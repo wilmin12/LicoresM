@@ -1,0 +1,202 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Charge Types - Licores Maduro</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../../css/main.css" />
+  <style>
+    .nav-tabs .nav-link { color: var(--primary); font-weight:500; }
+    .nav-tabs .nav-link.active { color: #fff; background:var(--primary); border-color:var(--primary); }
+  </style>
+</head>
+<body>
+<div id="sidebar-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;"></div>
+<div class="app-wrapper">
+  <nav id="sidebar" class="sidebar">
+    <div class="sidebar-header"><img src="../../img/LogoLicores.png" alt="Licores Maduro" class="sidebar-logo-img"/><span class="sidebar-logo-text">LICORES MADURO</span></div>
+    <div id="sidebar-nav" class="sidebar-nav"></div>
+    <div class="sidebar-footer"><div class="sidebar-user"><div class="sidebar-avatar" id="sidebar-user-initials">LM</div><div class="sidebar-text"><div id="sidebar-user-name" style="font-weight:600;">–</div></div></div></div>
+  </nav>
+  <div class="main-area">
+    <header class="topbar">
+      <button id="btn-sidebar-toggle" class="btn-sidebar-toggle"><i class="fas fa-bars"></i></button>
+      <span class="topbar-title"><i class="fas fa-coins me-2 text-wine"></i>Charge Types</span>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown">
+            <span class="sidebar-avatar" id="topbar-user-initials" style="width:28px;height:28px;font-size:.75rem;">LM</span>
+            <span id="topbar-user-name" class="d-none d-md-inline">–</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+            <li><div class="dropdown-header"><strong id="topbar-user-fullname">User</strong><br/><small class="text-muted" id="topbar-user-role">Role</small></div></li>
+            <li><hr class="dropdown-divider"/></li>
+            <li><a class="dropdown-item text-danger" href="#" id="btn-logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+          </ul>
+        </div>
+      </div>
+    </header>
+    <main class="page-content">
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="../../dashboard.html"><i class="fas fa-home me-1"></i>Home</a></li>
+          <li class="breadcrumb-item"><a href="index.html">Freight Forwarder</a></li>
+          <li class="breadcrumb-item active">Charge Types</li>
+        </ol>
+      </nav>
+      <div class="page-title">Charge Types</div>
+      <div class="page-subtitle">Manage all freight charge type catalogs.</div>
+
+      <!-- Tabs -->
+      <ul class="nav nav-tabs mb-3" id="chargeTabs">
+        <li class="nav-item"><a class="nav-link active" href="#" onclick="switchTab('ocean',this)">Ocean Freight</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="switchTab('inland',this)">Inland Freight</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="switchTab('lcl',this)">LCL</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="switchTab('price',this)">Price Types</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="switchTab('amount',this)">Amount Types</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="switchTab('action',this)">Charge Actions</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="switchTab('over',this)">Charge Over</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="switchTab('per',this)">Charge Per</a></li>
+      </ul>
+
+      <div class="card mb-3">
+        <div class="card-body d-flex flex-wrap align-items-center gap-2 py-2">
+          <div class="search-wrapper flex-grow-1"><i class="fas fa-search search-icon"></i><input type="text" id="search-input" class="form-control form-control-sm" placeholder="Search..."/></div>
+          <button class="btn btn-wine btn-sm ms-auto" id="btn-new"><i class="fas fa-plus me-1"></i>New</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <span><i class="fas fa-table me-2"></i><span id="tab-title">Ocean Freight Charges</span></span>
+          <span class="badge" style="background:var(--primary);color:#fff;" id="total-count">0 records</span>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead><tr><th>#</th><th>Code</th><th>Description</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody id="data-tbody"><tr><td colspan="5" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card-footer d-flex align-items-center justify-content-between flex-wrap gap-2">
+          <small class="text-muted" id="page-info">Page 1</small>
+          <nav><ul class="pagination pagination-sm mb-0" id="pagination"></ul></nav>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="itemModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title" id="modalTitle"><i class="fas fa-coins me-2"></i>Charge Type</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body"><form id="item-form" novalidate><input type="hidden" id="edit-id"/>
+      <div class="mb-3"><label class="form-label">Code <span class="text-danger">*</span></label><input type="text" id="f-code" class="form-control text-uppercase" required maxlength="20"/><div class="invalid-feedback">Code is required.</div></div>
+      <div class="mb-3"><label class="form-label">Description <span class="text-danger">*</span></label><input type="text" id="f-description" class="form-control" required maxlength="100"/><div class="invalid-feedback">Description is required.</div></div>
+    </form></div>
+    <div class="modal-footer"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-wine btn-sm" id="btn-save"><i class="fas fa-save me-1"></i>Save</button></div>
+  </div></div>
+</div>
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header" style="background:#dc3545;">
+        <h5 class="modal-title text-white"><i class="fas fa-trash me-2"></i>Delete</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body text-center py-4">
+        <i class="fas fa-exclamation-triangle fa-2x text-danger mb-3 d-block"></i>
+        <p class="mb-1">Are you sure you want to delete</p>
+        <strong id="delete-item-name" class="text-danger"></strong>?
+        <p class="text-muted mt-2 mb-0" style="font-size:.8rem;">This action cannot be undone.</p>
+      </div>
+      <div class="modal-footer justify-content-center gap-2">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger btn-sm" id="btn-confirm-delete">
+          <i class="fas fa-trash me-1"></i>Delete
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="toast-container"><div id="toast" class="toast align-items-center text-white border-0" role="alert"><div class="d-flex"><div class="toast-body" id="toast-msg"></div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div></div></div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../../js/i18n.js"></script><script src="../../js/api.js"></script><script src="../../js/auth.js"></script><script src="../../js/sidebar.js"></script>
+<script>
+  const TABS = {
+    ocean:  { label:'Ocean Freight Charges',  api:API.catalogs.oceanFreight,  toggle:'/api/freight/ocean-charge-types',   codeField:'OfctCode', descField:'OfctDescription', idField:'OfctId', dto:(c,d)=>({OfctCode:c,OfctDescription:d}) },
+    inland: { label:'Inland Freight Charges', api:API.catalogs.inlandFreight, toggle:'/api/freight/inland-charge-types',  codeField:'IfctCode', descField:'IfctDescription', idField:'IfctId', dto:(c,d)=>({IfctCode:c,IfctDescription:d}) },
+    lcl:    { label:'LCL Charge Types',       api:API.catalogs.lclCharge,     toggle:'/api/freight/lcl-charge-types',     codeField:'LctCode',  descField:'LctDescription',  idField:'LctId',  dto:(c,d)=>({LctCode:c,LctDescription:d}) },
+    price:  { label:'Price Types',            api:API.catalogs.priceTypes,    toggle:'/api/freight/price-types',          codeField:'PtCode',   descField:'PtDescription',   idField:'PtId',   dto:(c,d)=>({PtCode:c,PtDescription:d}) },
+    amount: { label:'Amount Types',           api:API.catalogs.amountTypes,   toggle:'/api/freight/amount-types',         codeField:'AtCode',   descField:'AtDescription',   idField:'AtId',   dto:(c,d)=>({AtCode:c,AtDescription:d}) },
+    action: { label:'Charge Actions',         api:API.catalogs.chargeActions, toggle:'/api/freight/charge-actions',       codeField:'CaCode',   descField:'CaDescription',   idField:'CaId',   dto:(c,d)=>({CaCode:c,CaDescription:d}) },
+    over:   { label:'Charge Over',            api:API.catalogs.chargeOvers,   toggle:'/api/freight/charge-overs',         codeField:'CoCode',   descField:'CoDescription',   idField:'CoId',   dto:(c,d)=>({CoCode:c,CoDescription:d}) },
+    per:    { label:'Charge Per',             api:API.catalogs.chargePers,    toggle:'/api/freight/charge-pers',          codeField:'CpCode',   descField:'CpDescription',   idField:'CpId',   dto:(c,d)=>({CpCode:c,CpDescription:d}) },
+  };
+  let currentTab='ocean';
+  let _pendingDeleteId = null;
+  let allItems=[],filtered=[],currentPage=1;const PAGE_SIZE=15;
+
+  document.addEventListener('DOMContentLoaded',async()=>{
+    if(!Auth.requireAuth())return;Auth.startExpiryWatcher();Auth.populateUserUI();Sidebar.init();
+    document.getElementById('btn-logout').addEventListener('click',e=>{e.preventDefault();Auth.logout();});
+    document.getElementById('btn-new').addEventListener('click',openCreate);
+    document.getElementById('btn-save').addEventListener('click',saveItem);
+    document.getElementById('btn-confirm-delete').addEventListener('click', deleteItem);
+    document.getElementById('search-input').addEventListener('input',filterAndRender);
+    await loadData();
+  });
+
+  async function switchTab(tab, el){
+    event.preventDefault();
+    document.querySelectorAll('#chargeTabs .nav-link').forEach(a=>a.classList.remove('active'));
+    el.classList.add('active');
+    currentTab=tab;
+    document.getElementById('tab-title').textContent=TABS[tab].label;
+    document.getElementById('search-input').value='';
+    await loadData();
+  }
+
+  async function loadData(){
+    const tbody=document.getElementById('data-tbody');
+    tbody.innerHTML='<tr><td colspan="5" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading...</td></tr>';
+    try{const res=await TABS[currentTab].api.getAll();allItems=res?.Data||res||[];filterAndRender();}
+    catch(err){showToast(err.message,'danger');tbody.innerHTML=`<tr><td colspan="5" class="text-center py-4 text-danger">${esc(err.message)}</td></tr>`;}
+  }
+
+  function filterAndRender(){const t=TABS[currentTab];const q=document.getElementById('search-input').value.toLowerCase();filtered=allItems.filter(r=>(r[t.codeField]||'').toLowerCase().includes(q)||(r[t.descField]||'').toLowerCase().includes(q));currentPage=1;renderTable();renderPagination();}
+  function renderTable(){const t=TABS[currentTab];const tbody=document.getElementById('data-tbody');const start=(currentPage-1)*PAGE_SIZE,page=filtered.slice(start,start+PAGE_SIZE);document.getElementById('total-count').textContent=filtered.length+' '+I18n.t(filtered.length!==1?'records':'record');if(!page.length){tbody.innerHTML=`<tr><td colspan="5" class="text-center py-4 text-muted">${I18n.t('No records found.')}</td></tr>`;return;}tbody.innerHTML=page.map((r,i)=>`<tr><td>${start+i+1}</td><td><strong>${esc(r[t.codeField])}</strong></td><td>${esc(r[t.descField])}</td><td><span class="${r.IsActive!==false?'badge-active':'badge-inactive'}">${I18n.t(r.IsActive!==false?'Active':'Inactive')}</span></td><td><button class="btn-action edit me-1" onclick="openEdit(${r[t.idField]})" title="Edit"><i class="fas fa-edit"></i></button><button class="btn-action ${r.IsActive!==false?'delete':'edit'}" onclick="toggleItem(${r[t.idField]})" title="Toggle"><i class="fas fa-${r.IsActive!==false?'ban':'check'}"></i></button><button class="btn-action delete ms-1" onclick="confirmDelete(${r[t.idField]})" title="Delete"><i class="fas fa-trash"></i></button></td></tr>`).join('');}
+  function renderPagination(){const total=Math.ceil(filtered.length/PAGE_SIZE)||1;document.getElementById('page-info').textContent=`${I18n.t('Page')} ${currentPage} ${I18n.t('of')} ${total}`;let html=`<li class="page-item ${currentPage===1?'disabled':''}"><a class="page-link" href="#" onclick="event.preventDefault();gotoPage(${currentPage-1})">&#8249;</a></li>`;for(let p=1;p<=total;p++)html+=`<li class="page-item ${p===currentPage?'active':''}"><a class="page-link" href="#" onclick="event.preventDefault();gotoPage(${p})">${p}</a></li>`;html+=`<li class="page-item ${currentPage>=total?'disabled':''}"><a class="page-link" href="#" onclick="event.preventDefault();gotoPage(${currentPage+1})">&#8250;</a></li>`;document.getElementById('pagination').innerHTML=html;}
+  function gotoPage(p){const t=Math.ceil(filtered.length/PAGE_SIZE)||1;if(p<1||p>t)return;currentPage=p;renderTable();renderPagination();}
+  function openCreate(){document.getElementById('edit-id').value='';document.getElementById('item-form').reset();['f-code','f-description'].forEach(id=>document.getElementById(id).classList.remove('is-invalid'));document.getElementById('modalTitle').innerHTML=`<i class="fas fa-plus me-2"></i>New ${TABS[currentTab].label}`;new bootstrap.Modal('#itemModal').show();}
+  function openEdit(id){const t=TABS[currentTab];const r=allItems.find(x=>x[t.idField]===id);if(!r)return;document.getElementById('edit-id').value=id;document.getElementById('f-code').value=r[t.codeField]||'';document.getElementById('f-description').value=r[t.descField]||'';['f-code','f-description'].forEach(id=>document.getElementById(id).classList.remove('is-invalid'));document.getElementById('modalTitle').innerHTML=`<i class="fas fa-edit me-2"></i>Edit ${TABS[currentTab].label}`;new bootstrap.Modal('#itemModal').show();}
+  async function saveItem(){const t=TABS[currentTab];const id=document.getElementById('edit-id').value;const code=document.getElementById('f-code').value.trim().toUpperCase();const desc=document.getElementById('f-description').value.trim();let valid=true;if(!code){document.getElementById('f-code').classList.add('is-invalid');valid=false;}else document.getElementById('f-code').classList.remove('is-invalid');if(!desc){document.getElementById('f-description').classList.add('is-invalid');valid=false;}else document.getElementById('f-description').classList.remove('is-invalid');if(!valid)return;try{if(id){await t.api.update(id,t.dto(code,desc));showToast(I18n.t('Updated.'),'success');}else{await t.api.create(t.dto(code,desc));showToast(I18n.t('Created.'),'success');}bootstrap.Modal.getInstance(document.getElementById('itemModal'))?.hide();await loadData();}catch(err){showToast(err.message,'danger');}}
+  async function toggleItem(id){if(!confirm(I18n.t('Toggle status?')))return;try{await API.patch(`${TABS[currentTab].toggle}/${id}/toggle`,{});showToast(I18n.t('Status updated.'),'success');await loadData();}catch(err){showToast(err.message,'danger');}}
+  function showToast(msg,type='success'){const el=document.getElementById('toast');el.className=`toast align-items-center text-white border-0 bg-${type==='success'?'success':'danger'}`;document.getElementById('toast-msg').textContent=msg;new bootstrap.Toast(el,{delay:3500}).show();}
+  function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+  function confirmDelete(id) {
+    const t = TABS[currentTab];
+    const r = allItems.find(x => x[t.idField] === id);
+    _pendingDeleteId = id;
+    document.getElementById('delete-item-name').textContent = r ? `${r[t.codeField]} - ${r[t.descField]}` : String(id);
+    new bootstrap.Modal('#deleteModal').show();
+  }
+
+  async function deleteItem() {
+    if (!_pendingDeleteId) return;
+    const id = _pendingDeleteId;
+    _pendingDeleteId = null;
+    bootstrap.Modal.getInstance(document.getElementById('deleteModal'))?.hide();
+    try {
+      await TABS[currentTab].api.delete(id);
+      showToast(I18n.t('Deleted.'), 'success');
+      await loadData();
+    } catch(err) { showToast(err.message, 'danger'); }
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Aankoopbonnen - Licores Maduro</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css"/>
+  <link rel="stylesheet" href="../../css/main.css"/>
+  <style>
+    .status-badge { font-size:.72rem; font-weight:700; padding:3px 10px; border-radius:20px; }
+    .status-DRAFT    { background:#e9ecef; color:#495057; }
+    .status-PENDING  { background:#fff3cd; color:#856404; }
+    .status-APPROVED { background:#d1e7dd; color:#0a3622; }
+    .status-REJECTED { background:#f8d7da; color:#58151c; }
+    .status-CLOSED   { background:#1e293b; color:#e2e8f0; }
+    .detail-row td { font-size:.82rem; padding:4px 8px!important; }
+
+    /* ── KPI Cards ─────────────────────────────────────────────────────── */
+    .kpi-card {
+      border: none; border-radius: 10px; padding: .8rem 1rem;
+      cursor: pointer; position: relative; overflow: hidden;
+      transition: transform .15s, box-shadow .15s;
+    }
+    .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 4px 14px rgba(0,0,0,.14); }
+    .kpi-card.active { outline: 2px solid rgba(255,255,255,.7); outline-offset: -3px; }
+    .kpi-card .kpi-value { font-size: 1.75rem; font-weight: 700; line-height: 1; }
+    .kpi-card .kpi-label { font-size: .7rem; text-transform: uppercase; letter-spacing: .05em; opacity: .8; margin-top: .25rem; }
+    .kpi-card .kpi-icon  { font-size: 2rem; opacity: .18; position: absolute; right: .9rem; top: 50%; transform: translateY(-50%); }
+
+    /* ── Print styles ─────────────────────────────────────────────────────── */
+    @media print {
+      body * { visibility: hidden; }
+      #print-area, #print-area * { visibility: visible; }
+      #print-area { position:fixed; top:0; left:0; width:100%; padding:24px; }
+      .no-print { display:none!important; }
+    }
+  </style>
+</head>
+<body>
+<div id="sidebar-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;"></div>
+<div class="app-wrapper">
+  <nav id="sidebar" class="sidebar">
+    <div class="sidebar-header"><img src="../../img/LogoLicores.png" alt="Licores Maduro" class="sidebar-logo-img"/><span class="sidebar-logo-text">LICORES MADURO</span></div>
+    <div id="sidebar-nav" class="sidebar-nav"></div>
+    <div class="sidebar-footer"><div class="sidebar-user"><div class="sidebar-avatar" id="sidebar-user-initials">LM</div><div class="sidebar-text"><div id="sidebar-user-name" style="font-weight:600;">–</div></div></div></div>
+  </nav>
+  <div class="main-area">
+    <header class="topbar">
+      <button id="btn-sidebar-toggle" class="btn-sidebar-toggle"><i class="fas fa-bars"></i></button>
+      <span class="topbar-title"><i class="fas fa-file-invoice me-2 text-wine"></i>Aankoopbonnen</span>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown">
+            <span class="sidebar-avatar" id="topbar-user-initials" style="width:28px;height:28px;font-size:.75rem;">LM</span>
+            <span id="topbar-user-name" class="d-none d-md-inline">–</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+            <li><div class="dropdown-header"><strong id="topbar-user-fullname">User</strong><br/><small class="text-muted" id="topbar-user-role">Role</small></div></li>
+            <li><hr class="dropdown-divider"/></li>
+            <li><a class="dropdown-item text-danger" href="#" id="btn-logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+          </ul>
+        </div>
+      </div>
+    </header>
+    <main class="page-content">
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="../../dashboard.html"><i class="fas fa-home me-1"></i>Home</a></li>
+          <li class="breadcrumb-item active">Aankoopbonnen</li>
+        </ol>
+      </nav>
+
+      <!-- KPI Cards -->
+      <div class="row g-2 mb-3" id="kpi-row">
+        <div class="col-6 col-sm-2">
+          <div class="kpi-card text-white active" style="background:#6366f1;" data-kpi="" onclick="kpiFilter(this,'')">
+            <div class="kpi-value" id="kpi-total">–</div>
+            <div class="kpi-label">Total</div>
+            <i class="fas fa-file-invoice kpi-icon"></i>
+          </div>
+        </div>
+        <div class="col-6 col-sm-2">
+          <div class="kpi-card text-white" style="background:#f59e0b;" data-kpi="PENDING" onclick="kpiFilter(this,'PENDING')">
+            <div class="kpi-value" id="kpi-pending">–</div>
+            <div class="kpi-label">Pending</div>
+            <i class="fas fa-clock kpi-icon"></i>
+          </div>
+        </div>
+        <div class="col-6 col-sm-2">
+          <div class="kpi-card text-white" style="background:#16a34a;" data-kpi="APPROVED" onclick="kpiFilter(this,'APPROVED')">
+            <div class="kpi-value" id="kpi-approved">–</div>
+            <div class="kpi-label">Approved</div>
+            <i class="fas fa-check-circle kpi-icon"></i>
+          </div>
+        </div>
+        <div class="col-6 col-sm-2">
+          <div class="kpi-card text-white" style="background:#ef4444;" data-kpi="REJECTED" onclick="kpiFilter(this,'REJECTED')">
+            <div class="kpi-value" id="kpi-rejected">–</div>
+            <div class="kpi-label">Rejected</div>
+            <i class="fas fa-times-circle kpi-icon"></i>
+          </div>
+        </div>
+        <div class="col-6 col-sm-2">
+          <div class="kpi-card text-white" style="background:#1e293b;" data-kpi="CLOSED" onclick="kpiFilter(this,'CLOSED')">
+            <div class="kpi-value" id="kpi-closed">–</div>
+            <div class="kpi-label">Closed</div>
+            <i class="fas fa-lock kpi-icon"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filters + New button -->
+      <div class="card mb-3 no-print">
+        <div class="card-body py-2">
+          <div class="row g-2 align-items-center">
+            <div class="col-md-4">
+              <input id="filter-search" type="text" class="form-control form-control-sm" placeholder="Search bon#, vendor, requestor..."/>
+            </div>
+            <div class="col-md-3">
+              <select id="filter-status" class="form-select form-select-sm">
+                <option value="">All Statuses</option>
+                <option value="DRAFT">Draft</option>
+                <option value="PENDING">Pending</option>
+                <option value="APPROVED">Approved</option>
+                <option value="REJECTED">Rejected</option>
+                <option value="CLOSED">Closed</option>
+              </select>
+            </div>
+            <div class="col-md-5 d-flex gap-2 justify-content-end">
+              <button class="btn btn-sm btn-outline-secondary" onclick="load()"><i class="fas fa-sync-alt me-1"></i>Refresh</button>
+              <button class="btn btn-sm btn-wine" onclick="openCreate()"><i class="fas fa-plus me-1"></i>New Aankoopbon</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="card no-print">
+        <div class="card-header d-flex justify-content-between align-items-center py-2">
+          <span class="fw-semibold"><i class="fas fa-list me-2 text-wine"></i>Aankoopbonnen</span>
+          <small class="text-muted" id="record-count"></small>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover table-sm mb-0 align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>Bon #</th>
+                  <th>Date</th>
+                  <th>Status</th>
+                  <th>Requestor</th>
+                  <th>Vendor</th>
+                  <th>Department</th>
+                  <th>Remarks</th>
+                  <th class="text-end">Amount</th>
+                  <th class="text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="table-body"><tr><td colspan="9" class="text-center py-4 text-muted">Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ── MODAL: Create / Edit ──────────────────────────────────────────────── -->
+<div class="modal fade" id="modal-form" tabindex="-1" data-bs-backdrop="static">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold" id="modal-form-title"><i class="fas fa-file-invoice me-2 text-wine"></i>New Aankoopbon</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3">
+          <!-- Requestor -->
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Requestor <span class="text-danger">*</span></label>
+            <select id="f-requestor" class="form-select form-select-sm" onchange="onRequestorChange()"></select>
+          </div>
+          <!-- Vendor -->
+          <div class="col-md-8">
+            <label class="form-label fw-semibold">Vendor <span class="text-danger">*</span></label>
+            <select id="f-vendor" class="form-select form-select-sm" onchange="onVendorChange()">
+              <option value="">— Select Vendor —</option>
+            </select>
+            <small class="text-muted" id="f-vendor-address"></small>
+          </div>
+          <!-- Department -->
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Department</label>
+            <select id="f-department" class="form-select form-select-sm"></select>
+          </div>
+          <!-- Cost Type -->
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Cost Type</label>
+            <select id="f-cost-type" class="form-select form-select-sm"></select>
+          </div>
+          <!-- Amount -->
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Amount (NAF)</label>
+            <input id="f-amount" type="number" step="0.01" class="form-control form-control-sm" placeholder="Optional"/>
+          </div>
+          <!-- Vehicle -->
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Vehicle (optional)</label>
+            <select id="f-vehicle" class="form-select form-select-sm" onchange="onVehicleChange()">
+              <option value="">— No vehicle —</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Vehicle Type</label>
+            <input id="f-vehicle-type" type="text" class="form-control form-control-sm" readonly/>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Vehicle Model</label>
+            <input id="f-vehicle-model" type="text" class="form-control form-control-sm" readonly/>
+          </div>
+          <!-- Quotation -->
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Quotation Number</label>
+            <input id="f-quotation-nr" type="text" class="form-control form-control-sm" maxlength="15"/>
+          </div>
+          <!-- Remarks -->
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Remarks <span class="text-danger">*</span></label>
+            <input id="f-remarks" type="text" class="form-control form-control-sm" maxlength="255"/>
+          </div>
+          <!-- Quotation PDF -->
+          <div class="col-12">
+            <label class="form-label fw-semibold">Quotation PDF <span class="text-danger">*</span></label>
+            <input id="f-quotation-pdf" type="file" accept=".pdf,application/pdf" class="form-control form-control-sm"/>
+            <div id="f-pdf-current" class="mt-1" style="display:none">
+              <small class="text-success"><i class="fas fa-file-pdf me-1"></i>PDF already attached — upload a new file to replace it.</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Products grid -->
+        <hr class="my-3"/>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="fw-semibold"><i class="fas fa-boxes me-1 text-wine"></i>Products</span>
+          <button class="btn btn-sm btn-outline-wine" onclick="addDetailRow()"><i class="fas fa-plus me-1"></i>Add Line</button>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm table-bordered mb-0" id="details-table">
+            <thead class="table-light">
+              <tr>
+                <th style="width:180px">Product Code</th>
+                <th>Description <span class="text-danger">*</span></th>
+                <th style="width:90px">Qty</th>
+                <th style="width:90px">Unit</th>
+                <th style="width:40px"></th>
+              </tr>
+            </thead>
+            <tbody id="details-body"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-wine" onclick="saveDraft()"><i class="fas fa-save me-1"></i>Save Draft</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Close (Delivery method) ───────────────────────────────────── -->
+<div class="modal fade" id="modal-close" tabindex="-1" data-bs-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold"><i class="fas fa-paper-plane me-2 text-wine"></i>Send for Approval</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="close-no-pdf-warning" class="alert alert-danger d-flex align-items-center gap-2 mb-3" style="display:none!important">
+          <i class="fas fa-exclamation-triangle"></i>
+          <span>This aankoopbon does not have a quotation PDF attached. Please edit it and upload the PDF before submitting for approval.</span>
+        </div>
+        <p class="text-muted">Select how the aankoopbon will be delivered:</p>
+        <div class="mb-3">
+          <div class="form-check"><input class="form-check-input" type="radio" name="delivery" id="del-meegeven"  value="meegeven"  onclick="onDeliveryChange()"/><label class="form-check-label" for="del-meegeven">Wilt u meegeven (Deliver in hand)</label></div>
+          <div class="form-check"><input class="form-check-input" type="radio" name="delivery" id="del-ontvangen" value="ontvangen" onclick="onDeliveryChange()"/><label class="form-check-label" for="del-ontvangen">Hierbij ontvangt u (Hereby receives)</label></div>
+          <div class="form-check"><input class="form-check-input" type="radio" name="delivery" id="del-zenden"    value="zenden"    onclick="onDeliveryChange()"/><label class="form-check-label" for="del-zenden">Wilt u zenden (Send)</label></div>
+          <div class="form-check"><input class="form-check-input" type="radio" name="delivery" id="del-andere"    value="andere"    onclick="onDeliveryChange()"/><label class="form-check-label" for="del-andere">Andere (Other)</label></div>
+        </div>
+        <div id="receiver-section" style="display:none">
+          <label class="form-label fw-semibold">Receiver <span class="text-danger">*</span></label>
+          <select id="f-receiver" class="form-select form-select-sm" onchange="onReceiverChange()">
+            <option value="">— Select receiver —</option>
+          </select>
+          <input id="f-receiver-id-doc" type="text" class="form-control form-control-sm mt-2" readonly placeholder="ID will appear here"/>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-warning fw-bold" onclick="submitClose()"><i class="fas fa-paper-plane me-1"></i>Send for Approval</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: View / Approve / Reject ───────────────────────────────────── -->
+<div class="modal fade" id="modal-view" tabindex="-1">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header" id="modal-view-header">
+        <h5 class="modal-title fw-bold" id="modal-view-title"><i class="fas fa-file-invoice me-2"></i>Aankoopbon</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="modal-view-body"><!-- filled by JS --></div>
+      <div class="modal-footer" id="modal-view-footer"><!-- filled by JS --></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Reject reason ─────────────────────────────────────────────── -->
+<div class="modal fade" id="modal-reject" tabindex="-1" data-bs-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header border-0">
+        <h5 class="modal-title fw-bold text-danger"><i class="fas fa-times-circle me-2"></i>Reject Aankoopbon</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body pt-0">
+        <label class="form-label fw-semibold">Reason for rejection <span class="text-danger">*</span></label>
+        <textarea id="f-reject-reason" class="form-control" rows="3" maxlength="500" placeholder="Explain why this aankoopbon is rejected..."></textarea>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger fw-bold" onclick="confirmReject()"><i class="fas fa-times me-1"></i>Reject</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Invoice Update ─────────────────────────────────────────────── -->
+<div class="modal fade" id="modal-invoice" tabindex="-1" data-bs-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header border-0">
+        <h5 class="modal-title fw-bold"><i class="fas fa-file-invoice-dollar me-2 text-wine"></i>Register Invoice &amp; Close</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body pt-0">
+        <div class="alert alert-warning d-flex align-items-start gap-2 mb-3 py-2 px-3" style="font-size:.82rem;">
+          <i class="fas fa-lock mt-1"></i>
+          <span><strong>Attention:</strong> Saving the invoice data will permanently <strong>close</strong> this aankoopbon. This action cannot be undone.</span>
+        </div>
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label fw-semibold">Invoice Number <span class="text-danger">*</span></label>
+            <input id="f-invoice-nr" type="text" class="form-control form-control-sm" maxlength="50" placeholder="e.g. INV-2025-001"/>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Invoice Date <span class="text-danger">*</span></label>
+            <input id="f-invoice-date" type="date" class="form-control form-control-sm"/>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Invoice Amount (NAF) <span class="text-danger">*</span></label>
+            <input id="f-invoice-amount" type="number" step="0.01" class="form-control form-control-sm" placeholder="0.00"/>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger fw-bold" onclick="saveInvoice()"><i class="fas fa-lock me-1"></i>Save &amp; Close Order</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── PRINT AREA ─────────────────────────────────────────────────────────── -->
+<div id="print-area" style="display:none;font-family:Arial,sans-serif;font-size:13px;"></div>
+
+<!-- ── Toast ─────────────────────────────────────────────────────────────── -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index:9999">
+  <div id="toast" class="toast align-items-center border-0" role="alert">
+    <div class="d-flex"><div class="toast-body" id="toast-msg"></div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+<script src="../../js/api.js"></script>
+<script src="../../js/auth.js"></script>
+<script src="../../js/sidebar.js"></script>
+<script src="../../js/notifications.js"></script>
+<script>
+const BASE = window.API?.BASE_URL || 'http://localhost:54929';
+
+let _editId      = null;
+let _closeId     = null;
+let _closePdf    = false;
+let _rejectId    = null;
+let _invoiceId   = null;
+let _viewData    = null;   // holds the last bon loaded in the view modal
+let _vendors          = [];
+let _requestorVendors = [];
+let _vehicles         = [];
+let _receivers        = [];
+let _ts               = {};   // Tom Select instances
+let _currentUser = null;
+let _isAdmin     = false;
+
+// ── Init ──────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!Auth.requireAuth()) return;
+  _currentUser = Auth.getCurrentUser();
+  _isAdmin = ['SuperAdmin','Admin'].includes(_currentUser?.RoleName);
+  Auth.startExpiryWatcher();
+  Auth.populateUserUI();
+  Sidebar.init();
+  Notifications.init();
+  document.getElementById('btn-logout').addEventListener('click', e => { e.preventDefault(); Auth.logout(); });
+
+  await Promise.all([loadCatalogs(), load()]);
+  _initTomSelects();
+
+  document.getElementById('filter-search').addEventListener('input', _debounce(load, 400));
+  document.getElementById('filter-status').addEventListener('change', () => {
+    const val = document.getElementById('filter-status').value;
+    document.querySelectorAll('#kpi-row .kpi-card').forEach(c => {
+      c.classList.toggle('active', c.dataset.kpi === val);
+    });
+    load();
+  });
+});
+
+// ── Load list ──────────────────────────────────────────────────────────────
+async function load() {
+  const search = document.getElementById('filter-search').value.trim();
+  const status = document.getElementById('filter-status').value;
+  const params = new URLSearchParams({ pageSize: 200 });
+  if (search) params.set('search', search);
+  if (status) params.set('status', status);
+
+  const res = await API.get(`/api/aankoopbon/orders?${params}`);
+  const items = res?.Data || [];
+
+  // KPIs
+  const all = await API.get('/api/aankoopbon/orders?pageSize=1000');
+  const allItems = all?.Data || [];
+  document.getElementById('kpi-total').textContent    = allItems.length;
+  document.getElementById('kpi-pending').textContent  = allItems.filter(x => x.AohStatus==='PENDING').length;
+  document.getElementById('kpi-approved').textContent = allItems.filter(x => x.AohStatus==='APPROVED').length;
+  document.getElementById('kpi-rejected').textContent = allItems.filter(x => x.AohStatus==='REJECTED').length;
+  document.getElementById('kpi-closed').textContent   = allItems.filter(x => x.AohStatus==='CLOSED').length;
+
+  document.getElementById('record-count').textContent = `${items.length} record(s)`;
+
+  const tbody = document.getElementById('table-body');
+  if (!items.length) { tbody.innerHTML = `<tr><td colspan="9" class="text-center py-4 text-muted">No aankoopbonnen found.</td></tr>`; return; }
+
+  tbody.innerHTML = items.map(r => {
+    const statusBadge = `<span class="status-badge status-${r.AohStatus}">${r.AohStatus}</span>`;
+    const date = r.AohOrderDate ? r.AohOrderDate.slice(0,10) : '–';
+    const amount = r.AohAmount != null ? `${parseFloat(r.AohAmount).toFixed(2)} NAF` : '–';
+    const actions = _buildActions(r);
+    return `<tr>
+      <td class="fw-semibold">${r.AohBonNr}</td>
+      <td>${date}</td>
+      <td>${statusBadge}</td>
+      <td>${r.AohRequestor||'–'}</td>
+      <td>${r.AohVendorName||'–'}</td>
+      <td>${r.AohDepartment||'–'}</td>
+      <td class="text-muted">${_esc(r.AohRemarks||'')}</td>
+      <td class="text-end">${amount}</td>
+      <td class="text-center">${actions}</td>
+    </tr>`;
+  }).join('');
+}
+
+function _buildActions(r) {
+  const myId    = _currentUser?.UserId;
+  const isOwner = r.AohCreatedBy === myId;
+
+  let html = `<button class="btn btn-xs btn-outline-secondary" onclick="viewBon(${r.AohId})" title="View"><i class="fas fa-eye"></i></button> `;
+
+  if (r.AohStatus === 'DRAFT' && (isOwner || _isAdmin)) {
+    html += `<button class="btn btn-xs btn-outline-primary" onclick="openEdit(${r.AohId})" title="Edit"><i class="fas fa-edit"></i></button> `;
+    html += `<button class="btn btn-xs btn-outline-warning" onclick="openClose(${r.AohId}, ${!!r.HasQuotationPdf})" title="Send for Approval"><i class="fas fa-paper-plane"></i></button> `;
+    html += `<button class="btn btn-xs btn-outline-danger" onclick="deleteBon(${r.AohId})" title="Delete"><i class="fas fa-trash"></i></button>`;
+  }
+
+  if (r.AohStatus === 'PENDING' && _isAdmin) {
+    if (r.HasQuotationPdf)
+      html += ` <button class="btn btn-xs btn-outline-danger" onclick="previewPdf(${r.AohId})" title="Preview Quotation PDF"><i class="fas fa-file-pdf"></i></button>`;
+    html += ` <button class="btn btn-xs btn-success" onclick="approveBon(${r.AohId})" title="Approve"><i class="fas fa-check"></i></button>`;
+    html += ` <button class="btn btn-xs btn-danger"  onclick="openReject(${r.AohId})" title="Reject"><i class="fas fa-times"></i></button>`;
+  }
+
+  if (r.AohStatus === 'APPROVED') {
+    if (isOwner || _isAdmin)
+      html += ` <button class="btn btn-xs btn-outline-wine" onclick="quickInvoice(${r.AohId})" title="Register Invoice"><i class="fas fa-file-invoice-dollar"></i></button>`;
+    html += ` <button class="btn btn-xs btn-outline-dark" onclick="printBon(${r.AohId})" title="Print"><i class="fas fa-print"></i></button>`;
+  }
+
+  if (r.AohStatus === 'CLOSED') {
+    html += ` <button class="btn btn-xs btn-outline-dark" onclick="printBon(${r.AohId})" title="Print"><i class="fas fa-print"></i></button>`;
+  }
+
+  return html;
+}
+
+function kpiFilter(card, s) {
+  document.querySelectorAll('#kpi-row .kpi-card').forEach(c => c.classList.remove('active'));
+  card.classList.add('active');
+  document.getElementById('filter-status').value = s;
+  load();
+}
+
+// ── Tom Select init ───────────────────────────────────────────────────────
+const _tsCfg = { allowEmptyOption: true, maxOptions: null, plugins: [] };
+
+function _initTomSelects() {
+  const ids = [
+    { id: 'f-requestor', onChange: () => onRequestorChange() },
+    { id: 'f-department' },
+    { id: 'f-cost-type' },
+    { id: 'f-vehicle',   onChange: () => onVehicleChange() },
+    { id: 'f-receiver',  onChange: () => onReceiverChange() },
+  ];
+  ids.forEach(({ id, onChange }) => {
+    if (_ts[id]) _ts[id].destroy();
+    _ts[id] = new TomSelect(`#${id}`, {
+      ..._tsCfg,
+      ...(onChange ? { onChange } : {})
+    });
+  });
+  _initVendorTs();
+}
+
+function _initVendorTs() {
+  if (_ts['f-vendor']) { _ts['f-vendor'].destroy(); _ts['f-vendor'] = null; }
+  _ts['f-vendor'] = new TomSelect('#f-vendor', {
+    ..._tsCfg,
+    onChange(val) {
+      const v = _vendors.find(x => x.VndId == val);
+      document.getElementById('f-vendor-address').textContent = v?.VndAddress1 || '';
+    }
+  });
+}
+
+// ── Load catalogs ─────────────────────────────────────────────────────────
+async function loadCatalogs() {
+  const [vendors, vehicles, receivers, departments, costTypes, eenheden, requestors, reqVendors] = await Promise.all([
+    API.get('/api/aankoopbon/vendors?pageSize=500'),
+    API.get('/api/aankoopbon/vehicles?pageSize=200'),
+    API.get('/api/aankoopbon/receivers?pageSize=200'),
+    API.get('/api/aankoopbon/departments?pageSize=200'),
+    API.get('/api/aankoopbon/cost-types?pageSize=200'),
+    API.get('/api/aankoopbon/eenheden?pageSize=500'),
+    API.get('/api/aankoopbon/requestors?pageSize=200'),
+    API.get('/api/aankoopbon/requestors-vendor?pageSize=1000'),
+  ]);
+
+  _vendors          = (vendors?.Data    || []).filter(v => v.IsActive);
+  _requestorVendors = (reqVendors?.Data || []).filter(r => r.IsActive);
+  _vehicles         = (vehicles?.Data   || []).filter(v => v.IsActive);
+  _receivers        = receivers?.Data   || [];
+
+  // Vendor dropdown starts empty — populated dynamically when a requestor is selected
+  document.getElementById('f-vendor').innerHTML = '<option value="">— Select a requestor first —</option>';
+
+  // Vehicle select
+  const vhSel = document.getElementById('f-vehicle');
+  vhSel.innerHTML = '<option value="">— No vehicle —</option>' +
+    _vehicles.filter(v=>v.IsActive).map(v => `<option value="${v.VhId}" data-type="${_esc(v.VhType||'')}" data-model="${_esc(v.VhModel||'')}" data-license="${_esc(v.VhLicense||'')}">${v.VhLicense} — ${v.VhType||''} ${v.VhModel||''}</option>`).join('');
+
+  // Receiver select
+  const recSel = document.getElementById('f-receiver');
+  recSel.innerHTML = '<option value="">— Select receiver —</option>' +
+    _receivers.filter(r=>r.IsActive).map(r => `<option value="${r.RecId}" data-iddoc="${_esc(r.RecIdDoc||'')}">${_esc(r.RecName)}</option>`).join('');
+
+  // Department
+  const dpSel = document.getElementById('f-department');
+  dpSel.innerHTML = '<option value="">— Select —</option>' +
+    (departments?.Data||[]).filter(d=>d.IsActive).map(d=>`<option>${_esc(d.DpName)}</option>`).join('');
+
+  // Cost Type
+  const ctSel = document.getElementById('f-cost-type');
+  ctSel.innerHTML = '<option value="">— Select —</option>' +
+    (costTypes?.Data||[]).filter(c=>c.IsActive).map(c=>`<option>${_esc(c.TcName)}</option>`).join('');
+
+  // Eenheden (for detail rows)
+  window._eenheden = (eenheden?.Data||[]).filter(e=>e.IsActive);
+
+  // Requestors
+  const reqSel = document.getElementById('f-requestor');
+  reqSel.innerHTML = '<option value="">— Select —</option>' +
+    (requestors?.Data||[]).filter(r=>r.IsActive).map(r=>`<option>${_esc(r.ReqName)}</option>`).join('');
+}
+
+// ── Create / Edit ─────────────────────────────────────────────────────────
+function openCreate() {
+  _editId = null;
+  document.getElementById('modal-form-title').innerHTML = '<i class="fas fa-file-invoice me-2 text-wine"></i>New Aankoopbon';
+  _resetForm();
+  new bootstrap.Modal(document.getElementById('modal-form')).show();
+}
+
+async function openEdit(id) {
+  const res = await API.get(`/api/aankoopbon/orders/${id}`);
+  const h = res?.Data; if (!h) return;
+  _editId = id;
+  document.getElementById('modal-form-title').innerHTML = `<i class="fas fa-edit me-2 text-wine"></i>Edit Aankoopbon ${h.AohBonNr}`;
+  _fillForm(h);
+  new bootstrap.Modal(document.getElementById('modal-form')).show();
+}
+
+function _resetForm() {
+  // Clear Tom Select dropdowns
+  ['f-requestor','f-department','f-cost-type','f-vehicle'].forEach(id => {
+    if (_ts[id]) _ts[id].clear(true); else { const el = document.getElementById(id); if (el) el.value = ''; }
+  });
+  // Rebuild vendor with no requestor (clears it)
+  _rebuildVendorDropdown('');
+  ['f-amount','f-quotation-nr','f-remarks','f-vehicle-type','f-vehicle-model'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.getElementById('f-vendor-address').textContent = '';
+  document.getElementById('f-quotation-pdf').value = '';
+  document.getElementById('f-pdf-current').style.display = 'none';
+  document.getElementById('details-body').innerHTML = '';
+  addDetailRow();
+}
+
+function _fillForm(h) {
+  // Tom Select dropdowns — use setValue; rebuild vendor after requestor is set
+  if (_ts['f-requestor']) _ts['f-requestor'].setValue(h.AohRequestor || '', true);
+  else _setVal('f-requestor', h.AohRequestor);
+
+  _rebuildVendorDropdown(h.AohRequestor || '', h.AohVendorId);
+
+  if (_ts['f-department']) _ts['f-department'].setValue(h.AohDepartment || '', true);
+  else _setVal('f-department', h.AohDepartment);
+
+  if (_ts['f-cost-type']) _ts['f-cost-type'].setValue(h.AohCostType || '', true);
+  else _setVal('f-cost-type', h.AohCostType);
+
+  if (_ts['f-vehicle']) _ts['f-vehicle'].setValue(h.AohVehicleId ? String(h.AohVehicleId) : '', true);
+  else _setVal('f-vehicle', h.AohVehicleId);
+
+  _setVal('f-remarks',      h.AohRemarks);
+  _setVal('f-quotation-nr', h.AohQuotationNr);
+  _setVal('f-amount',       h.AohAmount);
+  _setVal('f-vehicle-type', h.AohVehicleType);
+  _setVal('f-vehicle-model',h.AohVehicleModel);
+  document.getElementById('f-quotation-pdf').value = '';
+  document.getElementById('f-pdf-current').style.display = h.AohQuotationPdfPath ? 'block' : 'none';
+
+  // Vendor address fallback if not in catalog
+  if (h.AohVendorId && !document.getElementById('f-vendor').value)
+    document.getElementById('f-vendor-address').textContent = h.AohVendorAddress || '';
+
+  // Details
+  const tbody = document.getElementById('details-body');
+  tbody.innerHTML = '';
+  (h.Details||[]).forEach(d => addDetailRow(d));
+  if (!h.Details?.length) addDetailRow();
+}
+
+function addDetailRow(d = null) {
+  const units = (window._eenheden||[]).map(e=>`<option ${d?.AodUnit===e.UnitCode?'selected':''}>${e.UnitCode}</option>`).join('');
+  const row = document.createElement('tr');
+  row.className = 'detail-row';
+  row.innerHTML = `
+    <td><input type="text" class="form-control form-control-sm det-code text-uppercase" value="${_esc(d?.AodProductCode||'')}" placeholder="Code" onblur="onProductCodeLookup(this)"/></td>
+    <td><input type="text" class="form-control form-control-sm det-desc" value="${_esc(d?.AodProductDesc||'')}" placeholder="Description" required/></td>
+    <td><input type="number" class="form-control form-control-sm det-qty" value="${d?.AodQuantity||1}" min="0.01" step="0.01"/></td>
+    <td><select class="form-select form-select-sm det-unit"><option value=""></option>${units}</select></td>
+    <td><button class="btn btn-xs btn-outline-danger" onclick="this.closest('tr').remove()" title="Remove"><i class="fas fa-times"></i></button></td>`;
+  document.getElementById('details-body').appendChild(row);
+}
+
+
+async function onProductCodeLookup(input) {
+  const code = input.value.trim().toUpperCase();
+  if (!code) return;
+  const row = input.closest('tr');
+  const descInput = row.querySelector('.det-desc');
+  const unitSel   = row.querySelector('.det-unit');
+  // Solo auto-completa si descripción está vacía
+  if (descInput.value.trim()) return;
+  try {
+    const res = await API.get(`/api/aankoopbon/products?search=${encodeURIComponent(code)}&pageSize=1`);
+    const p = (res?.Data || res || [])[0];
+    if (!p) return;
+    descInput.value = p.Omschrijving || '';
+    if (p.Eenheid && unitSel) unitSel.value = p.Eenheid;
+  } catch (_) {}
+}
+
+function onVendorChange() {
+  const sel = document.getElementById('f-vendor');
+  const opt = sel.options[sel.selectedIndex];
+  document.getElementById('f-vendor-address').textContent = opt?.dataset.address || '';
+}
+
+function _rebuildVendorDropdown(requestorName, selectedVndId = null) {
+  // Destroy Tom Select instance so we can safely rebuild the underlying <select>
+  if (_ts['f-vendor']) { _ts['f-vendor'].destroy(); _ts['f-vendor'] = null; }
+
+  const vSel = document.getElementById('f-vendor');
+  document.getElementById('f-vendor-address').textContent = '';
+
+  if (!requestorName) {
+    vSel.innerHTML = '<option value="">— Select a requestor first —</option>';
+    _initVendorTs();
+    return;
+  }
+  // Get vendor codes assigned to this requestor (RsVendor stores VndCode)
+  const assignedCodes = new Set(
+    _requestorVendors
+      .filter(rv => rv.RsRequestor === requestorName)
+      .map(rv => rv.RsVendor.trim())
+  );
+  const filtered = _vendors.filter(v => assignedCodes.has(v.VndCode.trim()));
+  if (!filtered.length) {
+    vSel.innerHTML = '<option value="">— No vendors assigned to this requestor —</option>';
+    _initVendorTs();
+    return;
+  }
+  vSel.innerHTML = '<option value="">— Select Vendor —</option>' +
+    filtered.map(v => `<option value="${v.VndId}" data-address="${_esc(v.VndAddress1||'')}">${v.VndCode} — ${_esc(v.VndName)}</option>`).join('');
+  _initVendorTs();
+  if (selectedVndId) {
+    _ts['f-vendor'].setValue(String(selectedVndId), true);
+    const v = _vendors.find(x => x.VndId == selectedVndId);
+    document.getElementById('f-vendor-address').textContent = v?.VndAddress1 || '';
+  }
+}
+
+function onRequestorChange() {
+  const name = document.getElementById('f-requestor').value;
+  _rebuildVendorDropdown(name);
+}
+
+function onVehicleChange() {
+  const sel = document.getElementById('f-vehicle');
+  const opt = sel.options[sel.selectedIndex];
+  document.getElementById('f-vehicle-type').value  = opt?.dataset.type  || '';
+  document.getElementById('f-vehicle-model').value = opt?.dataset.model || '';
+}
+
+function onReceiverChange() {
+  const sel = document.getElementById('f-receiver');
+  const opt = sel.options[sel.selectedIndex];
+  document.getElementById('f-receiver-id-doc').value = opt?.dataset.iddoc || '';
+}
+
+function onDeliveryChange() {
+  const val = document.querySelector('input[name="delivery"]:checked')?.value;
+  document.getElementById('receiver-section').style.display = val === 'meegeven' ? 'block' : 'none';
+}
+
+function _buildDto() {
+  const vSel  = document.getElementById('f-vendor');
+  const vhSel = document.getElementById('f-vehicle');
+  const vhOpt = vhSel.options[vhSel.selectedIndex];
+  const details = [...document.querySelectorAll('#details-body tr.detail-row')].map(row => ({
+    AodProductCode: row.querySelector('.det-code')?.value.trim() || null,
+    AodProductDesc: row.querySelector('.det-desc')?.value.trim() || '',
+    AodQuantity:    parseFloat(row.querySelector('.det-qty')?.value) || 1,
+    AodUnit:        row.querySelector('.det-unit')?.value || null,
+  })).filter(d => d.AodProductDesc);
+
+  return {
+    AohRequestor:    document.getElementById('f-requestor').value  || null,
+    AohVendorId:     vSel.value ? parseInt(vSel.value) : null,
+    AohVendorName:   vSel.options[vSel.selectedIndex]?.text?.split(' — ')[1] || null,
+    AohVendorAddress:document.getElementById('f-vendor-address').textContent || null,
+    AohDepartment:   document.getElementById('f-department').value || null,
+    AohCostType:     document.getElementById('f-cost-type').value  || null,
+    AohRemarks:      document.getElementById('f-remarks').value.trim() || null,
+    AohVehicleId:    vhSel.value ? parseInt(vhSel.value) : null,
+    AohVehicleLicense: vhOpt?.dataset.license || null,
+    AohVehicleType:  document.getElementById('f-vehicle-type').value  || null,
+    AohVehicleModel: document.getElementById('f-vehicle-model').value || null,
+    AohQuotationNr:  document.getElementById('f-quotation-nr').value.trim() || null,
+    AohAmount:       parseFloat(document.getElementById('f-amount').value) || null,
+    Details: details
+  };
+}
+
+async function saveDraft() {
+  const dto = _buildDto();
+  if (!dto.AohRequestor) { showToast('Please select a requestor.','danger'); return; }
+  if (!dto.AohVendorId)  { showToast('Please select a vendor.','danger'); return; }
+  if (!dto.AohRemarks)   { showToast('Remarks are required.','danger'); return; }
+
+  let res;
+  if (_editId) {
+    res = await API.put(`/api/aankoopbon/orders/${_editId}`, dto);
+  } else {
+    res = await API.post('/api/aankoopbon/orders', dto);
+  }
+
+  if (!res?.Success) { showToast(res?.Message || 'Error saving.', 'danger'); return; }
+
+  const savedId = _editId || res.Data?.AohId;
+
+  // Upload PDF if a file was selected
+  const pdfFile = document.getElementById('f-quotation-pdf').files?.[0];
+  if (pdfFile && savedId) {
+    const fd = new FormData();
+    fd.append('file', pdfFile);
+    try {
+      const pdfRes = await fetch(`${BASE}/api/aankoopbon/orders/${savedId}/upload-pdf`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${Auth.getToken()}` },
+        body: fd
+      });
+      const pdfJson = await pdfRes.json();
+      if (!pdfJson?.Success) showToast('Saved, but PDF upload failed: ' + (pdfJson?.Message || ''), 'warning');
+    } catch { showToast('Saved, but PDF upload failed.', 'warning'); }
+  }
+
+  bootstrap.Modal.getInstance(document.getElementById('modal-form')).hide();
+  showToast(res.Message || 'Saved.', 'success');
+  load();
+}
+
+// ── Close (send for approval) ─────────────────────────────────────────────
+function openClose(id, hasPdf = false) {
+  _closeId  = id;
+  _closePdf = hasPdf;
+  document.querySelectorAll('input[name="delivery"]').forEach(r => r.checked = false);
+  document.getElementById('receiver-section').style.display = 'none';
+  document.getElementById('f-receiver').value = '';
+  document.getElementById('f-receiver-id-doc').value = '';
+  // Show warning if no PDF attached
+  const warn = document.getElementById('close-no-pdf-warning');
+  warn.style.display = hasPdf ? 'none' : 'block';
+  new bootstrap.Modal(document.getElementById('modal-close')).show();
+}
+
+async function submitClose() {
+  if (!_closePdf) { showToast('A quotation PDF is required before submitting for approval.', 'danger'); return; }
+  const delivery = document.querySelector('input[name="delivery"]:checked')?.value;
+  if (!delivery) { showToast('Select a delivery method.','danger'); return; }
+  if (delivery === 'meegeven' && !document.getElementById('f-receiver').value) {
+    showToast('Select a receiver.','danger'); return;
+  }
+  const recSel = document.getElementById('f-receiver');
+  const recOpt = recSel.options[recSel.selectedIndex];
+
+  const dto = {
+    Meegeven:  delivery === 'meegeven',
+    Ontvangen: delivery === 'ontvangen',
+    Zenden:    delivery === 'zenden',
+    Andere:    delivery === 'andere',
+    ReceiverId:    recSel.value ? parseInt(recSel.value) : null,
+    ReceiverName:  recOpt?.text || null,
+    ReceiverIdDoc: document.getElementById('f-receiver-id-doc').value || null,
+  };
+
+  const res = await API.patch(`/api/aankoopbon/orders/${_closeId}/close`, dto);
+  if (res?.Success) {
+    bootstrap.Modal.getInstance(document.getElementById('modal-close')).hide();
+    showToast('Aankoopbon sent for approval!', 'success');
+    load();
+  } else {
+    showToast(res?.Message || 'Error.', 'danger');
+  }
+}
+
+// ── Approve / Reject ──────────────────────────────────────────────────────
+async function approveBon(id) {
+  const res = await API.patch(`/api/aankoopbon/orders/${id}/approve`, {});
+  if (res?.Success) { showToast('Approved!','success'); load(); }
+  else showToast(res?.Message||'Error.','danger');
+}
+
+function openReject(id) {
+  _rejectId = id;
+  document.getElementById('f-reject-reason').value = '';
+  new bootstrap.Modal(document.getElementById('modal-reject')).show();
+}
+
+async function confirmReject() {
+  const reason = document.getElementById('f-reject-reason').value.trim();
+  if (!reason) { showToast('Reason is required.','danger'); return; }
+  const res = await API.patch(`/api/aankoopbon/orders/${_rejectId}/reject`, { Reason: reason });
+  if (res?.Success) {
+    bootstrap.Modal.getInstance(document.getElementById('modal-reject')).hide();
+    showToast('Aankoopbon rejected.','warning');
+    load();
+  } else showToast(res?.Message||'Error.','danger');
+}
+
+// ── Delete ────────────────────────────────────────────────────────────────
+async function deleteBon(id) {
+  if (!confirm('Delete this draft aankoopbon?')) return;
+  const res = await API.del(`/api/aankoopbon/orders/${id}`);
+  if (res?.Success) { showToast('Deleted.','success'); load(); }
+  else showToast(res?.Message||'Error.','danger');
+}
+
+// ── View ──────────────────────────────────────────────────────────────────
+async function viewBon(id) {
+  const res = await API.get(`/api/aankoopbon/orders/${id}`);
+  const h = res?.Data; if (!h) return;
+  _viewData = h;
+
+  const statusColor = { DRAFT:'secondary', PENDING:'warning', APPROVED:'success', REJECTED:'danger' };
+  const delivery = h.AohMeegeven ? 'Wilt u meegeven' : h.AohOntvangen ? 'Hierbij ontvangt u' : h.AohZenden ? 'Wilt u zenden' : h.AohAndere ? 'Andere' : '–';
+
+  document.getElementById('modal-view-title').innerHTML = `<i class="fas fa-file-invoice me-2"></i>${h.AohBonNr} <span class="badge bg-${statusColor[h.AohStatus]||'secondary'} ms-2">${h.AohStatus}</span>`;
+
+  const hasPdf = !!h.AohQuotationPdfPath;
+  const isMyOrder = h.AohCreatedBy === _currentUser?.UserId || _isAdmin;
+
+  // Invoice section — APPROVED (editable) or CLOSED (read-only)
+  let invoiceSection = '';
+  if (h.AohStatus === 'APPROVED') {
+    invoiceSection = `
+    <hr/>
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <span class="fw-semibold"><i class="fas fa-file-invoice-dollar me-1 text-wine"></i>Invoice</span>
+      ${isMyOrder ? `<button class="btn btn-sm btn-outline-wine" onclick="openUpdateInvoice()"><i class="fas fa-edit me-1"></i>Register Invoice</button>` : ''}
+    </div>
+    <div class="row g-2">
+      <div class="col-md-4"><b>Invoice #:</b> ${_esc(h.AohInvoiceNr||'–')}</div>
+      <div class="col-md-4"><b>Invoice Date:</b> ${h.AohInvoiceDate?.slice(0,10)||'–'}</div>
+      <div class="col-md-4"><b>Invoice Amount:</b> ${h.AohInvoiceAmount!=null?parseFloat(h.AohInvoiceAmount).toFixed(2)+' NAF':'–'}</div>
+    </div>`;
+  } else if (h.AohStatus === 'CLOSED') {
+    invoiceSection = `
+    <hr/>
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <span class="fw-semibold"><i class="fas fa-lock me-1"></i>Invoice (Closed)</span>
+      <span class="badge" style="background:#1e293b;font-size:.7rem;"><i class="fas fa-lock me-1"></i>CLOSED by ${_esc(h.AohClosedByName||'–')}</span>
+    </div>
+    <div class="row g-2">
+      <div class="col-md-4"><b>Invoice #:</b> ${_esc(h.AohInvoiceNr||'–')}</div>
+      <div class="col-md-4"><b>Invoice Date:</b> ${h.AohInvoiceDate?.slice(0,10)||'–'}</div>
+      <div class="col-md-4"><b>Invoice Amount:</b> ${h.AohInvoiceAmount!=null?parseFloat(h.AohInvoiceAmount).toFixed(2)+' NAF':'–'}</div>
+    </div>`;
+  }
+
+  document.getElementById('modal-view-body').innerHTML = `
+    <div class="row g-3">
+      <div class="col-md-4"><b>Date:</b> ${h.AohOrderDate?.slice(0,10)||'–'}</div>
+      <div class="col-md-4"><b>Requestor:</b> ${h.AohRequestor||'–'}</div>
+      <div class="col-md-4"><b>Created By:</b> ${h.AohCreatedByName||'–'}</div>
+      <div class="col-md-6"><b>Vendor:</b> ${h.AohVendorName||'–'}</div>
+      <div class="col-md-6"><b>Address:</b> ${h.AohVendorAddress||'–'}</div>
+      <div class="col-md-4"><b>Department:</b> ${h.AohDepartment||'–'}</div>
+      <div class="col-md-4"><b>Cost Type:</b> ${h.AohCostType||'–'}</div>
+      <div class="col-md-4"><b>Amount:</b> ${h.AohAmount!=null?h.AohAmount.toFixed(2)+' NAF':'–'}</div>
+      ${h.AohVehicleLicense?`<div class="col-12"><b>Vehicle:</b> ${h.AohVehicleLicense} / ${h.AohVehicleType||''} / ${h.AohVehicleModel||''}</div>`:''}
+      <div class="col-md-6"><b>Quotation #:</b> ${h.AohQuotationNr||'–'}</div>
+      <div class="col-md-6"><b>Delivery:</b> ${delivery}</div>
+      ${h.AohReceiverName?`<div class="col-md-6"><b>Receiver:</b> ${h.AohReceiverName} (ID: ${h.AohReceiverIdDoc||'–'})</div>`:''}
+      <div class="col-12"><b>Remarks:</b> ${_esc(h.AohRemarks||'–')}</div>
+      ${h.AohStatus==='APPROVED'?`<div class="col-12 text-success"><b>Approved by:</b> ${h.AohApprovedByName} on ${h.AohApprovedAt?.slice(0,10)}</div>`:''}
+      ${h.AohStatus==='REJECTED'?`<div class="col-12 text-danger"><b>Rejected by:</b> ${h.AohRejectedByName} — <i>${_esc(h.AohRejectionReason||'')}</i></div>`:''}
+      ${h.AohStatus==='CLOSED'?`<div class="col-12"><span style="color:#1e293b;font-weight:600;"><i class="fas fa-lock me-1"></i>Closed by:</span> ${_esc(h.AohClosedByName||'–')} on ${h.AohClosedAt?.slice(0,10)||'–'}</div>`:''}
+    </div>
+    <hr/>
+    <table class="table table-sm table-bordered mb-0">
+      <thead class="table-light"><tr><th>#</th><th>Code</th><th>Description</th><th>Qty</th><th>Unit</th></tr></thead>
+      <tbody>${(h.Details||[]).map((d,i)=>`<tr><td>${i+1}</td><td>${d.AodProductCode||'–'}</td><td>${_esc(d.AodProductDesc)}</td><td>${d.AodQuantity}</td><td>${d.AodUnit||'–'}</td></tr>`).join('')}</tbody>
+    </table>
+    ${invoiceSection}`;
+
+  let footer = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>`;
+  if (hasPdf)
+    footer += ` <button class="btn btn-outline-danger" onclick="previewPdf(${h.AohId})" title="Preview quotation PDF"><i class="fas fa-file-pdf me-1"></i>Preview PDF</button>`;
+  else
+    footer += ` <button class="btn btn-outline-secondary" disabled title="No quotation PDF attached"><i class="fas fa-file-pdf me-1"></i>No PDF</button>`;
+  if (h.AohStatus === 'APPROVED')
+    footer += ` <button class="btn btn-outline-dark" onclick="printBon(${h.AohId})"><i class="fas fa-print me-1"></i>Print</button>`;
+  if (h.AohStatus === 'PENDING' && _isAdmin) {
+    footer += ` <button class="btn btn-danger" onclick="openReject(${h.AohId});bootstrap.Modal.getInstance(document.getElementById('modal-view')).hide()"><i class="fas fa-times me-1"></i>Reject</button>`;
+    footer += ` <button class="btn btn-success" onclick="approveBon(${h.AohId});bootstrap.Modal.getInstance(document.getElementById('modal-view')).hide()"><i class="fas fa-check me-1"></i>Approve</button>`;
+  }
+  document.getElementById('modal-view-footer').innerHTML = footer;
+  new bootstrap.Modal(document.getElementById('modal-view')).show();
+}
+
+// ── Preview PDF ───────────────────────────────────────────────────────────
+async function previewPdf(id) {
+  try {
+    const response = await fetch(`${BASE}/api/aankoopbon/orders/${id}/quotation-pdf`, {
+      headers: { 'Authorization': `Bearer ${Auth.getToken()}` }
+    });
+    if (!response.ok) { showToast('No quotation PDF found.', 'danger'); return; }
+    const blob = await response.blob();
+    const url  = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+  } catch { showToast('Error loading PDF.', 'danger'); }
+}
+
+// ── Invoice Update ────────────────────────────────────────────────────────
+function openUpdateInvoice() {
+  const h = _viewData; if (!h) return;
+  _invoiceId = h.AohId;
+  document.getElementById('f-invoice-nr').value     = h.AohInvoiceNr     || '';
+  document.getElementById('f-invoice-date').value   = h.AohInvoiceDate?.slice(0,10) || '';
+  document.getElementById('f-invoice-amount').value = h.AohInvoiceAmount != null ? h.AohInvoiceAmount : '';
+  new bootstrap.Modal(document.getElementById('modal-invoice')).show();
+}
+
+async function quickInvoice(id) {
+  const res = await API.get(`/api/aankoopbon/orders/${id}`);
+  const h = res?.Data; if (!h) return;
+  _viewData  = h;
+  _invoiceId = h.AohId;
+  document.getElementById('f-invoice-nr').value     = h.AohInvoiceNr     || '';
+  document.getElementById('f-invoice-date').value   = h.AohInvoiceDate?.slice(0,10) || '';
+  document.getElementById('f-invoice-amount').value = h.AohInvoiceAmount != null ? h.AohInvoiceAmount : '';
+  new bootstrap.Modal(document.getElementById('modal-invoice')).show();
+}
+
+async function saveInvoice() {
+  const nr     = document.getElementById('f-invoice-nr').value.trim();
+  const date   = document.getElementById('f-invoice-date').value;
+  const amount = parseFloat(document.getElementById('f-invoice-amount').value);
+
+  if (!nr)           return showToast('Invoice number is required.', 'warning');
+  if (!date)         return showToast('Invoice date is required.', 'warning');
+  if (!amount || amount <= 0) return showToast('Invoice amount must be greater than 0.', 'warning');
+
+  const dto = { InvoiceNr: nr, InvoiceDate: date, InvoiceAmount: amount };
+  const res = await API.patch(`/api/aankoopbon/orders/${_invoiceId}/invoice`, dto);
+  if (res?.Success) {
+    bootstrap.Modal.getInstance(document.getElementById('modal-invoice')).hide();
+    showToast('Invoice saved. Aankoopbon is now CLOSED.', 'success');
+    load();
+  } else {
+    showToast(res?.Message || 'Error saving invoice.', 'danger');
+  }
+}
+
+// ── Print ─────────────────────────────────────────────────────────────────
+async function printBon(id) {
+  const res = await API.get(`/api/aankoopbon/orders/${id}`);
+  const h = res?.Data; if (!h) return;
+
+  const delivery = h.AohMeegeven ? '☑ Wilt u meegeven &nbsp; ☐ Hierbij ontvangt u &nbsp; ☐ Wilt u zenden &nbsp; ☐ Andere'
+                 : h.AohOntvangen? '☐ Wilt u meegeven &nbsp; ☑ Hierbij ontvangt u &nbsp; ☐ Wilt u zenden &nbsp; ☐ Andere'
+                 : h.AohZenden   ? '☐ Wilt u meegeven &nbsp; ☐ Hierbij ontvangt u &nbsp; ☑ Wilt u zenden &nbsp; ☐ Andere'
+                 :                 '☐ Wilt u meegeven &nbsp; ☐ Hierbij ontvangt u &nbsp; ☐ Wilt u zenden &nbsp; ☑ Andere';
+
+  const lines = (h.Details||[]).map((d,i) =>
+    `<tr><td>${i+1}</td><td>${_esc(d.AodProductCode||'')}</td><td>${_esc(d.AodProductDesc)}</td><td>${d.AodQuantity}</td><td>${d.AodUnit||''}</td></tr>`).join('');
+
+  const rejected = h.AohStatus === 'REJECTED';
+  const statusLabel = h.AohStatus === 'APPROVED' ? 'APROBADO'
+                    : h.AohStatus === 'REJECTED' ? 'RECHAZADO'
+                    : h.AohStatus === 'CLOSED'   ? 'CERRADO'
+                    : h.AohStatus === 'PENDING'  ? 'PENDIENTE'
+                    : 'BORRADOR';
+  const statusColor = h.AohStatus === 'APPROVED' ? '#16a34a'
+                    : h.AohStatus === 'REJECTED' ? '#dc3545'
+                    : h.AohStatus === 'CLOSED'   ? '#1e293b'
+                    : '#f59e0b';
+
+  const pa = document.getElementById('print-area');
+  pa.style.display = 'block';
+  pa.innerHTML = `
+<style>
+  @media print {
+    body > *:not(#print-area) { display: none !important; }
+    #print-area { display: block !important; }
+    .print-page { box-shadow: none !important; margin: 0 !important; }
+  }
+  .print-page {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    font-size: 11px;
+    color: #1a1a1a;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 32px;
+    background: #fff;
+    box-shadow: 0 4px 24px rgba(0,0,0,.12);
+  }
+  .print-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 3px solid #A52535;
+    padding-bottom: 14px;
+    margin-bottom: 18px;
+  }
+  .print-header-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .print-header-left img {
+    height: 60px;
+    width: auto;
+  }
+  .print-company-name {
+    font-size: 20px;
+    font-weight: 700;
+    color: #A52535;
+    letter-spacing: .5px;
+  }
+  .print-company-sub {
+    font-size: 10px;
+    color: #666;
+    margin-top: 2px;
+  }
+  .print-header-right {
+    text-align: right;
+  }
+  .print-doc-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: #A52535;
+    letter-spacing: 2px;
+  }
+  .print-bon-nr {
+    font-size: 13px;
+    font-weight: 600;
+    color: #333;
+    margin-top: 2px;
+  }
+  .print-status-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #fff;
+    margin-top: 4px;
+  }
+  .print-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    border: 1.5px solid #ddd;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 18px;
+  }
+  .print-info-cell {
+    padding: 8px 12px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    gap: 6px;
+    align-items: baseline;
+  }
+  .print-info-cell:nth-child(odd) { border-right: 1px solid #eee; }
+  .print-info-cell:last-child,
+  .print-info-cell:nth-last-child(2):nth-child(odd) { border-bottom: none; }
+  .print-info-label {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #A52535;
+    white-space: nowrap;
+    min-width: 80px;
+  }
+  .print-info-value {
+    font-size: 11px;
+    color: #1a1a1a;
+  }
+  .print-delivery-row {
+    grid-column: 1 / -1;
+    background: #fdf8f8;
+    border-bottom: 1px solid #eee;
+  }
+  .delivery-options {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+  }
+  .delivery-opt { font-size: 11px; }
+  .delivery-opt.selected { font-weight: 700; color: #A52535; }
+  .print-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+    font-size: 11px;
+  }
+  .print-table thead tr {
+    background: #A52535;
+    color: #fff;
+  }
+  .print-table thead th {
+    padding: 7px 10px;
+    text-align: left;
+    font-weight: 600;
+    letter-spacing: .3px;
+    font-size: 10px;
+    text-transform: uppercase;
+  }
+  .print-table thead th:last-child,
+  .print-table thead th:nth-child(4) { text-align: center; }
+  .print-table tbody tr:nth-child(even) { background: #fef2f2; }
+  .print-table tbody tr:nth-child(odd)  { background: #fff; }
+  .print-table tbody td {
+    padding: 6px 10px;
+    border-bottom: 1px solid #f0e0e0;
+    vertical-align: top;
+  }
+  .print-table tbody td:nth-child(4),
+  .print-table tbody td:nth-child(5) { text-align: center; }
+  .print-signatures {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 24px;
+    margin-top: 32px;
+    padding-top: 12px;
+    border-top: 1.5px solid #ddd;
+  }
+  .sig-block { text-align: center; }
+  .sig-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 28px;
+    min-height: 16px;
+  }
+  .sig-line {
+    border-top: 1.5px solid #A52535;
+    margin: 0 10px;
+  }
+  .sig-role {
+    font-size: 9px;
+    text-transform: uppercase;
+    color: #A52535;
+    font-weight: 700;
+    letter-spacing: .5px;
+    margin-top: 4px;
+  }
+  .print-rejection-box {
+    border: 2px solid #dc3545;
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    background: #fff5f5;
+  }
+  .print-rejection-box .rej-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #dc3545;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+  .print-rejection-box .rej-reason {
+    font-size: 11px;
+    color: #555;
+    margin-top: 4px;
+  }
+  .print-footer {
+    margin-top: 24px;
+    padding-top: 10px;
+    border-top: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    color: #aaa;
+  }
+</style>
+
+<div class="print-page">
+
+  <!-- ── Header ── -->
+  <div class="print-header">
+    <div class="print-header-left">
+      <img src="../../img/LogoLicores.png" alt="Licores Maduro" onerror="this.style.display='none'"/>
+      <div>
+        <div class="print-company-name">LICORES MADURO</div>
+        <div class="print-company-sub">Dokweg z.n., Willemstad, Curaçao</div>
+      </div>
+    </div>
+    <div class="print-header-right">
+      <div class="print-doc-title">AANKOOPBON</div>
+      <div class="print-bon-nr"># ${_esc(h.AohBonNr||'')}</div>
+      <div style="font-size:10px;color:#666;margin-top:2px;">${h.AohOrderDate?.slice(0,10)||''}</div>
+      <div><span class="print-status-badge" style="background:${statusColor};">${statusLabel}</span></div>
+    </div>
+  </div>
+
+  ${rejected ? `
+  <div class="print-rejection-box">
+    <div class="rej-title">&#9888; Rechazado / Rejected</div>
+    ${h.AohRejectionReason ? `<div class="rej-reason"><b>Motivo:</b> ${_esc(h.AohRejectionReason)}</div>` : ''}
+    ${h.AohRejectedByName  ? `<div class="rej-reason"><b>Por:</b> ${_esc(h.AohRejectedByName)}</div>` : ''}
+  </div>` : ''}
+
+  <!-- ── Info grid ── -->
+  <div class="print-info-grid">
+    <div class="print-info-cell"><span class="print-info-label">Aan (To):</span><span class="print-info-value">${_esc(h.AohVendorName||'–')}</span></div>
+    <div class="print-info-cell"><span class="print-info-label">Dirección:</span><span class="print-info-value">${_esc(h.AohVendorAddress||'–')}</span></div>
+    <div class="print-info-cell"><span class="print-info-label">Van (From):</span><span class="print-info-value">Licores Maduro, Dokweg z.n.</span></div>
+    <div class="print-info-cell"><span class="print-info-label">Afdeling:</span><span class="print-info-value">${_esc(h.AohDepartment||'–')}</span></div>
+    ${h.AohRemarks ? `<div class="print-info-cell print-delivery-row" style="grid-column:1/-1;"><span class="print-info-label">Betreft:</span><span class="print-info-value">${_esc(h.AohRemarks)}</span></div>` : ''}
+    ${h.AohAmount != null ? `<div class="print-info-cell"><span class="print-info-label">Bedrag:</span><span class="print-info-value"><b>${Number(h.AohAmount).toFixed(2)} NAF</b></span></div>` : '<div class="print-info-cell"></div>'}
+    ${h.AohQuotationNr ? `<div class="print-info-cell"><span class="print-info-label">Offerte #:</span><span class="print-info-value">${_esc(h.AohQuotationNr)}</span></div>` : '<div class="print-info-cell"></div>'}
+    ${h.AohReceiverName ? `<div class="print-info-cell"><span class="print-info-label">Ontvanger:</span><span class="print-info-value">${_esc(h.AohReceiverName)}${h.AohReceiverIdDoc?' &nbsp; ID# '+_esc(h.AohReceiverIdDoc):''}</span></div>` : ''}
+    ${h.AohVehicleLicense ? `<div class="print-info-cell"><span class="print-info-label">Voertuig:</span><span class="print-info-value">${_esc(h.AohVehicleLicense)} ${h.AohVehicleType?'/ '+_esc(h.AohVehicleType):''} ${h.AohVehicleModel?'/ '+_esc(h.AohVehicleModel):''}</span></div>` : ''}
+
+    <!-- Delivery options -->
+    <div class="print-info-cell print-delivery-row" style="grid-column:1/-1;">
+      <span class="print-info-label">Entrega:</span>
+      <div class="delivery-options">
+        <span class="delivery-opt ${h.AohMeegeven?'selected':''}"><span style="font-size:13px;">${h.AohMeegeven?'☑':'☐'}</span> Wilt u meegeven</span>
+        <span class="delivery-opt ${h.AohOntvangen?'selected':''}"><span style="font-size:13px;">${h.AohOntvangen?'☑':'☐'}</span> Hierbij ontvangt u</span>
+        <span class="delivery-opt ${h.AohZenden?'selected':''}"><span style="font-size:13px;">${h.AohZenden?'☑':'☐'}</span> Wilt u zenden</span>
+        <span class="delivery-opt ${!h.AohMeegeven&&!h.AohOntvangen&&!h.AohZenden?'selected':''}"><span style="font-size:13px;">${!h.AohMeegeven&&!h.AohOntvangen&&!h.AohZenden?'☑':'☐'}</span> Andere</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Line items ── -->
+  <table class="print-table">
+    <thead>
+      <tr>
+        <th style="width:30px;">#</th>
+        <th style="width:100px;">Código</th>
+        <th>Descripción</th>
+        <th style="width:50px;">Cant.</th>
+        <th style="width:60px;">Unidad</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${(h.Details||[]).map((d,i) => `
+        <tr>
+          <td style="text-align:center;">${i+1}</td>
+          <td>${_esc(d.AodProductCode||'')}</td>
+          <td>${_esc(d.AodProductDesc||'')}</td>
+          <td style="text-align:center;">${d.AodQuantity}</td>
+          <td style="text-align:center;">${_esc(d.AodUnit||'')}</td>
+        </tr>`).join('')}
+    </tbody>
+  </table>
+
+  <!-- ── Invoice info (if CLOSED) ── -->
+  ${h.AohStatus === 'CLOSED' && h.AohInvoiceNr ? `
+  <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:6px;padding:10px 14px;margin-bottom:20px;">
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#16a34a;margin-bottom:4px;">Datos de Factura</div>
+    <div style="display:flex;gap:24px;font-size:11px;">
+      <span><b>Invoice #:</b> ${_esc(h.AohInvoiceNr)}</span>
+      ${h.AohInvoiceDate ? `<span><b>Fecha:</b> ${h.AohInvoiceDate.slice(0,10)}</span>` : ''}
+      ${h.AohInvoiceAmount != null ? `<span><b>Monto:</b> ${Number(h.AohInvoiceAmount).toFixed(2)} NAF</span>` : ''}
+    </div>
+  </div>` : ''}
+
+  <!-- ── Signatures ── -->
+  <div class="print-signatures">
+    <div class="sig-block">
+      <div class="sig-name">${_esc(h.AohRequestor||'')}</div>
+      <div class="sig-line"></div>
+      <div class="sig-role">Solicitado por</div>
+    </div>
+    <div class="sig-block">
+      <div class="sig-name">${_esc(h.AohApprovedByName||'')}</div>
+      <div class="sig-line"></div>
+      <div class="sig-role">Aprobado por</div>
+    </div>
+    <div class="sig-block">
+      <div class="sig-name">${_esc(h.AohReceiverName||'')}</div>
+      <div class="sig-line"></div>
+      <div class="sig-role">Recibido por</div>
+    </div>
+  </div>
+
+  <!-- ── Footer ── -->
+  <div class="print-footer">
+    <span>Creado por: ${_esc(h.AohCreatedByName||'–')}</span>
+    <span>Impreso: ${new Date().toLocaleString('es-CW')}</span>
+    <span>Licores Maduro &copy; ${new Date().getFullYear()}</span>
+  </div>
+
+</div>`;
+
+  window.print();
+  setTimeout(() => { pa.style.display='none'; pa.innerHTML=''; }, 1000);
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────
+function _setVal(id, val) { const el = document.getElementById(id); if (el && val != null) el.value = val; }
+function _esc(s) { return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function _debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(()=>fn(...a), ms); }; }
+
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.className = `toast align-items-center text-bg-${type} border-0`;
+  document.getElementById('toast-msg').textContent = msg;
+  new bootstrap.Toast(t, { delay:3000 }).show();
+}
+</script>
+</body>
+</html>

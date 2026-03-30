@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inland Freight Quotes - Licores Maduro</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../../css/main.css" />
+  <style>
+    .level-card{border-left:3px solid var(--primary);margin-bottom:.5rem;}
+    .level-card .card-header{background:rgba(var(--bs-primary-rgb),.06);padding:.4rem .75rem;font-size:.85rem;font-weight:600;}
+    .level-2{border-left-color:#198754;margin-left:1rem;}
+    .level-3{border-left-color:#fd7e14;margin-left:2rem;}
+    .level-4{border-left-color:#6f42c1;margin-left:3rem;}
+    .tree-section{display:none;}.tree-section.open{display:block;}
+    .btn-tree{background:none;border:none;padding:0 .3rem;cursor:pointer;color:var(--primary);}
+  </style>
+</head>
+<body>
+<div id="sidebar-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;"></div>
+<div class="app-wrapper">
+  <nav id="sidebar" class="sidebar">
+    <div class="sidebar-header"><img src="../../img/LogoLicores.png" alt="Licores Maduro" class="sidebar-logo-img"/><span class="sidebar-logo-text">LICORES MADURO</span></div>
+    <div id="sidebar-nav" class="sidebar-nav"></div>
+    <div class="sidebar-footer"><div class="sidebar-user"><div class="sidebar-avatar" id="sidebar-user-initials">LM</div><div class="sidebar-text"><div id="sidebar-user-name" style="font-weight:600;">–</div></div></div></div>
+  </nav>
+  <div class="main-area">
+    <header class="topbar">
+      <button id="btn-sidebar-toggle" class="btn-sidebar-toggle"><i class="fas fa-bars"></i></button>
+      <span class="topbar-title"><i class="fas fa-truck-moving me-2 text-wine"></i>Inland Freight Quotes</span>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown">
+            <span class="sidebar-avatar" id="topbar-user-initials" style="width:28px;height:28px;font-size:.75rem;">LM</span>
+            <span id="topbar-user-name" class="d-none d-md-inline">–</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+            <li><div class="dropdown-header"><strong id="topbar-user-fullname">User</strong><br/><small class="text-muted" id="topbar-user-role">Role</small></div></li>
+            <li><hr class="dropdown-divider"/></li>
+            <li><a class="dropdown-item text-danger" href="#" id="btn-logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+          </ul>
+        </div>
+      </div>
+    </header>
+    <main class="page-content">
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="../../dashboard.html"><i class="fas fa-home me-1"></i>Home</a></li>
+          <li class="breadcrumb-item"><a href="index.html">Freight Forwarder</a></li>
+          <li class="breadcrumb-item active">Inland Freight</li>
+        </ol>
+      </nav>
+      <div class="page-title">Inland Freight Quotes</div>
+      <div class="page-subtitle">Manage inland freight quotes by forwarder → region → charge type → detail rates.</div>
+
+      <div class="card mb-3">
+        <div class="card-body d-flex flex-wrap align-items-center gap-2 py-2">
+          <select id="filter-forwarder" class="form-select form-select-sm" style="max-width:220px;"><option value="">All Forwarders</option></select>
+          <button class="btn btn-wine btn-sm ms-auto" id="btn-new-header"><i class="fas fa-plus me-1"></i>New Quote</button>
+        </div>
+      </div>
+
+      <div id="tree-container"><div class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading...</div></div>
+    </main>
+  </div>
+</div>
+
+<!-- Header Modal -->
+<div class="modal fade" id="headerModal" tabindex="-1">
+  <div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title" id="headerModalTitle">Quote Header</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body"><form id="header-form" novalidate>
+      <input type="hidden" id="h-id"/>
+      <div class="mb-3"><label class="form-label">Forwarder <span class="text-danger">*</span></label><select id="h-forwarder" class="form-select" required onchange="onNewQuoteForwarderChange(this)"><option value="">Select...</option></select><div class="invalid-feedback">Required.</div></div>
+      <div class="mb-3"><label class="form-label">Quote Number <span class="text-danger">*</span></label><input type="text" id="h-quote" class="form-control text-uppercase" required maxlength="10"/><div class="invalid-feedback">Required.</div></div>
+      <div class="row g-2"><div class="col-6"><label class="form-label">Start Date</label><input type="date" id="h-start" class="form-control"/></div><div class="col-6"><label class="form-label">End Date</label><input type="date" id="h-end" class="form-control"/></div></div>
+      <div class="mt-3"><label class="form-label">Remarks</label><textarea id="h-remarks" class="form-control" rows="2" maxlength="200"></textarea></div>
+    </form></div>
+    <div class="modal-footer"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-wine btn-sm" id="btn-save-header">Save</button></div>
+  </div></div>
+</div>
+
+<!-- Region Modal -->
+<div class="modal fade" id="regionModal" tabindex="-1">
+  <div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title" id="regionModalTitle">Region</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body"><form id="region-form" novalidate>
+      <input type="hidden" id="r-id"/><input type="hidden" id="r-header-id"/>
+      <div class="mb-3"><label class="form-label">Region Name <span class="text-danger">*</span></label><input type="text" id="r-region" class="form-control text-uppercase" required maxlength="20"/><div class="invalid-feedback">Required.</div></div>
+    </form></div>
+    <div class="modal-footer"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-wine btn-sm" id="btn-save-region">Save</button></div>
+  </div></div>
+</div>
+
+<!-- Region Type Modal -->
+<div class="modal fade" id="rtModal" tabindex="-1">
+  <div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title" id="rtModalTitle">Charge Type</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body"><form id="rt-form" novalidate>
+      <input type="hidden" id="rt-id"/><input type="hidden" id="rt-region-id"/><input type="hidden" id="rt-header-id"/>
+      <div class="mb-3"><label class="form-label">Charge Type <span class="text-danger">*</span></label><select id="rt-type" class="form-select" required><option value="">Select...</option></select><div class="invalid-feedback">Required.</div></div>
+      <div class="row g-2">
+        <div class="col-4"><label class="form-label">Amount Min</label><input type="number" id="rt-min" class="form-control" step="0.01"/></div>
+        <div class="col-4"><label class="form-label">Amount Max</label><input type="number" id="rt-max" class="form-control" step="0.01"/></div>
+        <div class="col-4"><label class="form-label">Currency</label><select id="rt-curr" class="form-select"><option value="">–</option></select></div>
+      </div>
+    </form></div>
+    <div class="modal-footer"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-wine btn-sm" id="btn-save-rt">Save</button></div>
+  </div></div>
+</div>
+
+<!-- Detail Modal -->
+<div class="modal fade" id="detModal" tabindex="-1">
+  <div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title" id="detModalTitle">Rate Detail</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body"><form id="det-form" novalidate>
+      <input type="hidden" id="det-id"/><input type="hidden" id="det-rt-id"/><input type="hidden" id="det-header-id"/>
+      <div class="row g-2">
+        <div class="col-6"><label class="form-label">From</label><input type="number" id="det-from" class="form-control" step="0.01"/></div>
+        <div class="col-6"><label class="form-label">To</label><input type="number" id="det-to" class="form-control" step="0.01"/></div>
+        <div class="col-6"><label class="form-label">Price</label><input type="number" id="det-price" class="form-control" step="0.01"/></div>
+        <div class="col-6"><label class="form-label">Price Type</label><select id="det-ptype" class="form-select"><option value="">–</option></select></div>
+        <div class="col-6"><label class="form-label">Amount Min</label><input type="number" id="det-min" class="form-control" step="0.01"/></div>
+        <div class="col-6"><label class="form-label">Amount Max</label><input type="number" id="det-max" class="form-control" step="0.01"/></div>
+      </div>
+    </form></div>
+    <div class="modal-footer"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-wine btn-sm" id="btn-save-det">Save</button></div>
+  </div></div>
+</div>
+
+<div class="toast-container"><div id="toast" class="toast align-items-center text-white border-0" role="alert"><div class="d-flex"><div class="toast-body" id="toast-msg"></div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div></div></div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../../js/i18n.js"></script><script src="../../js/api.js"></script><script src="../../js/auth.js"></script><script src="../../js/sidebar.js"></script>
+<script>
+const fq = API.freightQuotes;
+let allHeaders=[], forwarders=[], chargeTypes=[], currencies=[], priceTypes=[];
+
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!Auth.requireAuth()) return;
+  Auth.startExpiryWatcher(); Auth.populateUserUI(); Sidebar.init();
+  document.getElementById('btn-logout').addEventListener('click', e=>{e.preventDefault();Auth.logout();});
+  document.getElementById('btn-new-header').addEventListener('click', ()=>openHeaderModal());
+  document.getElementById('btn-save-header').addEventListener('click', saveHeader);
+  document.getElementById('btn-save-region').addEventListener('click', saveRegion);
+  document.getElementById('btn-save-rt').addEventListener('click', saveRType);
+  document.getElementById('btn-save-det').addEventListener('click', saveDet);
+  document.getElementById('filter-forwarder').addEventListener('change', loadHeaders);
+  await loadCatalogs();
+  await loadHeaders();
+});
+
+async function loadCatalogs(){
+  try{
+    const [fw,ct,cu,pt]=await Promise.all([
+      API.catalogs.freightForwarders.getAll(),
+      API.catalogs.inlandFreight.getAll(),
+      API.catalogs.currencies.getAll(),
+      API.catalogs.priceTypes.getAll()
+    ]);
+    forwarders=fw?.Data||fw||[]; chargeTypes=ct?.Data||ct||[]; currencies=cu?.Data||cu||[]; priceTypes=pt?.Data||pt||[];
+    const ffSel=document.getElementById('filter-forwarder');
+    forwarders.forEach(f=>{const o=document.createElement('option');o.value=f.FfCode;o.textContent=`${f.FfCode} - ${f.FfName}`;ffSel.appendChild(o);});
+    populateSelect('h-forwarder',forwarders,f=>({value:f.FfCode,text:`${f.FfCode} - ${f.FfName}`}));
+    populateSelect('rt-type',chargeTypes,c=>({value:c.IfctCode,text:`${c.IfctCode} - ${c.IfctDescription}`}));
+    populateSelect('rt-curr',currencies,c=>({value:c.CurCode,text:c.CurCode}));
+    populateSelect('det-ptype',priceTypes,p=>({value:p.PtCode,text:`${p.PtCode} - ${p.PtDescription}`}));
+  }catch(err){showToast(err.message,'danger');}
+}
+
+function populateSelect(id,items,fn){const el=document.getElementById(id);if(!el)return;items.forEach(item=>{const{value,text}=fn(item);const o=document.createElement('option');o.value=value;o.textContent=text;el.appendChild(o);});}
+
+async function loadHeaders(){
+  const fw=document.getElementById('filter-forwarder').value;
+  try{const params=fw?{forwarder:fw}:{};const res=await fq.getInlandHeaders(params);allHeaders=res?.Data||res||[];renderTree();}catch(err){showToast(err.message,'danger');}
+}
+
+async function loadFull(id){try{const res=await fq.getInlandHeader(id);return res?.Data||res;}catch(err){showToast(err.message,'danger');return null;}}
+
+function renderTree(){
+  const c=document.getElementById('tree-container');
+  if(!allHeaders.length){c.innerHTML='<p class="text-muted text-center py-4">No inland freight quotes found.</p>';return;}
+  c.innerHTML=allHeaders.map(h=>`
+    <div class="card level-card mb-2">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <span>
+          <button class="btn-tree" onclick="toggleSec('hsec-${h.FqihId}','htoggle-${h.FqihId}',${h.FqihId})"><i class="fas fa-chevron-right" id="htoggle-${h.FqihId}"></i></button>
+          <i class="fas fa-file-invoice me-2"></i>
+          <strong>${esc(h.FqihForwarder)}</strong> &nbsp;·&nbsp; Quote: <strong>${esc(h.FqihQuoteNumber)}</strong>
+          ${h.FqihStartDate?`<small class="ms-2 text-muted">${h.FqihStartDate} – ${h.FqihEndDate||'?'}</small>`:''}
+        </span>
+        <div class="d-flex gap-1">
+          <button class="btn btn-outline-success btn-sm" onclick="openRegionModal(${h.FqihId})"><i class="fas fa-plus me-1"></i>Region</button>
+          <button class="btn btn-outline-secondary btn-sm" onclick="openHeaderModal(${h.FqihId})"><i class="fas fa-edit"></i></button>
+          <button class="btn btn-outline-danger btn-sm" onclick="deleteHeader(${h.FqihId})"><i class="fas fa-trash"></i></button>
+        </div>
+      </div>
+      <div class="card-body p-2 tree-section" id="hsec-${h.FqihId}">
+        <div class="text-muted small fst-italic p-2" id="hcontent-${h.FqihId}">Click expand or add region...</div>
+      </div>
+    </div>`).join('');
+}
+
+function toggleSec(secId,iconId,hId){
+  const sec=document.getElementById(secId);const icon=document.getElementById(iconId);
+  if(sec.classList.contains('open')){sec.classList.remove('open');icon.className='fas fa-chevron-right';}
+  else{sec.classList.add('open');icon.className='fas fa-chevron-down';loadFull(hId).then(full=>{if(full)renderRegions(hId,full.Regions||[]);});}
+}
+
+function renderRegions(hId,regs){
+  let c=document.getElementById(`hcontent-${hId}`); if(!c)return;
+  c.id=`hregions-${hId}`;
+  if(!regs.length){c.innerHTML='<p class="text-muted small ps-2">No regions added yet.</p>';return;}
+  c.innerHTML=regs.map(r=>`
+    <div class="card level-card level-2 mb-1">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <span>
+          <button class="btn-tree" onclick="toggleSec2('rsec-${r.FqirId}','rtoggle-${r.FqirId}',${hId})"><i class="fas fa-chevron-right" id="rtoggle-${r.FqirId}"></i></button>
+          <i class="fas fa-map-marker-alt me-2 text-success"></i><strong>${esc(r.FqirRegion)}</strong>
+        </span>
+        <div class="d-flex gap-1">
+          <button class="btn btn-outline-warning btn-sm" onclick="openRTypeModal(${r.FqirId},null,${hId})"><i class="fas fa-plus me-1"></i>Type</button>
+          <button class="btn btn-outline-secondary btn-sm" onclick="openRegionModal(${hId},${r.FqirId})"><i class="fas fa-edit"></i></button>
+          <button class="btn btn-outline-danger btn-sm" onclick="deleteRegion(${r.FqirId},${hId})"><i class="fas fa-trash"></i></button>
+        </div>
+      </div>
+      <div class="card-body p-2 tree-section" id="rsec-${r.FqirId}">
+        ${renderRTypes(r.RegionTypes||[], r.FqirId, hId)}
+      </div>
+    </div>`).join('');
+}
+
+function toggleSec2(secId,iconId,hId){
+  const sec=document.getElementById(secId);const icon=document.getElementById(iconId);
+  sec.classList.toggle('open');icon.className=sec.classList.contains('open')?'fas fa-chevron-down':'fas fa-chevron-right';
+  if(sec.classList.contains('open')){loadFull(hId).then(full=>{if(!full)return;const regionId=secId.replace('rsec-','');const r=(full.Regions||[]).find(x=>x.FqirId==regionId);if(r)sec.innerHTML=renderRTypes(r.RegionTypes||[],r.FqirId,hId);});}
+}
+
+function renderRTypes(rtArr,regionId,hId){
+  if(!rtArr.length) return '<p class="text-muted small ps-2">No charge types added yet.</p>';
+  return rtArr.map(rt=>`
+    <div class="card level-card level-3 mb-1">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <span>
+          <i class="fas fa-tag me-2 text-warning"></i><strong>${esc(rt.FqirtChargeType)}</strong>
+          ${rt.FqirtAmountMin!=null?`<small class="ms-2 text-muted">Min:${rt.FqirtAmountMin} Max:${rt.FqirtAmountMax||'–'} ${rt.FqirtCurrency||''}</small>`:''}
+        </span>
+        <div class="d-flex gap-1">
+          <button class="btn btn-outline-primary btn-sm" onclick="openDetModal(${rt.FqirtId},null,${hId})"><i class="fas fa-plus me-1"></i>Rate</button>
+          <button class="btn btn-outline-secondary btn-sm" onclick="openRTypeModal(${regionId},${rt.FqirtId},${hId})"><i class="fas fa-edit"></i></button>
+          <button class="btn btn-outline-danger btn-sm" onclick="deleteRType(${rt.FqirtId},${hId})"><i class="fas fa-trash"></i></button>
+        </div>
+      </div>
+      <div class="card-body p-2">
+        ${renderDets(rt.Details||[], rt.FqirtId, hId)}
+      </div>
+    </div>`).join('');
+}
+
+function renderDets(dets,rtId,hId){
+  if(!dets.length) return '<p class="text-muted small ps-2">No rate details added yet.</p>';
+  return `<table class="table table-sm mb-0">
+    <thead><tr><th>From</th><th>To</th><th>Price</th><th>Price Type</th><th>Min</th><th>Max</th><th></th></tr></thead>
+    <tbody>${dets.map(d=>`<tr>
+      <td>${d.FqirtdFrom??'–'}</td><td>${d.FqirtdTo??'–'}</td><td>${d.FqirtdPrice??'–'}</td>
+      <td>${esc(d.FqirtdPriceType||'–')}</td><td>${d.FqirtdAmountMin??'–'}</td><td>${d.FqirtdAmountMax??'–'}</td>
+      <td>
+        <button class="btn-action edit me-1" onclick="openDetModal(${rtId},${d.FqirtdId},${hId})"><i class="fas fa-edit"></i></button>
+        <button class="btn-action delete" onclick="deleteDet(${d.FqirtdId},${hId})"><i class="fas fa-trash"></i></button>
+      </td>
+    </tr>`).join('')}</tbody></table>`;
+}
+
+// ── CRUD helpers ──────────────────────────────────────────────────────────────
+async function onNewQuoteForwarderChange(sel){document.getElementById('h-start').value='';document.getElementById('h-end').value='';document.getElementById('h-remarks').value='';if(document.getElementById('h-id').value)return;const fw=(sel.value||'').trim();if(!fw)return;try{const res=await fq.getInlandHeaders({forwarder:fw});if(document.getElementById('h-forwarder').value!==fw)return;const headers=res?.Data||res||[];if(!headers.length)return;const latest=headers.sort((a,b)=>(b.FqihStartDate||'')>(a.FqihStartDate||'')?1:-1)[0];document.getElementById('h-start').value=latest.FqihStartDate||'';document.getElementById('h-end').value=latest.FqihEndDate||'';document.getElementById('h-remarks').value=latest.FqihRemarks||'';}catch(e){}}
+function openHeaderModal(id=null){document.getElementById('h-id').value=id||'';document.getElementById('header-form').reset();document.getElementById('h-forwarder').value='';document.getElementById('h-quote').value='';document.getElementById('h-start').value='';document.getElementById('h-end').value='';document.getElementById('h-remarks').value='';document.getElementById('headerModalTitle').textContent=id?'Edit Quote':'New Quote';if(id){const h=allHeaders.find(x=>x.FqihId===id);if(h){document.getElementById('h-forwarder').value=h.FqihForwarder;document.getElementById('h-quote').value=h.FqihQuoteNumber;document.getElementById('h-start').value=h.FqihStartDate||'';document.getElementById('h-end').value=h.FqihEndDate||'';document.getElementById('h-remarks').value=h.FqihRemarks||'';}}new bootstrap.Modal('#headerModal').show();}
+async function saveHeader(){const id=document.getElementById('h-id').value;const fw=document.getElementById('h-forwarder').value;const q=document.getElementById('h-quote').value.trim().toUpperCase();let ok=true;if(!fw){document.getElementById('h-forwarder').classList.add('is-invalid');ok=false;}else document.getElementById('h-forwarder').classList.remove('is-invalid');if(!q){document.getElementById('h-quote').classList.add('is-invalid');ok=false;}else document.getElementById('h-quote').classList.remove('is-invalid');if(!ok)return;const dto={Forwarder:fw,QuoteNumber:q,StartDate:document.getElementById('h-start').value||null,EndDate:document.getElementById('h-end').value||null,Remarks:document.getElementById('h-remarks').value.trim()||null};try{id?await fq.updateInlandHeader(id,dto):await fq.createInlandHeader(dto);showToast(id?'Updated.':'Created.','success');bootstrap.Modal.getInstance(document.getElementById('headerModal'))?.hide();await loadHeaders();}catch(err){showToast(err.message,'danger');}}
+async function deleteHeader(id){if(!confirm('Delete?'))return;try{await fq.deleteInlandHeader(id);showToast('Deleted.','success');await loadHeaders();}catch(err){showToast(err.message,'danger');}}
+
+function openRegionModal(hId,rId=null){document.getElementById('r-id').value=rId||'';document.getElementById('r-header-id').value=hId;document.getElementById('region-form').reset();document.getElementById('regionModalTitle').textContent=rId?'Edit Region':'Add Region';if(rId){loadFull(hId).then(full=>{const r=(full?.Regions||[]).find(x=>x.FqirId===rId);if(r)document.getElementById('r-region').value=r.FqirRegion;});}new bootstrap.Modal('#regionModal').show();}
+async function saveRegion(){const id=document.getElementById('r-id').value;const hId=document.getElementById('r-header-id').value;const reg=document.getElementById('r-region').value.trim().toUpperCase();if(!reg){document.getElementById('r-region').classList.add('is-invalid');return;}document.getElementById('r-region').classList.remove('is-invalid');try{id?await fq.updateInlandRegion(id,{Region:reg}):await fq.addInlandRegion(hId,{Region:reg});showToast(id?'Updated.':'Added.','success');bootstrap.Modal.getInstance(document.getElementById('regionModal'))?.hide();const full=await loadFull(hId);if(full)renderRegions(hId,full.Regions||[]);}catch(err){showToast(err.message,'danger');}}
+async function deleteRegion(id,hId){if(!confirm('Delete?'))return;try{await fq.deleteInlandRegion(id);showToast('Deleted.','success');const full=await loadFull(hId);if(full)renderRegions(hId,full.Regions||[]);}catch(err){showToast(err.message,'danger');}}
+
+function openRTypeModal(rId,rtId=null,hId=null){document.getElementById('rt-id').value=rtId||'';document.getElementById('rt-region-id').value=rId;document.getElementById('rt-header-id').value=hId||'';document.getElementById('rt-form').reset();document.getElementById('rtModalTitle').textContent=rtId?'Edit Charge Type':'Add Charge Type';if(rtId&&hId){loadFull(hId).then(full=>{const r=(full?.Regions||[]).find(x=>x.FqirId===rId);const rt=(r?.RegionTypes||[]).find(x=>x.FqirtId===rtId);if(rt){document.getElementById('rt-type').value=rt.FqirtChargeType;document.getElementById('rt-min').value=rt.FqirtAmountMin||'';document.getElementById('rt-max').value=rt.FqirtAmountMax||'';document.getElementById('rt-curr').value=rt.FqirtCurrency||'';}});}new bootstrap.Modal('#rtModal').show();}
+async function saveRType(){const id=document.getElementById('rt-id').value;const rId=document.getElementById('rt-region-id').value;const hId=document.getElementById('rt-header-id').value;const ct=document.getElementById('rt-type').value;if(!ct){document.getElementById('rt-type').classList.add('is-invalid');return;}document.getElementById('rt-type').classList.remove('is-invalid');const dto={ChargeType:ct,AmountMin:document.getElementById('rt-min').value?parseFloat(document.getElementById('rt-min').value):null,AmountMax:document.getElementById('rt-max').value?parseFloat(document.getElementById('rt-max').value):null,Currency:document.getElementById('rt-curr').value||null};try{id?await fq.updateInlandRType(id,dto):await fq.addInlandRType(rId,dto);showToast(id?'Updated.':'Added.','success');bootstrap.Modal.getInstance(document.getElementById('rtModal'))?.hide();const full=await loadFull(hId);if(full)renderRegions(hId,full.Regions||[]);}catch(err){showToast(err.message,'danger');}}
+async function deleteRType(id,hId){if(!confirm('Delete?'))return;try{await fq.deleteInlandRType(id);showToast('Deleted.','success');const full=await loadFull(hId);if(full)renderRegions(hId,full.Regions||[]);}catch(err){showToast(err.message,'danger');}}
+
+function openDetModal(rtId,detId=null,hId=null){document.getElementById('det-id').value=detId||'';document.getElementById('det-rt-id').value=rtId;document.getElementById('det-header-id').value=hId||'';document.getElementById('det-form').reset();document.getElementById('detModalTitle').textContent=detId?'Edit Rate':'Add Rate';if(detId&&hId){fq.getInlandDetails(rtId).then(res=>{const dets=res?.Data||res||[];const d=dets.find(x=>x.FqirtdId===detId);if(d){document.getElementById('det-from').value=d.FqirtdFrom||'';document.getElementById('det-to').value=d.FqirtdTo||'';document.getElementById('det-price').value=d.FqirtdPrice||'';document.getElementById('det-ptype').value=d.FqirtdPriceType||'';document.getElementById('det-min').value=d.FqirtdAmountMin||'';document.getElementById('det-max').value=d.FqirtdAmountMax||'';}});}new bootstrap.Modal('#detModal').show();}
+async function saveDet(){const id=document.getElementById('det-id').value;const rtId=document.getElementById('det-rt-id').value;const hId=document.getElementById('det-header-id').value;const dto={From:document.getElementById('det-from').value?parseFloat(document.getElementById('det-from').value):null,To:document.getElementById('det-to').value?parseFloat(document.getElementById('det-to').value):null,Price:document.getElementById('det-price').value?parseFloat(document.getElementById('det-price').value):null,PriceType:document.getElementById('det-ptype').value||null,AmountMin:document.getElementById('det-min').value?parseFloat(document.getElementById('det-min').value):null,AmountMax:document.getElementById('det-max').value?parseFloat(document.getElementById('det-max').value):null};try{id?await fq.updateInlandDetail(id,dto):await fq.addInlandDetail(rtId,dto);showToast(id?'Updated.':'Added.','success');bootstrap.Modal.getInstance(document.getElementById('detModal'))?.hide();const full=await loadFull(hId);if(full)renderRegions(hId,full.Regions||[]);}catch(err){showToast(err.message,'danger');}}
+async function deleteDet(id,hId){if(!confirm('Delete?'))return;try{await fq.deleteInlandDetail(id);showToast('Deleted.','success');const full=await loadFull(hId);if(full)renderRegions(hId,full.Regions||[]);}catch(err){showToast(err.message,'danger');}}
+
+function showToast(msg,type='success'){const el=document.getElementById('toast');el.className=`toast align-items-center text-white border-0 bg-${type==='success'?'success':'danger'}`;document.getElementById('toast-msg').textContent=msg;new bootstrap.Toast(el,{delay:3500}).show();}
+function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+</script>
+</body>
+</html>

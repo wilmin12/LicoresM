@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Customer Ext Dimensions - Licores Maduro</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../../css/main.css" />
+</head>
+<body>
+<div id="sidebar-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;"></div>
+<div class="app-wrapper">
+  <nav id="sidebar" class="sidebar">
+    <div class="sidebar-header"><img src="../../img/LogoLicores.png" alt="Licores Maduro" class="sidebar-logo-img"/><span class="sidebar-logo-text">LICORES MADURO</span></div>
+    <div id="sidebar-nav" class="sidebar-nav"></div>
+    <div class="sidebar-footer"><div class="sidebar-user"><div class="sidebar-avatar" id="sidebar-user-initials">LM</div><div class="sidebar-text"><div id="sidebar-user-name" style="font-weight:600;">–</div></div></div></div>
+  </nav>
+  <div class="main-area">
+    <header class="topbar">
+      <button id="btn-sidebar-toggle" class="btn-sidebar-toggle"><i class="fas fa-bars"></i></button>
+      <span class="topbar-title"><i class="fas fa-users me-2 text-wine"></i>Customer Ext Dimensions</span>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown">
+            <span class="sidebar-avatar" id="topbar-user-initials" style="width:28px;height:28px;font-size:.75rem;">LM</span>
+            <span id="topbar-user-name" class="d-none d-md-inline">–</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+            <li><div class="dropdown-header"><strong id="topbar-user-fullname">User</strong><br/><small class="text-muted" id="topbar-user-role">Role</small></div></li>
+            <li><hr class="dropdown-divider"/></li>
+            <li><a class="dropdown-item text-danger" href="#" id="btn-logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+          </ul>
+        </div>
+      </div>
+    </header>
+    <main class="page-content">
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="../../dashboard.html"><i class="fas fa-home me-1"></i>Home</a></li>
+          <li class="breadcrumb-item"><a href="index.html">Route Assignment</a></li>
+          <li class="breadcrumb-item active">Customer Ext Dimensions</li>
+        </ol>
+      </nav>
+      <div class="page-title">Customer Ext Dimensions</div>
+      <div class="page-subtitle">Route assignments, pareto classifications and equipment flags per customer account.</div>
+
+      <div class="card mb-3">
+        <div class="card-body d-flex flex-wrap align-items-center gap-2 py-2">
+          <div class="search-wrapper flex-grow-1"><i class="fas fa-search search-icon"></i><input type="text" id="search-input" class="form-control form-control-sm" placeholder="Search by account number..."/></div>
+          <button class="btn btn-outline-secondary btn-sm" id="btn-import"><i class="fas fa-file-import me-1"></i>Import CSV</button>
+          <input type="file" id="csv-file-input" accept=".csv" style="display:none"/>
+          <button class="btn btn-wine btn-sm ms-auto" id="btn-new"><i class="fas fa-plus me-1"></i>New Record</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <span><i class="fas fa-users me-2"></i>Customer Extensions</span>
+          <span class="badge" style="background:var(--primary);color:#fff;" id="total-count">0 records</span>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0" style="font-size:.85rem;">
+              <thead>
+                <tr>
+                  <th>#</th><th>Account No.</th><th>Route (Active)</th><th>Ovd5</th><th>Ovd6</th>
+                  <th>Pareto Overall</th><th>Coolers</th><th>Equipment</th><th>Updated</th><th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="data-tbody"><tr><td colspan="10" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card-footer d-flex align-items-center justify-content-between flex-wrap gap-2">
+          <small class="text-muted" id="page-info">Page 1</small>
+          <nav><ul class="pagination pagination-sm mb-0" id="pagination"></ul></nav>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal fade" id="itemModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title"><i class="fas fa-users me-2"></i>Customer Ext</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body"><form id="item-form" novalidate>
+      <input type="hidden" id="edit-id"/>
+      <!-- Identification -->
+      <h6 class="fw-bold border-bottom pb-1 mb-3">Identification</h6>
+      <div class="row g-3 mb-3">
+        <div class="col-md-4">
+          <label class="form-label">Account Number <span class="text-danger">*</span></label>
+          <input type="text" id="f-account" class="form-control form-control-sm text-uppercase" required maxlength="20"/>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Route (NP Active)</label>
+          <input type="text" id="f-route-np" class="form-control form-control-sm" maxlength="20"/>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Route Ovd5</label>
+          <input type="text" id="f-route-ovd5" class="form-control form-control-sm" maxlength="20"/>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Route Ovd6</label>
+          <input type="text" id="f-route-ovd6" class="form-control form-control-sm" maxlength="20"/>
+        </div>
+      </div>
+      <!-- Sales Reps -->
+      <h6 class="fw-bold border-bottom pb-1 mb-3">Sales Representatives</h6>
+      <div class="row g-3 mb-3">
+        <div class="col-md-3"><label class="form-label">Sales Rep Period 4</label><input type="text" id="f-sr4" class="form-control form-control-sm" maxlength="20"/></div>
+        <div class="col-md-3"><label class="form-label">Sales Rep Period 5</label><input type="text" id="f-sr5" class="form-control form-control-sm" maxlength="20"/></div>
+        <div class="col-md-3"><label class="form-label">Sales Rep Period 6</label><input type="text" id="f-sr6" class="form-control form-control-sm" maxlength="20"/></div>
+        <div class="col-md-3"><label class="form-label">Alternative Sales Rep</label><input type="text" id="f-alt-sr" class="form-control form-control-sm" maxlength="20"/></div>
+        <div class="col-md-4"><label class="form-label">Proyection</label><input type="text" id="f-proyection" class="form-control form-control-sm" maxlength="50"/></div>
+      </div>
+      <!-- Pareto -->
+      <h6 class="fw-bold border-bottom pb-1 mb-3">Pareto Classification</h6>
+      <div class="row g-3 mb-3">
+        <!-- Overall -->
+        <div class="col-12"><small class="text-muted fw-bold">Overall</small></div>
+        <div class="col-md-4"><label class="form-label">Pareto 1 (Overall)</label><select id="f-p1-overall" class="form-select form-select-sm"><option value="">—</option><option>A</option><option>B</option><option>C</option></select></div>
+        <div class="col-md-4"><label class="form-label">Pareto 2 (Overall)</label><select id="f-p2-overall" class="form-select form-select-sm"><option value="">—</option><option>A</option><option>B</option><option>C</option></select></div>
+        <div class="col-md-4"><label class="form-label">Pareto Others (Overall)</label><select id="f-po-overall" class="form-select form-select-sm"><option value="">—</option><option>A</option><option>B</option><option>C</option></select></div>
+        <!-- Beer -->
+        <div class="col-12"><small class="text-muted fw-bold">Beer</small></div>
+        <div class="col-md-4"><label class="form-label">Pareto 1 (Beer)</label><select id="f-p1-beer" class="form-select form-select-sm"><option value="">—</option><option>A</option><option>B</option><option>C</option></select></div>
+        <div class="col-md-4"><label class="form-label">Pareto 2 (Beer)</label><select id="f-p2-beer" class="form-select form-select-sm"><option value="">—</option><option>A</option><option>B</option><option>C</option></select></div>
+        <div class="col-md-4"><label class="form-label">Pareto Others (Beer)</label><select id="f-po-beer" class="form-select form-select-sm"><option value="">—</option><option>A</option><option>B</option><option>C</option></select></div>
+        <!-- Water -->
+        <div class="col-12"><small class="text-muted fw-bold">Water</small></div>
+        <div class="col-md-4"><label class="form-label">Pareto 1 (Water)</label><select id="f-p1-water" class="form-select form-select-sm"><option value="">—</option><option>A</option><option>B</option><option>C</option></select></div>
+        <div class="col-md-4"><label class="form-label">Pareto 2 (Water)</label><select id="f-p2-water" class="form-select form-select-sm"><option value="">—</option><option>A</option><option>B</option><option>C</option></select></div>
+        <div class="col-md-4"><label class="form-label">Pareto Others (Water)</label><select id="f-po-water" class="form-select form-select-sm"><option value="">—</option><option>A</option><option>B</option><option>C</option></select></div>
+        <!-- Others -->
+        <div class="col-12"><small class="text-muted fw-bold">Others</small></div>
+        <div class="col-md-4"><label class="form-label">Pareto 1 (Others)</label><select id="f-p1-others" class="form-select form-select-sm"><option value="">—</option><option>A</option><option>B</option><option>C</option></select></div>
+        <div class="col-md-4"><label class="form-label">Pareto 2 (Others)</label><select id="f-p2-others" class="form-select form-select-sm"><option value="">—</option><option>A</option><option>B</option><option>C</option></select></div>
+        <div class="col-md-4"><label class="form-label">Pareto Others (Others)</label><select id="f-po-others" class="form-select form-select-sm"><option value="">—</option><option>A</option><option>B</option><option>C</option></select></div>
+      </div>
+      <!-- Coolers -->
+      <h6 class="fw-bold border-bottom pb-1 mb-3">Coolers &amp; Branding</h6>
+      <div class="row g-2 mb-3">
+        <div class="col-6 col-md-3"><div class="form-check"><input class="form-check-input" type="checkbox" id="f-cooler-polar"/><label class="form-check-label" for="f-cooler-polar">Cooler Polar</label></div></div>
+        <div class="col-6 col-md-3"><div class="form-check"><input class="form-check-input" type="checkbox" id="f-cooler-corona"/><label class="form-check-label" for="f-cooler-corona">Cooler Corona</label></div></div>
+        <div class="col-6 col-md-3"><div class="form-check"><input class="form-check-input" type="checkbox" id="f-cooler-brasa"/><label class="form-check-label" for="f-cooler-brasa">Cooler Brasa</label></div></div>
+        <div class="col-6 col-md-3"><div class="form-check"><input class="form-check-input" type="checkbox" id="f-cooler-wine"/><label class="form-check-label" for="f-cooler-wine">Cooler Wine</label></div></div>
+        <div class="col-6 col-md-3"><div class="form-check"><input class="form-check-input" type="checkbox" id="f-painted-polar"/><label class="form-check-label" for="f-painted-polar">Painted Polar</label></div></div>
+        <div class="col-6 col-md-3"><div class="form-check"><input class="form-check-input" type="checkbox" id="f-high-traffic"/><label class="form-check-label" for="f-high-traffic">High Traffic</label></div></div>
+        <div class="col-6 col-md-3"><div class="form-check"><input class="form-check-input" type="checkbox" id="f-branding-dwl"/><label class="form-check-label" for="f-branding-dwl">Branding DWL</label></div></div>
+        <div class="col-6 col-md-3"><div class="form-check"><input class="form-check-input" type="checkbox" id="f-branding-gg"/><label class="form-check-label" for="f-branding-gg">Branding Grey Goose</label></div></div>
+        <div class="col-6 col-md-3"><div class="form-check"><input class="form-check-input" type="checkbox" id="f-branding-bac"/><label class="form-check-label" for="f-branding-bac">Branding Bacardi</label></div></div>
+        <div class="col-6 col-md-3"><div class="form-check"><input class="form-check-input" type="checkbox" id="f-branding-brasa"/><label class="form-check-label" for="f-branding-brasa">Branding Brasa</label></div></div>
+      </div>
+      <!-- Indoor Branding -->
+      <h6 class="fw-bold border-bottom pb-1 mb-3">Indoor Branding</h6>
+      <div class="row g-2 mb-3">
+        <div class="col-6 col-md-3"><div class="form-check"><input class="form-check-input" type="checkbox" id="f-ib-claro"/><label class="form-check-label" for="f-ib-claro">Claro</label></div></div>
+        <div class="col-6 col-md-3"><div class="form-check"><input class="form-check-input" type="checkbox" id="f-ib-brasa"/><label class="form-check-label" for="f-ib-brasa">Brasa</label></div></div>
+        <div class="col-6 col-md-3"><div class="form-check"><input class="form-check-input" type="checkbox" id="f-ib-polar"/><label class="form-check-label" for="f-ib-polar">Polar</label></div></div>
+        <div class="col-6 col-md-3"><div class="form-check"><input class="form-check-input" type="checkbox" id="f-ib-malta"/><label class="form-check-label" for="f-ib-malta">Malta</label></div></div>
+        <div class="col-6 col-md-3"><div class="form-check"><input class="form-check-input" type="checkbox" id="f-ib-corona"/><label class="form-check-label" for="f-ib-corona">Corona</label></div></div>
+        <div class="col-6 col-md-3"><div class="form-check"><input class="form-check-input" type="checkbox" id="f-ib-carlo"/><label class="form-check-label" for="f-ib-carlo">Carlo Rossi</label></div></div>
+      </div>
+      <!-- Equipment -->
+      <h6 class="fw-bold border-bottom pb-1 mb-3">Equipment</h6>
+      <div class="row g-2 mb-3">
+        <div class="col-6 col-md-4"><div class="form-check"><input class="form-check-input" type="checkbox" id="f-rack"/><label class="form-check-label" for="f-rack">Rack Display</label></div></div>
+        <div class="col-6 col-md-4"><div class="form-check"><input class="form-check-input" type="checkbox" id="f-light-header"/><label class="form-check-label" for="f-light-header">Light Header</label></div></div>
+        <div class="col-6 col-md-4"><div class="form-check"><input class="form-check-input" type="checkbox" id="f-wall-nameboard"/><label class="form-check-label" for="f-wall-nameboard">Wall Mounted Nameboard</label></div></div>
+        <div class="col-6 col-md-4"><div class="form-check"><input class="form-check-input" type="checkbox" id="f-backbar"/><label class="form-check-label" for="f-backbar">Backbar</label></div></div>
+        <div class="col-6 col-md-4"><div class="form-check"><input class="form-check-input" type="checkbox" id="f-housewine"/><label class="form-check-label" for="f-housewine">Licores Wine as Housewine</label></div></div>
+      </div>
+    </form></div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-wine" id="btn-save"><i class="fas fa-save me-1"></i>Save</button>
+    </div>
+  </div></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../../js/auth.js"></script>
+<script src="../../js/api.js"></script>
+<script src="../../js/sidebar.js"></script>
+<script>
+  let currentPage = 1;
+  const pageSize  = 50;
+  let modal, searchTimeout;
+
+  document.addEventListener('DOMContentLoaded', () => {
+    if (!Auth.requireAuth()) return;
+    Auth.startExpiryWatcher();
+    Auth.populateUserUI();
+    Sidebar.init();
+    document.getElementById('btn-logout').addEventListener('click', e => {
+      e.preventDefault(); Auth.logout();
+    });
+
+    modal = new bootstrap.Modal(document.getElementById('itemModal'));
+    loadData();
+
+    document.getElementById('search-input').addEventListener('input', () => {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => { currentPage = 1; loadData(); }, 400);
+    });
+    document.getElementById('btn-new').addEventListener('click', () => openModal(null));
+    document.getElementById('btn-save').addEventListener('click', saveRecord);
+    document.getElementById('btn-import').addEventListener('click', () => document.getElementById('csv-file-input').click());
+    document.getElementById('csv-file-input').addEventListener('change', handleImport);
+  });
+
+  async function loadData() {
+    const search = document.getElementById('search-input').value.trim();
+    const tbody  = document.getElementById('data-tbody');
+    tbody.innerHTML = '<tr><td colspan="10" class="text-center py-3 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading...</td></tr>';
+    try {
+      const r = await API.routeAssignment.customerExt.getAll({ search, page: currentPage, pageSize });
+      document.getElementById('total-count').textContent = r.TotalCount + ' records';
+      renderTable(r.Data);
+      renderPagination(r.Page, r.TotalPages);
+      document.getElementById('page-info').textContent = `Page ${r.Page} of ${r.TotalPages}`;
+    } catch(e) {
+      tbody.innerHTML = `<tr><td colspan="10" class="text-center py-3 text-danger"><i class="fas fa-exclamation-triangle me-2"></i>${e.message}</td></tr>`;
+    }
+  }
+
+  function renderTable(data) {
+    const tbody = document.getElementById('data-tbody');
+    if (!data || data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="10" class="text-center py-4 text-muted">No records found.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.map((r, i) => {
+      const coolers = [r.RceCoolerPolar&&'Polar',r.RceCoolerCorona&&'Corona',r.RceCoolerBrasa&&'Brasa',r.RceCoolerWine&&'Wine'].filter(Boolean).join(', ') || '–';
+      const equip   = [r.RceWithRackDisplay&&'Rack',r.RceWithLightHeader&&'LHeader',r.RceWithBackbar&&'Backbar'].filter(Boolean).join(', ') || '–';
+      const upd     = r.UpdatedAt ? new Date(r.UpdatedAt).toLocaleDateString() : '–';
+      return `<tr>
+        <td>${(currentPage-1)*pageSize + i+1}</td>
+        <td><strong>${r.RceAccountNumber}</strong></td>
+        <td>${r.RceRouteNpActive||'–'}</td>
+        <td>${r.RceRouteOvd5||'–'}</td>
+        <td>${r.RceRouteOvd6||'–'}</td>
+        <td><span class="badge bg-secondary">${r.RcePareto1Overall||'–'}</span></td>
+        <td><small>${coolers}</small></td>
+        <td><small>${equip}</small></td>
+        <td><small class="text-muted">${upd}</small></td>
+        <td>
+          <button class="btn btn-outline-primary btn-xs me-1" onclick="openModal(${JSON.stringify(r).replace(/"/g,'&quot;')})"><i class="fas fa-edit"></i></button>
+          <button class="btn btn-outline-danger btn-xs" onclick="deleteRecord(${r.RceId})"><i class="fas fa-trash"></i></button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  function renderPagination(page, totalPages) {
+    const pg = document.getElementById('pagination');
+    if (totalPages <= 1) { pg.innerHTML = ''; return; }
+    let html = '';
+    if (page > 1) html += `<li class="page-item"><a class="page-link" href="#" onclick="goPage(${page-1})">«</a></li>`;
+    for (let p = Math.max(1,page-2); p <= Math.min(totalPages,page+2); p++)
+      html += `<li class="page-item ${p===page?'active':''}"><a class="page-link" href="#" onclick="goPage(${p})">${p}</a></li>`;
+    if (page < totalPages) html += `<li class="page-item"><a class="page-link" href="#" onclick="goPage(${page+1})">»</a></li>`;
+    pg.innerHTML = html;
+  }
+
+  function goPage(p) { currentPage = p; loadData(); }
+
+  function openModal(rec) {
+    const form = document.getElementById('item-form');
+    form.classList.remove('was-validated');
+    const set = (id, val) => { const el = document.getElementById(id); if(el) el.value = val || ''; };
+    const chk = (id, val) => { const el = document.getElementById(id); if(el) el.checked = !!val; };
+
+    document.getElementById('edit-id').value = rec ? rec.RceId : '';
+    set('f-account',    rec?.RceAccountNumber);
+    set('f-route-np',   rec?.RceRouteNpActive);
+    set('f-route-ovd5', rec?.RceRouteOvd5);
+    set('f-route-ovd6', rec?.RceRouteOvd6);
+    set('f-sr4',        rec?.RceSalesRepActive4);
+    set('f-sr5',        rec?.RceSalesRepActive5);
+    set('f-sr6',        rec?.RceSalesRepActive6);
+    set('f-alt-sr',     rec?.RceAlternativeSalesRep);
+    set('f-proyection', rec?.RceProyection);
+    set('f-p1-overall', rec?.RcePareto1Overall);
+    set('f-p2-overall', rec?.RcePareto2Overall);
+    set('f-po-overall', rec?.RceParetoOthersOverall);
+    set('f-p1-beer',    rec?.RcePareto1Beer);
+    set('f-p2-beer',    rec?.RcePareto2Beer);
+    set('f-po-beer',    rec?.RceParetoOthersBeer);
+    set('f-p1-water',   rec?.RcePareto1Water);
+    set('f-p2-water',   rec?.RcePareto2Water);
+    set('f-po-water',   rec?.RceParetoOthersWater);
+    set('f-p1-others',  rec?.RcePareto1Others);
+    set('f-p2-others',  rec?.RcePareto2Others);
+    set('f-po-others',  rec?.RceParetoOthersOthers);
+    chk('f-cooler-polar',    rec?.RceCoolerPolar);
+    chk('f-cooler-corona',   rec?.RceCoolerCorona);
+    chk('f-cooler-brasa',    rec?.RceCoolerBrasa);
+    chk('f-cooler-wine',     rec?.RceCoolerWine);
+    chk('f-painted-polar',   rec?.RcePaintedPolar);
+    chk('f-high-traffic',    rec?.RceHighTraffic);
+    chk('f-branding-dwl',    rec?.RceBrandingDwl);
+    chk('f-branding-gg',     rec?.RceBrandingGreyGoose);
+    chk('f-branding-bac',    rec?.RceBrandingBacardi);
+    chk('f-branding-brasa',  rec?.RceBrandingBrasa);
+    chk('f-ib-claro',        rec?.RceIndoorBrandingClaro);
+    chk('f-ib-brasa',        rec?.RceIndoorBrandingBrasa);
+    chk('f-ib-polar',        rec?.RceIndoorBrandingPolar);
+    chk('f-ib-malta',        rec?.RceIndoorBrandingMalta);
+    chk('f-ib-corona',       rec?.RceIndoorBrandingCorona);
+    chk('f-ib-carlo',        rec?.RceIndoorBrandingCarloRossi);
+    chk('f-rack',            rec?.RceWithRackDisplay);
+    chk('f-light-header',    rec?.RceWithLightHeader);
+    chk('f-wall-nameboard',  rec?.RceWithWallMountedNameboard);
+    chk('f-backbar',         rec?.RceWithBackbar);
+    chk('f-housewine',       rec?.RceWithLicoresWineAsHousewine);
+    modal.show();
+  }
+
+  async function saveRecord() {
+    const form = document.getElementById('item-form');
+    form.classList.add('was-validated');
+    if (!form.checkValidity()) return;
+    const g = id => document.getElementById(id)?.value || null;
+    const c = id => document.getElementById(id)?.checked || false;
+    const dto = {
+      RceAccountNumber: document.getElementById('f-account').value.trim().toUpperCase(),
+      RceRouteNpActive: g('f-route-np'), RceRouteOvd5: g('f-route-ovd5'), RceRouteOvd6: g('f-route-ovd6'),
+      RceSalesRepActive4: g('f-sr4'), RceSalesRepActive5: g('f-sr5'), RceSalesRepActive6: g('f-sr6'),
+      RceAlternativeSalesRep: g('f-alt-sr'), RceProyection: g('f-proyection'),
+      RcePareto1Overall: g('f-p1-overall'), RcePareto2Overall: g('f-p2-overall'), RceParetoOthersOverall: g('f-po-overall'),
+      RcePareto1Beer: g('f-p1-beer'), RcePareto2Beer: g('f-p2-beer'), RceParetoOthersBeer: g('f-po-beer'),
+      RcePareto1Water: g('f-p1-water'), RcePareto2Water: g('f-p2-water'), RceParetoOthersWater: g('f-po-water'),
+      RcePareto1Others: g('f-p1-others'), RcePareto2Others: g('f-p2-others'), RceParetoOthersOthers: g('f-po-others'),
+      RceCoolerPolar: c('f-cooler-polar'), RceCoolerCorona: c('f-cooler-corona'), RceCoolerBrasa: c('f-cooler-brasa'), RceCoolerWine: c('f-cooler-wine'),
+      RcePaintedPolar: c('f-painted-polar'), RceHighTraffic: c('f-high-traffic'),
+      RceBrandingDwl: c('f-branding-dwl'), RceBrandingGreyGoose: c('f-branding-gg'), RceBrandingBacardi: c('f-branding-bac'), RceBrandingBrasa: c('f-branding-brasa'),
+      RceIndoorBrandingClaro: c('f-ib-claro'), RceIndoorBrandingBrasa: c('f-ib-brasa'), RceIndoorBrandingPolar: c('f-ib-polar'),
+      RceIndoorBrandingMalta: c('f-ib-malta'), RceIndoorBrandingCorona: c('f-ib-corona'), RceIndoorBrandingCarloRossi: c('f-ib-carlo'),
+      RceWithRackDisplay: c('f-rack'), RceWithLightHeader: c('f-light-header'), RceWithWallMountedNameboard: c('f-wall-nameboard'),
+      RceWithBackbar: c('f-backbar'), RceWithLicoresWineAsHousewine: c('f-housewine'),
+    };
+    try {
+      await API.routeAssignment.customerExt.create(dto);
+      modal.hide();
+      loadData();
+    } catch(e) { alert('Error: ' + e.message); }
+  }
+
+  async function deleteRecord(id) {
+    if (!confirm('Delete this record?')) return;
+    try { await API.routeAssignment.customerExt.delete(id); loadData(); }
+    catch(e) { alert('Error: ' + e.message); }
+  }
+
+  function handleImport(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async ev => {
+      const lines = ev.target.result.split('\n').filter(l => l.trim());
+      const headers = lines[0].split(',').map(h => h.trim());
+      let ok = 0, fail = 0;
+      for (let i = 1; i < lines.length; i++) {
+        const vals = lines[i].split(',');
+        const row  = {};
+        headers.forEach((h, j) => row[h] = (vals[j]||'').trim());
+        if (!row.RceAccountNumber) continue;
+        try { await API.routeAssignment.customerExt.create(row); ok++; }
+        catch { fail++; }
+      }
+      e.target.value = '';
+      alert(`Import complete: ${ok} saved, ${fail} failed.`);
+      loadData();
+    };
+    reader.readAsText(file);
+  }
+</script>
+</body>
+</html>

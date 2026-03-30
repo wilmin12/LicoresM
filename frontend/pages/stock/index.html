@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stock Analysis - Licores Maduro</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../../css/main.css" />
+  <style>
+    .kpi-card { border-radius: 12px; border: none; box-shadow: 0 2px 8px rgba(0,0,0,.08); transition: transform .15s; }
+    .kpi-card:hover { transform: translateY(-2px); }
+    .kpi-icon { font-size: 2rem; opacity: .8; }
+    .kpi-value { font-size: 1.75rem; font-weight: 700; }
+    .kpi-label { font-size: .8rem; color: #6c757d; text-transform: uppercase; letter-spacing: .05em; }
+    .module-card { border-radius: 12px; text-decoration: none; color: inherit; transition: box-shadow .15s, transform .15s; display: block; }
+    .module-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.12); transform: translateY(-3px); color: inherit; }
+  </style>
+</head>
+<body>
+<div id="sidebar-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;"></div>
+<div class="app-wrapper">
+  <nav id="sidebar" class="sidebar">
+    <div class="sidebar-header"><img src="../../img/LogoLicores.png" alt="Licores Maduro" class="sidebar-logo-img"/><span class="sidebar-logo-text">LICORES MADURO</span></div>
+    <div id="sidebar-nav" class="sidebar-nav"></div>
+    <div class="sidebar-footer"><div class="sidebar-user"><div class="sidebar-avatar" id="sidebar-user-initials">LM</div><div class="sidebar-text"><div id="sidebar-user-name" style="font-weight:600;">–</div></div></div></div>
+  </nav>
+  <div class="main-area">
+    <header class="topbar">
+      <button id="btn-sidebar-toggle" class="btn-sidebar-toggle"><i class="fas fa-bars"></i></button>
+      <span class="topbar-title"><i class="fas fa-boxes me-2 text-wine"></i>Stock Analysis</span>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown">
+            <span class="sidebar-avatar" id="topbar-user-initials" style="width:28px;height:28px;font-size:.75rem;">LM</span>
+            <span id="topbar-user-name" class="d-none d-md-inline">–</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+            <li><div class="dropdown-header"><strong id="topbar-user-fullname">User</strong><br/><small class="text-muted" id="topbar-user-role">Role</small></div></li>
+            <li><hr class="dropdown-divider"/></li>
+            <li><a class="dropdown-item text-danger" href="#" id="btn-logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+          </ul>
+        </div>
+      </div>
+    </header>
+    <main class="page-content">
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="../../dashboard.html"><i class="fas fa-home me-1"></i>Home</a></li>
+          <li class="breadcrumb-item active">Stock Analysis</li>
+        </ol>
+      </nav>
+      <div class="page-title">Stock Analysis Dashboard</div>
+      <div class="page-subtitle">Inventory health overview — latest available period.</div>
+
+      <!-- Period info bar -->
+      <div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
+        <span class="text-muted small" id="period-label"><i class="fas fa-calendar-alt me-1"></i>Loading period...</span>
+        <button class="btn btn-wine btn-sm" id="btn-generate"><i class="fas fa-cogs me-1"></i>Generate Analysis</button>
+      </div>
+
+      <!-- KPI Cards -->
+      <div class="row g-3 mb-4" id="kpi-row">
+        <div class="col-6 col-md-4 col-lg-2">
+          <div class="card kpi-card p-3 text-center">
+            <div class="kpi-icon text-primary mb-1"><i class="fas fa-cube"></i></div>
+            <div class="kpi-value" id="kpi-total">–</div>
+            <div class="kpi-label">Total Items</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+          <div class="card kpi-card p-3 text-center">
+            <div class="kpi-icon text-danger mb-1"><i class="fas fa-arrow-up"></i></div>
+            <div class="kpi-value" id="kpi-overstock">–</div>
+            <div class="kpi-label">Overstocked</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+          <div class="card kpi-card p-3 text-center">
+            <div class="kpi-icon text-success mb-1"><i class="fas fa-arrow-down"></i></div>
+            <div class="kpi-value" id="kpi-understock">–</div>
+            <div class="kpi-label">Understocked</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+          <div class="card kpi-card p-3 text-center">
+            <div class="kpi-icon text-info mb-1"><i class="fas fa-dollar-sign"></i></div>
+            <div class="kpi-value" id="kpi-inv-value">–</div>
+            <div class="kpi-label">Total Inv Value (ANG)</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+          <div class="card kpi-card p-3 text-center">
+            <div class="kpi-icon text-warning mb-1"><i class="fas fa-exclamation-triangle"></i></div>
+            <div class="kpi-value" id="kpi-overstock-ang">–</div>
+            <div class="kpi-label">Total Overstock (ANG)</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+          <div class="card kpi-card p-3 text-center">
+            <div class="kpi-icon text-secondary mb-1"><i class="fas fa-balance-scale"></i></div>
+            <div class="kpi-value" id="kpi-ideal-ang">–</div>
+            <div class="kpi-label">Ideal Stock (ANG)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Module navigation cards -->
+      <div class="row g-3">
+        <div class="col-sm-6 col-lg-3">
+          <a href="ideal-months.html" class="card module-card shadow-sm p-4">
+            <div class="text-primary mb-2" style="font-size:2rem;"><i class="fas fa-sliders-h"></i></div>
+            <h6 class="mb-1">Ideal Months Config</h6>
+            <small class="text-muted">Configure ideal months of stock per item.</small>
+          </a>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <a href="upload.html" class="card module-card shadow-sm p-4">
+            <div class="text-success mb-2" style="font-size:2rem;"><i class="fas fa-file-upload"></i></div>
+            <h6 class="mb-1">Upload Data</h6>
+            <small class="text-muted">Import vendor constraints and sales budget CSV.</small>
+          </a>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <a href="analysis.html" class="card module-card shadow-sm p-4">
+            <div class="text-warning mb-2" style="font-size:2rem;"><i class="fas fa-chart-bar"></i></div>
+            <h6 class="mb-1">Analysis Results</h6>
+            <small class="text-muted">View full analysis table with all KPIs.</small>
+          </a>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <a href="analysis.html" class="card module-card shadow-sm p-4">
+            <div class="text-danger mb-2" style="font-size:2rem;"><i class="fas fa-cogs"></i></div>
+            <h6 class="mb-1">Generate Analysis</h6>
+            <small class="text-muted">Run the full stock analysis for any period.</small>
+          </a>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Generate Modal -->
+<div class="modal fade" id="generateModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title"><i class="fas fa-cogs me-2"></i>Generate Stock Analysis</h5>
+      <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    </div>
+    <div class="modal-body">
+      <div class="row g-3">
+        <div class="col-6">
+          <label class="form-label">Year <span class="text-danger">*</span></label>
+          <input type="number" id="gen-year" class="form-control" min="2020" max="2099" value="2025"/>
+        </div>
+        <div class="col-6">
+          <label class="form-label">Month <span class="text-danger">*</span></label>
+          <select id="gen-month" class="form-select">
+            <option value="1">January</option><option value="2">February</option>
+            <option value="3">March</option><option value="4">April</option>
+            <option value="5">May</option><option value="6">June</option>
+            <option value="7">July</option><option value="8">August</option>
+            <option value="9">September</option><option value="10">October</option>
+            <option value="11">November</option><option value="12">December</option>
+          </select>
+        </div>
+      </div>
+      <div id="gen-status" class="mt-3"></div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-wine btn-sm" id="btn-run-generate">
+        <i class="fas fa-play me-1"></i>Run Analysis
+      </button>
+    </div>
+  </div></div>
+</div>
+
+<div class="toast-container"><div id="toast" class="toast align-items-center text-white border-0" role="alert"><div class="d-flex"><div class="toast-body" id="toast-msg"></div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div></div></div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../../js/i18n.js"></script>
+<script src="../../js/api.js"></script>
+<script src="../../js/auth.js"></script>
+<script src="../../js/sidebar.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    if (!Auth.requireAuth()) return;
+    Auth.startExpiryWatcher();
+    Auth.populateUserUI();
+    Sidebar.init();
+    document.getElementById('btn-logout').addEventListener('click', e => { e.preventDefault(); Auth.logout(); });
+
+    document.getElementById('btn-generate').addEventListener('click', () => {
+      prefillGenerateModal();
+      new bootstrap.Modal('#generateModal').show();
+    });
+    document.getElementById('btn-run-generate').addEventListener('click', runGenerate);
+
+    await loadDashboard();
+  });
+
+  async function loadDashboard() {
+    try {
+      const periods = await API.stockAnalysis.getAvailablePeriods();
+      const list = periods?.Data || [];
+      if (!list.length) {
+        document.getElementById('period-label').textContent = 'No analysis generated yet.';
+        return;
+      }
+      const latest = list[0];
+      document.getElementById('period-label').innerHTML =
+        `<i class="fas fa-calendar-alt me-1"></i>Latest period: ${monthName(latest.SarMonth)} ${latest.SarYear}`;
+
+      const summaryRes = await API.stockAnalysis.getSummary({ year: latest.SarYear, month: latest.SarMonth });
+      const s = summaryRes?.Data;
+      if (!s) return;
+
+      document.getElementById('kpi-total').textContent       = fmt(s.TotalItems, 0);
+      document.getElementById('kpi-overstock').textContent   = fmt(s.ItemsOverstocked, 0);
+      document.getElementById('kpi-understock').textContent  = fmt(s.ItemsUnderstocked, 0);
+      document.getElementById('kpi-inv-value').textContent   = fmtAng(s.TotalInventoryValue);
+      document.getElementById('kpi-overstock-ang').textContent = fmtAng(s.TotalOverstockAng);
+      document.getElementById('kpi-ideal-ang').textContent   = fmtAng(s.TotalIdealStockAng);
+    } catch(e) {
+      showToast(e.message, 'danger');
+    }
+  }
+
+  function prefillGenerateModal() {
+    const now = new Date();
+    document.getElementById('gen-year').value  = now.getFullYear();
+    document.getElementById('gen-month').value = now.getMonth() + 1;
+    document.getElementById('gen-status').innerHTML = '';
+  }
+
+  async function runGenerate() {
+    const year  = parseInt(document.getElementById('gen-year').value);
+    const month = parseInt(document.getElementById('gen-month').value);
+    if (!year || !month) return;
+
+    const statusEl = document.getElementById('gen-status');
+    statusEl.innerHTML = '<div class="alert alert-info py-2"><i class="fas fa-spinner fa-spin me-2"></i>Running analysis, please wait...</div>';
+    document.getElementById('btn-run-generate').disabled = true;
+
+    try {
+      const res = await API.stockAnalysis.generate({ Year: year, Month: month });
+      const d = res?.Data;
+      statusEl.innerHTML = `<div class="alert alert-success py-2"><i class="fas fa-check me-2"></i>Done! ${d?.ItemsProcessed} items processed.</div>`;
+      showToast('Analysis generated successfully.', 'success');
+      await loadDashboard();
+    } catch(e) {
+      statusEl.innerHTML = `<div class="alert alert-danger py-2"><i class="fas fa-times me-2"></i>${esc(e.message)}</div>`;
+    } finally {
+      document.getElementById('btn-run-generate').disabled = false;
+    }
+  }
+
+  function fmt(v, decimals = 0) {
+    if (v == null) return '–';
+    return Number(v).toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+  }
+  function fmtAng(v) {
+    if (v == null) return '–';
+    return 'ƒ ' + Number(v).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  }
+  const MONTHS = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  function monthName(m) { return MONTHS[m] || m; }
+  function showToast(msg, type='success') {
+    const el = document.getElementById('toast');
+    el.className = `toast align-items-center text-white border-0 bg-${type === 'success' ? 'success' : 'danger'}`;
+    document.getElementById('toast-msg').textContent = msg;
+    new bootstrap.Toast(el, { delay: 3500 }).show();
+  }
+  function esc(s) { return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+</script>
+</body>
+</html>

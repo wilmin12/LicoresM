@@ -1,0 +1,1960 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Applied Freight Quotes - Licores Maduro</title>
+  <link rel="icon" href="../../img/LogoLicores.png" type="image/png" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" />
+  <link rel="stylesheet" href="../../css/main.css" />
+  <style>
+    /* ── Layout ── */
+    .quotes-layout { display:flex; gap:1rem; align-items:flex-start; }
+    .quotes-list-panel { width:340px; flex-shrink:0; }
+    .quotes-detail-panel { flex:1; min-width:0; }
+    @media (max-width:900px) { .quotes-layout { flex-direction:column; } .quotes-list-panel { width:100%; } }
+
+    /* ── Quote list items ── */
+    .quote-item { cursor:pointer; padding:.55rem .85rem; border-bottom:1px solid var(--border-color); transition:background .12s; font-size:.83rem; }
+    .quote-item:hover { background:var(--primary-pale); }
+    .quote-item.active { background:var(--primary-pale); border-left:3px solid var(--primary); }
+    .quote-num { font-weight:700; font-size:.9rem; color:var(--primary); }
+
+    /* ── Tabs wine ── */
+    #detail-tabs .nav-link { color:var(--text-secondary); border-color:transparent; font-size:.84rem; padding:.4rem .9rem; }
+    #detail-tabs .nav-link:hover { color:var(--primary); background:var(--primary-pale); border-color:transparent; }
+    #detail-tabs .nav-link.active { color:var(--primary); font-weight:600; border-color:var(--border-color) var(--border-color) #fff; border-bottom-color:#fff; }
+
+    /* ── Tree styles (Inland) ── */
+    .level-card { border-left:3px solid var(--primary); margin-bottom:.5rem; }
+    .level-card .card-header { background:var(--primary-pale); padding:.35rem .7rem; font-size:.82rem; font-weight:600; color:var(--text-primary); border-bottom:1px solid rgba(123,26,46,.1); }
+    .level-2 { border-left-color:var(--gold); margin-left:1.25rem; }
+    .level-2 .card-header { background:#fdf9ee; border-bottom-color:rgba(160,138,58,.15); }
+    .tree-section { display:none; } .tree-section.open { display:block; }
+    .btn-tree { background:none; border:none; padding:0 .25rem; cursor:pointer; color:var(--primary); line-height:1; }
+
+    /* ── Inline editable grid ── */
+    .charges-grid { font-size:.79rem; margin-bottom:0; }
+    .charges-grid thead th { background:var(--primary); color:#fff; font-weight:600; font-size:.75rem; white-space:nowrap; padding:.3rem .4rem; }
+    .charges-grid td { vertical-align:middle; padding:.2rem .35rem; border-color:var(--border-color); }
+    .charges-grid tbody tr:hover { background:var(--primary-pale); }
+    .charges-grid .form-select,
+    .charges-grid .form-control { font-size:.78rem; padding:.18rem .3rem; height:auto; border-color:var(--border-color); }
+    .charges-grid .form-select:focus,
+    .charges-grid .form-control:focus { border-color:var(--primary-light); box-shadow:0 0 0 2px rgba(123,26,46,.12); }
+    .charges-grid .desc-cell { color:var(--text-secondary); font-style:italic; font-size:.74rem; min-width:100px; max-width:150px; }
+    .charges-grid .num-col { width:80px; }
+    .charges-grid .cur-col  { width:75px; }
+    .charges-grid .act-col  { width:60px; white-space:nowrap; }
+
+    /* ── Ocean header list ── */
+    .ocean-header-list { border:1px solid var(--border-color); border-radius:6px; overflow:hidden; margin-bottom:1rem; }
+    .ocean-header-item { display:flex; align-items:center; gap:.6rem; padding:.4rem .75rem; border-bottom:1px solid var(--border-color); font-size:.83rem; cursor:pointer; transition:background .1s; }
+    .ocean-header-item:last-child { border-bottom:none; }
+    .ocean-header-item:hover { background:var(--primary-pale); }
+    .ocean-header-item.active { background:var(--primary-pale); border-left:3px solid var(--primary); font-weight:600; }
+    .ocean-header-item .oc-hdr-label { flex:1; }
+    .ocean-detail-title { font-size:.8rem; font-weight:600; color:var(--text-secondary); margin-bottom:.4rem; padding-left:.1rem; }
+
+    /* ── Row action buttons (alineado con btn-action del design system) ── */
+    .btn-row-save { background:#e8f5e9; color:#2e7d32; border:none; border-radius:4px; cursor:pointer; padding:.22rem .45rem; font-size:.8rem; transition:filter .15s, transform .1s; }
+    .btn-row-save:hover { filter:brightness(.9); transform:scale(1.07); }
+    .btn-row-del  { background:#fdecea; color:#c62828; border:none; border-radius:4px; cursor:pointer; padding:.22rem .45rem; font-size:.8rem; transition:filter .15s, transform .1s; }
+    .btn-row-del:hover  { filter:brightness(.9); transform:scale(1.07); }
+    .row-dirty .btn-row-save { background:#fff3cd; color:#855800; }
+    /* Tom Select dropdown always on top of Bootstrap modals */
+    .ts-dropdown { z-index: 9999 !important; }
+  </style>
+</head>
+<body>
+<div id="sidebar-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;"></div>
+<div class="app-wrapper">
+  <nav id="sidebar" class="sidebar">
+    <div class="sidebar-header"><img src="../../img/LogoLicores.png" alt="Licores Maduro" class="sidebar-logo-img"/><span class="sidebar-logo-text">LICORES MADURO</span></div>
+    <div id="sidebar-nav" class="sidebar-nav"></div>
+    <div class="sidebar-footer"><div class="sidebar-user"><div class="sidebar-avatar" id="sidebar-user-initials">LM</div><div class="sidebar-text"><div id="sidebar-user-name" style="font-weight:600;">–</div></div></div></div>
+  </nav>
+  <div class="main-area">
+    <header class="topbar">
+      <button id="btn-sidebar-toggle" class="btn-sidebar-toggle"><i class="fas fa-bars"></i></button>
+      <span class="topbar-title"><i class="fas fa-file-invoice me-2 text-wine"></i>Applied Freight Quotes</span>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown">
+            <span class="sidebar-avatar" id="topbar-user-initials" style="width:28px;height:28px;font-size:.75rem;">LM</span>
+            <span id="topbar-user-name" class="d-none d-md-inline">–</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+            <li><div class="dropdown-header"><strong id="topbar-user-fullname">User</strong><br/><small class="text-muted" id="topbar-user-role">Role</small></div></li>
+            <li><hr class="dropdown-divider"/></li>
+            <li><a class="dropdown-item text-danger" href="#" id="btn-logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+          </ul>
+        </div>
+      </div>
+    </header>
+    <main class="page-content">
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="../../dashboard.html"><i class="fas fa-home me-1"></i>Home</a></li>
+          <li class="breadcrumb-item"><a href="index.html">Freight Forwarder</a></li>
+          <li class="breadcrumb-item active">Applied Quotes</li>
+        </ol>
+      </nav>
+      <div class="page-title">Applied Freight Quotes</div>
+      <div class="page-subtitle">Quotes per Forwarder + Port + Route combining ocean, inland and additional port charges.</div>
+
+      <div class="quotes-layout mt-3">
+        <!-- ── LEFT: Quote list ── -->
+        <div class="quotes-list-panel">
+          <div class="card shadow-sm">
+            <div class="card-body px-3 py-2 border-bottom">
+              <button class="btn btn-wine btn-sm w-100 mb-2" id="btn-new-quote"><i class="fas fa-plus me-1"></i>New Quote</button>
+              <select id="filter-forwarder" class="form-select form-select-sm"><option value="">— Select Forwarder —</option></select>
+            </div>
+            <div class="mb-2 px-3 pt-2">
+              <input type="search" id="filter-search" class="form-control form-control-sm" placeholder="Search…" />
+            </div>
+            <div id="quote-list" style="max-height:calc(100vh - 280px);overflow-y:auto;">
+              <div class="text-center text-muted py-4" style="font-size:.82rem;"><i class="fas fa-arrow-up fa-sm mb-1 d-block opacity-50"></i>Select a forwarder to view quotes</div>
+            </div>
+            <div class="card-footer d-flex justify-content-between align-items-center py-1 px-3" style="font-size:.78rem;">
+              <span id="list-info">–</span>
+              <div class="d-flex gap-1">
+                <button class="btn btn-sm btn-outline-secondary py-0 px-2" id="btn-prev">‹</button>
+                <button class="btn btn-sm btn-outline-secondary py-0 px-2" id="btn-next">›</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── RIGHT: Detail panel ── -->
+        <div class="quotes-detail-panel">
+
+          <!-- Forwarder info card (shown when a forwarder is selected in the filter) -->
+          <div id="fwd-info-card" class="card shadow-sm mb-3" style="display:none;">
+            <div class="card-header py-2 px-3 d-flex align-items-center gap-2" style="background:var(--primary-pale);">
+              <i class="fas fa-building text-wine"></i>
+              <span class="fw-bold text-wine" id="fic-code" style="font-size:1rem;"></span>
+              <span class="fw-600" id="fic-name" style="font-size:.9rem;"></span>
+              <span id="fic-currency" class="badge bg-secondary ms-1" style="display:none;font-size:.73rem;"></span>
+            </div>
+            <div class="card-body py-1 px-3">
+              <div id="fic-info-line" style="font-size:.78rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+            </div>
+          </div>
+
+          <!-- Header info bar — visible only when a quote is selected -->
+          <div id="quote-header-card" class="card shadow-sm mb-3" style="display:none;">
+            <div class="card-body py-2 px-3 d-flex flex-wrap align-items-center gap-3">
+              <div><span class="text-muted" style="font-size:.72rem;">QUOTE #</span><span id="dh-num" class="fw-bold ms-1 text-wine" style="font-size:1.1rem;"></span></div>
+              <div><span class="text-muted" style="font-size:.72rem;">FORWARDER</span><span id="dh-fwd" class="fw-600 ms-1" style="font-size:.85rem;"></span></div>
+              <div><span class="text-muted" style="font-size:.72rem;">PORT</span><span id="dh-port" class="ms-1" style="font-size:.85rem;"></span></div>
+              <div><span class="text-muted" style="font-size:.72rem;">ROUTE</span><span id="dh-route" class="ms-1" style="font-size:.85rem;"></span></div>
+              <div><span class="text-muted" style="font-size:.72rem;">TRANSIT</span><span id="dh-transit" class="ms-1" style="font-size:.85rem;"></span></div>
+              <div><span class="text-muted" style="font-size:.72rem;">VALIDITY</span><span id="dh-dates" class="ms-1" style="font-size:.85rem;"></span></div>
+              <div class="ms-auto d-flex gap-2">
+                <button class="btn btn-sm btn-outline-secondary" id="btn-edit-quote" title="Edit header"><i class="fas fa-edit"></i></button>
+                <button class="btn btn-sm btn-outline-danger" id="btn-delete-quote" title="Delete quote"><i class="fas fa-trash"></i></button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tabs — always visible -->
+          <ul class="nav nav-tabs mb-0" id="detail-tabs">
+            <li class="nav-item"><button class="nav-link active" data-tab="ocean"><i class="fas fa-ship me-1"></i>Ocean Freight</button></li>
+            <li class="nav-item"><button class="nav-link" data-tab="inland"><i class="fas fa-truck me-1"></i>Inland</button></li>
+            <li class="nav-item"><button class="nav-link" data-tab="port-add"><i class="fas fa-anchor me-1"></i>Port Additional</button></li>
+            <li class="nav-item"><button class="nav-link" data-tab="lcl"><i class="fas fa-boxes me-1"></i>LCL Charges</button></li>
+          </ul>
+
+          <div id="detail-placeholder" class="card shadow-sm text-center text-muted py-5 border-top-0 rounded-top-0" style="font-size:.85rem;">
+            <i class="fas fa-arrow-left fa-2x mb-2 opacity-25"></i><br/>Select a quote to view its details
+          </div>
+
+          <div id="detail-panel" style="display:none;">
+
+            <!-- ── Tab: Ocean Freight ── -->
+            <div class="tab-pane" id="tab-ocean">
+              <div class="card shadow-sm border-top-0 rounded-top-0">
+                <div class="card-body p-3">
+                  <!-- Botones -->
+                  <div class="d-flex justify-content-end gap-2 mb-3">
+                    <button class="btn btn-wine btn-sm" id="btn-add-ocean-port"><i class="fas fa-plus me-1"></i>New Port</button>
+                    <button class="btn btn-outline-wine btn-sm" id="btn-add-ocean-sline"><i class="fas fa-plus me-1"></i>New Shipping Line</button>
+                    <button class="btn btn-success btn-sm" id="btn-save-all-ocean"><i class="fas fa-save me-1"></i>Save All</button>
+                  </div>
+                  <!-- Lista de cabeceras Port + Shipping Line -->
+                  <div id="ocean-headers-list"></div>
+                  <!-- Grid de detalle (charges del SLine activo) -->
+                  <div id="ocean-tree"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ── Tab: Inland (tree) ── -->
+            <div class="tab-pane" id="tab-inland" style="display:none;">
+              <div class="card shadow-sm border-top-0 rounded-top-0">
+                <div class="card-body p-3">
+                  <div class="d-flex justify-content-end gap-2 mb-3">
+                    <button class="btn btn-wine btn-sm" id="btn-add-region"><i class="fas fa-plus me-1"></i>Add Region</button>
+                    <button class="btn btn-success btn-sm" id="btn-save-all-inland"><i class="fas fa-save me-1"></i>Save All</button>
+                  </div>
+                  <div id="inland-tree"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ── Tab: Port Additional ── -->
+            <div class="tab-pane" id="tab-port-add" style="display:none;">
+              <div class="card shadow-sm border-top-0 rounded-top-0">
+                <div class="card-body p-0">
+                  <div class="card-header d-flex justify-content-end py-2">
+                    <button class="btn btn-wine btn-sm" id="btn-add-portadd"><i class="fas fa-plus me-1"></i>Add Row</button>
+                  </div>
+                  <div class="table-responsive">
+                    <table class="table table-sm table-bordered charges-grid mb-0">
+                      <thead>
+                        <tr>
+                          <th>Charge Type</th>
+                          <th class="desc-cell">Description</th>
+                          <th>Load Type</th>
+                          <th class="desc-cell">Description</th>
+                          <th class="num-col">Amount</th>
+                          <th class="cur-col">Currency</th>
+                          <th>Action</th>
+                          <th>Over</th>
+                          <th>Per</th>
+                          <th class="num-col">From</th>
+                          <th class="num-col">To</th>
+                          <th class="num-col">Min</th>
+                          <th class="num-col">Max</th>
+                          <th class="act-col"></th>
+                        </tr>
+                      </thead>
+                      <tbody id="portadd-tbody"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ── Tab: LCL Charges ── -->
+            <div class="tab-pane" id="tab-lcl" style="display:none;">
+              <div class="card shadow-sm border-top-0 rounded-top-0">
+                <div class="card-body p-3">
+                  <div class="d-flex justify-content-end mb-3">
+                    <button class="btn btn-wine btn-sm" id="btn-add-lcl-port"><i class="fas fa-plus me-1"></i>New Port</button>
+                  </div>
+                  <div id="lcl-tree"></div>
+                </div>
+              </div>
+            </div>
+
+          </div><!-- /detail-panel -->
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ═══════════ MODALS ═══════════════════════════════════════════════════════ -->
+
+<!-- Quote Header Modal -->
+<div class="modal fade" id="modal-quote" tabindex="-1">
+  <div class="modal-dialog modal-lg"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title" id="modal-quote-title">New Quote</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+      <div class="row g-3">
+        <div class="col-sm-4"><label class="form-label fw-600">Quote #<span class="text-danger">*</span></label><input type="number" id="q-num" class="form-control form-control-sm" min="1" /></div>
+        <div class="col-sm-8"><label class="form-label fw-600">Forwarder<span class="text-danger">*</span></label><select id="q-fwd" class="form-select form-select-sm" onchange="onModalFwdChange(this)"><option value="">— select —</option></select></div>
+        <div class="col-12" id="q-based-on-wrap" style="display:none;"><label class="form-label fw-600">Based on Quote</label><select id="q-based-on" class="form-select form-select-sm" onchange="onBasedOnChange(this)"><option value="">— start fresh —</option></select></div>
+        <div class="col-sm-6"><label class="form-label fw-600">Port of Loading</label><select id="q-port" class="form-select form-select-sm"><option value="">— select —</option></select></div>
+        <div class="col-sm-6"><label class="form-label fw-600">Route</label><select id="q-route" class="form-select form-select-sm"><option value="">— select —</option></select></div>
+        <div class="col-sm-4"><label class="form-label fw-600">Transit Days</label><input type="number" id="q-transit" class="form-control form-control-sm" min="0" /></div>
+        <div class="col-sm-4"><label class="form-label fw-600">Start Date</label><input type="date" id="q-start" class="form-control form-control-sm" /></div>
+        <div class="col-sm-4"><label class="form-label fw-600">End Date</label><input type="date" id="q-end" class="form-control form-control-sm" /></div>
+      </div>
+      <div id="quote-form-error" class="alert alert-danger mt-3 d-none"></div>
+    </div>
+    <div class="modal-footer"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-wine btn-sm" id="btn-save-quote">Save</button></div>
+  </div></div>
+</div>
+
+<!-- Inland Region Modal -->
+<div class="modal fade" id="modal-region" tabindex="-1">
+  <div class="modal-dialog modal-sm"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title">Add Inland Region</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+      <label class="form-label fw-600">Region<span class="text-danger">*</span></label>
+      <select id="reg-code" class="form-select form-select-sm"><option value="">— select region —</option></select>
+      <div id="region-form-error" class="alert alert-danger mt-2 d-none"></div>
+    </div>
+    <div class="modal-footer"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-wine btn-sm" id="btn-save-region">Add</button></div>
+  </div></div>
+</div>
+
+<!-- Region Type Modal -->
+<div class="modal fade" id="modal-rtype" tabindex="-1">
+  <div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title" id="modal-rtype-title">Region Charge Type</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body row g-3">
+      <div class="col-12"><label class="form-label fw-600">Charge Type<span class="text-danger">*</span></label><select id="rt-type" class="form-select form-select-sm"><option value="">— select —</option></select></div>
+      <div class="col-sm-4"><label class="form-label fw-600">Amount Min</label><input type="number" id="rt-min" class="form-control form-control-sm" step="0.01" /></div>
+      <div class="col-sm-4"><label class="form-label fw-600">Amount Max</label><input type="number" id="rt-max" class="form-control form-control-sm" step="0.01" /></div>
+      <div class="col-sm-4"><label class="form-label fw-600">Currency</label><select id="rt-currency" class="form-select form-select-sm"><option value="">— select —</option></select></div>
+      <div class="col-12"><div id="rtype-form-error" class="alert alert-danger d-none"></div></div>
+    </div>
+    <div class="modal-footer"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-wine btn-sm" id="btn-save-rtype">Save</button></div>
+  </div></div>
+</div>
+
+<!-- Ocean Port Modal -->
+<div class="modal fade" id="modal-ocean-port" tabindex="-1">
+  <div class="modal-dialog modal-sm"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title" id="modal-ocean-port-title">New Port</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+      <label class="form-label fw-600">Port of Loading<span class="text-danger">*</span></label>
+      <select id="op-port" class="form-select form-select-sm"><option value="">— select —</option></select>
+      <label class="form-label fw-600 mt-2">Remarks</label>
+      <input type="text" id="op-remarks" class="form-control form-control-sm" maxlength="200" />
+      <div id="ocean-port-error" class="alert alert-danger mt-2 d-none"></div>
+    </div>
+    <div class="modal-footer"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-wine btn-sm" id="btn-save-ocean-port">Save</button></div>
+  </div></div>
+</div>
+
+<!-- Ocean Shipping Line Modal -->
+<div class="modal fade" id="modal-ocean-sline" tabindex="-1">
+  <div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title" id="modal-ocean-sline-title">New Shipping Line</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body row g-3">
+      <div class="col-12" id="osl-port-row"><label class="form-label fw-600">Port<span class="text-danger">*</span></label><select id="osl-port" class="form-select form-select-sm"><option value="">— select —</option></select></div>
+      <div class="col-12"><label class="form-label fw-600">Shipping Line<span class="text-danger">*</span></label><select id="osl-line" class="form-select form-select-sm"><option value="">— select —</option></select></div>
+      <div class="col-sm-8"><label class="form-label fw-600">Route</label><select id="osl-route" class="form-select form-select-sm"><option value="">— select —</option></select></div>
+      <div class="col-sm-4"><label class="form-label fw-600">Transit Days</label><input type="number" id="osl-days" class="form-control form-control-sm" min="0" /></div>
+      <div class="col-12"><div id="ocean-sline-error" class="alert alert-danger d-none"></div></div>
+    </div>
+    <div class="modal-footer"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-wine btn-sm" id="btn-save-ocean-sline">Save</button></div>
+  </div></div>
+</div>
+
+<!-- LCL Port Modal -->
+<div class="modal fade" id="modal-lcl-port" tabindex="-1">
+  <div class="modal-dialog modal-sm"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title" id="modal-lcl-port-title">New Port</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+      <label class="form-label fw-600">Port<span class="text-danger">*</span></label>
+      <select id="lp-port" class="form-select form-select-sm"><option value="">— select —</option></select>
+      <label class="form-label fw-600 mt-2">Remarks</label>
+      <input type="text" id="lp-remarks" class="form-control form-control-sm" maxlength="200" />
+      <div id="lcl-port-error" class="alert alert-danger mt-2 d-none"></div>
+    </div>
+    <div class="modal-footer"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-wine btn-sm" id="btn-save-lcl-port">Save</button></div>
+  </div></div>
+</div>
+
+<!-- LCL Shipping (Port Type) Modal -->
+<div class="modal fade" id="modal-lcl-shipping" tabindex="-1">
+  <div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title" id="modal-lcl-shipping-title">New Shipping</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body row g-3">
+      <div class="col-12"><label class="form-label fw-600">Charge Type<span class="text-danger">*</span></label><select id="ls-type" class="form-select form-select-sm"><option value="">— select —</option></select></div>
+      <div class="col-sm-4"><label class="form-label fw-600">Amount Min</label><input type="number" id="ls-min" class="form-control form-control-sm" step="0.01" /></div>
+      <div class="col-sm-4"><label class="form-label fw-600">Amount Max</label><input type="number" id="ls-max" class="form-control form-control-sm" step="0.01" /></div>
+      <div class="col-sm-4"><label class="form-label fw-600">Currency</label><select id="ls-currency" class="form-select form-select-sm"><option value="">— select —</option></select></div>
+      <div class="col-12"><div id="lcl-shipping-error" class="alert alert-danger d-none"></div></div>
+    </div>
+    <div class="modal-footer"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-wine btn-sm" id="btn-save-lcl-shipping">Save</button></div>
+  </div></div>
+</div>
+
+<!-- Confirm Delete -->
+<div class="modal fade" id="modal-confirm" tabindex="-1">
+  <div class="modal-dialog modal-sm"><div class="modal-content">
+    <div class="modal-header border-0"><h5 class="modal-title text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Delete</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body"><p id="confirm-msg" class="mb-0">Are you sure?</p></div>
+    <div class="modal-footer border-0"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-danger btn-sm" id="btn-confirm-delete">Delete</button></div>
+  </div></div>
+</div>
+
+<!-- Toast notification -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index:9999;">
+  <div id="toast" class="toast align-items-center text-white border-0" role="alert">
+    <div class="d-flex">
+      <div class="toast-body" id="toast-msg"></div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SCRIPTS ═══════════════════════════════════════════════════════ -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+<script src="../../js/auth.js"></script>
+<script src="../../js/api.js"></script>
+<script src="../../js/sidebar.js"></script>
+<script>
+Auth.requireAuth();
+Sidebar.init('FF_QUOTES');
+
+// ── Role ───────────────────────────────────────────────────────────────────
+const _isSuperAdmin = Auth.getCurrentUser()?.RoleName === 'SuperAdmin';
+
+// ── State ──────────────────────────────────────────────────────────────────
+let _page = 1, _pageSize = 20, _total = 0;
+let _activeQuoteId = null;
+let _activeQuote   = null;
+let _activeTab     = null;   // null = sin filtro de tab; se activa al hacer click en un tab
+let _pendingDeleteFn = null;
+let _newQuoteSourceOceanPorts = null;
+
+// catalog caches
+let _forwarders = [], _ports = [], _routes = [], _currencies = [];
+let _oceanChargeTypes = [], _containerTypes = [], _inlandChargeTypes = [];
+let _loadTypes = [], _chargeActions = [], _chargeOvers = [], _chargePers = [];
+let _priceTypes = [], _amountTypes = [], _lclChargeTypes = [], _shippingLines = [];
+let _regions = [];
+
+// ── Tom Select (searchable dropdowns) ─────────────────────────────────────
+const _ts = {};
+function _tsReinit(id) {
+  if (_ts[id]) { try { _ts[id].destroy(); } catch(e) {} }
+  const el = document.getElementById(id);
+  if (!el) return;
+  _ts[id] = new TomSelect(el, { allowEmptyOption: true, maxOptions: null, dropdownParent: 'body' });
+}
+function _tsSet(id, val) {
+  if (_ts[id]) _ts[id].setValue(val || '', true);
+  else { const el = document.getElementById(id); if (el) el.value = val || ''; }
+}
+
+// Bootstrap modal references
+const mQuote      = new bootstrap.Modal('#modal-quote');
+const mRegion     = new bootstrap.Modal('#modal-region');
+const mRtype      = new bootstrap.Modal('#modal-rtype');
+const mOceanPort  = new bootstrap.Modal('#modal-ocean-port');
+const mOceanSLine = new bootstrap.Modal('#modal-ocean-sline');
+const mLclPort    = new bootstrap.Modal('#modal-lcl-port');
+const mLclShip    = new bootstrap.Modal('#modal-lcl-shipping');
+const mConfirm    = new bootstrap.Modal('#modal-confirm');
+
+// ── Init ───────────────────────────────────────────────────────────────────
+(async () => {
+  await _loadCatalogs();
+  _populateFilterForwarder();
+  _wireEvents();
+  _loadList();
+})();
+
+// ── Catalog Loading ────────────────────────────────────────────────────────
+async function _loadCatalogs() {
+  const [fwds, pts, rts, curs, oct, ct, ict, lt, ca, co, cp, prt, amt, lct, sls, regs] = await Promise.all([
+    API.catalogs.freightForwarders.getAll().catch(() => ({ Data: [] })),
+    API.catalogs.portsOfLoading.getAll().catch(()    => ({ Data: [] })),
+    API.catalogs.routes.getAll().catch(()            => ({ Data: [] })),
+    API.catalogs.currencies.getAll().catch(()        => ({ Data: [] })),
+    API.catalogs.oceanFreight.getAll().catch(()      => ({ Data: [] })),
+    API.catalogs.containerTypes.getAll().catch(()    => ({ Data: [] })),
+    API.catalogs.inlandFreight.getAll().catch(()     => ({ Data: [] })),
+    API.catalogs.loadTypes.getAll().catch(()         => ({ Data: [] })),
+    API.catalogs.chargeActions.getAll().catch(()     => ({ Data: [] })),
+    API.catalogs.chargeOvers.getAll().catch(()       => ({ Data: [] })),
+    API.catalogs.chargePers.getAll().catch(()        => ({ Data: [] })),
+    API.catalogs.priceTypes.getAll().catch(()        => ({ Data: [] })),
+    API.catalogs.amountTypes.getAll().catch(()       => ({ Data: [] })),
+    API.catalogs.lclCharge.getAll().catch(()         => ({ Data: [] })),
+    API.catalogs.shippingLines.getAll().catch(()     => ({ Data: [] })),
+    API.catalogs.regions.getAll().catch(()           => ({ Data: [] })),
+  ]);
+  _forwarders       = (fwds.Data  || []).filter(x => x.IsActive !== false);
+  _ports            = (pts.Data   || []).filter(x => x.IsActive !== false);
+  _routes           = (rts.Data   || []).filter(x => x.IsActive !== false);
+  _currencies       = (curs.Data  || []).filter(x => x.IsActive !== false);
+  _oceanChargeTypes = (oct.Data   || []).filter(x => x.IsActive !== false);
+  _containerTypes   = (ct.Data    || []).filter(x => x.IsActive !== false);
+  _inlandChargeTypes= (ict.Data   || []).filter(x => x.IsActive !== false);
+  _regions          = (regs.Data  || []).filter(x => x.IsActive !== false);
+  _loadTypes        = (lt.Data    || []).filter(x => x.IsActive !== false);
+  _chargeActions    = (ca.Data    || []).filter(x => x.IsActive !== false);
+  _chargeOvers      = (co.Data    || []).filter(x => x.IsActive !== false);
+  _chargePers       = (cp.Data    || []).filter(x => x.IsActive !== false);
+  _priceTypes       = (prt.Data   || []).filter(x => x.IsActive !== false);
+  _amountTypes      = (amt.Data   || []).filter(x => x.IsActive !== false);
+  _lclChargeTypes   = (lct.Data   || []).filter(x => x.IsActive !== false);
+  _shippingLines    = (sls.Data   || []).filter(x => x.IsActive !== false);
+}
+
+function _populateFilterForwarder() {
+  const sel = document.getElementById('filter-forwarder');
+  _forwarders.forEach(f => {
+    const o = document.createElement('option');
+    o.value = f.FfCode; o.textContent = f.FfName || f.FfCode;
+    sel.appendChild(o);
+  });
+  _tsReinit('filter-forwarder');
+}
+
+function _fillSelect(selId, items, codeField, nameField, includeBlank = true) {
+  const sel = document.getElementById(selId);
+  if (!sel) return;
+  sel.innerHTML = includeBlank ? '<option value="">— select —</option>' : '';
+  items.forEach(i => {
+    const o = document.createElement('option');
+    o.value = i[codeField];
+    o.textContent = i[nameField] ? `${i[codeField]} — ${i[nameField]}` : i[codeField];
+    sel.appendChild(o);
+  });
+}
+
+// ── Option builders for inline grid ───────────────────────────────────────
+function _esc(s) { return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function _buildOpts(items, codeField, selected = '') {
+  return `<option value=""></option>` +
+    items.map(i => `<option value="${_esc(i[codeField])}"${i[codeField]===selected?' selected':''}>${_esc(i[codeField])}</option>`).join('');
+}
+function _buildOptsOpt(items, codeField, selected = '') {  // with blank "–" (optional field)
+  return `<option value="">–</option>` +
+    items.map(i => `<option value="${_esc(i[codeField])}"${i[codeField]===selected?' selected':''}>${_esc(i[codeField])}</option>`).join('');
+}
+
+function _oceanCtDesc(code)     { return _oceanChargeTypes.find(x=>x.OfctCode===code)?.OfctDescription||''; }
+function _amountTypeDesc(code)  { return _amountTypes.find(x=>x.AtCode===code)?.AtDescription||''; }
+function _regionName(code)      { const r = _regions.find(x=>x.RegCode===code); return r ? `${r.RegName}${r.RegCountry ? ' ('+r.RegCountry+')' : ''}` : code; }
+
+// Builds options showing "CODE — Description" for display, but collapses to code after selection
+function _buildOptsCodeDesc(items, codeField, descField, selected) {
+  return `<option value="">— select —</option>` +
+    items.map(item => {
+      const code = item[codeField] || '';
+      const desc = item[descField] || '';
+      const isSel = code === selected;
+      return `<option value="${code}" ${isSel ? 'selected' : ''}>${_esc(isSel ? code : `${code} \u2014 ${desc}`)}</option>`;
+    }).join('');
+}
+
+// Called on mousedown (before dropdown opens) — expands all options to CODE — Description
+function expandSelectDesc(sel, items, codeField, descField) {
+  Array.from(sel.options).forEach(opt => {
+    if (!opt.value) return;
+    const item = items.find(x => x[codeField] === opt.value);
+    if (item) opt.text = `${item[codeField]} \u2014 ${item[descField] || ''}`;
+  });
+}
+
+// Called on change — collapses all options back to code only
+function collapseSelectToCode(sel) {
+  Array.from(sel.options).forEach(opt => {
+    if (opt.value) opt.text = opt.value;
+  });
+}
+function _containerDesc(code) { return _containerTypes.find(x=>x.CtCode===code)?.CtDescription||''; }
+function _inlandCtDesc(code)  { return _inlandChargeTypes.find(x=>x.IfctCode===code)?.IfctDescription||''; }
+function _loadTypeDesc(code)  { return _loadTypes.find(x=>x.LtCode===code)?.LtDescription||''; }
+
+// ── List ───────────────────────────────────────────────────────────────────
+function _renderListEmpty() {
+  document.getElementById('quote-list').innerHTML =
+    '<div class="text-center text-muted py-4" style="font-size:.82rem;"><i class="fas fa-arrow-up fa-sm mb-1 d-block opacity-50"></i>Select a forwarder to view quotes</div>';
+  document.getElementById('list-info').textContent = '–';
+  document.getElementById('btn-prev').disabled = true;
+  document.getElementById('btn-next').disabled = true;
+}
+
+async function _loadList() {
+  const fwd    = document.getElementById('filter-forwarder').value || null;
+  const search = document.getElementById('filter-search').value;
+  const res = await API.appliedQuotes.getQuotes({ forwarder: fwd, search, tab: _activeTab, page: _page, pageSize: _pageSize });
+  _total = res.TotalCount || 0;
+  _renderList(res.Data || []);
+  const start = (_page - 1) * _pageSize + 1;
+  const end   = Math.min(_page * _pageSize, _total);
+  document.getElementById('list-info').textContent = _total ? `${start}-${end} of ${_total}` : '0 quotes';
+  document.getElementById('btn-prev').disabled = _page <= 1;
+  document.getElementById('btn-next').disabled = end >= _total;
+}
+
+function _renderList(items) {
+  const el = document.getElementById('quote-list');
+  if (!items.length) {
+    el.innerHTML = '<div class="text-center text-muted py-4" style="font-size:.82rem;"><i class="fas fa-inbox d-block mb-2 opacity-25"></i>No quotes found</div>';
+    return;
+  }
+  el.innerHTML = items.map(q => `
+    <div class="quote-item ${q.FqhId === _activeQuoteId ? 'active' : ''}" data-id="${q.FqhId}">
+      <div class="d-flex justify-content-between align-items-center">
+        <span class="quote-num">#${q.FqhQuoteNumber}</span>
+        <span class="badge bg-secondary" style="font-size:.68rem;">${q.FqhForwarder}</span>
+      </div>
+      <div class="text-muted mt-1" style="font-size:.75rem;">
+        ${q.FqhPort || '—'} &rarr; ${q.FqhRoute || '—'}
+        ${q.FqhStartDate ? ' &bull; ' + _fmt(q.FqhStartDate) : ''}
+      </div>
+    </div>`).join('');
+  el.querySelectorAll('.quote-item').forEach(el => {
+    el.addEventListener('click', () => _selectQuote(+el.dataset.id));
+  });
+}
+
+// ── Select & Load Quote Detail ─────────────────────────────────────────────
+async function _selectQuote(id) {
+  _activeQuoteId = id;
+  document.querySelectorAll('.quote-item').forEach(el => el.classList.toggle('active', +el.dataset.id === id));
+  try {
+    const res = await API.appliedQuotes.getQuote(id);
+    _activeQuote = res.Data;
+    _renderDetail(_activeQuote);
+  } catch(e) {
+    document.getElementById('quote-header-card').style.display = 'none';
+    document.getElementById('detail-placeholder').style.display = 'none';
+    document.getElementById('detail-panel').style.display = '';
+    document.getElementById('detail-panel').innerHTML =
+      `<div class="alert alert-danger m-3"><strong>Error cargando quote:</strong> ${e.message}</div>`;
+  }
+}
+
+function _renderDetail(q) {
+  document.getElementById('quote-header-card').style.display = '';
+  document.getElementById('detail-placeholder').style.display = 'none';
+  document.getElementById('detail-panel').style.display = '';
+  document.getElementById('dh-num').textContent     = '#' + q.FqhQuoteNumber;
+  document.getElementById('dh-fwd').textContent     = q.FqhForwarder;
+  _renderFwdInfoCard(q.FqhForwarder);
+  document.getElementById('dh-port').textContent    = q.FqhPort    || '—';
+  document.getElementById('dh-route').textContent   = q.FqhRoute   || '—';
+  document.getElementById('dh-transit').textContent = q.FqhTransitDays != null ? q.FqhTransitDays + ' days' : '—';
+  document.getElementById('dh-dates').textContent   = (q.FqhStartDate ? _fmt(q.FqhStartDate) : '?') + ' → ' + (q.FqhEndDate ? _fmt(q.FqhEndDate) : '?');
+  _renderOceanTab(q.OceanPorts      || []);
+  _renderInlandTab(q.InlandRegions  || []);
+  _renderPortAddTab(q.InlandPortAdds || []);
+  _renderLclTab(q.LclPorts          || []);
+}
+
+// ── Tab switching ──────────────────────────────────────────────────────────
+function _wireTabEvents() {
+  const _tabMap = { ocean: 'ocean', inland: 'inland', 'port-add': 'portadd', lcl: 'lcl' };
+  document.querySelectorAll('#detail-tabs .nav-link').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#detail-tabs .nav-link').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('.tab-pane').forEach(p => p.style.display = 'none');
+      document.getElementById('tab-' + btn.dataset.tab).style.display = '';
+      _activeTab = _tabMap[btn.dataset.tab] || 'ocean';
+      _page = 1;
+      _loadList();
+    });
+  });
+}
+
+// ── OCEAN TAB — Header (Port + SLine) → Detail (Charges grid) ──────────────
+let _oceanPortEditId  = null;
+let _oceanSLinePortId = null;
+let _oceanSLineEditId = null;
+let _selOceanSLineId  = null;   // slineId de la cabecera activa
+
+function _currencyDesc(code) { return _currencies.find(x => x.CurCode === code)?.CurDescription || ''; }
+
+// Renderiza la lista de cabeceras y el grid de detalle
+function _renderOceanTab(ports) {
+  _renderOceanHeaders(ports);
+  _renderOceanGrid(ports);
+}
+
+// Lista de cabeceras: Port — Shipping Line (clickeables)
+function _renderOceanHeaders(ports) {
+  const el = document.getElementById('ocean-headers-list');
+  const allSLines = [];
+  for (const p of (ports || [])) {
+    for (const sl of (p.ShippingLines || [])) {
+      allSLines.push({ port: p, sl });
+    }
+  }
+  if (!allSLines.length) {
+    el.innerHTML = '<div class="text-muted mb-3" style="font-size:.82rem;">Sin cabeceras — usa New Port y New Shipping Line.</div>';
+    _selOceanSLineId = null;
+    return;
+  }
+  // Auto-seleccionar el primero si no hay selección válida
+  if (!allSLines.find(x => x.sl.FqopsId === _selOceanSLineId)) {
+    _selOceanSLineId = allSLines[0].sl.FqopsId;
+  }
+  el.innerHTML = `<div class="ocean-header-list">` +
+    allSLines.map(({ port: p, sl }) => {
+      const active = sl.FqopsId === _selOceanSLineId ? 'active' : '';
+      const portLabel = _ports.find(x => x.PlCode === p.FqopPort)?.PlName || p.FqopPort;
+      const slLabel   = _shippingLines.find(x => x.SlCode === sl.FqopsShippingLine)?.SlName || sl.FqopsShippingLine;
+      return `<div class="ocean-header-item ${active}" onclick="selectOceanSLine(${sl.FqopsId})">
+        <span class="oc-hdr-label"><strong>${_esc(p.FqopPort)}</strong> <span class="text-muted">—</span> ${_esc(sl.FqopsShippingLine)}
+          <small class="text-muted ms-1">${_esc(portLabel)} / ${_esc(slLabel)}</small>
+        </span>
+        ${_isSuperAdmin ? `<button class="btn btn-sm btn-outline-secondary py-0 px-1" onclick="event.stopPropagation();openEditOceanSLine(${sl.FqopsId})" title="Editar"><i class="fas fa-edit" style="font-size:.7rem;"></i></button>` : ''}
+        ${_isSuperAdmin ? `<button class="btn btn-sm btn-outline-danger py-0 px-1" onclick="event.stopPropagation();confirmDelete('¿Eliminar ${_esc(p.FqopPort)} — ${_esc(sl.FqopsShippingLine)} y sus cargos?',()=>deleteOceanSLine(${sl.FqopsId}))" title="Eliminar"><i class="fas fa-trash" style="font-size:.7rem;"></i></button>` : ''}
+      </div>`;
+    }).join('') + `</div>`;
+}
+
+// Activa una cabecera y recarga el grid
+function selectOceanSLine(slineId) {
+  _selOceanSLineId = slineId;
+  _renderOceanHeaders(_activeQuote?.OceanPorts || []);
+  _renderOceanGrid(_activeQuote?.OceanPorts || []);
+}
+
+// Grid de charges para el slineId activo
+function _renderOceanGrid(ports) {
+  const el = document.getElementById('ocean-tree');
+  if (!_selOceanSLineId) { el.innerHTML = ''; return; }
+  let activeSLine = null, activePort = null;
+  for (const p of (ports || [])) {
+    const sl = (p.ShippingLines || []).find(s => s.FqopsId === _selOceanSLineId);
+    if (sl) { activeSLine = sl; activePort = p; break; }
+  }
+  const charges = activeSLine?.Charges || [];
+  const rows = charges.map(c =>
+    _oceanChargeRowHtml(c.FqocId, _selOceanSLineId,
+      c.FqocChargeType||'', c.FqocContainerType||'', c.FqocAmount, c.FqocCurrency||'')
+  ).join('');
+  const title = activePort && activeSLine
+    ? `${_esc(activePort.FqopPort)} — ${_esc(activeSLine.FqopsShippingLine)}`
+    : '';
+  el.innerHTML = `
+    <div class="ocean-detail-title">Charges: ${title}</div>
+    <div class="table-responsive">
+    <table class="table table-sm table-bordered charges-grid" id="oc-flat-tbl">
+      <thead><tr>
+        <th>Charge Type</th><th class="desc-cell">Description</th>
+        <th>Cont. Type</th><th class="desc-cell">Container Spec</th>
+        <th class="num-col">Amount</th>
+        <th class="cur-col">Currency</th><th class="desc-cell">Currency Desc</th>
+        <th class="act-col"></th>
+      </tr></thead>
+      <tbody id="oc-flat-tbody">${rows}</tbody>
+    </table>
+  </div>`;
+  const tbody = document.getElementById('oc-flat-tbody');
+  tbody.addEventListener('keydown', _onOceanTbodyKeydown);
+  if (_isSuperAdmin) _appendEmptyOceanRow(tbody);
+}
+
+function _oceanChargeRowHtml(id, slineId, ct, cont, amount, currency) {
+  return `<tr data-id="${id||''}" data-sline="${slineId||''}">
+    <td><select class="form-select oc-ct-sel" onmousedown="expandSelectDesc(this,_oceanChargeTypes,'OfctCode','OfctDescription')" onchange="onOceanCtChange(this)">${_buildOptsCodeDesc(_oceanChargeTypes,'OfctCode','OfctDescription',ct)}</select></td>
+    <td class="desc-cell oc-ct-desc">${_esc(_oceanCtDesc(ct))}</td>
+    <td><select class="form-select oc-cont-sel" onmousedown="expandSelectDesc(this,_containerTypes,'CtCode','CtDescription')" onchange="onOceanContChange(this)">${_buildOptsCodeDesc(_containerTypes,'CtCode','CtDescription',cont)}</select></td>
+    <td class="desc-cell oc-cont-desc">${_esc(_containerDesc(cont))}</td>
+    <td class="num-col"><input type="number" class="form-control oc-amount" step="0.01" value="${amount!=null?amount:''}" oninput="this.closest('tr').classList.add('row-dirty')" /></td>
+    <td class="cur-col"><select class="form-select oc-currency" onchange="onOceanCurChange(this)">${_buildOptsOpt(_currencies,'CurCode',currency)}</select></td>
+    <td class="desc-cell oc-cur-desc">${_esc(_currencyDesc(currency))}</td>
+    <td class="act-col">
+      ${_isSuperAdmin ? `<button class="btn-row-save" onclick="saveOceanChargeRow(this)" title="Save"><i class="fas fa-save"></i></button>` : ''}
+      ${_isSuperAdmin ? `<button class="btn-row-del"  onclick="deleteOceanChargeRow(this)" title="Delete"><i class="fas fa-trash"></i></button>` : ''}
+    </td>
+  </tr>`;
+}
+
+
+function onOceanCtChange(sel) {
+  collapseSelectToCode(sel);
+  sel.closest('tr').querySelector('.oc-ct-desc').textContent = _oceanCtDesc(sel.value);
+  sel.closest('tr').classList.add('row-dirty');
+}
+function onOceanContChange(sel) {
+  collapseSelectToCode(sel);
+  sel.closest('tr').querySelector('.oc-cont-desc').textContent = _containerDesc(sel.value);
+  sel.closest('tr').classList.add('row-dirty');
+}
+function onOceanCurChange(sel) {
+  sel.closest('tr').querySelector('.oc-cur-desc').textContent = _currencyDesc(sel.value);
+  sel.closest('tr').classList.add('row-dirty');
+}
+
+function _appendEmptyOceanRow(tbody) {
+  const tr = document.createElement('tr');
+  tr.dataset.id    = '';
+  tr.dataset.sline = _selOceanSLineId || '';
+  tr.innerHTML = `
+    <td><select class="form-select oc-ct-sel" onmousedown="expandSelectDesc(this,_oceanChargeTypes,'OfctCode','OfctDescription')" onchange="onOceanCtChange(this)">${_buildOptsCodeDesc(_oceanChargeTypes,'OfctCode','OfctDescription','')}</select></td>
+    <td class="desc-cell oc-ct-desc"></td>
+    <td><select class="form-select oc-cont-sel" onmousedown="expandSelectDesc(this,_containerTypes,'CtCode','CtDescription')" onchange="onOceanContChange(this)">${_buildOptsCodeDesc(_containerTypes,'CtCode','CtDescription','')}</select></td>
+    <td class="desc-cell oc-cont-desc"></td>
+    <td class="num-col"><input type="number" class="form-control oc-amount" step="0.01" value="" oninput="this.closest('tr').classList.add('row-dirty')" /></td>
+    <td class="cur-col"><select class="form-select oc-currency" onchange="onOceanCurChange(this)">${_buildOptsOpt(_currencies,'CurCode','')}</select></td>
+    <td class="desc-cell oc-cur-desc"></td>
+    <td class="act-col">
+      ${_isSuperAdmin ? `<button class="btn-row-save" onclick="saveOceanChargeRow(this)" title="Save"><i class="fas fa-save"></i></button>` : ''}
+      ${_isSuperAdmin ? `<button class="btn-row-del"  onclick="deleteOceanChargeRow(this)" title="Delete"><i class="fas fa-trash"></i></button>` : ''}
+    </td>`;
+  tbody.appendChild(tr);
+}
+
+function _onOceanTbodyKeydown(e) {
+  if (e.key !== 'Enter') return;
+  const el  = e.target;
+  const row = el.closest('tr');
+  if (!row) return;
+  // Solo disparar desde la última celda editable (oc-currency select)
+  if (!el.classList.contains('oc-currency')) return;
+  e.preventDefault();
+  addOceanChargeRow();
+}
+
+function addOceanChargeRow() {
+  const tbody = document.getElementById('oc-flat-tbody');
+  if (!tbody) return;
+  _appendEmptyOceanRow(tbody);
+  tbody.lastElementChild.querySelector('.oc-ct-sel').focus();
+}
+
+async function saveOceanChargeRow(btn) {
+  const row     = btn.closest('tr');
+  const id      = row.dataset.id;
+  const ct      = row.querySelector('.oc-ct-sel').value;
+  if (!ct) { showToast('Seleccione un Charge Type.', 'danger'); return; }
+  const dto = {
+    ChargeType:    ct,
+    ContainerType: row.querySelector('.oc-cont-sel').value || null,
+    Amount:        row.querySelector('.oc-amount').value ? +row.querySelector('.oc-amount').value : null,
+    Currency:      row.querySelector('.oc-currency').value || null
+  };
+  try {
+    if (id) {
+      await API.appliedQuotes.updateOceanCharge(+id, dto);
+    } else {
+      const slineId = row.dataset.sline || _selOceanSLineId;
+      if (!slineId) { showToast('Selecciona una cabecera (Port / Shipping Line) primero.', 'danger'); return; }
+      const res   = await API.appliedQuotes.addOceanCharge(+slineId, dto);
+      const saved = res?.Data || res;
+      if (saved?.FqocId) { row.dataset.id = saved.FqocId; row.dataset.sline = slineId; }
+    }
+    row.classList.remove('row-dirty');
+    _showRowOk(btn);
+  } catch(e) { showToast(e?.message || 'Error saving.', 'danger'); }
+}
+
+async function deleteOceanChargeRow(btn) {
+  const row = btn.closest('tr');
+  const id  = row.dataset.id;
+  if (id) {
+    if (!confirm('¿Eliminar este cargo?')) return;
+    try { await API.appliedQuotes.deleteOceanCharge(+id); } catch(e) { showToast(e?.message||'Error', 'danger'); return; }
+  }
+  row.remove();
+}
+
+// ── Save All ocean charges (todas las filas visibles del grid activo) ────────
+async function saveAllOceanCharges() {
+  const tbody = document.getElementById('oc-flat-tbody');
+  if (!tbody) { showToast('Selecciona un Port / Shipping Line primero.', 'danger'); return; }
+  const rows = Array.from(tbody.querySelectorAll('tr'));
+  if (!rows.length) { showToast('No hay cargos para guardar.', 'danger'); return; }
+  const btn = document.getElementById('btn-save-all-ocean');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Saving…';
+  let saved = 0, skipped = 0;
+  try {
+    for (const row of rows) {
+      const ct = row.querySelector('.oc-ct-sel')?.value;
+      if (!ct) { skipped++; continue; }
+      const dto = {
+        ChargeType:    ct,
+        ContainerType: row.querySelector('.oc-cont-sel')?.value  || null,
+        Amount:        row.querySelector('.oc-amount')?.value    ? +row.querySelector('.oc-amount').value : null,
+        Currency:      row.querySelector('.oc-currency')?.value  || null
+      };
+      const id     = row.dataset.id;
+      const slineId = row.dataset.sline || _selOceanSLineId;
+      if (id) {
+        await API.appliedQuotes.updateOceanCharge(+id, dto);
+      } else {
+        if (!slineId) { skipped++; continue; }
+        const res = await API.appliedQuotes.addOceanCharge(+slineId, dto);
+        const saved_ = res?.Data || res;
+        if (saved_?.FqocId) { row.dataset.id = saved_.FqocId; row.dataset.sline = slineId; }
+      }
+      row.classList.remove('row-dirty');
+      saved++;
+    }
+    const msg = skipped ? `Guardado. ${skipped} fila(s) sin Charge Type omitidas.` : `${saved} cargo(s) guardado(s) correctamente.`;
+    showToast(msg, skipped ? 'danger' : 'success');
+  } catch(e) {
+    showToast('Error guardando: ' + (e?.message || 'Error desconocido.'), 'danger');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-save me-1"></i>Save All';
+  }
+}
+
+// ── Save All Inland detail rows ───────────────────────────────────────────────
+async function saveAllInland() {
+  const allRows = Array.from(document.querySelectorAll('[id^="det-tbody-"] tr'));
+  if (!allRows.length) { showToast('No hay filas de detalle para guardar.', 'danger'); return; }
+
+  const btn = document.getElementById('btn-save-all-inland');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Saving…';
+
+  let saved = 0, skipped = 0;
+  try {
+    for (const row of allRows) {
+      const id     = row.dataset.id;
+      const typeId = row.dataset.typeId || row.closest('tbody')?.id?.replace('det-tbody-', '');
+      if (!typeId) { skipped++; continue; }
+
+      const dto = {
+        From:      row.querySelector('.det-from')?.value      ? +row.querySelector('.det-from').value      : null,
+        To:        row.querySelector('.det-to')?.value        ? +row.querySelector('.det-to').value        : null,
+        Price:     row.querySelector('.det-price')?.value     ? +row.querySelector('.det-price').value     : null,
+        PriceType: row.querySelector('.det-pricetype')?.value || null,
+        AmountMin: row.querySelector('.det-min')?.value       ? +row.querySelector('.det-min').value       : null,
+        AmountMax: row.querySelector('.det-max')?.value       ? +row.querySelector('.det-max').value       : null
+      };
+
+      if (id) {
+        await API.appliedQuotes.updateInlandDetail(+id, dto);
+      } else {
+        const res   = await API.appliedQuotes.addInlandDetail(+typeId, dto);
+        const saved_ = res?.Data || res;
+        if (saved_?.FqertdId) row.dataset.id = saved_.FqertdId;
+      }
+      row.classList.remove('row-dirty');
+      saved++;
+    }
+    const msg = skipped
+      ? `Guardado. ${skipped} fila(s) omitidas por falta de datos.`
+      : `${saved} fila(s) guardada(s) correctamente.`;
+    showToast(msg, skipped ? 'warning' : 'success');
+    await _refreshDetail();
+  } catch(e) {
+    showToast('Error guardando: ' + (e?.message || 'Error desconocido.'), 'danger');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-save me-1"></i>Save All';
+  }
+}
+
+// ── Ocean Port modal ────────────────────────────────────────────────────────
+function openNewOceanPort() {
+  _oceanPortEditId = null;
+  document.getElementById('modal-ocean-port-title').textContent = 'New Port';
+  _fillSelect('op-port', _ports, 'PlCode', 'PlName');
+  document.getElementById('op-port').value    = '';
+  document.getElementById('op-remarks').value = '';
+  _hideErr('ocean-port-error');
+  mOceanPort.show();
+}
+
+function openEditOceanPort(portId) {
+  const p = (_activeQuote?.OceanPorts || []).find(x => x.FqopId === portId);
+  if (!p) return;
+  _oceanPortEditId = portId;
+  document.getElementById('modal-ocean-port-title').textContent = 'Edit Port';
+  _fillSelect('op-port', _ports, 'PlCode', 'PlName');
+  document.getElementById('op-port').value    = p.FqopPort    || '';
+  document.getElementById('op-remarks').value = p.FqopRemarks || '';
+  _hideErr('ocean-port-error');
+  mOceanPort.show();
+}
+
+async function saveOceanPort() {
+  const portVal = document.getElementById('op-port').value;
+  if (!portVal) { _showErr('ocean-port-error', 'Port is required.'); return; }
+  const dto = { Port: portVal, Remarks: document.getElementById('op-remarks').value || null };
+  try {
+    if (_oceanPortEditId) { await API.appliedQuotes.updateOceanPort(_oceanPortEditId, dto); }
+    else                  { await API.appliedQuotes.addOceanPort(_activeQuoteId, dto); }
+    mOceanPort.hide();
+    await _refreshDetail();
+  } catch(e) { _showErr('ocean-port-error', e?.message || 'Error.'); }
+}
+
+async function deleteOceanPort(id) {
+  try { await API.appliedQuotes.deleteOceanPort(id); await _refreshDetail(); }
+  catch(e) { showToast(e?.message || 'Error deleting port.', 'danger'); }
+}
+
+// ── Ocean Shipping Line modal ───────────────────────────────────────────────
+function openNewOceanSLine() {
+  _oceanSLinePortId = null;
+  _oceanSLineEditId = null;
+  document.getElementById('modal-ocean-sline-title').textContent = 'New Shipping Line';
+  const ports = _activeQuote?.OceanPorts || [];
+  const sel = document.getElementById('osl-port');
+  sel.innerHTML = '<option value="">— select port —</option>' +
+    ports.map(p => `<option value="${p.FqopId}">${_esc(p.FqopPort)}</option>`).join('');
+  sel.value = '';
+  document.getElementById('osl-port-row').style.display = '';
+  _fillSelect('osl-line',  _shippingLines, 'SlCode', 'SlName');
+  _fillSelect('osl-route', _routes,        'RouCode','RouDescription');
+  document.getElementById('osl-line').value  = '';
+  document.getElementById('osl-route').value = '';
+  document.getElementById('osl-days').value  = '';
+  _hideErr('ocean-sline-error');
+  mOceanSLine.show();
+}
+
+function openEditOceanSLine(slineId) {
+  // Find the sline across all ports
+  let foundSl = null, foundPort = null;
+  for (const p of (_activeQuote?.OceanPorts || [])) {
+    const sl = (p.ShippingLines || []).find(x => x.FqopsId === slineId);
+    if (sl) { foundSl = sl; foundPort = p; break; }
+  }
+  if (!foundSl) return;
+  _oceanSLinePortId = foundPort.FqopId;
+  _oceanSLineEditId = slineId;
+  document.getElementById('modal-ocean-sline-title').textContent = 'Edit Shipping Line';
+  // Show port selector in read-only mode
+  const ports = _activeQuote?.OceanPorts || [];
+  const portSel = document.getElementById('osl-port');
+  portSel.innerHTML = ports.map(p => `<option value="${p.FqopId}" ${p.FqopId===foundPort.FqopId?'selected':''}>${_esc(p.FqopPort)}</option>`).join('');
+  portSel.disabled = true;
+  document.getElementById('osl-port-row').style.display = '';
+  _fillSelect('osl-line',  _shippingLines, 'SlCode', 'SlName');
+  _fillSelect('osl-route', _routes,        'RouCode','RouDescription');
+  document.getElementById('osl-line').value  = foundSl.FqopsShippingLine || '';
+  document.getElementById('osl-route').value = foundSl.FqopsRoute        || '';
+  document.getElementById('osl-days').value  = foundSl.FqopsDays         ?? '';
+  _hideErr('ocean-sline-error');
+  mOceanSLine.show();
+}
+
+async function saveOceanSLine() {
+  const lineVal = document.getElementById('osl-line').value;
+  if (!lineVal) { _showErr('ocean-sline-error', 'Shipping Line is required.'); return; }
+  // Resolve portId — either set when opened from port card, or from selector
+  const portId = _oceanSLinePortId || +document.getElementById('osl-port').value || null;
+  if (!_oceanSLineEditId && !portId) { _showErr('ocean-sline-error', 'Select a Port.'); return; }
+  const dto = {
+    ShippingLine: lineVal,
+    Route:        document.getElementById('osl-route').value || null,
+    Days:         document.getElementById('osl-days').value  ? +document.getElementById('osl-days').value : null
+  };
+  try {
+    if (_oceanSLineEditId) { await API.appliedQuotes.updateOceanSLine(_oceanSLineEditId, dto); }
+    else                   { await API.appliedQuotes.addOceanSLine(portId, dto); }
+    document.getElementById('osl-port').disabled = false;
+    mOceanSLine.hide();
+    await _refreshDetail();
+  } catch(e) { _showErr('ocean-sline-error', e?.message || 'Error.'); }
+}
+
+async function deleteOceanSLine(id) {
+  try { await API.appliedQuotes.deleteOceanSLine(id); await _refreshDetail(); }
+  catch(e) { showToast(e?.message || 'Error deleting shipping line.', 'danger'); }
+}
+
+// ── INLAND TAB — tree with inline detail rows ──────────────────────────────
+function _renderInlandTab(regions) {
+  const el = document.getElementById('inland-tree');
+  if (!regions.length) {
+    el.innerHTML = `<div class="text-center py-4">
+      <i class="fas fa-truck fa-2x mb-2 opacity-25"></i>
+      <div class="text-muted mb-3" style="font-size:.85rem;">No inland regions defined for this quote.</div>
+      ${_isSuperAdmin ? `<button class="btn btn-wine btn-sm" onclick="openNewRegion()"><i class="fas fa-plus me-1"></i>Add Region</button>` : ''}
+    </div>`;
+    return;
+  }
+  el.innerHTML = regions.map(r => {
+    const hasTypes = (r.RegionTypes || []).length > 0;
+    return `
+    <div class="card level-card">
+      <div class="card-header d-flex align-items-center gap-2">
+        <button class="btn-tree" onclick="toggleSection('reg-${r.FqerId}')">
+          <i class="fas fa-chevron-right toggle-icon" id="ti-reg-${r.FqerId}" style="${hasTypes ? 'transform:rotate(90deg)' : ''}"></i>
+        </button>
+        <span class="flex-grow-1 fw-600">${_esc(_regionName(r.FqerRegion))}</span>
+        ${_isSuperAdmin ? `<button class="btn btn-sm btn-outline-secondary py-0 px-1" onclick="addRegionType(${r.FqerId})"><i class="fas fa-plus" style="font-size:.7rem;"></i> Type</button>` : ''}
+        ${_isSuperAdmin ? `<button class="btn btn-sm btn-outline-danger py-0 px-1 ms-1" onclick="confirmDelete('Delete region &ldquo;${_esc(r.FqerRegion)}&rdquo; and all its data?', () => deleteInlandRegion(${r.FqerId}))"><i class="fas fa-trash" style="font-size:.7rem;"></i></button>` : ''}
+      </div>
+      <div class="tree-section${hasTypes ? ' open' : ''}" id="reg-${r.FqerId}">
+        ${(r.RegionTypes || []).map(rt => {
+          const hasDets = (rt.Details||[]).length > 0;
+          return `
+          <div class="card level-card level-2 m-2">
+            <div class="card-header d-flex align-items-center gap-2">
+              <button class="btn-tree" onclick="toggleSection('rt-${rt.FqertId}')">
+                <i class="fas fa-chevron-right toggle-icon" id="ti-rt-${rt.FqertId}" style="${hasDets ? 'transform:rotate(90deg)' : ''}"></i>
+              </button>
+              <span class="flex-grow-1">${_esc(rt.FqertChargeType)}
+                ${rt.FqertAmountMin != null || rt.FqertAmountMax != null
+                  ? `<small class="text-muted ms-2">min:${rt.FqertAmountMin ?? '—'} max:${rt.FqertAmountMax ?? '—'} ${rt.FqertCurrency || ''}</small>` : ''}</span>
+              ${_isSuperAdmin ? `<button class="btn btn-sm btn-outline-secondary py-0 px-1" onclick="editRegionType(${rt.FqertId},${r.FqerId})"><i class="fas fa-edit" style="font-size:.7rem;"></i></button>` : ''}
+              ${_isSuperAdmin ? `<button class="btn btn-sm btn-outline-success py-0 px-1 ms-1" onclick="addDetailRow(${rt.FqertId})"><i class="fas fa-plus" style="font-size:.7rem;"></i> Row</button>` : ''}
+              ${_isSuperAdmin ? `<button class="btn btn-sm btn-outline-danger py-0 px-1 ms-1" onclick="confirmDelete('Delete charge type &ldquo;${_esc(rt.FqertChargeType)}&rdquo; and its details?', () => deleteRegionType(${rt.FqertId}))"><i class="fas fa-trash" style="font-size:.7rem;"></i></button>` : ''}
+            </div>
+            <div class="tree-section${hasDets ? ' open' : ''}" id="rt-${rt.FqertId}">
+              ${_renderDetailGrid(rt.Details || [], rt.FqertId)}
+            </div>
+          </div>`;
+        }).join('') || '<div class="p-2 text-muted" style="font-size:.8rem;">No charge types — click + Type</div>'}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function _renderDetailGrid(details, typeId) {
+  const rows = details.map(d => _detailRowHtml(d.FqertdId, typeId, d)).join('');
+  return `<div class="table-responsive">
+    <table class="table table-sm table-bordered charges-grid mb-0" id="det-tbl-${typeId}">
+      <thead><tr>
+        <th class="num-col">From</th><th class="num-col">To</th>
+        <th class="num-col">Price</th><th>Price Type</th><th class="desc-cell">Description</th>
+        <th class="num-col">Min</th><th class="num-col">Max</th>
+        <th class="act-col"></th>
+      </tr></thead>
+      <tbody id="det-tbody-${typeId}">${rows}</tbody>
+    </table>
+  </div>`;
+}
+
+function _detailRowHtml(id, typeId, d = {}) {
+  return `<tr data-id="${id||''}" data-type-id="${typeId}">
+    <td class="num-col"><input type="number" class="form-control det-from" step="0.0001" value="${d.FqertdFrom??''}" oninput="this.closest('tr').classList.add('row-dirty')" style="width:70px;"/></td>
+    <td class="num-col"><input type="number" class="form-control det-to" step="0.0001" value="${d.FqertdTo??''}" oninput="this.closest('tr').classList.add('row-dirty')" style="width:70px;"/></td>
+    <td class="num-col"><input type="number" class="form-control det-price" step="0.000001" value="${d.FqertdPrice??''}" oninput="this.closest('tr').classList.add('row-dirty')" style="width:80px;"/></td>
+    <td><select class="form-select det-pricetype" onmousedown="expandSelectDesc(this,_amountTypes,'AtCode','AtDescription')" onchange="onDetPriceTypeChange(this)" style="width:90px;">${_buildOptsCodeDesc(_amountTypes,'AtCode','AtDescription',d.FqertdPriceType||'')}</select></td>
+    <td class="desc-cell det-pt-desc">${_esc(_amountTypeDesc(d.FqertdPriceType||''))}</td>
+    <td class="num-col"><input type="number" class="form-control det-min" step="0.01" value="${d.FqertdAmountMin??''}" oninput="this.closest('tr').classList.add('row-dirty')" style="width:70px;"/></td>
+    <td class="num-col"><input type="number" class="form-control det-max" step="0.01" value="${d.FqertdAmountMax??''}" oninput="this.closest('tr').classList.add('row-dirty')" style="width:70px;"/></td>
+    <td class="act-col">
+      ${_isSuperAdmin ? `<button class="btn-row-save" onclick="saveDetailRow(this)" title="Save"><i class="fas fa-save"></i></button>` : ''}
+      ${_isSuperAdmin ? `<button class="btn-row-del" onclick="deleteDetailRow(this)" title="Delete"><i class="fas fa-trash"></i></button>` : ''}
+    </td>
+  </tr>`;
+}
+
+function onDetPriceTypeChange(sel) {
+  collapseSelectToCode(sel);
+  sel.closest('tr').querySelector('.det-pt-desc').textContent = _amountTypeDesc(sel.value);
+  sel.closest('tr').classList.add('row-dirty');
+}
+function onLclPriceTypeChange(sel) {
+  collapseSelectToCode(sel);
+  sel.closest('tr').querySelector('.ld-pt-desc').textContent = _amountTypeDesc(sel.value);
+  sel.closest('tr').classList.add('row-dirty');
+}
+
+function addDetailRow(typeId) {
+  const sec = document.getElementById(`rt-${typeId}`);
+  if (sec && !sec.classList.contains('open')) sec.classList.add('open');
+  const icon = document.getElementById(`ti-rt-${typeId}`);
+  if (icon) icon.style.transform = 'rotate(90deg)';
+
+  let tbody = document.getElementById(`det-tbody-${typeId}`);
+  if (!tbody) {
+    sec.innerHTML = _renderDetailGrid([], typeId);
+    tbody = document.getElementById(`det-tbody-${typeId}`);
+  }
+  const tr = document.createElement('tr');
+  tr.dataset.id = '';
+  tr.dataset.typeId = typeId;
+  tr.innerHTML = `
+    <td class="num-col"><input type="number" class="form-control det-from" step="0.0001" value="" style="width:70px;"/></td>
+    <td class="num-col"><input type="number" class="form-control det-to" step="0.0001" value="" style="width:70px;"/></td>
+    <td class="num-col"><input type="number" class="form-control det-price" step="0.000001" value="" style="width:80px;"/></td>
+    <td><select class="form-select det-pricetype" onmousedown="expandSelectDesc(this,_amountTypes,'AtCode','AtDescription')" onchange="onDetPriceTypeChange(this)" style="width:90px;">${_buildOptsCodeDesc(_amountTypes,'AtCode','AtDescription','')}</select></td>
+    <td class="desc-cell det-pt-desc"></td>
+    <td class="num-col"><input type="number" class="form-control det-min" step="0.01" value="" style="width:70px;"/></td>
+    <td class="num-col"><input type="number" class="form-control det-max" step="0.01" value="" style="width:70px;"/></td>
+    <td class="act-col">
+      ${_isSuperAdmin ? `<button class="btn-row-save" onclick="saveDetailRow(this)" title="Save"><i class="fas fa-save"></i></button>` : ''}
+      ${_isSuperAdmin ? `<button class="btn-row-del" onclick="deleteDetailRow(this)" title="Delete"><i class="fas fa-trash"></i></button>` : ''}
+    </td>`;
+  tbody.appendChild(tr);
+  tr.querySelector('.det-from').focus();
+}
+
+async function saveDetailRow(btn) {
+  const row    = btn.closest('tr');
+  const id     = row.dataset.id;
+  const typeId = row.dataset.typeId || row.closest('tbody')?.id?.replace('det-tbody-','');
+  const dto = {
+    From:      row.querySelector('.det-from').value      ? +row.querySelector('.det-from').value      : null,
+    To:        row.querySelector('.det-to').value        ? +row.querySelector('.det-to').value        : null,
+    Price:     row.querySelector('.det-price').value     ? +row.querySelector('.det-price').value     : null,
+    PriceType: row.querySelector('.det-pricetype').value || null,
+    AmountMin: row.querySelector('.det-min').value       ? +row.querySelector('.det-min').value       : null,
+    AmountMax: row.querySelector('.det-max').value       ? +row.querySelector('.det-max').value       : null
+  };
+  try {
+    if (id) {
+      await API.appliedQuotes.updateInlandDetail(+id, dto);
+    } else {
+      const res = await API.appliedQuotes.addInlandDetail(+typeId, dto);
+      const saved = res?.Data || res;
+      if (saved?.FqertdId) row.dataset.id = saved.FqertdId;
+    }
+    row.classList.remove('row-dirty');
+    _showRowOk(btn);
+  } catch(e) { showToast(e?.message || 'Error saving.', 'danger'); }
+}
+
+async function deleteDetailRow(btn) {
+  const row = btn.closest('tr');
+  const id  = row.dataset.id;
+  if (id) {
+    if (!confirm('Delete this detail row?')) return;
+    try { await API.appliedQuotes.deleteInlandDetail(+id); } catch(e) { showToast(e?.message||'Error', 'danger'); return; }
+  }
+  row.remove();
+}
+
+// ── PORT ADDITIONAL TAB — inline editable grid ─────────────────────────────
+function _renderPortAddTab(items) {
+  const tb = document.getElementById('portadd-tbody');
+  if (!items.length) {
+    tb.innerHTML = '<tr><td colspan="14" class="text-center text-muted py-3" style="font-size:.8rem;">No port additional charges — click Add Row</td></tr>';
+    return;
+  }
+  tb.innerHTML = items.map(c => _portAddRowHtml(
+    c.FqipaId, c.FqipaChargeType||'', c.FqipaLoadType||'',
+    c.FqipaAmount, c.FqipaCurrency||'', c.FqipaAction||'',
+    c.FqipaChargeOver||'', c.FqipaChargePer||'',
+    c.FqipaFrom, c.FqipaTo, c.FqipaAmountMin, c.FqipaAmountMax
+  )).join('');
+}
+
+function _portAddRowHtml(id, ct, lt, amount, currency, action, over, per, from, to, min, max) {
+  const dirty = "this.closest('tr').classList.add('row-dirty')";
+  return `
+  <tr data-id="${id||''}">
+    <td><select class="form-select pa-ct-sel" onchange="onPaCtChange(this)">${_buildOpts(_inlandChargeTypes,'IfctCode',ct)}</select></td>
+    <td class="desc-cell pa-ct-desc">${_esc(_inlandCtDesc(ct))}</td>
+    <td><select class="form-select pa-lt-sel" onchange="onPaLtChange(this)">${_buildOptsOpt(_loadTypes,'LtCode',lt)}</select></td>
+    <td class="desc-cell pa-lt-desc">${_esc(_loadTypeDesc(lt))}</td>
+    <td class="num-col"><input type="number" class="form-control pa-amount" step="0.01" value="${amount!=null?amount:''}" oninput="${dirty}" /></td>
+    <td class="cur-col"><select class="form-select pa-currency" onchange="${dirty}">${_buildOptsOpt(_currencies,'CurCode',currency)}</select></td>
+    <td><select class="form-select pa-action" onchange="${dirty}" style="width:70px;">${_buildOptsOpt(_chargeActions,'CaCode',action)}</select></td>
+    <td><select class="form-select pa-over" onchange="${dirty}" style="width:70px;">${_buildOptsOpt(_chargeOvers,'CoCode',over)}</select></td>
+    <td><select class="form-select pa-per" onchange="${dirty}" style="width:70px;">${_buildOptsOpt(_chargePers,'CpCode',per)}</select></td>
+    <td class="num-col"><input type="number" class="form-control pa-from" step="0.0001" value="${from!=null?from:''}" oninput="${dirty}" /></td>
+    <td class="num-col"><input type="number" class="form-control pa-to" step="0.0001" value="${to!=null?to:''}" oninput="${dirty}" /></td>
+    <td class="num-col"><input type="number" class="form-control pa-min" step="0.01" value="${min!=null?min:''}" oninput="${dirty}" /></td>
+    <td class="num-col"><input type="number" class="form-control pa-max" step="0.01" value="${max!=null?max:''}" oninput="${dirty}" /></td>
+    <td class="act-col">
+      ${_isSuperAdmin ? `<button class="btn-row-save" onclick="savePortAddRow(this)" title="Save"><i class="fas fa-save"></i></button>` : ''}
+      ${_isSuperAdmin ? `<button class="btn-row-del" onclick="deletePortAddRow(this)" title="Delete"><i class="fas fa-trash"></i></button>` : ''}
+    </td>
+  </tr>`;
+}
+
+function onPaCtChange(sel) {
+  const row = sel.closest('tr');
+  row.querySelector('.pa-ct-desc').textContent = _inlandCtDesc(sel.value);
+  row.classList.add('row-dirty');
+}
+function onPaLtChange(sel) {
+  const row = sel.closest('tr');
+  row.querySelector('.pa-lt-desc').textContent = _loadTypeDesc(sel.value);
+  row.classList.add('row-dirty');
+}
+
+function addPortAddRow() {
+  const tb = document.getElementById('portadd-tbody');
+  if (tb.querySelector('td[colspan]')) tb.innerHTML = '';
+  const dirty = "this.closest('tr').classList.add('row-dirty')";
+  const tr = document.createElement('tr');
+  tr.dataset.id = '';
+  tr.innerHTML = `
+    <td><select class="form-select pa-ct-sel" onchange="onPaCtChange(this)">${_buildOpts(_inlandChargeTypes,'IfctCode','')}</select></td>
+    <td class="desc-cell pa-ct-desc"></td>
+    <td><select class="form-select pa-lt-sel" onchange="onPaLtChange(this)">${_buildOptsOpt(_loadTypes,'LtCode','')}</select></td>
+    <td class="desc-cell pa-lt-desc"></td>
+    <td class="num-col"><input type="number" class="form-control pa-amount" step="0.01" value="" oninput="${dirty}" /></td>
+    <td class="cur-col"><select class="form-select pa-currency" onchange="${dirty}">${_buildOptsOpt(_currencies,'CurCode','')}</select></td>
+    <td><select class="form-select pa-action" onchange="${dirty}" style="width:70px;">${_buildOptsOpt(_chargeActions,'CaCode','')}</select></td>
+    <td><select class="form-select pa-over" onchange="${dirty}" style="width:70px;">${_buildOptsOpt(_chargeOvers,'CoCode','')}</select></td>
+    <td><select class="form-select pa-per" onchange="${dirty}" style="width:70px;">${_buildOptsOpt(_chargePers,'CpCode','')}</select></td>
+    <td class="num-col"><input type="number" class="form-control pa-from" step="0.0001" value="" oninput="${dirty}" /></td>
+    <td class="num-col"><input type="number" class="form-control pa-to" step="0.0001" value="" oninput="${dirty}" /></td>
+    <td class="num-col"><input type="number" class="form-control pa-min" step="0.01" value="" oninput="${dirty}" /></td>
+    <td class="num-col"><input type="number" class="form-control pa-max" step="0.01" value="" oninput="${dirty}" /></td>
+    <td class="act-col">
+      ${_isSuperAdmin ? `<button class="btn-row-save" onclick="savePortAddRow(this)" title="Save"><i class="fas fa-save"></i></button>` : ''}
+      ${_isSuperAdmin ? `<button class="btn-row-del" onclick="deletePortAddRow(this)" title="Delete"><i class="fas fa-trash"></i></button>` : ''}
+    </td>`;
+  tb.appendChild(tr);
+  tr.querySelector('.pa-ct-sel').focus();
+}
+
+async function savePortAddRow(btn) {
+  const row = btn.closest('tr');
+  const id  = row.dataset.id;
+  const ct  = row.querySelector('.pa-ct-sel').value;
+  if (!ct) { showToast('Select a Charge Type.', 'danger'); return; }
+  const g = cls => row.querySelector(cls).value;
+  const dto = {
+    ChargeType: ct,
+    LoadType:   g('.pa-lt-sel')   || null,
+    Amount:     g('.pa-amount')   ? +g('.pa-amount')   : null,
+    Currency:   g('.pa-currency') || null,
+    Action:     g('.pa-action')   || null,
+    ChargeOver: g('.pa-over')     || null,
+    ChargePer:  g('.pa-per')      || null,
+    From:       g('.pa-from')     ? +g('.pa-from')     : null,
+    To:         g('.pa-to')       ? +g('.pa-to')       : null,
+    AmountMin:  g('.pa-min')      ? +g('.pa-min')      : null,
+    AmountMax:  g('.pa-max')      ? +g('.pa-max')      : null
+  };
+  try {
+    if (id) {
+      await API.appliedQuotes.updatePortAdd(+id, dto);
+    } else {
+      const res = await API.appliedQuotes.addPortAdd(_activeQuoteId, dto);
+      const saved = res?.Data || res;
+      if (saved?.FqipaId) row.dataset.id = saved.FqipaId;
+    }
+    row.classList.remove('row-dirty');
+    _showRowOk(btn);
+  } catch(e) { showToast(e?.message || 'Error saving.', 'danger'); }
+}
+
+async function deletePortAddRow(btn) {
+  const row = btn.closest('tr');
+  const id  = row.dataset.id;
+  if (id) {
+    if (!confirm('Delete this port additional charge?')) return;
+    try { await API.appliedQuotes.deletePortAdd(+id); } catch(e) { showToast(e?.message||'Error', 'danger'); return; }
+  }
+  row.remove();
+}
+
+// ── LCL TAB — tree: Port → Shipping (PortType) → detail rows ──────────────
+function _lclCtDesc(code) { return _lclChargeTypes.find(x=>x.LctCode===code)?.LctDescription||''; }
+
+function _renderLclTab(ports) {
+  const el = document.getElementById('lcl-tree');
+  if (!ports.length) {
+    el.innerHTML = '<div class="text-center text-muted py-3" style="font-size:.82rem;">No LCL ports — click New Port</div>';
+    return;
+  }
+  el.innerHTML = ports.map(p => {
+    const hasTypes = (p.PortTypes || []).length > 0;
+    const portName = _ports.find(x => x.PlCode === p.FqlcpPort)?.PlName || p.FqlcpPort;
+    return `
+    <div class="card level-card">
+      <div class="card-header d-flex align-items-center gap-2">
+        <button class="btn-tree" onclick="toggleSection('lclp-${p.FqlcpId}')">
+          <i class="fas fa-chevron-right toggle-icon" id="ti-lclp-${p.FqlcpId}" style="${hasTypes ? 'transform:rotate(90deg)' : ''}"></i>
+        </button>
+        <span class="flex-grow-1 fw-600">${_esc(p.FqlcpPort)} <small class="text-muted fw-normal">${_esc(portName !== p.FqlcpPort ? portName : '')}</small></span>
+        ${p.FqlcpRemarks ? `<small class="text-muted">${_esc(p.FqlcpRemarks)}</small>` : ''}
+        ${_isSuperAdmin ? `<button class="btn btn-sm btn-outline-secondary py-0 px-1" onclick="editLclPort(${p.FqlcpId})"><i class="fas fa-edit" style="font-size:.7rem;"></i></button>` : ''}
+        ${_isSuperAdmin ? `<button class="btn btn-sm btn-wine btn-sm py-0 px-1 ms-1" onclick="openNewLclShipping(${p.FqlcpId})"><i class="fas fa-plus" style="font-size:.7rem;"></i> Shipping</button>` : ''}
+        ${_isSuperAdmin ? `<button class="btn btn-sm btn-outline-danger py-0 px-1 ms-1" onclick="confirmDelete('Delete port &ldquo;${_esc(p.FqlcpPort)}&rdquo; and all its data?', () => deleteLclPort(${p.FqlcpId}))"><i class="fas fa-trash" style="font-size:.7rem;"></i></button>` : ''}
+      </div>
+      <div class="tree-section${hasTypes ? ' open' : ''}" id="lclp-${p.FqlcpId}">
+        ${(p.PortTypes || []).map(pt => {
+          const hasDets = (pt.Details||[]).length > 0;
+          return `
+          <div class="card level-card level-2 m-2">
+            <div class="card-header d-flex align-items-center gap-2">
+              <button class="btn-tree" onclick="toggleSection('lclpt-${pt.FqlcptId}')">
+                <i class="fas fa-chevron-right toggle-icon" id="ti-lclpt-${pt.FqlcptId}" style="${hasDets ? 'transform:rotate(90deg)' : ''}"></i>
+              </button>
+              <span class="flex-grow-1">${_esc(pt.FqlcptChargeType)}
+                <small class="text-muted ms-1">${_esc(_lclCtDesc(pt.FqlcptChargeType))}</small>
+                ${pt.FqlcptAmountMin != null || pt.FqlcptAmountMax != null
+                  ? `<small class="text-muted ms-2">min:${pt.FqlcptAmountMin ?? '—'} max:${pt.FqlcptAmountMax ?? '—'} ${pt.FqlcptCurrency || ''}</small>` : ''}</span>
+              ${_isSuperAdmin ? `<button class="btn btn-sm btn-outline-secondary py-0 px-1" onclick="editLclShipping(${pt.FqlcptId},${p.FqlcpId})"><i class="fas fa-edit" style="font-size:.7rem;"></i></button>` : ''}
+              ${_isSuperAdmin ? `<button class="btn btn-sm btn-outline-success py-0 px-1 ms-1" onclick="addLclDetailRow(${pt.FqlcptId})"><i class="fas fa-plus" style="font-size:.7rem;"></i> Row</button>` : ''}
+              ${_isSuperAdmin ? `<button class="btn btn-sm btn-outline-danger py-0 px-1 ms-1" onclick="confirmDelete('Delete shipping &ldquo;${_esc(pt.FqlcptChargeType)}&rdquo; and its details?', () => deleteLclShipping(${pt.FqlcptId}))"><i class="fas fa-trash" style="font-size:.7rem;"></i></button>` : ''}
+            </div>
+            <div class="tree-section${hasDets ? ' open' : ''}" id="lclpt-${pt.FqlcptId}">
+              ${_renderLclDetailGrid(pt.Details || [], pt.FqlcptId)}
+            </div>
+          </div>`;
+        }).join('') || '<div class="p-2 text-muted" style="font-size:.8rem;">No shipping types — click + Shipping</div>'}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function _renderLclDetailGrid(details, typeId) {
+  const rows = details.map(d => _lclDetailRowHtml(d.FqlcptdId, typeId, d)).join('');
+  return `<div class="table-responsive">
+    <table class="table table-sm table-bordered charges-grid mb-0" id="lcldet-tbl-${typeId}">
+      <thead><tr>
+        <th class="num-col">From</th><th class="num-col">To</th>
+        <th class="num-col">Price</th><th class="num-col">Over</th>
+        <th>Price Type</th><th class="desc-cell">Description</th>
+        <th class="num-col">Min</th><th class="num-col">Max</th>
+        <th class="act-col"></th>
+      </tr></thead>
+      <tbody id="lcldet-tbody-${typeId}">${rows}</tbody>
+    </table>
+  </div>`;
+}
+
+function _lclDetailRowHtml(id, typeId, d = {}) {
+  return `<tr data-id="${id||''}" data-type-id="${typeId}">
+    <td class="num-col"><input type="number" class="form-control ld-from" step="0.0001" value="${d.FqlcptdFrom??''}" oninput="this.closest('tr').classList.add('row-dirty')" style="width:70px;"/></td>
+    <td class="num-col"><input type="number" class="form-control ld-to" step="0.0001" value="${d.FqlcptdTo??''}" oninput="this.closest('tr').classList.add('row-dirty')" style="width:70px;"/></td>
+    <td class="num-col"><input type="number" class="form-control ld-price" step="0.000001" value="${d.FqlcptdPrice??''}" oninput="this.closest('tr').classList.add('row-dirty')" style="width:80px;"/></td>
+    <td class="num-col"><input type="number" class="form-control ld-over" step="0.0001" value="${d.FqlcptdOver??''}" oninput="this.closest('tr').classList.add('row-dirty')" style="width:70px;"/></td>
+    <td><select class="form-select ld-pricetype" onmousedown="expandSelectDesc(this,_amountTypes,'AtCode','AtDescription')" onchange="onLclPriceTypeChange(this)" style="width:90px;">${_buildOptsCodeDesc(_amountTypes,'AtCode','AtDescription',d.FqlcptdPriceType||'')}</select></td>
+    <td class="desc-cell ld-pt-desc">${_esc(_amountTypeDesc(d.FqlcptdPriceType||''))}</td>
+    <td class="num-col"><input type="number" class="form-control ld-min" step="0.01" value="${d.FqlcptdAmountMin??''}" oninput="this.closest('tr').classList.add('row-dirty')" style="width:70px;"/></td>
+    <td class="num-col"><input type="number" class="form-control ld-max" step="0.01" value="${d.FqlcptdAmountMax??''}" oninput="this.closest('tr').classList.add('row-dirty')" style="width:70px;"/></td>
+    <td class="act-col">
+      ${_isSuperAdmin ? `<button class="btn-row-save" onclick="saveLclDetailRow(this)" title="Save"><i class="fas fa-save"></i></button>` : ''}
+      ${_isSuperAdmin ? `<button class="btn-row-del" onclick="deleteLclDetailRow(this)" title="Delete"><i class="fas fa-trash"></i></button>` : ''}
+    </td>
+  </tr>`;
+}
+
+function addLclDetailRow(typeId) {
+  const sec = document.getElementById(`lclpt-${typeId}`);
+  if (sec && !sec.classList.contains('open')) sec.classList.add('open');
+  const icon = document.getElementById(`ti-lclpt-${typeId}`);
+  if (icon) icon.style.transform = 'rotate(90deg)';
+  let tbody = document.getElementById(`lcldet-tbody-${typeId}`);
+  if (!tbody) { sec.innerHTML = _renderLclDetailGrid([], typeId); tbody = document.getElementById(`lcldet-tbody-${typeId}`); }
+  const tr = document.createElement('tr');
+  tr.dataset.id = ''; tr.dataset.typeId = typeId;
+  tr.innerHTML = `
+    <td class="num-col"><input type="number" class="form-control ld-from" step="0.0001" value="" style="width:70px;"/></td>
+    <td class="num-col"><input type="number" class="form-control ld-to" step="0.0001" value="" style="width:70px;"/></td>
+    <td class="num-col"><input type="number" class="form-control ld-price" step="0.000001" value="" style="width:80px;"/></td>
+    <td class="num-col"><input type="number" class="form-control ld-over" step="0.0001" value="" style="width:70px;"/></td>
+    <td><select class="form-select ld-pricetype" onmousedown="expandSelectDesc(this,_amountTypes,'AtCode','AtDescription')" onchange="onLclPriceTypeChange(this)" style="width:90px;">${_buildOptsCodeDesc(_amountTypes,'AtCode','AtDescription','')}</select></td>
+    <td class="desc-cell ld-pt-desc"></td>
+    <td class="num-col"><input type="number" class="form-control ld-min" step="0.01" value="" style="width:70px;"/></td>
+    <td class="num-col"><input type="number" class="form-control ld-max" step="0.01" value="" style="width:70px;"/></td>
+    <td class="act-col">
+      ${_isSuperAdmin ? `<button class="btn-row-save" onclick="saveLclDetailRow(this)" title="Save"><i class="fas fa-save"></i></button>` : ''}
+      ${_isSuperAdmin ? `<button class="btn-row-del" onclick="deleteLclDetailRow(this)" title="Delete"><i class="fas fa-trash"></i></button>` : ''}
+    </td>`;
+  tbody.appendChild(tr);
+  tr.querySelector('.ld-from').focus();
+}
+
+async function saveLclDetailRow(btn) {
+  const row    = btn.closest('tr');
+  const id     = row.dataset.id;
+  const typeId = row.dataset.typeId || row.closest('tbody')?.id?.replace('lcldet-tbody-','');
+  const dto = {
+    From:      row.querySelector('.ld-from').value  ? +row.querySelector('.ld-from').value  : null,
+    To:        row.querySelector('.ld-to').value    ? +row.querySelector('.ld-to').value    : null,
+    Price:     row.querySelector('.ld-price').value ? +row.querySelector('.ld-price').value : null,
+    Over:      row.querySelector('.ld-over').value  ? +row.querySelector('.ld-over').value  : null,
+    PriceType: row.querySelector('.ld-pricetype').value || null,
+    AmountMin: row.querySelector('.ld-min').value   ? +row.querySelector('.ld-min').value   : null,
+    AmountMax: row.querySelector('.ld-max').value   ? +row.querySelector('.ld-max').value   : null
+  };
+  try {
+    if (id) { await API.appliedQuotes.updateLclDetail(+id, dto); }
+    else {
+      const res = await API.appliedQuotes.addLclDetail(+typeId, dto);
+      const saved = res?.Data || res;
+      if (saved?.FqlcptdId) row.dataset.id = saved.FqlcptdId;
+    }
+    row.classList.remove('row-dirty'); _showRowOk(btn);
+  } catch(e) { showToast(e?.message || 'Error saving.', 'danger'); }
+}
+
+async function deleteLclDetailRow(btn) {
+  const row = btn.closest('tr');
+  const id  = row.dataset.id;
+  if (id) {
+    if (!confirm('Delete this LCL detail row?')) return;
+    try { await API.appliedQuotes.deleteLclDetail(+id); } catch(e) { showToast(e?.message||'Error', 'danger'); return; }
+  }
+  row.remove();
+}
+
+// ── LCL Port Modal ─────────────────────────────────────────────────────────
+let _lclPortTargetId = null;  // null = new, int = edit
+let _lclShipTargetPortId = null;
+let _lclShipEditId = null;
+
+function openNewLclPort() {
+  _lclPortTargetId = null;
+  document.getElementById('modal-lcl-port-title').textContent = 'New Port';
+  _fillSelect('lp-port', _ports, 'PlCode', 'PlName');
+  document.getElementById('lp-remarks').value = '';
+  _hideErr('lcl-port-error');
+  mLclPort.show();
+}
+
+function editLclPort(portId) {
+  const q  = _activeQuote;
+  const p  = q?.LclPorts?.find(x => x.FqlcpId === portId);
+  if (!p) return;
+  _lclPortTargetId = portId;
+  document.getElementById('modal-lcl-port-title').textContent = 'Edit Port';
+  _fillSelect('lp-port', _ports, 'PlCode', 'PlName');
+  document.getElementById('lp-port').value    = p.FqlcpPort || '';
+  document.getElementById('lp-remarks').value = p.FqlcpRemarks || '';
+  _hideErr('lcl-port-error');
+  mLclPort.show();
+}
+
+async function saveLclPort() {
+  const portVal = document.getElementById('lp-port').value;
+  if (!portVal) { _showErr('lcl-port-error', 'Port is required.'); return; }
+  const dto = { Port: portVal, Remarks: document.getElementById('lp-remarks').value || null };
+  try {
+    if (_lclPortTargetId) { await API.appliedQuotes.updateLclPort(_lclPortTargetId, dto); }
+    else                  { await API.appliedQuotes.addLclPort(_activeQuoteId, dto); }
+    mLclPort.hide();
+    await _refreshDetail();
+  } catch(e) { _showErr('lcl-port-error', e?.message || 'Error.'); }
+}
+
+async function deleteLclPort(id) {
+  await API.appliedQuotes.deleteLclPort(id);
+  await _refreshDetail();
+}
+
+// ── LCL Shipping (PortType) Modal ──────────────────────────────────────────
+function openNewLclShipping(portId) {
+  _lclShipTargetPortId = portId;
+  _lclShipEditId = null;
+  document.getElementById('modal-lcl-shipping-title').textContent = 'New Shipping';
+  _fillSelect('ls-type',     _lclChargeTypes, 'LctCode', 'LctDescription');
+  _fillSelect('ls-currency', _currencies,     'CurCode',  'CurDescription');
+  document.getElementById('ls-min').value = '';
+  document.getElementById('ls-max').value = '';
+  _hideErr('lcl-shipping-error');
+  mLclShip.show();
+}
+
+function editLclShipping(typeId, portId) {
+  const p  = _activeQuote?.LclPorts?.find(x => x.FqlcpId === portId);
+  const pt = p?.PortTypes?.find(x => x.FqlcptId === typeId);
+  if (!pt) return;
+  _lclShipTargetPortId = portId;
+  _lclShipEditId = typeId;
+  document.getElementById('modal-lcl-shipping-title').textContent = 'Edit Shipping';
+  _fillSelect('ls-type',     _lclChargeTypes, 'LctCode', 'LctDescription');
+  _fillSelect('ls-currency', _currencies,     'CurCode',  'CurDescription');
+  document.getElementById('ls-type').value     = pt.FqlcptChargeType || '';
+  document.getElementById('ls-min').value      = pt.FqlcptAmountMin  ?? '';
+  document.getElementById('ls-max').value      = pt.FqlcptAmountMax  ?? '';
+  document.getElementById('ls-currency').value = pt.FqlcptCurrency   || '';
+  _hideErr('lcl-shipping-error');
+  mLclShip.show();
+}
+
+async function saveLclShipping() {
+  const typeVal = document.getElementById('ls-type').value;
+  if (!typeVal) { _showErr('lcl-shipping-error', 'Charge Type is required.'); return; }
+  const dto = {
+    ChargeType: typeVal,
+    AmountMin:  document.getElementById('ls-min').value ? +document.getElementById('ls-min').value : null,
+    AmountMax:  document.getElementById('ls-max').value ? +document.getElementById('ls-max').value : null,
+    Currency:   document.getElementById('ls-currency').value || null
+  };
+  try {
+    if (_lclShipEditId) { await API.appliedQuotes.updateLclPortType(_lclShipEditId, dto); }
+    else                { await API.appliedQuotes.addLclPortType(_lclShipTargetPortId, dto); }
+    mLclShip.hide();
+    await _refreshDetail();
+  } catch(e) { _showErr('lcl-shipping-error', e?.message || 'Error.'); }
+}
+
+async function deleteLclShipping(id) {
+  await API.appliedQuotes.deleteLclPortType(id);
+  await _refreshDetail();
+}
+
+// ── Tree toggle ────────────────────────────────────────────────────────────
+function toggleSection(id) {
+  const sec  = document.getElementById(id);
+  const icon = document.getElementById('ti-' + id);
+  if (!sec) return;
+  sec.classList.toggle('open');
+  if (icon) icon.style.transform = sec.classList.contains('open') ? 'rotate(90deg)' : '';
+}
+
+// ── Wire Events ────────────────────────────────────────────────────────────
+function _wireEvents() {
+  _wireTabEvents();
+
+  document.getElementById('filter-forwarder').addEventListener('change', () => {
+    _page = 1;
+    _activeQuoteId = null; _activeQuote = null;
+    document.getElementById('quote-header-card').style.display = 'none';
+    document.getElementById('detail-placeholder').style.display = '';
+    document.getElementById('detail-panel').style.display = 'none';
+    _loadList();
+    _renderFwdInfoCard();
+  });
+  let _searchTimer;
+  document.getElementById('filter-search').addEventListener('input', () => {
+    clearTimeout(_searchTimer);
+    _searchTimer = setTimeout(() => { _page = 1; _loadList(); }, 400);
+  });
+
+  document.getElementById('btn-prev').addEventListener('click', () => { if (_page > 1) { _page--; _loadList(); } });
+  document.getElementById('btn-next').addEventListener('click', () => { _page++; _loadList(); });
+
+  document.getElementById('btn-new-quote').addEventListener('click', openNewQuote);
+  document.getElementById('btn-save-quote').addEventListener('click', saveQuote);
+  document.getElementById('btn-edit-quote').addEventListener('click', () => openEditQuote(_activeQuote));
+  document.getElementById('btn-delete-quote').addEventListener('click', () =>
+    confirmDelete(`Delete quote #${_activeQuote?.FqhQuoteNumber}? This will remove all charges.`, deleteCurrentQuote));
+
+  document.getElementById('btn-save-all-ocean').addEventListener('click', saveAllOceanCharges);
+  document.getElementById('btn-save-all-inland').addEventListener('click', saveAllInland);
+  document.getElementById('btn-add-ocean-port').addEventListener('click', openNewOceanPort);
+  document.getElementById('btn-add-ocean-sline').addEventListener('click', () => openNewOceanSLine(null));
+  document.getElementById('btn-save-ocean-port').addEventListener('click', saveOceanPort);
+  document.getElementById('btn-save-ocean-sline').addEventListener('click', saveOceanSLine);
+  document.getElementById('btn-add-region').addEventListener('click', openNewRegion);
+  document.getElementById('btn-save-region').addEventListener('click', saveRegion);
+  document.getElementById('btn-save-rtype').addEventListener('click', saveRegionType);
+  document.getElementById('btn-add-portadd').addEventListener('click', addPortAddRow);
+  document.getElementById('btn-add-lcl-port').addEventListener('click', openNewLclPort);
+  document.getElementById('btn-save-lcl-port').addEventListener('click', saveLclPort);
+  document.getElementById('btn-save-lcl-shipping').addEventListener('click', saveLclShipping);
+
+  document.getElementById('btn-confirm-delete').addEventListener('click', () => { mConfirm.hide(); if (_pendingDeleteFn) _pendingDeleteFn(); });
+  document.getElementById('btn-logout')?.addEventListener('click', e => { e.preventDefault(); Auth.logout(); });
+
+  // Role-based: ocultar botones de edición para usuarios sin permiso
+  if (!_isSuperAdmin) {
+    ['btn-new-quote','btn-edit-quote','btn-delete-quote',
+     'btn-add-ocean-port','btn-add-ocean-sline','btn-save-all-ocean',
+     'btn-add-region','btn-save-all-inland','btn-add-portadd','btn-add-lcl-port'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+  }
+}
+
+// ── Forwarder info card ────────────────────────────────────────────────────
+async function _renderFwdInfoCard(code) {
+  if (code === undefined) code = document.getElementById('filter-forwarder').value;
+  const card = document.getElementById('fwd-info-card');
+  if (!code) { card.style.display = 'none'; return; }
+
+  // 1) buscar en cache
+  let fw = _forwarders.find(f => f.FfCode === code);
+
+  // 2) si no está en cache, buscar directo en la API
+  if (!fw) {
+    try {
+      const res = await API.catalogs.freightForwarders.getAll({ search: code, pageSize: 10 });
+      const items = (res?.Data || []);
+      fw = items.find(f => f.FfCode === code) || null;
+      // si lo encontró, agregar al cache para próximas veces
+      if (fw) _forwarders.push(fw);
+    } catch { fw = null; }
+  }
+
+  if (!fw) { card.style.display = 'none'; return; }
+
+  document.getElementById('fic-code').textContent     = fw.FfCode;
+  document.getElementById('fic-name').textContent     = fw.FfName || '';
+  document.getElementById('fic-currency').textContent = fw.FfCurrency || '—';
+  document.getElementById('fic-currency').style.display = '';
+
+  const sep = '<span class="text-muted" style="margin:0 .75rem;">|</span>';
+  const lbl = (icon, t) => `<i class="fas ${icon} text-wine me-1"></i><strong>${t}:</strong> `;
+  const parts = [];
+  const addr = [fw.FfAddress1, fw.FfAddress2, fw.FfCity, fw.FfCountry].filter(Boolean).join(', ');
+  if (addr)         parts.push(lbl('fa-map-marker-alt', 'Address') + _esc(addr));
+  if (fw.FfEmail)   parts.push(lbl('fa-envelope',       'Email')   + _esc(fw.FfEmail));
+  if (fw.FfPhone1)  parts.push(lbl('fa-phone',          'Phone 1') + _esc(fw.FfPhone1));
+  if (fw.FfPhone2)  parts.push(lbl('fa-phone',          'Phone 2') + _esc(fw.FfPhone2));
+  if (fw.FfContact) parts.push(lbl('fa-user',           'Contact') + _esc(fw.FfContact));
+  document.getElementById('fic-info-line').innerHTML = parts.join(sep);
+
+  card.style.display = '';
+}
+
+// ── Modal: Forwarder change → populate Based on Quote ─────────────────────
+async function onModalFwdChange(sel) {
+  const wrap    = document.getElementById('q-based-on-wrap');
+  const basedOn = document.getElementById('q-based-on');
+  basedOn.innerHTML = '<option value="">— start fresh —</option>';
+  wrap.style.display = 'none';
+  _newQuoteSourceOceanPorts = null;
+  document.getElementById('q-port').value    = '';
+  document.getElementById('q-route').value   = '';
+  document.getElementById('q-transit').value = '';
+  document.getElementById('q-start').value   = '';
+  document.getElementById('q-end').value     = '';
+  const fw = sel.value;
+  if (!fw) return;
+  try {
+    const res = await API.appliedQuotes.getQuotes({ forwarder: fw, page: 1, pageSize: 100 });
+    const quotes = res?.Data || [];
+    if (!quotes.length) return;  // sin quotes anteriores → formulario vacío
+    quotes.forEach(q => {
+      const o = document.createElement('option');
+      o.value = q.FqhId;
+      o.textContent = `#${q.FqhQuoteNumber}${q.FqhStartDate ? ' (' + q.FqhStartDate.substring(0,10) + ')' : ''}`;
+      basedOn.appendChild(o);
+    });
+    // Auto-seleccionar el más reciente (primero de la lista, ordenada desc)
+    basedOn.value = quotes[0].FqhId;
+    wrap.style.display = '';
+    // Llenar todos los campos automáticamente
+    await onBasedOnChange(basedOn);
+  } catch { /* ignore */ }
+}
+
+async function onBasedOnChange(sel) {
+  _newQuoteSourceOceanPorts = null;
+  if (!sel.value) {
+    document.getElementById('q-port').value    = '';
+    document.getElementById('q-route').value   = '';
+    document.getElementById('q-transit').value = '';
+    document.getElementById('q-start').value   = '';
+    document.getElementById('q-end').value     = '';
+    return;
+  }
+  try {
+    const res = await API.appliedQuotes.getQuote(+sel.value);
+    const q = res?.Data || res;
+    if (!q) return;
+    document.getElementById('q-port').value    = q.FqhPort        || '';
+    document.getElementById('q-route').value   = q.FqhRoute       || '';
+    document.getElementById('q-transit').value = q.FqhTransitDays != null ? q.FqhTransitDays : '';
+    document.getElementById('q-start').value   = q.FqhStartDate   ? q.FqhStartDate.substring(0,10) : '';
+    document.getElementById('q-end').value     = q.FqhEndDate     ? q.FqhEndDate.substring(0,10)   : '';
+    _newQuoteSourceOceanPorts = q.OceanPorts?.length ? q.OceanPorts : null;
+  } catch { /* ignore */ }
+}
+
+// ── QUOTE MODAL ────────────────────────────────────────────────────────────
+async function openNewQuote() {
+  document.getElementById('modal-quote-title').textContent = 'New Quote';
+  const numRes = await API.appliedQuotes.getNextNumber().catch(() => ({ Data: 1 }));
+  document.getElementById('q-num').value = numRes.Data || 1;
+  _fillSelect('q-fwd',   _forwarders, 'FfCode',  'FfName');
+  _fillSelect('q-port',  _ports,      'PlCode',  'PlName');
+  _fillSelect('q-route', _routes,     'RouCode', 'RouDescription');
+  _tsReinit('q-fwd'); _tsReinit('q-port'); _tsReinit('q-route');
+  // Reset
+  document.getElementById('q-based-on').innerHTML = '<option value="">— start fresh —</option>';
+  document.getElementById('q-based-on-wrap').style.display = 'none';
+  _tsSet('q-fwd',   '');
+  _tsSet('q-port',  '');
+  _tsSet('q-route', '');
+  document.getElementById('q-transit').value = '';
+  document.getElementById('q-start').value   = '';
+  document.getElementById('q-end').value     = '';
+  _newQuoteSourceOceanPorts = null;
+  _hideErr('quote-form-error');
+  document.getElementById('modal-quote').dataset.editId = '';
+  // Si hay un Forwarder seleccionado en el filtro → pre-seleccionar y cargar sus quotes
+  const filterFwd = document.getElementById('filter-forwarder').value;
+  if (filterFwd) {
+    _tsSet('q-fwd', filterFwd);
+    await onModalFwdChange(document.getElementById('q-fwd'));
+  }
+  mQuote.show();
+}
+
+function openEditQuote(q) {
+  document.getElementById('modal-quote-title').textContent = `Edit Quote #${q.FqhQuoteNumber}`;
+  _fillSelect('q-fwd',   _forwarders, 'FfCode',  'FfName');
+  _fillSelect('q-port',  _ports,      'PlCode',  'PlName');
+  _fillSelect('q-route', _routes,     'RouCode', 'RouDescription');
+  _tsReinit('q-fwd'); _tsReinit('q-port'); _tsReinit('q-route');
+  document.getElementById('q-based-on-wrap').style.display = 'none';
+  document.getElementById('q-num').value = q.FqhQuoteNumber;
+  _tsSet('q-fwd',   q.FqhForwarder || '');
+  _tsSet('q-port',  q.FqhPort      || '');
+  _tsSet('q-route', q.FqhRoute     || '');
+  document.getElementById('q-transit').value = q.FqhTransitDays ?? '';
+  document.getElementById('q-start').value   = q.FqhStartDate ? q.FqhStartDate.substring(0,10) : '';
+  document.getElementById('q-end').value     = q.FqhEndDate   ? q.FqhEndDate.substring(0,10)   : '';
+  _hideErr('quote-form-error');
+  document.getElementById('modal-quote').dataset.editId = q.FqhId;
+  mQuote.show();
+}
+
+async function saveQuote() {
+  const numVal = document.getElementById('q-num').value;
+  const fwdVal = document.getElementById('q-fwd').value;
+  if (!numVal || !fwdVal) { _showErr('quote-form-error', 'Quote # and Forwarder are required.'); return; }
+  const dto = {
+    QuoteNumber: +numVal,
+    Forwarder:   fwdVal,
+    Port:        document.getElementById('q-port').value    || null,
+    Route:       document.getElementById('q-route').value   || null,
+    TransitDays: document.getElementById('q-transit').value ? +document.getElementById('q-transit').value : null,
+    StartDate:   document.getElementById('q-start').value   || null,
+    EndDate:     document.getElementById('q-end').value     || null
+  };
+  const editId = document.getElementById('modal-quote').dataset.editId;
+  try {
+    if (editId) { await API.appliedQuotes.updateQuote(+editId, dto); }
+    else {
+      const res = await API.appliedQuotes.createQuote(dto);
+      _activeQuoteId = res.Data?.FqhId;
+      // Copy Ocean Freight data (ports → slines → charges) from source quote
+      if (_activeQuoteId && _newQuoteSourceOceanPorts?.length) {
+        try {
+          for (const port of _newQuoteSourceOceanPorts) {
+            const pRes = await API.appliedQuotes.addOceanPort(_activeQuoteId, { Port: port.FqopPort, Remarks: port.FqopRemarks || null });
+            const newPortId = pRes?.Data?.FqopId;
+            if (!newPortId) continue;
+            for (const sl of (port.ShippingLines || [])) {
+              const slRes = await API.appliedQuotes.addOceanSLine(newPortId, { ShippingLine: sl.FqopsShippingLine, Route: sl.FqopsRoute || null, Days: sl.FqopsDays ?? null });
+              const newSlId = slRes?.Data?.FqopsId;
+              if (!newSlId) continue;
+              for (const ch of (sl.Charges || [])) {
+                await API.appliedQuotes.addOceanCharge(newSlId, { ChargeType: ch.FqocChargeType, ContainerType: ch.FqocContainerType || null, Amount: ch.FqocAmount ?? null, Currency: ch.FqocCurrency || null });
+              }
+            }
+          }
+        } catch (oceanErr) {
+          console.warn('Ocean Freight copy failed:', oceanErr?.message);
+        }
+      }
+      _newQuoteSourceOceanPorts = null;
+    }
+    mQuote.hide();
+    await _loadList();
+    if (_activeQuoteId) await _selectQuote(_activeQuoteId);
+  } catch (e) { _showErr('quote-form-error', e?.message || 'Error saving quote.'); }
+}
+
+async function deleteCurrentQuote() {
+  if (!_activeQuoteId) return;
+  await API.appliedQuotes.deleteQuote(_activeQuoteId);
+  _activeQuoteId = null; _activeQuote = null;
+  document.getElementById('quote-header-card').style.display = 'none';
+  document.getElementById('detail-placeholder').style.display = '';
+  document.getElementById('detail-panel').style.display = 'none';
+  await _loadList();
+}
+
+// ── INLAND REGION MODAL ────────────────────────────────────────────────────
+function openNewRegion() {
+  _fillSelect('reg-code', _regions, 'RegCode', 'RegName');
+  _tsReinit('reg-code');
+  _tsSet('reg-code', '');
+  _hideErr('region-form-error');
+  mRegion.show();
+}
+
+async function saveRegion() {
+  const code = document.getElementById('reg-code').value;
+  if (!code) { _showErr('region-form-error', 'Select a region.'); return; }
+  // Prevent duplicate regions in the same quote
+  const existing = (_activeQuote?.InlandRegions || []).map(r => r.FqerRegion);
+  if (existing.includes(code)) { _showErr('region-form-error', 'This region is already added to the quote.'); return; }
+  try {
+    await API.appliedQuotes.addInlandRegion(_activeQuoteId, { Region: code });
+    mRegion.hide();
+    await _refreshDetail();
+  } catch (e) { _showErr('region-form-error', e?.message || 'Error.'); }
+}
+
+async function deleteInlandRegion(id) {
+  await API.appliedQuotes.deleteInlandRegion(id);
+  await _refreshDetail();
+}
+
+// ── REGION TYPE MODAL ──────────────────────────────────────────────────────
+let _regionTypeTargetRegionId = null;
+
+function addRegionType(regionId) {
+  _regionTypeTargetRegionId = regionId;
+  document.getElementById('modal-rtype-title').textContent = 'Add Charge Type';
+  _fillSelect('rt-type',     _inlandChargeTypes, 'IfctCode', 'IfctDescription');
+  _fillSelect('rt-currency', _currencies,        'CurCode',  'CurDescription');
+  document.getElementById('rt-min').value = '';
+  document.getElementById('rt-max').value = '';
+  _hideErr('rtype-form-error');
+  mRtype.show();
+}
+
+function editRegionType(rtId, regionId) {
+  _regionTypeTargetRegionId = regionId;
+  const r  = _activeQuote?.InlandRegions?.find(x => x.FqerId === regionId);
+  const rt = r?.RegionTypes?.find(x => x.FqertId === rtId);
+  if (!rt) return;
+  document.getElementById('modal-rtype-title').textContent = 'Edit Charge Type';
+  _fillSelect('rt-type',     _inlandChargeTypes, 'IfctCode', 'IfctDescription');
+  _fillSelect('rt-currency', _currencies,        'CurCode',  'CurDescription');
+  document.getElementById('rt-type').value     = rt.FqertChargeType || '';
+  document.getElementById('rt-min').value      = rt.FqertAmountMin  ?? '';
+  document.getElementById('rt-max').value      = rt.FqertAmountMax  ?? '';
+  document.getElementById('rt-currency').value = rt.FqertCurrency   || '';
+  _hideErr('rtype-form-error');
+  // store rtId for update
+  document.getElementById('modal-rtype').dataset.editId = rtId;
+  mRtype.show();
+}
+
+async function saveRegionType() {
+  const typeVal = document.getElementById('rt-type').value;
+  if (!typeVal) { _showErr('rtype-form-error', 'Charge Type is required.'); return; }
+  const editId = document.getElementById('modal-rtype').dataset.editId;
+  const dto = {
+    ChargeType: typeVal,
+    AmountMin:  document.getElementById('rt-min').value ? +document.getElementById('rt-min').value : null,
+    AmountMax:  document.getElementById('rt-max').value ? +document.getElementById('rt-max').value : null,
+    Currency:   document.getElementById('rt-currency').value || null
+  };
+  try {
+    if (editId) await API.appliedQuotes.updateInlandRegionType(+editId, dto);
+    else        await API.appliedQuotes.addInlandRegionType(_regionTypeTargetRegionId, dto);
+    document.getElementById('modal-rtype').dataset.editId = '';
+    mRtype.hide();
+    await _refreshDetail();
+  } catch (e) { _showErr('rtype-form-error', e?.message || 'Error.'); }
+}
+
+async function deleteRegionType(id) {
+  await API.appliedQuotes.deleteInlandRegionType(id);
+  await _refreshDetail();
+}
+
+// ── Confirm Delete helper ──────────────────────────────────────────────────
+function confirmDelete(msg, fn) {
+  _pendingDeleteFn = fn;
+  document.getElementById('confirm-msg').textContent = msg;
+  mConfirm.show();
+}
+
+// ── Refresh full detail after region/type changes ──────────────────────────
+async function _refreshDetail() {
+  if (!_activeQuoteId) return;
+  const res = await API.appliedQuotes.getQuote(_activeQuoteId);
+  _activeQuote = res.Data;
+  _renderDetail(_activeQuote);
+}
+
+// ── Row OK flash ───────────────────────────────────────────────────────────
+function _showRowOk(btn) {
+  const icon = btn.querySelector('i');
+  icon.className = 'fas fa-check';
+  btn.style.color = '#198754';
+  setTimeout(() => { icon.className = 'fas fa-save'; btn.style.color = ''; }, 1500);
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function showToast(msg, type = 'success') {
+  const el = document.getElementById('toast');
+  el.className = `toast align-items-center text-white border-0 bg-${type === 'success' ? 'success' : 'danger'}`;
+  document.getElementById('toast-msg').textContent = msg;
+  new bootstrap.Toast(el, { delay: 3500 }).show();
+}
+function _fmt(d) { return d ? String(d).substring(0,10) : '—'; }
+function _n(v)   { return v != null ? Number(v).toLocaleString('en', { minimumFractionDigits:2, maximumFractionDigits:6 }) : '—'; }
+function _showErr(id, msg) { const el = document.getElementById(id); el.textContent = msg; el.classList.remove('d-none'); }
+function _hideErr(id)      { document.getElementById(id)?.classList.add('d-none'); }
+
+// topbar info
+const u = Auth.getCurrentUser();
+if (u) {
+  const initials = ((u.FullName || u.Username || '').split(' ').map(w => w[0]).join('').substring(0,2) || 'LM').toUpperCase();
+  ['topbar-user-initials','sidebar-user-initials'].forEach(id => { const el = document.getElementById(id); if(el) el.textContent = initials; });
+  document.getElementById('topbar-user-name').textContent     = u.FullName || u.Username || '—';
+  document.getElementById('topbar-user-fullname').textContent = u.FullName || u.Username || '—';
+  document.getElementById('topbar-user-role').textContent     = u.RoleName || '—';
+  document.getElementById('sidebar-user-name').textContent    = u.FullName || u.Username || '—';
+}
+</script>
+</body>
+</html>

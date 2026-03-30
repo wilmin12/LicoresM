@@ -1,0 +1,275 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard - Licores Maduro</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="css/main.css" />
+</head>
+<body>
+
+<!-- Mobile sidebar overlay -->
+<div id="sidebar-overlay"
+     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;"
+     aria-hidden="true">
+</div>
+
+<div class="app-wrapper">
+
+  <!-- ═══════════════════════════════ SIDEBAR ════════════════════════════════ -->
+  <nav id="sidebar" class="sidebar" aria-label="Main navigation">
+
+    <!-- Brand Header -->
+    <div class="sidebar-header">
+      <img src="img/LogoLicores.png" alt="Licores Maduro" class="sidebar-logo-img"/>
+      <span class="sidebar-logo-text">LICORES MADURO</span>
+    </div>
+
+    <!-- Navigation Links (built by sidebar.js) -->
+    <div id="sidebar-nav" class="sidebar-nav"></div>
+
+    <!-- User Footer -->
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="sidebar-avatar" id="sidebar-user-initials">LM</div>
+        <div class="sidebar-text">
+          <div id="sidebar-user-name" style="font-weight:600;">Loading...</div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ═══════════════════════════ MAIN AREA ═══════════════════════════════════ -->
+  <div class="main-area">
+
+    <!-- Top Navbar -->
+    <header class="topbar">
+      <button id="btn-sidebar-toggle" class="btn-sidebar-toggle" aria-label="Toggle sidebar">
+        <i class="fas fa-bars"></i>
+      </button>
+
+      <span class="topbar-title">
+        <i class="fas fa-tachometer-alt me-2 text-wine"></i>Dashboard
+      </span>
+
+      <div class="topbar-actions ms-auto">
+        <!-- User dropdown -->
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-2"
+                  type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <span class="sidebar-avatar" id="topbar-user-initials" style="width:28px;height:28px;font-size:.75rem;">LM</span>
+            <span id="topbar-user-name" class="d-none d-md-inline">Loading...</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+            <li>
+              <div class="dropdown-header">
+                <strong id="topbar-user-fullname">User</strong><br/>
+                <small class="text-muted" id="topbar-user-role">Role</small>
+              </div>
+            </li>
+            <li><hr class="dropdown-divider" /></li>
+            <li><a class="dropdown-item" href="pages/users.html"><i class="fas fa-user-cog me-2 text-wine"></i>My Profile</a></li>
+            <li><hr class="dropdown-divider" /></li>
+            <li>
+              <a class="dropdown-item text-danger" href="#" id="btn-logout">
+                <i class="fas fa-sign-out-alt me-2"></i>Logout
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </header>
+
+    <!-- Page Content -->
+    <main class="page-content">
+
+      <!-- Welcome Banner -->
+      <div class="row mb-4">
+        <div class="col-12">
+          <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); color:#fff;">
+            <div class="card-body py-4 px-4">
+              <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <div>
+                  <h2 class="mb-1" style="color:#fff;font-size:1.5rem;">
+                    Welcome back, <span id="welcome-name">User</span>!
+                  </h2>
+                  <p class="mb-0 opacity-75" style="font-size:.9rem;">
+                    <i class="fas fa-calendar-alt me-1"></i>
+                    <span id="today-date"></span>
+                    &nbsp;&bull;&nbsp;
+                    <i class="fas fa-shield-alt me-1"></i>
+                    Role: <strong id="welcome-role">–</strong>
+                  </p>
+                </div>
+                <div style="opacity:.25;">
+                  <i class="fas fa-wine-bottle" style="font-size:5rem;"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Module Stats Cards -->
+      <div class="row g-3 mb-4" id="module-stats">
+        <!-- Tracking -->
+        <div class="col-12 col-sm-6 col-xl-3 fade-in-up">
+          <div class="stat-card">
+            <div class="stat-icon wine"><i class="fas fa-shipping-fast"></i></div>
+            <div class="stat-body">
+              <div class="stat-value" id="stat-tracking">–</div>
+              <div class="stat-label">Tracking Orders</div>
+            </div>
+          </div>
+        </div>
+        <!-- Freight -->
+        <div class="col-12 col-sm-6 col-xl-3 fade-in-up">
+          <div class="stat-card">
+            <div class="stat-icon gold"><i class="fas fa-ship"></i></div>
+            <div class="stat-body">
+              <div class="stat-value" id="stat-freight">17</div>
+              <div class="stat-label">Freight Catalogs</div>
+            </div>
+          </div>
+        </div>
+        <!-- Activity -->
+        <div class="col-12 col-sm-6 col-xl-3 fade-in-up">
+          <div class="stat-card">
+            <div class="stat-icon blue"><i class="fas fa-tasks"></i></div>
+            <div class="stat-body">
+              <div class="stat-value" id="stat-activity">38</div>
+              <div class="stat-label">Activity Catalogs</div>
+            </div>
+          </div>
+        </div>
+        <!-- Purchase -->
+        <div class="col-12 col-sm-6 col-xl-3 fade-in-up">
+          <div class="stat-card">
+            <div class="stat-icon green"><i class="fas fa-file-invoice"></i></div>
+            <div class="stat-body">
+              <div class="stat-value" id="stat-vendors">–</div>
+              <div class="stat-label">Active Vendors</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Module Cards Grid -->
+      <h5 class="mb-3" style="color:var(--primary-dark);font-weight:600;">
+        <i class="fas fa-th me-2"></i>Quick Access Modules
+      </h5>
+      <div class="row g-3" id="module-cards">
+        <!-- Rendered by JS -->
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/i18n.js"></script><script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/sidebar.js"></script>
+<script src="js/notifications.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    // Guard
+    if (!Auth.requireAuth()) return;
+    Auth.startExpiryWatcher();
+
+    const user = Auth.getCurrentUser();
+
+    // Populate UI
+    Auth.populateUserUI();
+    Notifications.init();
+    document.getElementById('topbar-user-fullname').textContent = user?.FullName || user?.Username || '–';
+    document.getElementById('welcome-role').textContent = user?.RoleName || '–';
+    document.getElementById('today-date').textContent = new Date().toLocaleDateString('en-US', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    });
+
+    // Build sidebar
+    Sidebar.init();
+
+    // Logout
+    document.getElementById('btn-logout').addEventListener('click', async (e) => {
+      e.preventDefault();
+      await Auth.logout();
+    });
+
+    // Render module cards
+    renderModuleCards(user);
+
+    // Load live stats
+    await loadStats();
+  });
+
+  // ── Module card definitions ──────────────────────────────────────────────────
+  const MODULE_CARDS = [
+    { code:'TRACKING',  label:'Tracking',          icon:'fa-shipping-fast', color:'wine',  href:'pages/tracking/index.html',                               tables:2  },
+    { code:'FREIGHT',   label:'Freight Forwarder',  icon:'fa-ship',          color:'gold',  href:'pages/catalog.html?table=CURRENCIES&module=FREIGHT',      tables:17 },
+    { code:'COST',      label:'Cost Calculation',   icon:'fa-calculator',    color:'blue',  href:'pages/cost-calc/index.html',                               tables:3  },
+    { code:'ROUTE',     label:'Route Assignment',   icon:'fa-route',         color:'green', href:'#',                                                        tables:0  },
+    { code:'STOCK',     label:'Stock Analysis',     icon:'fa-boxes',         color:'wine',  href:'#',                                                        tables:0  },
+    { code:'ACTIVITY',  label:'Activity Request',   icon:'fa-tasks',         color:'gold',  href:'pages/catalog.html?table=ACTIVITY_TYPE&module=ACTIVITY',   tables:38 },
+    { code:'PURCHASE',  label:'Aankoopbon',         icon:'fa-file-invoice',  color:'blue',  href:'pages/catalog.html?table=VENDORS&module=PURCHASE',         tables:10 },
+  ];
+
+  function renderModuleCards(user) {
+    const container = document.getElementById('module-cards');
+    if (!container) return;
+
+    let html = '';
+    MODULE_CARDS.forEach(mod => {
+      const hasAccess = user?.RoleName === 'SuperAdmin'
+        || (user?.Permissions || []).some(p => p.ModuleCode === mod.code && p.CanAccess);
+
+      if (!hasAccess) return;
+
+      html += `
+        <div class="col-12 col-sm-6 col-lg-4 fade-in-up">
+          <a href="${mod.href}" class="text-decoration-none">
+            <div class="card h-100 border-0 shadow-sm" style="cursor:pointer;transition:all .25s;">
+              <div class="card-body d-flex align-items-center gap-3 p-3">
+                <div class="stat-icon ${mod.color}" style="flex-shrink:0;">
+                  <i class="fas ${mod.icon}"></i>
+                </div>
+                <div>
+                  <div style="font-weight:700;color:var(--primary-dark);">${mod.label}</div>
+                  <div style="font-size:.78rem;color:var(--text-secondary);">
+                    ${mod.tables > 0 ? mod.tables + ' catalog table' + (mod.tables > 1 ? 's' : '') : 'Reports & Analytics'}
+                  </div>
+                </div>
+                <i class="fas fa-chevron-right ms-auto text-muted" style="font-size:.75rem;"></i>
+              </div>
+            </div>
+          </a>
+        </div>`;
+    });
+
+    container.innerHTML = html || '<div class="col-12"><div class="alert alert-warning">No modules accessible for your role.</div></div>';
+  }
+
+  // ── Load live stats ─────────────────────────────────────────────────────────
+  async function loadStats() {
+    // Order status count
+    try {
+      const r = await API.catalogs.orderStatus.getAll({ page: 1, pageSize: 1 });
+      const el = document.getElementById('stat-tracking');
+      if (el) el.textContent = r?.TotalCount ?? '–';
+    } catch { /* ignore */ }
+
+    // Vendor count
+    try {
+      const r = await API.catalogs.vendors.getAll({ page: 1, pageSize: 1 });
+      const el = document.getElementById('stat-vendors');
+      if (el) el.textContent = r?.TotalCount ?? '–';
+    } catch { /* ignore */ }
+  }
+</script>
+</body>
+</html>

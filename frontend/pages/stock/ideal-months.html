@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ideal Months Config - Licores Maduro</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../../css/main.css" />
+</head>
+<body>
+<div id="sidebar-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;"></div>
+<div class="app-wrapper">
+  <nav id="sidebar" class="sidebar">
+    <div class="sidebar-header"><img src="../../img/LogoLicores.png" alt="Licores Maduro" class="sidebar-logo-img"/><span class="sidebar-logo-text">LICORES MADURO</span></div>
+    <div id="sidebar-nav" class="sidebar-nav"></div>
+    <div class="sidebar-footer"><div class="sidebar-user"><div class="sidebar-avatar" id="sidebar-user-initials">LM</div><div class="sidebar-text"><div id="sidebar-user-name" style="font-weight:600;">–</div></div></div></div>
+  </nav>
+  <div class="main-area">
+    <header class="topbar">
+      <button id="btn-sidebar-toggle" class="btn-sidebar-toggle"><i class="fas fa-bars"></i></button>
+      <span class="topbar-title"><i class="fas fa-sliders-h me-2 text-wine"></i>Ideal Months Config</span>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown">
+            <span class="sidebar-avatar" id="topbar-user-initials" style="width:28px;height:28px;font-size:.75rem;">LM</span>
+            <span id="topbar-user-name" class="d-none d-md-inline">–</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+            <li><div class="dropdown-header"><strong id="topbar-user-fullname">User</strong><br/><small class="text-muted" id="topbar-user-role">Role</small></div></li>
+            <li><hr class="dropdown-divider"/></li>
+            <li><a class="dropdown-item text-danger" href="#" id="btn-logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+          </ul>
+        </div>
+      </div>
+    </header>
+    <main class="page-content">
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="../../dashboard.html"><i class="fas fa-home me-1"></i>Home</a></li>
+          <li class="breadcrumb-item"><a href="index.html">Stock Analysis</a></li>
+          <li class="breadcrumb-item active">Ideal Months Config</li>
+        </ol>
+      </nav>
+      <div class="page-title">Ideal Months Config</div>
+      <div class="page-subtitle">Configure ideal months of stock per item (from ORDERSTREAM).</div>
+
+      <!-- Search / Actions bar -->
+      <div class="card mb-3">
+        <div class="card-body d-flex flex-wrap align-items-center gap-2 py-2">
+          <div class="search-wrapper flex-grow-1">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" id="search-input" class="form-control form-control-sm" placeholder="Search by item code..."/>
+          </div>
+          <button class="btn btn-wine btn-sm ms-auto" id="btn-new"><i class="fas fa-plus me-1"></i>New Entry</button>
+        </div>
+      </div>
+
+      <!-- Table card -->
+      <div class="card">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <span><i class="fas fa-sliders-h me-2"></i>Ideal Months per Item</span>
+          <span class="badge" style="background:var(--primary);color:#fff;" id="total-count">0 records</span>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Item Code</th>
+                  <th>Ideal Months</th>
+                  <th>Order Frequency</th>
+                  <th>Stock Start Date</th>
+                  <th>Updated At</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="data-tbody">
+                <tr><td colspan="7" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card-footer d-flex align-items-center justify-content-between flex-wrap gap-2">
+          <small class="text-muted" id="page-info">Page 1</small>
+          <nav><ul class="pagination pagination-sm mb-0" id="pagination"></ul></nav>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal fade" id="itemModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title" id="modalTitle"><i class="fas fa-sliders-h me-2"></i>Ideal Months Entry</h5>
+      <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    </div>
+    <div class="modal-body">
+      <form id="item-form" novalidate>
+        <input type="hidden" id="edit-id"/>
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label">Item Code <span class="text-danger">*</span></label>
+            <input type="text" id="f-item-code" class="form-control text-uppercase" required maxlength="20"/>
+            <div class="invalid-feedback">Item code is required.</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Ideal Months <span class="text-danger">*</span></label>
+            <input type="number" id="f-ideal-months" class="form-control" min="0" step="0.5" value="1.5" required/>
+            <div class="invalid-feedback">Ideal months required.</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Order Frequency</label>
+            <input type="text" id="f-order-freq" class="form-control" maxlength="20" placeholder="e.g. Weekly, Monthly"/>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Stock Start Date</label>
+            <input type="date" id="f-stock-start" class="form-control"/>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-wine btn-sm" id="btn-save"><i class="fas fa-save me-1"></i>Save</button>
+    </div>
+  </div></div>
+</div>
+
+<!-- Confirm Delete Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-sm"><div class="modal-content">
+    <div class="modal-header bg-danger text-white py-2">
+      <h6 class="modal-title mb-0">Confirm Delete</h6>
+      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+    </div>
+    <div class="modal-body">Delete this item configuration? This action cannot be undone.</div>
+    <div class="modal-footer py-2">
+      <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-danger btn-sm" id="btn-confirm-delete">Delete</button>
+    </div>
+  </div></div>
+</div>
+
+<div class="toast-container"><div id="toast" class="toast align-items-center text-white border-0" role="alert"><div class="d-flex"><div class="toast-body" id="toast-msg"></div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div></div></div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../../js/i18n.js"></script>
+<script src="../../js/api.js"></script>
+<script src="../../js/auth.js"></script>
+<script src="../../js/sidebar.js"></script>
+<script>
+  let currentPage = 1, totalCount = 0, deleteId = null;
+  const PAGE_SIZE = 20;
+  let currentSearch = '';
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    if (!Auth.requireAuth()) return;
+    Auth.startExpiryWatcher();
+    Auth.populateUserUI();
+    Sidebar.init();
+    document.getElementById('btn-logout').addEventListener('click', e => { e.preventDefault(); Auth.logout(); });
+
+    document.getElementById('btn-new').addEventListener('click', openCreate);
+    document.getElementById('btn-save').addEventListener('click', saveItem);
+    document.getElementById('btn-confirm-delete').addEventListener('click', confirmDelete);
+    document.getElementById('search-input').addEventListener('input', () => {
+      currentSearch = document.getElementById('search-input').value;
+      currentPage = 1;
+      loadData();
+    });
+
+    await loadData();
+  });
+
+  async function loadData() {
+    try {
+      const params = { page: currentPage, pageSize: PAGE_SIZE };
+      if (currentSearch) params.search = currentSearch;
+      const res = await API.stockAnalysis.idealMonths.getAll(params);
+      const data = res?.Data || [];
+      totalCount = res?.TotalCount || 0;
+      renderTable(data);
+      renderPagination(res?.TotalPages || 1);
+    } catch(e) { showToast(e.message, 'danger'); }
+  }
+
+  function renderTable(rows) {
+    document.getElementById('total-count').textContent = totalCount + ' records';
+    const tbody = document.getElementById('data-tbody');
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No records found.</td></tr>';
+      return;
+    }
+    const offset = (currentPage - 1) * PAGE_SIZE;
+    tbody.innerHTML = rows.map((r, i) => `
+      <tr>
+        <td>${offset + i + 1}</td>
+        <td><strong>${esc(r.SimItemCode)}</strong></td>
+        <td>${r.SimIdealMonths}</td>
+        <td>${esc(r.SimOrderFreq || '–')}</td>
+        <td>${r.SimStockStartDate ? r.SimStockStartDate.substring(0, 10) : '–'}</td>
+        <td><small>${r.UpdatedAt ? r.UpdatedAt.substring(0, 10) : '–'}</small></td>
+        <td>
+          <button class="btn-action edit me-1" onclick="openEdit(${r.SimId},'${esc(r.SimItemCode)}',${r.SimIdealMonths},'${esc(r.SimOrderFreq||'')}','${r.SimStockStartDate?r.SimStockStartDate.substring(0,10):''}')"><i class="fas fa-edit"></i></button>
+          <button class="btn-action delete" onclick="askDelete(${r.SimId})"><i class="fas fa-trash"></i></button>
+        </td>
+      </tr>`).join('');
+  }
+
+  function renderPagination(totalPages) {
+    document.getElementById('page-info').textContent = `Page ${currentPage} of ${totalPages}`;
+    let html = `<li class="page-item ${currentPage===1?'disabled':''}"><a class="page-link" href="#" onclick="event.preventDefault();gotoPage(${currentPage-1})">&#8249;</a></li>`;
+    for (let p = 1; p <= totalPages; p++)
+      html += `<li class="page-item ${p===currentPage?'active':''}"><a class="page-link" href="#" onclick="event.preventDefault();gotoPage(${p})">${p}</a></li>`;
+    html += `<li class="page-item ${currentPage>=totalPages?'disabled':''}"><a class="page-link" href="#" onclick="event.preventDefault();gotoPage(${currentPage+1})">&#8250;</a></li>`;
+    document.getElementById('pagination').innerHTML = html;
+  }
+
+  function gotoPage(p) { if (p < 1) return; currentPage = p; loadData(); }
+
+  function openCreate() {
+    document.getElementById('edit-id').value = '';
+    document.getElementById('f-item-code').value = '';
+    document.getElementById('f-item-code').disabled = false;
+    document.getElementById('f-ideal-months').value = '1.5';
+    document.getElementById('f-order-freq').value = '';
+    document.getElementById('f-stock-start').value = '';
+    document.getElementById('modalTitle').innerHTML = '<i class="fas fa-plus me-2"></i>New Ideal Months Entry';
+    new bootstrap.Modal('#itemModal').show();
+  }
+
+  function openEdit(id, itemCode, idealMonths, orderFreq, stockStart) {
+    document.getElementById('edit-id').value = id;
+    document.getElementById('f-item-code').value = itemCode;
+    document.getElementById('f-item-code').disabled = true;
+    document.getElementById('f-ideal-months').value = idealMonths;
+    document.getElementById('f-order-freq').value = orderFreq || '';
+    document.getElementById('f-stock-start').value = stockStart || '';
+    document.getElementById('modalTitle').innerHTML = '<i class="fas fa-edit me-2"></i>Edit Ideal Months Entry';
+    new bootstrap.Modal('#itemModal').show();
+  }
+
+  async function saveItem() {
+    const itemCode    = document.getElementById('f-item-code').value.trim().toUpperCase();
+    const idealMonths = parseFloat(document.getElementById('f-ideal-months').value);
+    const orderFreq   = document.getElementById('f-order-freq').value.trim() || null;
+    const stockStart  = document.getElementById('f-stock-start').value || null;
+
+    document.getElementById('f-item-code').classList.toggle('is-invalid', !itemCode);
+    if (!itemCode) return;
+
+    const dto = {
+      ItemCode: itemCode,
+      IdealMonths: idealMonths,
+      OrderFreq: orderFreq,
+      StockStartDate: stockStart
+    };
+    try {
+      await API.put('/api/stock/ideal-months', dto);
+      showToast('Saved.', 'success');
+      bootstrap.Modal.getInstance(document.getElementById('itemModal'))?.hide();
+      await loadData();
+    } catch(e) { showToast(e.message, 'danger'); }
+  }
+
+  function askDelete(id) {
+    deleteId = id;
+    new bootstrap.Modal('#deleteModal').show();
+  }
+
+  async function confirmDelete() {
+    if (!deleteId) return;
+    try {
+      await API.stockAnalysis.idealMonths.delete(deleteId);
+      bootstrap.Modal.getInstance(document.getElementById('deleteModal'))?.hide();
+      showToast('Deleted.', 'success');
+      await loadData();
+    } catch(e) { showToast(e.message, 'danger'); }
+    deleteId = null;
+  }
+
+  function showToast(msg, type='success') {
+    const el = document.getElementById('toast');
+    el.className = `toast align-items-center text-white border-0 bg-${type==='success'?'success':'danger'}`;
+    document.getElementById('toast-msg').textContent = msg;
+    new bootstrap.Toast(el, { delay: 3500 }).show();
+  }
+  function esc(s) { return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+</script>
+</body>
+</html>

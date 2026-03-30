@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>POS Lend Out - Licores Maduro</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../../css/main.css" />
+  <style>
+    .table-lend th  { white-space: nowrap; font-size: .78rem; }
+    .table-lend td  { font-size: .82rem; vertical-align: middle; }
+    .status-badge   { font-size: .75rem; padding: 3px 10px; border-radius: 50px; font-weight: 600; }
+    .status-DRAFT    { background:#e9ecef; color:#495057; }
+    .status-LENT     { background:#fff3cd; color:#856404; }
+    .status-PARTIAL  { background:#cfe2ff; color:#084298; }
+    .status-RETURNED { background:#d1e7dd; color:#0a3622; }
+  </style>
+</head>
+<body>
+<div id="sidebar-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;"></div>
+<div class="app-wrapper">
+  <nav id="sidebar" class="sidebar">
+    <div class="sidebar-header"><img src="../../img/LogoLicores.png" alt="Licores Maduro" class="sidebar-logo-img"/><span class="sidebar-logo-text">LICORES MADURO</span></div>
+    <div id="sidebar-nav" class="sidebar-nav"></div>
+    <div class="sidebar-footer"><div class="sidebar-user"><div class="sidebar-avatar" id="sidebar-user-initials">LM</div><div class="sidebar-text"><div id="sidebar-user-name" style="font-weight:600;">–</div></div></div></div>
+  </nav>
+  <div class="main-area">
+    <header class="topbar">
+      <button id="btn-sidebar-toggle" class="btn-sidebar-toggle"><i class="fas fa-bars"></i></button>
+      <span class="topbar-title"><i class="fas fa-hand-holding me-2 text-wine"></i>POS Lend Out</span>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown">
+            <span class="sidebar-avatar" id="topbar-user-initials" style="width:28px;height:28px;font-size:.75rem;">LM</span>
+            <span id="topbar-user-name" class="d-none d-md-inline">–</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+            <li><div class="dropdown-header"><strong id="topbar-user-fullname">User</strong><br/><small class="text-muted" id="topbar-user-role">Role</small></div></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item text-danger" href="#" id="btn-logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+          </ul>
+        </div>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="../../dashboard.html"><i class="fas fa-home me-1"></i>Home</a></li>
+          <li class="breadcrumb-item">Activity Request</li>
+          <li class="breadcrumb-item active">POS Lend Out</li>
+        </ol>
+      </nav>
+      <div class="page-title">POS Lend Out</div>
+      <div class="page-subtitle">Track POS material loans to clients — from lend to return.</div>
+
+      <!-- KPI Cards -->
+      <div class="row g-3 mb-4">
+        <div class="col-12 col-sm-6 col-xl-3">
+          <div class="stat-card">
+            <div class="stat-icon wine"><i class="fas fa-clipboard-list"></i></div>
+            <div class="stat-body">
+              <div class="stat-value" id="kpi-draft">–</div>
+              <div class="stat-label">Draft</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+          <div class="stat-card">
+            <div class="stat-icon gold"><i class="fas fa-hand-holding"></i></div>
+            <div class="stat-body">
+              <div class="stat-value" id="kpi-lent">–</div>
+              <div class="stat-label">Lent Out</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+          <div class="stat-card">
+            <div class="stat-icon blue"><i class="fas fa-undo-alt"></i></div>
+            <div class="stat-body">
+              <div class="stat-value" id="kpi-partial">–</div>
+              <div class="stat-label">Partial Return</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+          <div class="stat-card">
+            <div class="stat-icon green"><i class="fas fa-check-double"></i></div>
+            <div class="stat-body">
+              <div class="stat-value" id="kpi-returned">–</div>
+              <div class="stat-label">Returned</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="card mb-3">
+        <div class="card-body d-flex flex-wrap align-items-center gap-2 py-2">
+          <div id="year-buttons" class="d-flex gap-1 flex-wrap"></div>
+          <div class="vr mx-1"></div>
+          <div class="search-wrapper" style="width:220px;">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" id="search-input" class="form-control form-control-sm" placeholder="Search LO#, client…" />
+          </div>
+          <select id="status-filter" class="form-select form-select-sm" style="width:140px;">
+            <option value="">All Statuses</option>
+            <option value="DRAFT">Draft</option>
+            <option value="LENT">Lent Out</option>
+            <option value="PARTIAL">Partial</option>
+            <option value="RETURNED">Returned</option>
+          </select>
+          <div class="form-check form-switch ms-2 mb-0">
+            <input class="form-check-input" type="checkbox" id="chk-inactive" />
+            <label class="form-check-label small" for="chk-inactive">Show inactive</label>
+          </div>
+          <button id="btn-new" class="btn btn-wine btn-sm ms-auto">
+            <i class="fas fa-plus me-1"></i>New Lend Out
+          </button>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="card">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <span><i class="fas fa-table me-2"></i>Lend Out Records</span>
+          <span class="badge" style="background:var(--primary);color:#fff;" id="total-count">0 records</span>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover table-lend mb-0">
+              <thead>
+                <tr>
+                  <th>LO #</th>
+                  <th>Date</th>
+                  <th>Client</th>
+                  <th>Contact</th>
+                  <th>Expected Return</th>
+                  <th>Actual Return</th>
+                  <th class="text-center">Status</th>
+                  <th>Notes</th>
+                  <th class="text-center" style="width:120px;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="data-tbody">
+                <tr><td colspan="9" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card-footer d-flex align-items-center justify-content-between flex-wrap gap-2">
+          <small class="text-muted" id="page-info">–</small>
+          <nav><ul class="pagination pagination-sm mb-0" id="pagination"></ul></nav>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ── Create Modal ────────────────────────────────────────────────────────── -->
+<div class="modal fade" id="modal-create" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-plus me-2"></i>New Lend Out</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Date</label>
+            <input type="date" id="f-date" class="form-control" />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Expected Return</label>
+            <input type="date" id="f-expected-return" class="form-control" />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Year</label>
+            <input type="number" id="f-year" class="form-control" />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Client Code</label>
+            <input type="text" id="f-client-code" class="form-control" maxlength="20" placeholder="Client code" />
+          </div>
+          <div class="col-md-8">
+            <label class="form-label fw-semibold">Client Name <span class="text-danger">*</span></label>
+            <input type="text" id="f-client-name" class="form-control" maxlength="150" placeholder="Client / company name" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Contact Name</label>
+            <input type="text" id="f-contact-name" class="form-control" maxlength="150" placeholder="Contact person" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Contact Phone</label>
+            <input type="text" id="f-contact-phone" class="form-control" maxlength="50" placeholder="Phone number" />
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Notes</label>
+            <textarea id="f-notes" class="form-control" rows="2" maxlength="300"></textarea>
+          </div>
+        </div>
+        <div id="create-error" class="alert alert-danger mt-3 d-none"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" id="btn-create" class="btn btn-wine"><i class="fas fa-save me-1"></i>Create & Open</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Detail Modal ───────────────────────────────────────────────────────── -->
+<div class="modal fade" id="modal-detail" tabindex="-1">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="detail-title"><i class="fas fa-hand-holding me-2"></i>Lend Out Detail</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+
+        <!-- Header info + status actions -->
+        <div class="d-flex flex-wrap gap-2 align-items-start mb-3">
+          <div>
+            <span class="fw-bold fs-5 me-2" id="d-number">–</span>
+            <span id="d-status-badge" class="status-badge">–</span>
+          </div>
+          <div class="ms-auto d-flex gap-2" id="d-action-btns"></div>
+        </div>
+
+        <!-- Info row -->
+        <div class="row g-2 mb-3">
+          <div class="col-md-3"><small class="text-muted d-block">Client</small><span id="d-client" class="fw-semibold">–</span></div>
+          <div class="col-md-3"><small class="text-muted d-block">Contact</small><span id="d-contact">–</span></div>
+          <div class="col-md-2"><small class="text-muted d-block">Date</small><span id="d-date">–</span></div>
+          <div class="col-md-2"><small class="text-muted d-block">Expected Return</small><span id="d-expected">–</span></div>
+          <div class="col-md-2"><small class="text-muted d-block">Actual Return</small><span id="d-actual">–</span></div>
+        </div>
+        <div class="mb-3" id="d-notes-row" style="display:none">
+          <small class="text-muted d-block">Notes</small><span id="d-notes" class="text-muted fst-italic">–</span>
+        </div>
+
+        <!-- Edit form (DRAFT only) -->
+        <div id="d-edit-panel" class="card mb-3 d-none">
+          <div class="card-header py-2"><i class="fas fa-edit me-2"></i>Edit Header</div>
+          <div class="card-body">
+            <div class="row g-2">
+              <div class="col-md-3"><label class="form-label small">Date</label><input type="date" id="e-date" class="form-control form-control-sm" /></div>
+              <div class="col-md-3"><label class="form-label small">Expected Return</label><input type="date" id="e-expected" class="form-control form-control-sm" /></div>
+              <div class="col-md-3"><label class="form-label small">Client Code</label><input type="text" id="e-client-code" class="form-control form-control-sm" maxlength="20" /></div>
+              <div class="col-md-3"><label class="form-label small">Client Name</label><input type="text" id="e-client-name" class="form-control form-control-sm" maxlength="150" /></div>
+              <div class="col-md-3"><label class="form-label small">Contact Name</label><input type="text" id="e-contact-name" class="form-control form-control-sm" maxlength="150" /></div>
+              <div class="col-md-3"><label class="form-label small">Contact Phone</label><input type="text" id="e-contact-phone" class="form-control form-control-sm" maxlength="50" /></div>
+              <div class="col-md-6"><label class="form-label small">Notes</label><input type="text" id="e-notes" class="form-control form-control-sm" maxlength="300" /></div>
+            </div>
+            <button class="btn btn-sm btn-wine mt-2" onclick="saveHeader()"><i class="fas fa-save me-1"></i>Save Header</button>
+          </div>
+        </div>
+
+        <!-- Items table -->
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <strong><i class="fas fa-list me-2"></i>Items</strong>
+          <button class="btn btn-sm btn-outline-wine" id="btn-add-item"><i class="fas fa-plus me-1"></i>Add Item</button>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Code</th>
+                <th>Material</th>
+                <th class="text-center">Qty Lent</th>
+                <th class="text-center">Qty Returned</th>
+                <th class="text-center">Pending</th>
+                <th>Notes</th>
+                <th class="text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="items-tbody">
+              <tr><td colspan="7" class="text-center text-muted py-3">No items added.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Add item form (inline) -->
+        <div id="add-item-panel" class="card mt-3 d-none">
+          <div class="card-body">
+            <div class="row g-2 align-items-end">
+              <div class="col-md-2"><label class="form-label small">PM Code</label><input type="text" id="i-code" class="form-control form-control-sm" maxlength="20" placeholder="Code" /></div>
+              <div class="col-md-4"><label class="form-label small">Material Name <span class="text-danger">*</span></label><input type="text" id="i-name" class="form-control form-control-sm" maxlength="150" placeholder="Material name" /></div>
+              <div class="col-md-2"><label class="form-label small">Qty Lent <span class="text-danger">*</span></label><input type="number" id="i-qty" class="form-control form-control-sm" min="1" value="1" /></div>
+              <div class="col-md-3"><label class="form-label small">Notes</label><input type="text" id="i-notes" class="form-control form-control-sm" maxlength="300" /></div>
+              <div class="col-md-1 d-flex gap-1">
+                <button class="btn btn-sm btn-wine" onclick="addItem()"><i class="fas fa-plus"></i></button>
+                <button class="btn btn-sm btn-outline-secondary" onclick="toggleAddItemPanel()"><i class="fas fa-times"></i></button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Return qty panel (LENT/PARTIAL only) -->
+        <div id="return-panel" class="d-none mt-2">
+          <small class="text-muted"><i class="fas fa-info-circle me-1"></i>Update returned quantities per item using the <i class="fas fa-undo-alt"></i> button, then advance the status.</small>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Return qty modal -->
+<div class="modal fade" id="modal-return-item" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header py-2">
+        <h6 class="modal-title">Update Return Qty</h6>
+        <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="ri-item-id" />
+        <label class="form-label small fw-semibold" id="ri-label">Quantity Returned</label>
+        <input type="number" id="ri-qty" class="form-control" min="0" value="0" />
+      </div>
+      <div class="modal-footer py-2">
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-sm btn-wine" onclick="saveReturnQty()"><i class="fas fa-save me-1"></i>Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index:1200;">
+  <div id="toast-msg" class="toast align-items-center text-white border-0" role="alert">
+    <div class="d-flex">
+      <div class="toast-body" id="toast-body"></div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../../js/auth.js"></script>
+<script src="../../js/api.js"></script>
+<script src="../../js/sidebar.js"></script>
+<script>
+'use strict';
+
+const STATUS_LABEL = { DRAFT:'Draft', LENT:'Lent Out', PARTIAL:'Partial', RETURNED:'Returned' };
+const NEXT_TRANSITIONS = {
+  DRAFT:   [{ to:'LENT',     cls:'btn-warning',        icon:'fa-hand-holding', label:'Mark as Lent' }],
+  LENT:    [{ to:'PARTIAL',  cls:'btn-outline-info',   icon:'fa-undo-alt',     label:'Partial Return' },
+             { to:'RETURNED',cls:'btn-success',         icon:'fa-check-double', label:'Full Return' }],
+  PARTIAL: [{ to:'RETURNED', cls:'btn-success',         icon:'fa-check-double', label:'Full Return' }],
+  RETURNED:[]
+};
+
+let allData     = [];
+let currentPage = 1;
+const PAGE_SIZE = 20;
+let currentYear = null;
+let currentDetail = null;
+
+let bsCreate = null, bsDetail = null, bsReturnItem = null;
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (!Auth.requireAuth()) return;
+  Auth.startExpiryWatcher();
+  Auth.populateUserUI();
+  Sidebar.init();
+  document.getElementById('btn-logout').addEventListener('click', e => { e.preventDefault(); Auth.logout(); });
+
+  bsCreate     = new bootstrap.Modal(document.getElementById('modal-create'));
+  bsDetail     = new bootstrap.Modal(document.getElementById('modal-detail'));
+  bsReturnItem = new bootstrap.Modal(document.getElementById('modal-return-item'));
+
+  document.getElementById('btn-new').addEventListener('click', openCreate);
+  document.getElementById('btn-create').addEventListener('click', create);
+  document.getElementById('search-input').addEventListener('input', loadData);
+  document.getElementById('status-filter').addEventListener('change', loadData);
+  document.getElementById('chk-inactive').addEventListener('change', loadData);
+  document.getElementById('btn-add-item').addEventListener('click', toggleAddItemPanel);
+
+  // default year = current
+  currentYear = new Date().getFullYear();
+  document.getElementById('f-year').value = currentYear;
+
+  loadYears();
+  loadData();
+  loadSummary();
+});
+
+// ── Years ─────────────────────────────────────────────────────────────────────
+async function loadYears() {
+  try {
+    const res   = await API.get('/api/activity/pos-lend-out/years');
+    const years = res.data ?? [];
+    if (!years.includes(currentYear)) years.unshift(currentYear);
+    const container = document.getElementById('year-buttons');
+    container.innerHTML = years.map(y =>
+      `<button class="btn btn-sm btn-outline-secondary ${y === currentYear ? 'active' : ''}" onclick="selectYear(${y})">${y}</button>`
+    ).join('');
+  } catch { /* ignore */ }
+}
+
+function selectYear(y) {
+  currentYear = y;
+  document.querySelectorAll('#year-buttons button').forEach(b => {
+    b.classList.toggle('active', parseInt(b.textContent) === y);
+  });
+  loadData();
+  loadSummary();
+}
+
+// ── KPI Summary ───────────────────────────────────────────────────────────────
+async function loadSummary() {
+  try {
+    const params = {};
+    if (currentYear) params.year = currentYear;
+    const res = await API.get('/api/activity/pos-lend-out/summary', params);
+    const d   = res.data ?? {};
+    document.getElementById('kpi-draft').textContent    = d['DRAFT']    ?? 0;
+    document.getElementById('kpi-lent').textContent     = d['LENT']     ?? 0;
+    document.getElementById('kpi-partial').textContent  = d['PARTIAL']  ?? 0;
+    document.getElementById('kpi-returned').textContent = d['RETURNED'] ?? 0;
+  } catch { /* ignore */ }
+}
+
+// ── Load list ─────────────────────────────────────────────────────────────────
+async function loadData() {
+  showTableMsg('<i class="fas fa-spinner fa-spin me-2"></i>Loading…');
+  const search   = document.getElementById('search-input').value.trim();
+  const status   = document.getElementById('status-filter').value;
+  const inactive = document.getElementById('chk-inactive').checked;
+
+  const params = { pageSize: 500 };
+  if (search)   params.search          = search;
+  if (status)   params.status          = status;
+  if (currentYear) params.year         = currentYear;
+  if (inactive) params.includeInactive = true;
+
+  try {
+    const res = await API.catalogs.posLendOut.getAll(params);
+    allData = res.data ?? [];
+    currentPage = 1;
+    renderTable();
+  } catch (e) {
+    const msg = e?.data?.message ?? e?.message ?? 'Unknown error';
+    showTableMsg(`<span class="text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Error loading data: ${msg}</span>`);
+  }
+}
+
+// ── Render table ──────────────────────────────────────────────────────────────
+function renderTable() {
+  const total = allData.length;
+  document.getElementById('total-count').textContent = `${total} record${total !== 1 ? 's' : ''}`;
+  const pages = Math.ceil(total / PAGE_SIZE) || 1;
+  if (currentPage > pages) currentPage = pages;
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const slice = allData.slice(start, start + PAGE_SIZE);
+
+  if (!slice.length) {
+    showTableMsg('<span class="text-muted">No records found.</span>');
+    document.getElementById('page-info').textContent = '';
+    document.getElementById('pagination').innerHTML  = '';
+    return;
+  }
+
+  const rows = slice.map(r => {
+    const st = r.ploStatus ?? 'DRAFT';
+    return `<tr class="${r.isActive ? '' : 'table-secondary opacity-75'}">
+      <td><code>${esc(r.ploNumber)}</code></td>
+      <td>${r.ploDate ?? '–'}</td>
+      <td>${esc(r.ploClientName ?? '–')}<br/><small class="text-muted">${esc(r.ploClientCode ?? '')}</small></td>
+      <td>${esc(r.ploContactName ?? '–')}<br/><small class="text-muted">${esc(r.ploContactPhone ?? '')}</small></td>
+      <td>${r.ploExpectedReturn ?? '–'}</td>
+      <td>${r.ploActualReturn ?? '–'}</td>
+      <td class="text-center"><span class="status-badge status-${st}">${STATUS_LABEL[st] ?? st}</span></td>
+      <td><small class="text-muted">${esc(r.ploNotes ?? '–')}</small></td>
+      <td class="text-center">
+        <button class="btn btn-sm btn-outline-primary py-0 px-1" onclick="openDetail(${r.ploId})" title="Open"><i class="fas fa-folder-open"></i></button>
+        ${st === 'DRAFT' ? `<button class="btn btn-sm btn-outline-danger py-0 px-1 ms-1" onclick="deleteRecord(${r.ploId})" title="Delete"><i class="fas fa-trash"></i></button>` : ''}
+      </td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('data-tbody').innerHTML = rows;
+  document.getElementById('page-info').textContent = `${start + 1}–${Math.min(start + PAGE_SIZE, total)} of ${total}`;
+  renderPagination(pages);
+}
+
+function renderPagination(pages) {
+  const ul = document.getElementById('pagination');
+  if (pages <= 1) { ul.innerHTML = ''; return; }
+  ul.innerHTML = Array.from({ length: pages }, (_, i) => i + 1).map(i =>
+    `<li class="page-item ${i === currentPage ? 'active' : ''}"><button class="page-link" onclick="goPage(${i})">${i}</button></li>`
+  ).join('');
+}
+function goPage(p) { currentPage = p; renderTable(); }
+
+// ── Create ────────────────────────────────────────────────────────────────────
+function openCreate() {
+  document.getElementById('f-date').value           = new Date().toISOString().slice(0, 10);
+  document.getElementById('f-expected-return').value= '';
+  document.getElementById('f-client-code').value    = '';
+  document.getElementById('f-client-name').value    = '';
+  document.getElementById('f-contact-name').value   = '';
+  document.getElementById('f-contact-phone').value  = '';
+  document.getElementById('f-notes').value          = '';
+  document.getElementById('create-error').classList.add('d-none');
+  bsCreate.show();
+}
+
+async function create() {
+  const clientName = document.getElementById('f-client-name').value.trim();
+  if (!clientName) { showCreateError('Client Name is required.'); return; }
+
+  const toDate = v => v ? v : null;
+  const payload = {
+    ploYear:          parseInt(document.getElementById('f-year').value) || new Date().getFullYear(),
+    ploDate:          toDate(document.getElementById('f-date').value),
+    ploExpectedReturn:toDate(document.getElementById('f-expected-return').value),
+    ploClientCode:    document.getElementById('f-client-code').value.trim() || null,
+    ploClientName:    clientName,
+    ploContactName:   document.getElementById('f-contact-name').value.trim() || null,
+    ploContactPhone:  document.getElementById('f-contact-phone').value.trim() || null,
+    ploNotes:         document.getElementById('f-notes').value.trim() || null
+  };
+
+  try {
+    const res = await API.catalogs.posLendOut.create(payload);
+    bsCreate.hide();
+    loadData();
+    loadSummary();
+    loadYears();
+    showToast('Lend out created.', 'success');
+    openDetail(res.data.ploId);
+  } catch (e) {
+    showCreateError(e?.data?.message ?? e?.message ?? 'Error creating record.');
+  }
+}
+
+// ── Detail ────────────────────────────────────────────────────────────────────
+async function openDetail(id) {
+  currentDetail = null;
+  try {
+    const [hRes, iRes] = await Promise.all([
+      API.catalogs.posLendOut.getById(id),
+      API.get(`/api/activity/pos-lend-out/${id}/items`)
+    ]);
+    currentDetail = hRes.data;
+    renderDetail(currentDetail, iRes.data ?? []);
+    bsDetail.show();
+  } catch {
+    showToast('Error loading detail.', 'danger');
+  }
+}
+
+function renderDetail(h, items) {
+  const st = h.ploStatus ?? 'DRAFT';
+  document.getElementById('detail-title').innerHTML = `<i class="fas fa-hand-holding me-2"></i>Lend Out — ${esc(h.ploNumber)}`;
+  document.getElementById('d-number').textContent   = h.ploNumber;
+  document.getElementById('d-status-badge').className = `status-badge status-${st}`;
+  document.getElementById('d-status-badge').textContent = STATUS_LABEL[st] ?? st;
+  document.getElementById('d-client').textContent   = h.ploClientName ?? '–';
+  document.getElementById('d-contact').textContent  = [h.ploContactName, h.ploContactPhone].filter(Boolean).join(' · ') || '–';
+  document.getElementById('d-date').textContent     = h.ploDate ?? '–';
+  document.getElementById('d-expected').textContent = h.ploExpectedReturn ?? '–';
+  document.getElementById('d-actual').textContent   = h.ploActualReturn ?? '–';
+
+  const notesRow = document.getElementById('d-notes-row');
+  if (h.ploNotes) { notesRow.style.display = ''; document.getElementById('d-notes').textContent = h.ploNotes; }
+  else            { notesRow.style.display = 'none'; }
+
+  // Edit panel (DRAFT only)
+  const editPanel = document.getElementById('d-edit-panel');
+  if (st === 'DRAFT') {
+    editPanel.classList.remove('d-none');
+    document.getElementById('e-date').value          = h.ploDate ?? '';
+    document.getElementById('e-expected').value      = h.ploExpectedReturn ?? '';
+    document.getElementById('e-client-code').value   = h.ploClientCode ?? '';
+    document.getElementById('e-client-name').value   = h.ploClientName ?? '';
+    document.getElementById('e-contact-name').value  = h.ploContactName ?? '';
+    document.getElementById('e-contact-phone').value = h.ploContactPhone ?? '';
+    document.getElementById('e-notes').value         = h.ploNotes ?? '';
+  } else {
+    editPanel.classList.add('d-none');
+  }
+
+  // Add item button
+  document.getElementById('btn-add-item').classList.toggle('d-none', st !== 'DRAFT');
+  document.getElementById('add-item-panel').classList.add('d-none');
+
+  // Return info
+  document.getElementById('return-panel').classList.toggle('d-none', !['LENT','PARTIAL'].includes(st));
+
+  // Status action buttons
+  const btns = (NEXT_TRANSITIONS[st] ?? []).map(t =>
+    `<button class="btn btn-sm ${t.cls}" onclick="changeStatus('${t.to}')">
+      <i class="fas ${t.icon} me-1"></i>${t.label}</button>`
+  ).join('');
+  document.getElementById('d-action-btns').innerHTML = btns;
+
+  renderItems(items, st);
+}
+
+function renderItems(items, status) {
+  const canReturn = ['LENT', 'PARTIAL'].includes(status);
+  const canRemove = status === 'DRAFT';
+
+  if (!items.length) {
+    document.getElementById('items-tbody').innerHTML =
+      '<tr><td colspan="7" class="text-center text-muted py-3">No items added.</td></tr>';
+    return;
+  }
+
+  document.getElementById('items-tbody').innerHTML = items.map(i => {
+    const pending = (i.ploiQuantityLent ?? 0) - (i.ploiQuantityReturned ?? 0);
+    return `<tr>
+      <td><code>${esc(i.ploiPmCode ?? '–')}</code></td>
+      <td>${esc(i.ploiPmName ?? '–')}</td>
+      <td class="text-center">${i.ploiQuantityLent ?? 0}</td>
+      <td class="text-center text-success fw-semibold">${i.ploiQuantityReturned ?? 0}</td>
+      <td class="text-center ${pending > 0 ? 'text-warning fw-semibold' : 'text-muted'}">${pending}</td>
+      <td><small class="text-muted">${esc(i.ploiNotes ?? '–')}</small></td>
+      <td class="text-center">
+        ${canReturn ? `<button class="btn btn-xs btn-outline-info py-0 px-1" onclick="openReturnItem(${i.ploiId}, ${i.ploiQuantityLent}, ${i.ploiQuantityReturned})" title="Update return"><i class="fas fa-undo-alt"></i></button>` : ''}
+        ${canRemove ? `<button class="btn btn-xs btn-outline-danger py-0 px-1 ms-1" onclick="removeItem(${i.ploiId})" title="Remove"><i class="fas fa-trash"></i></button>` : ''}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Save header ───────────────────────────────────────────────────────────────
+async function saveHeader() {
+  if (!currentDetail) return;
+  const payload = {
+    ploDate:          document.getElementById('e-date').value || null,
+    ploExpectedReturn:document.getElementById('e-expected').value || null,
+    ploClientCode:    document.getElementById('e-client-code').value.trim() || null,
+    ploClientName:    document.getElementById('e-client-name').value.trim() || null,
+    ploContactName:   document.getElementById('e-contact-name').value.trim() || null,
+    ploContactPhone:  document.getElementById('e-contact-phone').value.trim() || null,
+    ploNotes:         document.getElementById('e-notes').value.trim() || null
+  };
+  try {
+    const res = await API.catalogs.posLendOut.update(currentDetail.ploId, payload);
+    currentDetail = res.data;
+    const iRes = await API.get(`/api/activity/pos-lend-out/${currentDetail.ploId}/items`);
+    renderDetail(currentDetail, iRes.data ?? []);
+    loadData();
+    showToast('Header saved.', 'success');
+  } catch (e) {
+    showToast(e?.data?.message ?? 'Error saving.', 'danger');
+  }
+}
+
+// ── Status change ─────────────────────────────────────────────────────────────
+async function changeStatus(newStatus) {
+  if (!currentDetail) return;
+  let actualReturn = null;
+  if (newStatus === 'RETURNED') {
+    actualReturn = prompt('Actual return date (YYYY-MM-DD):', new Date().toISOString().slice(0, 10));
+    if (!actualReturn) return;
+  }
+  try {
+    const res = await API.patch(`/api/activity/pos-lend-out/${currentDetail.ploId}/status`,
+      { status: newStatus, actualReturn: actualReturn || null });
+    currentDetail = res.data;
+    const iRes = await API.get(`/api/activity/pos-lend-out/${currentDetail.ploId}/items`);
+    renderDetail(currentDetail, iRes.data ?? []);
+    loadData();
+    loadSummary();
+    showToast(`Status changed to ${STATUS_LABEL[newStatus]}.`, 'success');
+  } catch (e) {
+    showToast(e?.data?.message ?? 'Error changing status.', 'danger');
+  }
+}
+
+// ── Items ─────────────────────────────────────────────────────────────────────
+function toggleAddItemPanel() {
+  const p = document.getElementById('add-item-panel');
+  p.classList.toggle('d-none');
+  if (!p.classList.contains('d-none')) {
+    document.getElementById('i-code').value = '';
+    document.getElementById('i-name').value = '';
+    document.getElementById('i-qty').value  = 1;
+    document.getElementById('i-notes').value= '';
+  }
+}
+
+async function addItem() {
+  const name = document.getElementById('i-name').value.trim();
+  const qty  = parseInt(document.getElementById('i-qty').value) || 0;
+  if (!name || qty < 1) { showToast('Material name and qty (≥1) required.', 'warning'); return; }
+
+  try {
+    await API.post(`/api/activity/pos-lend-out/${currentDetail.ploId}/items`, {
+      ploiPmCode:       document.getElementById('i-code').value.trim() || null,
+      ploiPmName:       name,
+      ploiQuantityLent: qty,
+      ploiNotes:        document.getElementById('i-notes').value.trim() || null
+    });
+    const iRes = await API.get(`/api/activity/pos-lend-out/${currentDetail.ploId}/items`);
+    renderItems(iRes.data ?? [], currentDetail.ploStatus);
+    document.getElementById('add-item-panel').classList.add('d-none');
+    showToast('Item added.', 'success');
+  } catch (e) {
+    showToast(e?.data?.message ?? 'Error adding item.', 'danger');
+  }
+}
+
+async function removeItem(itemId) {
+  if (!confirm('Remove this item?')) return;
+  try {
+    await API.del(`/api/activity/pos-lend-out/${currentDetail.ploId}/items/${itemId}`);
+    const iRes = await API.get(`/api/activity/pos-lend-out/${currentDetail.ploId}/items`);
+    renderItems(iRes.data ?? [], currentDetail.ploStatus);
+    showToast('Item removed.', 'success');
+  } catch {
+    showToast('Error removing item.', 'danger');
+  }
+}
+
+// ── Return item qty ───────────────────────────────────────────────────────────
+function openReturnItem(itemId, maxQty, currentReturned) {
+  document.getElementById('ri-item-id').value = itemId;
+  document.getElementById('ri-label').textContent = `Quantity Returned (max: ${maxQty})`;
+  document.getElementById('ri-qty').value     = currentReturned;
+  document.getElementById('ri-qty').max       = maxQty;
+  bsReturnItem.show();
+}
+
+async function saveReturnQty() {
+  const itemId = parseInt(document.getElementById('ri-item-id').value);
+  const qty    = parseInt(document.getElementById('ri-qty').value) || 0;
+  try {
+    await API.patch(`/api/activity/pos-lend-out/${currentDetail.ploId}/items/${itemId}/return`,
+      { quantityReturned: qty });
+    bsReturnItem.hide();
+    const iRes = await API.get(`/api/activity/pos-lend-out/${currentDetail.ploId}/items`);
+    renderItems(iRes.data ?? [], currentDetail.ploStatus);
+    showToast('Return quantity updated.', 'success');
+  } catch (e) {
+    showToast(e?.data?.message ?? 'Error updating return qty.', 'danger');
+  }
+}
+
+// ── Delete ────────────────────────────────────────────────────────────────────
+async function deleteRecord(id) {
+  if (!confirm('Delete this lend out record?')) return;
+  try {
+    await API.catalogs.posLendOut.delete(id);
+    showToast('Record deleted.', 'success');
+    loadData();
+    loadSummary();
+  } catch {
+    showToast('Error deleting record.', 'danger');
+  }
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function showTableMsg(html) {
+  document.getElementById('data-tbody').innerHTML =
+    `<tr><td colspan="9" class="text-center py-4">${html}</td></tr>`;
+}
+function showCreateError(msg) {
+  const el = document.getElementById('create-error');
+  el.textContent = msg;
+  el.classList.remove('d-none');
+}
+function showToast(msg, type = 'success') {
+  const el = document.getElementById('toast-msg');
+  el.className = `toast align-items-center text-white border-0 bg-${type}`;
+  document.getElementById('toast-body').textContent = msg;
+  bootstrap.Toast.getOrCreateInstance(el, { delay: 3000 }).show();
+}
+const esc = s => (s ?? '').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+</script>
+</body>
+</html>

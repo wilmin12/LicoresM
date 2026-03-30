@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Allowed Margins - Licores Maduro</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="../../css/main.css"/>
+</head>
+<body>
+<div id="sidebar-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;"></div>
+<div class="app-wrapper">
+  <nav id="sidebar" class="sidebar">
+    <div class="sidebar-header"><img src="../../img/LogoLicores.png" alt="Licores Maduro" class="sidebar-logo-img"/><span class="sidebar-logo-text">LICORES MADURO</span></div>
+    <div id="sidebar-nav" class="sidebar-nav"></div>
+    <div class="sidebar-footer"><div class="sidebar-user"><div class="sidebar-avatar" id="sidebar-user-initials">LM</div><div class="sidebar-text"><div id="sidebar-user-name" style="font-weight:600;">–</div></div></div></div>
+  </nav>
+  <div class="main-area">
+    <header class="topbar">
+      <button id="btn-sidebar-toggle" class="btn-sidebar-toggle"><i class="fas fa-bars"></i></button>
+      <span class="topbar-title"><i class="fas fa-percentage me-2 text-wine"></i>Allowed Margins</span>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown">
+            <span class="sidebar-avatar" id="topbar-user-initials" style="width:28px;height:28px;font-size:.75rem;">LM</span>
+            <span id="topbar-user-name" class="d-none d-md-inline">–</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+            <li><div class="dropdown-header"><strong id="topbar-user-fullname">User</strong><br/><small class="text-muted" id="topbar-user-role">Role</small></div></li>
+            <li><hr class="dropdown-divider"/></li>
+            <li><a class="dropdown-item text-danger" href="#" id="btn-logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+          </ul>
+        </div>
+      </div>
+    </header>
+    <main class="page-content">
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="../../dashboard.html"><i class="fas fa-home me-1"></i>Home</a></li>
+          <li class="breadcrumb-item"><a href="index.html">Cost Calculations</a></li>
+          <li class="breadcrumb-item active">Allowed Margins</li>
+        </ol>
+      </nav>
+      <div class="page-title">Allowed Margins</div>
+      <div class="page-subtitle">Minimum, maximum, and default margin percentages by item code or commodity. Item code takes priority over commodity in the calculation.</div>
+
+      <div class="card mb-3">
+        <div class="card-body d-flex flex-wrap align-items-center gap-2 py-2">
+          <div class="search-wrapper flex-grow-1"><i class="fas fa-search search-icon"></i><input type="text" id="search-input" class="form-control form-control-sm" placeholder="Search by item code, commodity or description..."/></div>
+          <select id="filter-active" class="form-select form-select-sm" style="max-width:130px;">
+            <option value="">All</option>
+            <option value="1">Active only</option>
+            <option value="0">Inactive only</option>
+          </select>
+          <button id="btn-new" class="btn btn-wine btn-sm ms-auto"><i class="fas fa-plus me-1"></i>New Margin Rule</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <span><i class="fas fa-table me-2"></i>Margin Rules</span>
+          <span class="badge" style="background:var(--primary);color:#fff;" id="total-count">0 records</span>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Item Code</th>
+                  <th>Commodity</th>
+                  <th>Description</th>
+                  <th class="text-end">Min %</th>
+                  <th class="text-end">Max %</th>
+                  <th class="text-end">Default %</th>
+                  <th class="text-center">Active</th>
+                  <th class="text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="data-tbody"><tr><td colspan="9" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card-footer text-muted" style="font-size:.8rem;">
+          <i class="fas fa-info-circle me-1"></i>Item Code rules take priority over Commodity rules. At least one of the two must be set per record.
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Create / Edit Modal -->
+<div class="modal fade" id="editModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modal-title">New Margin Rule</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="f-id"/>
+        <div class="alert alert-info py-2" style="font-size:.85rem;">
+          <i class="fas fa-info-circle me-1"></i>Fill Item Code for a specific product rule, or Commodity for a category rule. Item Code takes priority.
+        </div>
+        <div class="row g-3 mb-3">
+          <div class="col-6">
+            <label class="form-label">Item Code</label>
+            <input type="text" id="f-item-code" class="form-control form-control-sm" maxlength="50" placeholder="e.g. ABV-001"/>
+          </div>
+          <div class="col-6">
+            <label class="form-label">Commodity</label>
+            <input type="text" id="f-commodity" class="form-control form-control-sm" maxlength="100" placeholder="e.g. WHISKY"/>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Description</label>
+          <input type="text" id="f-description" class="form-control form-control-sm" maxlength="200"/>
+        </div>
+        <div class="row g-3 mb-3">
+          <div class="col-4">
+            <label class="form-label">Min Margin % <span class="text-danger">*</span></label>
+            <input type="number" id="f-min-margin" class="form-control form-control-sm" step="0.01" min="0" max="100" placeholder="0.00"/>
+            <div class="form-text">e.g. 10 for 10%</div>
+          </div>
+          <div class="col-4">
+            <label class="form-label">Max Margin % <span class="text-danger">*</span></label>
+            <input type="number" id="f-max-margin" class="form-control form-control-sm" step="0.01" min="0" max="100" placeholder="0.00"/>
+          </div>
+          <div class="col-4">
+            <label class="form-label">Default % <span class="text-danger">*</span></label>
+            <input type="number" id="f-def-margin" class="form-control form-control-sm" step="0.01" min="0" max="100" placeholder="0.00"/>
+          </div>
+        </div>
+        <div class="form-check">
+          <input type="checkbox" class="form-check-input" id="f-active" checked/>
+          <label class="form-check-label" for="f-active">Active</label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-wine" id="btn-save"><i class="fas fa-save me-1"></i>Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index:9999;">
+  <div id="toast" class="toast align-items-center text-white border-0" role="alert">
+    <div class="d-flex"><div class="toast-body" id="toast-msg"></div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../../js/i18n.js"></script><script src="../../js/api.js"></script><script src="../../js/auth.js"></script><script src="../../js/sidebar.js"></script>
+<script>
+  let allItems = [], filtered = [];
+  let editModal;
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    if (!Auth.requireAuth()) return;
+    Auth.startExpiryWatcher(); Auth.populateUserUI(); Sidebar.init();
+    document.getElementById('btn-logout').addEventListener('click', e => { e.preventDefault(); Auth.logout(); });
+    editModal = new bootstrap.Modal(document.getElementById('editModal'));
+    document.getElementById('search-input').addEventListener('input', filterAndRender);
+    document.getElementById('filter-active').addEventListener('change', filterAndRender);
+    document.getElementById('btn-new').addEventListener('click', openCreate);
+    document.getElementById('btn-save').addEventListener('click', save);
+    await loadData();
+  });
+
+  async function loadData() {
+    document.getElementById('data-tbody').innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading...</td></tr>';
+    try {
+      const res = await API.costCalc.getAllowedMargins();
+      allItems = res?.Data || res || [];
+      filterAndRender();
+    } catch (err) { showToast(err.message, 'danger'); }
+  }
+
+  function filterAndRender() {
+    const q = document.getElementById('search-input').value.toLowerCase();
+    const act = document.getElementById('filter-active').value;
+    filtered = allItems.filter(r => {
+      const matchQ = !q || (r.AmItemCode || '').toLowerCase().includes(q)
+                        || (r.AmCommodity || '').toLowerCase().includes(q)
+                        || (r.AmDescription || '').toLowerCase().includes(q);
+      const matchA = act === '' || (act === '1' ? r.IsActive : !r.IsActive);
+      return matchQ && matchA;
+    });
+    renderTable();
+  }
+
+  function fmtRate(v) { return v != null ? (Number(v) * 100).toFixed(2) + '%' : '–'; }
+
+  function renderTable() {
+    const tbody = document.getElementById('data-tbody');
+    document.getElementById('total-count').textContent = filtered.length + ' records';
+    if (!filtered.length) { tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted">No records found.</td></tr>'; return; }
+    tbody.innerHTML = filtered.map((r, i) => `<tr>
+      <td>${i + 1}</td>
+      <td>${r.AmItemCode ? `<strong>${esc(r.AmItemCode)}</strong>` : '<span class="text-muted">–</span>'}</td>
+      <td>${esc(r.AmCommodity || '') || '<span class="text-muted">–</span>'}</td>
+      <td>${esc(r.AmDescription || '')}</td>
+      <td class="text-end">${fmtRate(r.AmMinMargin)}</td>
+      <td class="text-end">${fmtRate(r.AmMaxMargin)}</td>
+      <td class="text-end"><strong>${fmtRate(r.AmDefMargin)}</strong></td>
+      <td class="text-center"><span class="${r.IsActive ? 'badge-active' : 'badge-inactive'}">${r.IsActive ? 'Active' : 'Inactive'}</span></td>
+      <td class="text-center">
+        <button class="btn-action edit me-1" onclick="openEdit(${r.AmId})" title="Edit"><i class="fas fa-edit"></i></button>
+        <button class="btn-action delete" onclick="deleteItem(${r.AmId})" title="Delete"><i class="fas fa-trash"></i></button>
+      </td>
+    </tr>`).join('');
+  }
+
+  function clearForm() {
+    ['f-id','f-item-code','f-commodity','f-description','f-min-margin','f-max-margin','f-def-margin'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('f-active').checked = true;
+  }
+
+  function openCreate() {
+    document.getElementById('modal-title').textContent = 'New Margin Rule';
+    clearForm();
+    editModal.show();
+  }
+
+  function openEdit(id) {
+    const r = allItems.find(x => x.AmId === id);
+    if (!r) return;
+    document.getElementById('modal-title').textContent = 'Edit Margin Rule';
+    document.getElementById('f-id').value = r.AmId;
+    document.getElementById('f-item-code').value = r.AmItemCode || '';
+    document.getElementById('f-commodity').value = r.AmCommodity || '';
+    document.getElementById('f-description').value = r.AmDescription || '';
+    document.getElementById('f-min-margin').value = r.AmMinMargin != null ? (Number(r.AmMinMargin) * 100).toFixed(4) : '';
+    document.getElementById('f-max-margin').value = r.AmMaxMargin != null ? (Number(r.AmMaxMargin) * 100).toFixed(4) : '';
+    document.getElementById('f-def-margin').value = r.AmDefMargin != null ? (Number(r.AmDefMargin) * 100).toFixed(4) : '';
+    document.getElementById('f-active').checked = r.IsActive;
+    editModal.show();
+  }
+
+  async function save() {
+    const id = document.getElementById('f-id').value;
+    const itemCode = document.getElementById('f-item-code').value.trim();
+    const commodity = document.getElementById('f-commodity').value.trim();
+    if (!itemCode && !commodity) { showToast('Either Item Code or Commodity is required.', 'danger'); return; }
+    const minV = parseFloat(document.getElementById('f-min-margin').value);
+    const maxV = parseFloat(document.getElementById('f-max-margin').value);
+    const defV = parseFloat(document.getElementById('f-def-margin').value);
+    if (isNaN(minV) || isNaN(maxV) || isNaN(defV)) { showToast('Min, Max, and Default margins are required.', 'danger'); return; }
+    if (minV > maxV) { showToast('Min margin cannot exceed Max margin.', 'danger'); return; }
+    if (defV < minV || defV > maxV) { showToast('Default margin must be between Min and Max.', 'danger'); return; }
+    const dto = {
+      ItemCode:   itemCode || null,
+      Commodity:  commodity || null,
+      Description: document.getElementById('f-description').value.trim() || null,
+      MinMargin:  minV / 100,
+      MaxMargin:  maxV / 100,
+      DefMargin:  defV / 100,
+      IsActive:   document.getElementById('f-active').checked
+    };
+    const btn = document.getElementById('btn-save');
+    btn.disabled = true;
+    try {
+      if (id) await API.costCalc.updateAllowedMargin(parseInt(id), dto);
+      else    await API.costCalc.createAllowedMargin(dto);
+      editModal.hide();
+      showToast('Saved successfully.', 'success');
+      await loadData();
+    } catch (err) { showToast(err.message, 'danger'); }
+    finally { btn.disabled = false; }
+  }
+
+  async function deleteItem(id) {
+    const r = allItems.find(x => x.AmId === id);
+    const label = r?.AmItemCode || r?.AmCommodity || `ID ${id}`;
+    if (!confirm(`Delete margin rule for "${label}"? This cannot be undone.`)) return;
+    try {
+      await API.costCalc.deleteAllowedMargin(id);
+      showToast('Deleted successfully.', 'success');
+      await loadData();
+    } catch (err) { showToast(err.message, 'danger'); }
+  }
+
+  function showToast(msg, type = 'success') {
+    const el = document.getElementById('toast');
+    el.className = `toast align-items-center text-white border-0 bg-${type === 'success' ? 'success' : 'danger'}`;
+    document.getElementById('toast-msg').textContent = msg;
+    new bootstrap.Toast(el, { delay: 3500 }).show();
+  }
+  function esc(s) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+</script>
+</body>
+</html>

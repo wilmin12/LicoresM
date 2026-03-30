@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Upload Data - Licores Maduro</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../../css/main.css" />
+  <style>
+    .upload-section { border-radius: 12px; }
+    .csv-hint { font-family: monospace; font-size: .8rem; background: #f8f9fa; padding: 8px 12px; border-radius: 6px; border: 1px solid #dee2e6; white-space: pre-wrap; }
+    .import-status { min-height: 40px; }
+  </style>
+</head>
+<body>
+<div id="sidebar-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;"></div>
+<div class="app-wrapper">
+  <nav id="sidebar" class="sidebar">
+    <div class="sidebar-header"><img src="../../img/LogoLicores.png" alt="Licores Maduro" class="sidebar-logo-img"/><span class="sidebar-logo-text">LICORES MADURO</span></div>
+    <div id="sidebar-nav" class="sidebar-nav"></div>
+    <div class="sidebar-footer"><div class="sidebar-user"><div class="sidebar-avatar" id="sidebar-user-initials">LM</div><div class="sidebar-text"><div id="sidebar-user-name" style="font-weight:600;">–</div></div></div></div>
+  </nav>
+  <div class="main-area">
+    <header class="topbar">
+      <button id="btn-sidebar-toggle" class="btn-sidebar-toggle"><i class="fas fa-bars"></i></button>
+      <span class="topbar-title"><i class="fas fa-file-upload me-2 text-wine"></i>Upload Data</span>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown">
+            <span class="sidebar-avatar" id="topbar-user-initials" style="width:28px;height:28px;font-size:.75rem;">LM</span>
+            <span id="topbar-user-name" class="d-none d-md-inline">–</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+            <li><div class="dropdown-header"><strong id="topbar-user-fullname">User</strong><br/><small class="text-muted" id="topbar-user-role">Role</small></div></li>
+            <li><hr class="dropdown-divider"/></li>
+            <li><a class="dropdown-item text-danger" href="#" id="btn-logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+          </ul>
+        </div>
+      </div>
+    </header>
+    <main class="page-content">
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="../../dashboard.html"><i class="fas fa-home me-1"></i>Home</a></li>
+          <li class="breadcrumb-item"><a href="index.html">Stock Analysis</a></li>
+          <li class="breadcrumb-item active">Upload Data</li>
+        </ol>
+      </nav>
+      <div class="page-title">Upload Data</div>
+      <div class="page-subtitle">Import Vendor Constraints and Sales Budget data via CSV paste.</div>
+
+      <!-- Vendor Constraints Section -->
+      <div class="card upload-section mb-4">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <span><i class="fas fa-truck me-2"></i>Vendor Constraints (ORDERSTREAM)</span>
+          <span class="badge bg-secondary" id="vc-count-badge">0 records</span>
+        </div>
+        <div class="card-body">
+          <p class="text-muted small mb-2">
+            Paste CSV data below. <strong>Columns (comma or tab-separated, with header row):</strong><br/>
+            <code>FromLocationCode, FromLocationName, ToLocationCode, ToLocationName, ShipperCode, OrderReviewDay, SupplierLeadDays, TransitDays, WarehouseProcessDays, SafetyDays, OrderCycleDays, MinOrderQty, OrderIncrement, MinTotalCaseOrder, PurchaserName</code>
+          </p>
+          <div class="csv-hint mb-3">FromCode,FromName,ToCode,ToName,ShipperCode,ReviewDay,LeadDays,TransitDays,WhDays,SafetyDays,CycleDays,MinQty,Increment,MinTotal,Purchaser
+SUPL1,Supplier One,WH001,Warehouse 1,SHIP01,Monday,30,14,2,7,45,100,50,500,John Doe</div>
+          <div class="mb-3">
+            <label class="form-label">Paste CSV data here</label>
+            <textarea id="vc-csv" class="form-control font-monospace" rows="8" placeholder="Paste CSV with header row..."></textarea>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-wine btn-sm" id="btn-import-vc"><i class="fas fa-upload me-1"></i>Import Vendor Constraints</button>
+            <button class="btn btn-outline-secondary btn-sm" id="btn-clear-vc"><i class="fas fa-times me-1"></i>Clear</button>
+          </div>
+          <div class="import-status mt-3" id="vc-status"></div>
+        </div>
+      </div>
+
+      <!-- Sales Budget Section -->
+      <div class="card upload-section mb-4">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <span><i class="fas fa-chart-line me-2"></i>Sales Budget (DII Download)</span>
+          <span class="badge bg-secondary" id="sb-count-badge">0 records</span>
+        </div>
+        <div class="card-body">
+          <p class="text-muted small mb-2">
+            Paste CSV data below. <strong>Columns (comma or tab-separated, with header row):</strong><br/>
+            <code>Year, Month, ItemCode, ItemDesc, BudgetedUnits, BudgetedSales, BudgetedDiscount, BudgetedMargin, BudgetedGross, BudgetedCost</code>
+          </p>
+          <div class="csv-hint mb-3">Year,Month,ItemCode,ItemDesc,BudgetedUnits,BudgetedSales,BudgetedDiscount,BudgetedMargin,BudgetedGross,BudgetedCost
+2025,1,ITEM001,Product One,100,5000,200,1500,4800,3000
+2025,2,ITEM001,Product One,110,5500,220,1650,5280,3300</div>
+          <div class="mb-3">
+            <label class="form-label">Paste CSV data here</label>
+            <textarea id="sb-csv" class="form-control font-monospace" rows="8" placeholder="Paste CSV with header row..."></textarea>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-wine btn-sm" id="btn-import-sb"><i class="fas fa-upload me-1"></i>Import Sales Budget</button>
+            <button class="btn btn-outline-secondary btn-sm" id="btn-clear-sb"><i class="fas fa-times me-1"></i>Clear</button>
+          </div>
+          <div class="import-status mt-3" id="sb-status"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div class="toast-container"><div id="toast" class="toast align-items-center text-white border-0" role="alert"><div class="d-flex"><div class="toast-body" id="toast-msg"></div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div></div></div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../../js/i18n.js"></script>
+<script src="../../js/api.js"></script>
+<script src="../../js/auth.js"></script>
+<script src="../../js/sidebar.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    if (!Auth.requireAuth()) return;
+    Auth.startExpiryWatcher();
+    Auth.populateUserUI();
+    Sidebar.init();
+    document.getElementById('btn-logout').addEventListener('click', e => { e.preventDefault(); Auth.logout(); });
+
+    document.getElementById('btn-import-vc').addEventListener('click', importVendorConstraints);
+    document.getElementById('btn-clear-vc').addEventListener('click', () => { document.getElementById('vc-csv').value = ''; document.getElementById('vc-status').innerHTML = ''; });
+
+    document.getElementById('btn-import-sb').addEventListener('click', importSalesBudget);
+    document.getElementById('btn-clear-sb').addEventListener('click', () => { document.getElementById('sb-csv').value = ''; document.getElementById('sb-status').innerHTML = ''; });
+
+    await loadCounts();
+  });
+
+  async function loadCounts() {
+    try {
+      const vcRes = await API.stockAnalysis.vendorConstraints.getAll({ pageSize: 1 });
+      document.getElementById('vc-count-badge').textContent = (vcRes?.TotalCount || 0) + ' records';
+    } catch {}
+    try {
+      const sbRes = await API.stockAnalysis.salesBudget.getAll({ pageSize: 1 });
+      document.getElementById('sb-count-badge').textContent = (sbRes?.TotalCount || 0) + ' records';
+    } catch {}
+  }
+
+  async function importVendorConstraints() {
+    const csv = document.getElementById('vc-csv').value.trim();
+    if (!csv) { showStatus('vc-status', 'No data to import.', 'warning'); return; }
+
+    const rows = parseVendorConstraintsCsv(csv);
+    if (!rows.length) { showStatus('vc-status', 'No valid rows parsed.', 'warning'); return; }
+
+    showStatus('vc-status', `<i class="fas fa-spinner fa-spin me-1"></i>Importing ${rows.length} rows...`, 'info');
+    try {
+      const res = await API.stockAnalysis.bulkImportVendorConstraints(rows);
+      const d = res?.Data;
+      showStatus('vc-status', `Imported ${d?.ImportedCount ?? rows.length} records successfully.`, 'success');
+      document.getElementById('vc-count-badge').textContent = (d?.ImportedCount ?? rows.length) + ' records';
+      showToast('Vendor Constraints imported.', 'success');
+    } catch(e) { showStatus('vc-status', e.message, 'danger'); }
+  }
+
+  async function importSalesBudget() {
+    const csv = document.getElementById('sb-csv').value.trim();
+    if (!csv) { showStatus('sb-status', 'No data to import.', 'warning'); return; }
+
+    const rows = parseSalesBudgetCsv(csv);
+    if (!rows.length) { showStatus('sb-status', 'No valid rows parsed.', 'warning'); return; }
+
+    showStatus('sb-status', `<i class="fas fa-spinner fa-spin me-1"></i>Importing ${rows.length} rows...`, 'info');
+    try {
+      const res = await API.stockAnalysis.bulkImportSalesBudget(rows);
+      const d = res?.Data;
+      showStatus('sb-status', `Upserted ${d?.UpsertedCount ?? rows.length} records successfully.`, 'success');
+      showToast('Sales Budget imported.', 'success');
+      await loadCounts();
+    } catch(e) { showStatus('sb-status', e.message, 'danger'); }
+  }
+
+  // Parse vendor constraints CSV
+  function parseVendorConstraintsCsv(csv) {
+    const lines = csv.split('\n').map(l => l.trim()).filter(l => l);
+    if (lines.length < 2) return [];
+    const rows = [];
+    for (let i = 1; i < lines.length; i++) {
+      const cols = splitCsvLine(lines[i]);
+      if (cols.length < 1) continue;
+      rows.push({
+        FromLocationCode:     cols[0]  || null,
+        FromLocationName:     cols[1]  || null,
+        ToLocationCode:       cols[2]  || null,
+        ToLocationName:       cols[3]  || null,
+        ShipperCode:          cols[4]  || null,
+        OrderReviewDay:       cols[5]  || null,
+        SupplierLeadDays:     intOrNull(cols[6]),
+        TransitDays:          intOrNull(cols[7]),
+        WarehouseProcessDays: intOrNull(cols[8]),
+        SafetyDays:           intOrNull(cols[9]),
+        OrderCycleDays:       intOrNull(cols[10]),
+        MinOrderQty:          decOrNull(cols[11]),
+        OrderIncrement:       decOrNull(cols[12]),
+        MinTotalCaseOrder:    decOrNull(cols[13]),
+        PurchaserName:        cols[14] || null,
+      });
+    }
+    return rows;
+  }
+
+  // Parse sales budget CSV
+  function parseSalesBudgetCsv(csv) {
+    const lines = csv.split('\n').map(l => l.trim()).filter(l => l);
+    if (lines.length < 2) return [];
+    const rows = [];
+    for (let i = 1; i < lines.length; i++) {
+      const cols = splitCsvLine(lines[i]);
+      if (cols.length < 3) continue;
+      rows.push({
+        Year:             intOrNull(cols[0]) || 0,
+        Month:            intOrNull(cols[1]) || 0,
+        ItemCode:         (cols[2] || '').trim(),
+        ItemDesc:         cols[3] || null,
+        BudgetedUnits:    decOrNull(cols[4]),
+        BudgetedSales:    decOrNull(cols[5]),
+        BudgetedDiscount: decOrNull(cols[6]),
+        BudgetedMargin:   decOrNull(cols[7]),
+        BudgetedGross:    decOrNull(cols[8]),
+        BudgetedCost:     decOrNull(cols[9]),
+      });
+    }
+    return rows.filter(r => r.Year > 0 && r.Month > 0 && r.ItemCode);
+  }
+
+  // Splits a CSV line by comma or tab
+  function splitCsvLine(line) {
+    const sep = line.includes('\t') ? '\t' : ',';
+    return line.split(sep).map(c => c.trim().replace(/^"|"$/g, ''));
+  }
+
+  function intOrNull(v) { const n = parseInt(v); return isNaN(n) ? null : n; }
+  function decOrNull(v) { const n = parseFloat(v); return isNaN(n) ? null : n; }
+
+  function showStatus(elId, msg, type) {
+    const types = { info: 'alert-info', success: 'alert-success', warning: 'alert-warning', danger: 'alert-danger' };
+    document.getElementById(elId).innerHTML = `<div class="alert ${types[type]||'alert-info'} py-2 mb-0">${msg}</div>`;
+  }
+
+  function showToast(msg, type='success') {
+    const el = document.getElementById('toast');
+    el.className = `toast align-items-center text-white border-0 bg-${type==='success'?'success':'danger'}`;
+    document.getElementById('toast-msg').textContent = msg;
+    new bootstrap.Toast(el, { delay: 3500 }).show();
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Route Reports - Licores Maduro</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../../css/main.css" />
+  <style>
+    .results-table th { background: #f8f9fa; font-size:.8rem; white-space:nowrap; }
+    .results-table td { font-size:.82rem; }
+    .badge-variance-ok   { background:#198754; color:#fff; }
+    .badge-variance-warn { background:#dc3545; color:#fff; }
+    .tab-filter-bar { background:#f8f9fa; border-bottom:1px solid #dee2e6; padding:.6rem 1rem; }
+    .spinner-overlay { text-align:center; padding:3rem; color:#6c757d; }
+    .empty-state { text-align:center; padding:3rem; color:#6c757d; }
+  </style>
+</head>
+<body>
+<div id="sidebar-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;"></div>
+<div class="app-wrapper">
+  <nav id="sidebar" class="sidebar">
+    <div class="sidebar-header"><img src="../../img/LogoLicores.png" alt="Licores Maduro" class="sidebar-logo-img"/><span class="sidebar-logo-text">LICORES MADURO</span></div>
+    <div id="sidebar-nav" class="sidebar-nav"></div>
+    <div class="sidebar-footer"><div class="sidebar-user"><div class="sidebar-avatar" id="sidebar-user-initials">LM</div><div class="sidebar-text"><div id="sidebar-user-name" style="font-weight:600;">–</div></div></div></div>
+  </nav>
+  <div class="main-area">
+    <header class="topbar">
+      <button id="btn-sidebar-toggle" class="btn-sidebar-toggle"><i class="fas fa-bars"></i></button>
+      <span class="topbar-title"><i class="fas fa-chart-line me-2 text-wine"></i>Route Reports</span>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown">
+            <span class="sidebar-avatar" id="topbar-user-initials" style="width:28px;height:28px;font-size:.75rem;">LM</span>
+            <span id="topbar-user-name" class="d-none d-md-inline">–</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+            <li><div class="dropdown-header"><strong id="topbar-user-fullname">User</strong><br/><small class="text-muted" id="topbar-user-role">Role</small></div></li>
+            <li><hr class="dropdown-divider"/></li>
+            <li><a class="dropdown-item text-danger" href="#" id="btn-logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+          </ul>
+        </div>
+      </div>
+    </header>
+    <main class="page-content">
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="../../dashboard.html"><i class="fas fa-home me-1"></i>Home</a></li>
+          <li class="breadcrumb-item"><a href="index.html">Route Assignment</a></li>
+          <li class="breadcrumb-item active">Reports</li>
+        </ol>
+      </nav>
+      <div class="page-title">Route Reports</div>
+      <div class="page-subtitle">Measures, visit/delivery schedules, zero-sales and commission analysis.</div>
+
+      <div class="card mt-2">
+        <!-- Tab Nav -->
+        <div class="card-header p-0">
+          <ul class="nav nav-tabs border-0" id="reportTabs" role="tablist">
+            <li class="nav-item"><button class="nav-link active px-3 py-2" data-bs-toggle="tab" data-bs-target="#tab-measures"><i class="fas fa-tachometer-alt me-1"></i>Measures</button></li>
+            <li class="nav-item"><button class="nav-link px-3 py-2" data-bs-toggle="tab" data-bs-target="#tab-visit"><i class="fas fa-calendar-check me-1"></i>Visit Schedule</button></li>
+            <li class="nav-item"><button class="nav-link px-3 py-2" data-bs-toggle="tab" data-bs-target="#tab-delivery"><i class="fas fa-truck me-1"></i>Delivery Schedule</button></li>
+            <li class="nav-item"><button class="nav-link px-3 py-2" data-bs-toggle="tab" data-bs-target="#tab-zerosales"><i class="fas fa-ban me-1"></i>Zero Sales</button></li>
+            <li class="nav-item"><button class="nav-link px-3 py-2" data-bs-toggle="tab" data-bs-target="#tab-commission"><i class="fas fa-dollar-sign me-1"></i>Commission</button></li>
+          </ul>
+        </div>
+
+        <!-- ── MEASURES ── -->
+        <div class="tab-content">
+          <div class="tab-pane fade show active" id="tab-measures">
+            <div class="tab-filter-bar">
+              <div class="row g-2 align-items-end">
+                <div class="col-md-2"><label class="form-label small mb-1">Date From</label><input type="date" id="m-date-from" class="form-control form-control-sm"/></div>
+                <div class="col-md-2"><label class="form-label small mb-1">Date To</label><input type="date" id="m-date-to" class="form-control form-control-sm"/></div>
+                <div class="col-md-2">
+                  <label class="form-label small mb-1">Group By</label>
+                  <select id="m-group-by" class="form-select form-select-sm">
+                    <option value="route">Route</option>
+                    <option value="salesman">Salesman</option>
+                    <option value="customer">Customer</option>
+                    <option value="brand">Brand</option>
+                  </select>
+                </div>
+                <div class="col-md-2"><label class="form-label small mb-1">Warehouse</label><input type="text" id="m-warehouse" class="form-control form-control-sm" placeholder="All"/></div>
+                <div class="col-auto"><button class="btn btn-wine btn-sm" id="btn-run-measures"><i class="fas fa-play me-1"></i>Run</button></div>
+              </div>
+            </div>
+            <div id="measures-results" class="p-3"><div class="empty-state"><i class="fas fa-chart-bar fa-2x mb-2 d-block opacity-25"></i>Select filters and click Run.</div></div>
+          </div>
+
+          <!-- ── VISIT SCHEDULE ── -->
+          <div class="tab-pane fade" id="tab-visit">
+            <div class="tab-filter-bar">
+              <div class="row g-2 align-items-end">
+                <div class="col-md-2"><label class="form-label small mb-1">Date From</label><input type="date" id="vs-date-from" class="form-control form-control-sm"/></div>
+                <div class="col-md-2"><label class="form-label small mb-1">Date To</label><input type="date" id="vs-date-to" class="form-control form-control-sm"/></div>
+                <div class="col-md-2"><label class="form-label small mb-1">Salesman Code</label><input type="text" id="vs-salesman" class="form-control form-control-sm" placeholder="All"/></div>
+                <div class="col-md-2"><label class="form-label small mb-1">Route</label><input type="text" id="vs-route" class="form-control form-control-sm" placeholder="All"/></div>
+                <div class="col-auto"><button class="btn btn-wine btn-sm" id="btn-run-visit"><i class="fas fa-play me-1"></i>Run</button></div>
+              </div>
+            </div>
+            <div id="visit-results" class="p-3"><div class="empty-state"><i class="fas fa-calendar-check fa-2x mb-2 d-block opacity-25"></i>Select filters and click Run.</div></div>
+          </div>
+
+          <!-- ── DELIVERY SCHEDULE ── -->
+          <div class="tab-pane fade" id="tab-delivery">
+            <div class="tab-filter-bar">
+              <div class="row g-2 align-items-end">
+                <div class="col-md-2"><label class="form-label small mb-1">Date From</label><input type="date" id="ds-date-from" class="form-control form-control-sm"/></div>
+                <div class="col-md-2"><label class="form-label small mb-1">Date To</label><input type="date" id="ds-date-to" class="form-control form-control-sm"/></div>
+                <div class="col-md-2"><label class="form-label small mb-1">Driver Code</label><input type="text" id="ds-driver" class="form-control form-control-sm" placeholder="All"/></div>
+                <div class="col-md-2"><label class="form-label small mb-1">Route</label><input type="text" id="ds-route" class="form-control form-control-sm" placeholder="All"/></div>
+                <div class="col-auto"><button class="btn btn-wine btn-sm" id="btn-run-delivery"><i class="fas fa-play me-1"></i>Run</button></div>
+              </div>
+            </div>
+            <div id="delivery-results" class="p-3"><div class="empty-state"><i class="fas fa-truck fa-2x mb-2 d-block opacity-25"></i>Select filters and click Run.</div></div>
+          </div>
+
+          <!-- ── ZERO SALES ── -->
+          <div class="tab-pane fade" id="tab-zerosales">
+            <div class="tab-filter-bar">
+              <div class="row g-2 align-items-end">
+                <div class="col-md-2"><label class="form-label small mb-1">Date From</label><input type="date" id="zs-date-from" class="form-control form-control-sm"/></div>
+                <div class="col-md-2"><label class="form-label small mb-1">Date To</label><input type="date" id="zs-date-to" class="form-control form-control-sm"/></div>
+                <div class="col-md-2"><label class="form-label small mb-1">Salesman Code</label><input type="text" id="zs-salesman" class="form-control form-control-sm" placeholder="All"/></div>
+                <div class="col-md-2"><label class="form-label small mb-1">Route</label><input type="text" id="zs-route" class="form-control form-control-sm" placeholder="All"/></div>
+                <div class="col-auto"><button class="btn btn-wine btn-sm" id="btn-run-zerosales"><i class="fas fa-play me-1"></i>Run</button></div>
+              </div>
+            </div>
+            <div id="zerosales-results" class="p-3"><div class="empty-state"><i class="fas fa-ban fa-2x mb-2 d-block opacity-25"></i>Select filters and click Run.</div></div>
+          </div>
+
+          <!-- ── COMMISSION ── -->
+          <div class="tab-pane fade" id="tab-commission">
+            <div class="tab-filter-bar">
+              <div class="row g-2 align-items-end">
+                <div class="col-md-2"><label class="form-label small mb-1">Date From</label><input type="date" id="co-date-from" class="form-control form-control-sm"/></div>
+                <div class="col-md-2"><label class="form-label small mb-1">Date To</label><input type="date" id="co-date-to" class="form-control form-control-sm"/></div>
+                <div class="col-md-2"><label class="form-label small mb-1">Salesman Code</label><input type="text" id="co-salesman" class="form-control form-control-sm" placeholder="All"/></div>
+                <div class="col-auto"><button class="btn btn-wine btn-sm" id="btn-run-commission"><i class="fas fa-play me-1"></i>Run</button></div>
+              </div>
+            </div>
+            <div id="commission-results" class="p-3"><div class="empty-state"><i class="fas fa-dollar-sign fa-2x mb-2 d-block opacity-25"></i>Select filters and click Run.</div></div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../../js/auth.js"></script>
+<script src="../../js/api.js"></script>
+<script src="../../js/sidebar.js"></script>
+<script>
+  // ── Init ─────────────────────────────────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', () => {
+    if (!Auth.requireAuth()) return;
+    Auth.startExpiryWatcher();
+    Auth.populateUserUI();
+    Sidebar.init();
+    document.getElementById('btn-logout').addEventListener('click', e => {
+      e.preventDefault(); Auth.logout();
+    });
+
+    // Default dates: first/last of current month
+    const now   = new Date();
+    const y     = now.getFullYear(), m = now.getMonth();
+    const first = `${y}-${String(m+1).padStart(2,'0')}-01`;
+    const last  = new Date(y, m+1, 0);
+    const lastStr = `${last.getFullYear()}-${String(last.getMonth()+1).padStart(2,'0')}-${String(last.getDate()).padStart(2,'0')}`;
+    ['m','vs','ds','zs','co'].forEach(p => {
+      const f = document.getElementById(`${p}-date-from`);
+      const t = document.getElementById(`${p}-date-to`);
+      if (f) f.value = first;
+      if (t) t.value = lastStr;
+    });
+
+    document.getElementById('btn-run-measures').addEventListener('click', runMeasures);
+    document.getElementById('btn-run-visit').addEventListener('click', runVisitSchedule);
+    document.getElementById('btn-run-delivery').addEventListener('click', runDeliverySchedule);
+    document.getElementById('btn-run-zerosales').addEventListener('click', runZeroSales);
+    document.getElementById('btn-run-commission').addEventListener('click', runCommission);
+  });
+
+  // ── Helpers ───────────────────────────────────────────────────────────────────
+  function spinner() { return '<div class="spinner-overlay"><i class="fas fa-spinner fa-spin fa-2x mb-2 d-block"></i>Loading data...</div>'; }
+  function empty(msg) { return `<div class="empty-state"><i class="fas fa-inbox fa-2x mb-2 d-block opacity-25"></i>${msg}</div>`; }
+  function errHtml(msg) { return `<div class="alert alert-danger m-3"><i class="fas fa-exclamation-triangle me-2"></i>${msg}</div>`; }
+  function currency(v) { return Number(v||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
+  function num(v,d=0) { return Number(v||0).toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d}); }
+
+  function gv(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+
+  function buildParams(prefix, extra = {}) {
+    const p = { dateFrom: gv(`${prefix}-date-from`), dateTo: gv(`${prefix}-date-to`), ...extra };
+    return Object.fromEntries(Object.entries(p).filter(([,v]) => v));
+  }
+
+  // ── MEASURES ─────────────────────────────────────────────────────────────────
+  async function runMeasures() {
+    const el = document.getElementById('measures-results');
+    el.innerHTML = spinner();
+    try {
+      const params = buildParams('m', {
+        groupBy:   gv('m-group-by'),
+        warehouse: gv('m-warehouse'),
+      });
+      const r = await API.routeAssignment.reports.measures(params);
+      if (!r.Success) { el.innerHTML = errHtml(r.Errors?.[0] || 'Unknown error'); return; }
+      const data = r.Data || [];
+      if (!data.length) { el.innerHTML = empty('No data for the selected filters.'); return; }
+      const groupLabel = { route:'Route', salesman:'Salesman', customer:'Customer', brand:'Brand' }[gv('m-group-by')] || 'Group';
+      el.innerHTML = `<div class="table-responsive">
+        <table class="table table-hover table-sm results-table mb-0">
+          <thead><tr>
+            <th>${groupLabel} Code</th><th>${groupLabel} Name</th>
+            <th class="text-end">Total Cases</th><th class="text-end">Avg Cases/Day</th>
+            <th class="text-end">Nett Sales</th><th class="text-end">Avg Sales/Day</th>
+            <th class="text-end">Discounts</th>
+            <th class="text-end">Invoices</th><th class="text-end">Stops</th>
+            <th class="text-end">Customers</th>
+            <th class="text-end">Margin%</th><th class="text-end">Commission</th>
+          </tr></thead>
+          <tbody>
+            ${data.map(r => `<tr>
+              <td><strong>${r.GroupCode||'–'}</strong></td>
+              <td>${r.GroupName||'–'}</td>
+              <td class="text-end">${num(r.TotalCases,2)}</td>
+              <td class="text-end text-muted">${num(r.AvgCases,2)}</td>
+              <td class="text-end">${currency(r.TotalNettSales)}</td>
+              <td class="text-end text-muted">${currency(r.AvgNettSales)}</td>
+              <td class="text-end">${currency(r.TotalDiscounts)}</td>
+              <td class="text-end">${num(r.TotalInvoices)}</td>
+              <td class="text-end">${num(r.TotalStops)}</td>
+              <td class="text-end">${num(r.TotalCustomers)}</td>
+              <td class="text-end"><span class="badge ${r.MarginPct >= 20 ? 'bg-success' : 'bg-warning text-dark'}">${num(r.MarginPct,1)}%</span></td>
+              <td class="text-end fw-bold">${currency(r.Commission)}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+    } catch(e) { el.innerHTML = errHtml(e.message); }
+  }
+
+  // ── VISIT SCHEDULE ────────────────────────────────────────────────────────────
+  async function runVisitSchedule() {
+    const el = document.getElementById('visit-results');
+    el.innerHTML = spinner();
+    try {
+      const params = buildParams('vs', { salesmanCode: gv('vs-salesman'), route: gv('vs-route') });
+      const r = await API.routeAssignment.reports.visitSchedule(params);
+      if (!r.Success) { el.innerHTML = errHtml(r.Errors?.[0]||'Error'); return; }
+      const data = r.Data || [];
+      if (!data.length) { el.innerHTML = empty('No data for the selected filters.'); return; }
+      el.innerHTML = `<div class="table-responsive">
+        <table class="table table-hover table-sm results-table mb-0">
+          <thead><tr><th>Account</th><th>Name</th><th>Salesman</th><th>Scheduled Day</th><th>Actual Days</th><th>Variance</th></tr></thead>
+          <tbody>
+            ${data.map(r => `<tr>
+              <td><strong>${r.AccountNumber||'–'}</strong></td>
+              <td>${r.AccountName||'–'}</td>
+              <td>${r.SalesmanCode||'–'} ${r.SalesmanName ? `<small class="text-muted">(${r.SalesmanName})</small>` : ''}</td>
+              <td>${r.ScheduledVisitDay||'<span class="text-muted">Not set</span>'}</td>
+              <td>${(r.ActualVisitDays||[]).join(', ')||'–'}</td>
+              <td><span class="badge ${r.HasVariance ? 'badge-variance-warn' : 'badge-variance-ok'}">${r.HasVariance ? 'VARIANCE' : 'OK'}</span></td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+    } catch(e) { el.innerHTML = errHtml(e.message); }
+  }
+
+  // ── DELIVERY SCHEDULE ─────────────────────────────────────────────────────────
+  async function runDeliverySchedule() {
+    const el = document.getElementById('delivery-results');
+    el.innerHTML = spinner();
+    try {
+      const params = buildParams('ds', { driverCode: gv('ds-driver'), route: gv('ds-route') });
+      const r = await API.routeAssignment.reports.deliverySchedule(params);
+      if (!r.Success) { el.innerHTML = errHtml(r.Errors?.[0]||'Error'); return; }
+      const data = r.Data || [];
+      if (!data.length) { el.innerHTML = empty('No data for the selected filters.'); return; }
+      el.innerHTML = `<div class="table-responsive">
+        <table class="table table-hover table-sm results-table mb-0">
+          <thead><tr><th>Account</th><th>Name</th><th>Driver</th><th>Scheduled Day</th><th>Actual Days</th><th>Variance</th></tr></thead>
+          <tbody>
+            ${data.map(r => `<tr>
+              <td><strong>${r.AccountNumber||'–'}</strong></td>
+              <td>${r.AccountName||'–'}</td>
+              <td>${r.DriverCode||'–'} ${r.DriverName ? `<small class="text-muted">(${r.DriverName})</small>` : ''}</td>
+              <td>${r.ScheduledDeliveryDay||'<span class="text-muted">Not set</span>'}</td>
+              <td>${(r.ActualDeliveryDays||[]).join(', ')||'–'}</td>
+              <td><span class="badge ${r.HasVariance ? 'badge-variance-warn' : 'badge-variance-ok'}">${r.HasVariance ? 'VARIANCE' : 'OK'}</span></td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+    } catch(e) { el.innerHTML = errHtml(e.message); }
+  }
+
+  // ── ZERO SALES ────────────────────────────────────────────────────────────────
+  async function runZeroSales() {
+    const el = document.getElementById('zerosales-results');
+    el.innerHTML = spinner();
+    try {
+      const params = buildParams('zs', { salesmanCode: gv('zs-salesman'), route: gv('zs-route') });
+      const r = await API.routeAssignment.reports.zeroSales(params);
+      if (!r.Success) { el.innerHTML = errHtml(r.Errors?.[0]||'Error'); return; }
+      const data = r.Data || [];
+      if (!data.length) { el.innerHTML = empty('No zero-sales gaps found — all brands sold in this period.'); return; }
+      el.innerHTML = `<div class="table-responsive">
+        <table class="table table-hover table-sm results-table mb-0">
+          <thead><tr><th>Sales Rep</th><th>Account</th><th>Brands with Zero Sales</th><th>Count</th></tr></thead>
+          <tbody>
+            ${data.map(r => `<tr>
+              <td>${r.SalesRepNo||'–'}</td>
+              <td><strong>${r.AccountNumber||'–'}</strong></td>
+              <td><small>${(r.BrandsWithZeroSales||[]).join(', ')||'–'}</small></td>
+              <td><span class="badge bg-danger">${(r.BrandsWithZeroSales||[]).length}</span></td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+    } catch(e) { el.innerHTML = errHtml(e.message); }
+  }
+
+  // ── COMMISSION ────────────────────────────────────────────────────────────────
+  async function runCommission() {
+    const el = document.getElementById('commission-results');
+    el.innerHTML = spinner();
+    try {
+      const params = buildParams('co', { salesmanCode: gv('co-salesman') });
+      const r = await API.routeAssignment.reports.commission(params);
+      if (!r.Success) { el.innerHTML = errHtml(r.Errors?.[0]||'Error'); return; }
+      const data = r.Data || [];
+      if (!data.length) { el.innerHTML = empty('No commission data for the selected filters.'); return; }
+      const totalSales = data.reduce((s,x) => s + (x.CurrentPeriodNettSales||0), 0);
+      const totalComm  = data.reduce((s,x) => s + (x.CurrentCommission||0), 0);
+      el.innerHTML = `<div class="table-responsive">
+        <table class="table table-hover table-sm results-table mb-0">
+          <thead><tr>
+            <th>Sales Rep No.</th><th>Sales Rep Name</th>
+            <th class="text-end">Nett Sales (Ex-Polar)</th><th class="text-end">Commission (24%×6.7%)</th>
+          </tr></thead>
+          <tbody>
+            ${data.map(r => `<tr>
+              <td>${r.SalesRepNo||'–'}</td>
+              <td>${r.SalesRepName||'–'}</td>
+              <td class="text-end">${currency(r.CurrentPeriodNettSales)}</td>
+              <td class="text-end fw-bold text-success">${currency(r.CurrentCommission)}</td>
+            </tr>`).join('')}
+          </tbody>
+          <tfoot>
+            <tr class="table-light fw-bold">
+              <td colspan="2">TOTAL</td>
+              <td class="text-end">${currency(totalSales)}</td>
+              <td class="text-end text-success">${currency(totalComm)}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div><p class="text-muted small m-2">Commission formula: Nett Sales × 24% × 6.7% (ExPolar: excludes POLAR brand items)</p>`;
+    } catch(e) { el.innerHTML = errHtml(e.message); }
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Route Dimensions - Licores Maduro</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../../css/main.css" />
+</head>
+<body>
+<div id="sidebar-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;"></div>
+<div class="app-wrapper">
+  <nav id="sidebar" class="sidebar">
+    <div class="sidebar-header"><img src="../../img/LogoLicores.png" alt="Licores Maduro" class="sidebar-logo-img"/><span class="sidebar-logo-text">LICORES MADURO</span></div>
+    <div id="sidebar-nav" class="sidebar-nav"></div>
+    <div class="sidebar-footer"><div class="sidebar-user"><div class="sidebar-avatar" id="sidebar-user-initials">LM</div><div class="sidebar-text"><div id="sidebar-user-name" style="font-weight:600;">–</div></div></div></div>
+  </nav>
+  <div class="main-area">
+    <header class="topbar">
+      <button id="btn-sidebar-toggle" class="btn-sidebar-toggle"><i class="fas fa-bars"></i></button>
+      <span class="topbar-title"><i class="fas fa-database me-2 text-wine"></i>Dimensions Viewer</span>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown">
+            <span class="sidebar-avatar" id="topbar-user-initials" style="width:28px;height:28px;font-size:.75rem;">LM</span>
+            <span id="topbar-user-name" class="d-none d-md-inline">–</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+            <li><div class="dropdown-header"><strong id="topbar-user-fullname">User</strong><br/><small class="text-muted" id="topbar-user-role">Role</small></div></li>
+            <li><hr class="dropdown-divider"/></li>
+            <li><a class="dropdown-item text-danger" href="#" id="btn-logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+          </ul>
+        </div>
+      </div>
+    </header>
+    <main class="page-content">
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="../../dashboard.html"><i class="fas fa-home me-1"></i>Home</a></li>
+          <li class="breadcrumb-item"><a href="index.html">Route Assignment</a></li>
+          <li class="breadcrumb-item active">Dimensions Viewer</li>
+        </ol>
+      </nav>
+      <div class="page-title">Dimensions Viewer</div>
+      <div class="page-subtitle">VIP master data (BRATTT/ITEMT) joined with local extension tables.</div>
+
+      <div class="card mt-2">
+        <div class="card-header p-0">
+          <ul class="nav nav-tabs border-0" role="tablist">
+            <li class="nav-item"><button class="nav-link active px-3 py-2" data-bs-toggle="tab" data-bs-target="#tab-customers"><i class="fas fa-users me-1"></i>Customers</button></li>
+            <li class="nav-item"><button class="nav-link px-3 py-2" data-bs-toggle="tab" data-bs-target="#tab-products"><i class="fas fa-box-open me-1"></i>Products</button></li>
+          </ul>
+        </div>
+
+        <div class="tab-content">
+          <!-- CUSTOMERS -->
+          <div class="tab-pane fade show active" id="tab-customers">
+            <div class="p-3 border-bottom">
+              <div class="row g-2 align-items-center">
+                <div class="col-md-5"><div class="search-wrapper"><i class="fas fa-search search-icon"></i><input type="text" id="cust-search" class="form-control form-control-sm" placeholder="Search account or name..."/></div></div>
+                <div class="col-auto"><button class="btn btn-wine btn-sm" id="btn-search-customers"><i class="fas fa-search me-1"></i>Search</button></div>
+                <div class="ms-auto col-auto" id="cust-count"><span class="badge bg-secondary">–</span></div>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-hover table-sm mb-0" style="font-size:.82rem;">
+                <thead>
+                  <tr>
+                    <th>Account</th><th>Name</th><th>Route</th><th>Salesman</th><th>Visit Day</th><th>Delivery Day</th>
+                    <th>Status</th><th>Sub Class</th><th>On/Off</th><th>Route (Active)</th><th>Pareto</th><th>Coolers</th>
+                  </tr>
+                </thead>
+                <tbody id="cust-tbody"><tr><td colspan="12" class="text-center py-4 text-muted">Enter a search term above and click Search.</td></tr></tbody>
+              </table>
+            </div>
+            <div class="card-footer d-flex align-items-center justify-content-between flex-wrap gap-2">
+              <small class="text-muted" id="cust-page-info">–</small>
+              <nav><ul class="pagination pagination-sm mb-0" id="cust-pagination"></ul></nav>
+            </div>
+          </div>
+
+          <!-- PRODUCTS -->
+          <div class="tab-pane fade" id="tab-products">
+            <div class="p-3 border-bottom">
+              <div class="row g-2 align-items-center">
+                <div class="col-md-5"><div class="search-wrapper"><i class="fas fa-search search-icon"></i><input type="text" id="prod-search" class="form-control form-control-sm" placeholder="Search item code or description..."/></div></div>
+                <div class="col-auto"><button class="btn btn-wine btn-sm" id="btn-search-products"><i class="fas fa-search me-1"></i>Search</button></div>
+                <div class="ms-auto col-auto" id="prod-count"><span class="badge bg-secondary">–</span></div>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-hover table-sm mb-0" style="font-size:.82rem;">
+                <thead>
+                  <tr>
+                    <th>Item Code</th><th>Description</th><th>Status</th><th>Brand</th><th>Sub Code</th>
+                    <th>Product Class</th><th>UPC</th><th>ML/Btl</th><th>Group BWO</th><th>Group Brand</th>
+                  </tr>
+                </thead>
+                <tbody id="prod-tbody"><tr><td colspan="10" class="text-center py-4 text-muted">Enter a search term above and click Search.</td></tr></tbody>
+              </table>
+            </div>
+            <div class="card-footer d-flex align-items-center justify-content-between flex-wrap gap-2">
+              <small class="text-muted" id="prod-page-info">–</small>
+              <nav><ul class="pagination pagination-sm mb-0" id="prod-pagination"></ul></nav>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../../js/auth.js"></script>
+<script src="../../js/api.js"></script>
+<script src="../../js/sidebar.js"></script>
+<script>
+  let custPage = 1, prodPage = 1, pageSize = 50;
+
+  document.addEventListener('DOMContentLoaded', () => {
+    if (!Auth.requireAuth()) return;
+    Auth.startExpiryWatcher();
+    Auth.populateUserUI();
+    Sidebar.init();
+    document.getElementById('btn-logout').addEventListener('click', e => {
+      e.preventDefault(); Auth.logout();
+    });
+    document.getElementById('btn-search-customers').addEventListener('click', () => { custPage = 1; loadCustomers(); });
+    document.getElementById('btn-search-products').addEventListener('click', () => { prodPage = 1; loadProducts(); });
+    document.getElementById('cust-search').addEventListener('keydown', e => { if(e.key==='Enter') { custPage=1; loadCustomers(); } });
+    document.getElementById('prod-search').addEventListener('keydown', e => { if(e.key==='Enter') { prodPage=1; loadProducts(); } });
+  });
+
+  async function loadCustomers() {
+    const search = document.getElementById('cust-search').value.trim();
+    const tbody  = document.getElementById('cust-tbody');
+    tbody.innerHTML = '<tr><td colspan="12" class="text-center py-3 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading...</td></tr>';
+    try {
+      const r = await API.routeAssignment.dimensions.customers({ search, page: custPage, pageSize });
+      document.getElementById('cust-count').innerHTML = `<span class="badge bg-secondary">${r.TotalCount} records</span>`;
+      renderCustomers(r.Data);
+      renderPag('cust-pagination', r.Page, r.TotalPages, 'custGoPage');
+      document.getElementById('cust-page-info').textContent = `Page ${r.Page} of ${r.TotalPages}`;
+    } catch(e) {
+      tbody.innerHTML = `<tr><td colspan="12" class="text-center py-3 text-danger">${e.message}</td></tr>`;
+    }
+  }
+
+  function renderCustomers(data) {
+    const tbody = document.getElementById('cust-tbody');
+    if (!data?.length) { tbody.innerHTML = '<tr><td colspan="12" class="text-center py-4 text-muted">No records found.</td></tr>'; return; }
+    tbody.innerHTML = data.map(c => `<tr>
+      <td><strong>${c.AccountNumber||'–'}</strong></td>
+      <td>${c.AccountName||'–'}</td>
+      <td>${c.Route||'–'}</td>
+      <td>${c.SalesmanCode||'–'}</td>
+      <td>${c.VisitDaySalesman||'–'}</td>
+      <td>${c.DeliveryDayDriver||'–'}</td>
+      <td><span class="badge bg-secondary">${c.Status||'–'}</span></td>
+      <td>${c.SubClass||'–'}</td>
+      <td>${c.OnOffPremise||'–'}</td>
+      <td>${c.RceRouteNpActive||'–'}</td>
+      <td>${c.RcePareto1Overall||'–'}</td>
+      <td>${[c.RceCoolerPolar&&'Polar',c.RceCoolerCorona&&'Corona'].filter(Boolean).join(',')||'–'}</td>
+    </tr>`).join('');
+  }
+
+  async function loadProducts() {
+    const search = document.getElementById('prod-search').value.trim();
+    const tbody  = document.getElementById('prod-tbody');
+    tbody.innerHTML = '<tr><td colspan="10" class="text-center py-3 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading...</td></tr>';
+    try {
+      const r = await API.routeAssignment.dimensions.products({ search, page: prodPage, pageSize });
+      document.getElementById('prod-count').innerHTML = `<span class="badge bg-secondary">${r.TotalCount} records</span>`;
+      renderProducts(r.Data);
+      renderPag('prod-pagination', r.Page, r.TotalPages, 'prodGoPage');
+      document.getElementById('prod-page-info').textContent = `Page ${r.Page} of ${r.TotalPages}`;
+    } catch(e) {
+      tbody.innerHTML = `<tr><td colspan="10" class="text-center py-3 text-danger">${e.message}</td></tr>`;
+    }
+  }
+
+  function renderProducts(data) {
+    const tbody = document.getElementById('prod-tbody');
+    if (!data?.length) { tbody.innerHTML = '<tr><td colspan="10" class="text-center py-4 text-muted">No records found.</td></tr>'; return; }
+    tbody.innerHTML = data.map(p => `<tr>
+      <td><strong>${p.ItemCode||'–'}</strong></td>
+      <td>${p.ItemDesc||'–'}</td>
+      <td><span class="badge bg-secondary">${p.Status||'–'}</span></td>
+      <td>${p.BrandDesc ? `${p.BrandCode} - ${p.BrandDesc}` : (p.BrandCode||'–')}</td>
+      <td>${p.SubCode||'–'}</td>
+      <td>${p.ProductClassDesc ? `${p.ProductClass} - ${p.ProductClassDesc}` : (p.ProductClass||'–')}</td>
+      <td>${p.UnitsPerCase??'–'}</td>
+      <td>${p.MlPerBottle??'–'}</td>
+      <td>${p.RpeGroupCodeBeerWaterOthers||'–'}</td>
+      <td>${p.RpeGroupCodeBrandSpecific||'–'}</td>
+    </tr>`).join('');
+  }
+
+  function renderPag(containerId, page, totalPages, fnName) {
+    const pg = document.getElementById(containerId);
+    if (totalPages <= 1) { pg.innerHTML = ''; return; }
+    let html = '';
+    if (page > 1) html += `<li class="page-item"><a class="page-link" href="#" onclick="event.preventDefault();${fnName}(${page-1})">«</a></li>`;
+    for (let p = Math.max(1,page-2); p <= Math.min(totalPages,page+2); p++)
+      html += `<li class="page-item ${p===page?'active':''}"><a class="page-link" href="#" onclick="event.preventDefault();${fnName}(${p})">${p}</a></li>`;
+    if (page < totalPages) html += `<li class="page-item"><a class="page-link" href="#" onclick="event.preventDefault();${fnName}(${page+1})">»</a></li>`;
+    pg.innerHTML = html;
+  }
+
+  function custGoPage(p) { custPage = p; loadCustomers(); }
+  function prodGoPage(p) { prodPage = p; loadProducts(); }
+</script>
+</body>
+</html>

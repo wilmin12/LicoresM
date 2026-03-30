@@ -1,0 +1,106 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Activity Request - Licores Maduro</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../../css/main.css" />
+</head>
+<body>
+<div id="sidebar-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;"></div>
+<div class="app-wrapper">
+  <nav id="sidebar" class="sidebar">
+    <div class="sidebar-header"><img src="../../img/LogoLicores.png" alt="Licores Maduro" class="sidebar-logo-img"/><span class="sidebar-logo-text">LICORES MADURO</span></div>
+    <div id="sidebar-nav" class="sidebar-nav"></div>
+    <div class="sidebar-footer"><div class="sidebar-user"><div class="sidebar-avatar" id="sidebar-user-initials">LM</div><div class="sidebar-text"><div id="sidebar-user-name" style="font-weight:600;">–</div></div></div></div>
+  </nav>
+  <div class="main-area">
+    <header class="topbar">
+      <button id="btn-sidebar-toggle" class="btn-sidebar-toggle"><i class="fas fa-bars"></i></button>
+      <span class="topbar-title"><i class="fas fa-tasks me-2 text-wine"></i>Activity Request</span>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown">
+            <span class="sidebar-avatar" id="topbar-user-initials" style="width:28px;height:28px;font-size:.75rem;">LM</span>
+            <span id="topbar-user-name" class="d-none d-md-inline">–</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+            <li><div class="dropdown-header"><strong id="topbar-user-fullname">User</strong><br/><small class="text-muted" id="topbar-user-role">Role</small></div></li>
+            <li><hr class="dropdown-divider"/></li>
+            <li><a class="dropdown-item text-danger" href="#" id="btn-logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+          </ul>
+        </div>
+      </div>
+    </header>
+    <main class="page-content">
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="../../dashboard.html"><i class="fas fa-home me-1"></i>Home</a></li>
+          <li class="breadcrumb-item active">Activity Request</li>
+        </ol>
+      </nav>
+
+      <!-- Banner -->
+      <div class="card border-0 shadow-sm mb-4" style="background:linear-gradient(135deg,var(--primary) 0%,var(--primary-light) 100%);color:#fff;">
+        <div class="card-body py-4 px-4">
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <div>
+              <h2 class="mb-1" style="color:#fff;font-size:1.5rem;"><i class="fas fa-tasks me-2"></i>Activity Request Module</h2>
+              <p class="mb-0 opacity-75" style="font-size:.9rem;">Manage activity configurations, product catalogs, customer data and POS finance tables.</p>
+            </div>
+            <div style="opacity:.2;"><i class="fas fa-tasks" style="font-size:5rem;"></i></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Activity Configuration -->
+      <h5 class="mb-3" style="color:var(--primary-dark);font-weight:600;"><i class="fas fa-cog me-2"></i>Activity Configuration</h5>
+      <div class="row g-3 mb-4">
+        <div class="col-12 col-sm-6 col-lg-4"><a href="activity-config.html#activityTypes" class="text-decoration-none"><div class="card h-100 border-0 shadow-sm" style="cursor:pointer;"><div class="card-body d-flex align-items-center gap-3 p-3"><div class="stat-icon wine"><i class="fas fa-star"></i></div><div><div style="font-weight:700;color:var(--primary-dark);">Activity Types</div><div style="font-size:.78rem;color:var(--text-secondary);">Activity type codes</div></div><i class="fas fa-chevron-right ms-auto text-muted" style="font-size:.75rem;"></i></div></div></a></div>
+        <div class="col-12 col-sm-6 col-lg-4"><a href="activity-config.html#budgetActivities" class="text-decoration-none"><div class="card h-100 border-0 shadow-sm" style="cursor:pointer;"><div class="card-body d-flex align-items-center gap-3 p-3"><div class="stat-icon gold"><i class="fas fa-money-bill-wave"></i></div><div><div style="font-weight:700;color:var(--primary-dark);">Budget Activities</div><div style="font-size:.78rem;color:var(--text-secondary);">Budget line items</div></div><i class="fas fa-chevron-right ms-auto text-muted" style="font-size:.75rem;"></i></div></div></a></div>
+        <div class="col-12 col-sm-6 col-lg-4"><a href="activity-config.html#statusCodes" class="text-decoration-none"><div class="card h-100 border-0 shadow-sm" style="cursor:pointer;"><div class="card-body d-flex align-items-center gap-3 p-3"><div class="stat-icon blue"><i class="fas fa-toggle-on"></i></div><div><div style="font-weight:700;color:var(--primary-dark);">Status Codes</div><div style="font-size:.78rem;color:var(--text-secondary);">Request status values</div></div><i class="fas fa-chevron-right ms-auto text-muted" style="font-size:.75rem;"></i></div></div></a></div>
+        <div class="col-12 col-sm-6 col-lg-4"><a href="activity-config.html#denialReasons" class="text-decoration-none"><div class="card h-100 border-0 shadow-sm" style="cursor:pointer;"><div class="card-body d-flex align-items-center gap-3 p-3"><div class="stat-icon wine"><i class="fas fa-ban"></i></div><div><div style="font-weight:700;color:var(--primary-dark);">Denial Reasons</div><div style="font-size:.78rem;color:var(--text-secondary);">Rejection reason codes</div></div><i class="fas fa-chevron-right ms-auto text-muted" style="font-size:.75rem;"></i></div></div></a></div>
+        <div class="col-12 col-sm-6 col-lg-4"><a href="activity-config.html#sponsoringType" class="text-decoration-none"><div class="card h-100 border-0 shadow-sm" style="cursor:pointer;"><div class="card-body d-flex align-items-center gap-3 p-3"><div class="stat-icon gold"><i class="fas fa-handshake"></i></div><div><div style="font-weight:700;color:var(--primary-dark);">Sponsoring Types</div><div style="font-size:.78rem;color:var(--text-secondary);">Sponsorship categories</div></div><i class="fas fa-chevron-right ms-auto text-muted" style="font-size:.75rem;"></i></div></div></a></div>
+        <div class="col-12 col-sm-6 col-lg-4"><a href="activity-config.html#entertainmentTypes" class="text-decoration-none"><div class="card h-100 border-0 shadow-sm" style="cursor:pointer;"><div class="card-body d-flex align-items-center gap-3 p-3"><div class="stat-icon green"><i class="fas fa-theater-masks"></i></div><div><div style="font-weight:700;color:var(--primary-dark);">Entertainment Types</div><div style="font-size:.78rem;color:var(--text-secondary);">Entertainment categories</div></div><i class="fas fa-chevron-right ms-auto text-muted" style="font-size:.75rem;"></i></div></div></a></div>
+      </div>
+
+      <!-- Product Catalogs -->
+      <h5 class="mb-3" style="color:var(--primary-dark);font-weight:600;"><i class="fas fa-tags me-2"></i>Product Catalogs</h5>
+      <div class="row g-3 mb-4">
+        <div class="col-12 col-sm-6 col-lg-4"><a href="product-catalogs.html" class="text-decoration-none"><div class="card h-100 border-0 shadow-sm" style="cursor:pointer;"><div class="card-body d-flex align-items-center gap-3 p-3"><div class="stat-icon wine"><i class="fas fa-swatchbook"></i></div><div><div style="font-weight:700;color:var(--primary-dark);">Colors, Sizes, Shapes</div><div style="font-size:.78rem;color:var(--text-secondary);">Physical attribute catalogs</div></div><i class="fas fa-chevron-right ms-auto text-muted" style="font-size:.75rem;"></i></div></div></a></div>
+        <div class="col-12 col-sm-6 col-lg-4"><a href="product-catalogs.html" class="text-decoration-none"><div class="card h-100 border-0 shadow-sm" style="cursor:pointer;"><div class="card-body d-flex align-items-center gap-3 p-3"><div class="stat-icon gold"><i class="fas fa-wine-bottle"></i></div><div><div style="font-weight:700;color:var(--primary-dark);">Bottles & Bags</div><div style="font-size:.78rem;color:var(--text-secondary);">Bottle and bag spec catalogs</div></div><i class="fas fa-chevron-right ms-auto text-muted" style="font-size:.75rem;"></i></div></div></a></div>
+        <div class="col-12 col-sm-6 col-lg-4"><a href="product-catalogs.html" class="text-decoration-none"><div class="card h-100 border-0 shadow-sm" style="cursor:pointer;"><div class="card-body d-flex align-items-center gap-3 p-3"><div class="stat-icon blue"><i class="fas fa-thermometer-half"></i></div><div><div style="font-weight:700;color:var(--primary-dark);">Cooler Types & Models</div><div style="font-size:.78rem;color:var(--text-secondary);">Cooler catalog tables</div></div><i class="fas fa-chevron-right ms-auto text-muted" style="font-size:.75rem;"></i></div></div></a></div>
+        <div class="col-12 col-sm-6 col-lg-4"><a href="product-catalogs.html" class="text-decoration-none"><div class="card h-100 border-0 shadow-sm" style="cursor:pointer;"><div class="card-body d-flex align-items-center gap-3 p-3"><div class="stat-icon green"><i class="fas fa-tshirt"></i></div><div><div style="font-weight:700;color:var(--primary-dark);">Apparel & Clothing</div><div style="font-size:.78rem;color:var(--text-secondary);">Apparel type and clothing catalogs</div></div><i class="fas fa-chevron-right ms-auto text-muted" style="font-size:.75rem;"></i></div></div></a></div>
+        <div class="col-12 col-sm-6 col-lg-4"><a href="product-catalogs.html" class="text-decoration-none"><div class="card h-100 border-0 shadow-sm" style="cursor:pointer;"><div class="card-body d-flex align-items-center gap-3 p-3"><div class="stat-icon wine"><i class="fas fa-layer-group"></i></div><div><div style="font-weight:700;color:var(--primary-dark);">Materials & Content</div><div style="font-size:.78rem;color:var(--text-secondary);">Material and content catalogs</div></div><i class="fas fa-chevron-right ms-auto text-muted" style="font-size:.75rem;"></i></div></div></a></div>
+        <div class="col-12 col-sm-6 col-lg-4"><a href="product-catalogs.html" class="text-decoration-none"><div class="card h-100 border-0 shadow-sm" style="cursor:pointer;"><div class="card-body d-flex align-items-center gap-3 p-3"><div class="stat-icon gold"><i class="fas fa-list-ul"></i></div><div><div style="font-weight:700;color:var(--primary-dark);">All Other Catalogs</div><div style="font-size:.78rem;color:var(--text-secondary);">LED, VAP, Glass, Brand, Gender, Files, Maint., Insurance</div></div><i class="fas fa-chevron-right ms-auto text-muted" style="font-size:.75rem;"></i></div></div></a></div>
+      </div>
+
+      <!-- Customer Data -->
+      <h5 class="mb-3" style="color:var(--primary-dark);font-weight:600;"><i class="fas fa-users me-2"></i>Customer Data</h5>
+      <div class="row g-3 mb-4">
+        <div class="col-12 col-sm-6 col-lg-4"><a href="customers.html" class="text-decoration-none"><div class="card h-100 border-0 shadow-sm" style="cursor:pointer;"><div class="card-body d-flex align-items-center gap-3 p-3"><div class="stat-icon wine"><i class="fas fa-user-times"></i></div><div><div style="font-weight:700;color:var(--primary-dark);">Non-Clients</div><div style="font-size:.78rem;color:var(--text-secondary);">Non-client customer records</div></div><i class="fas fa-chevron-right ms-auto text-muted" style="font-size:.75rem;"></i></div></div></a></div>
+        <div class="col-12 col-sm-6 col-lg-4"><a href="customers.html" class="text-decoration-none"><div class="card h-100 border-0 shadow-sm" style="cursor:pointer;"><div class="card-body d-flex align-items-center gap-3 p-3"><div class="stat-icon gold"><i class="fas fa-user-friends"></i></div><div><div style="font-weight:700;color:var(--primary-dark);">Sales Groups & Segments</div><div style="font-size:.78rem;color:var(--text-secondary);">Sales group and segment info</div></div><i class="fas fa-chevron-right ms-auto text-muted" style="font-size:.75rem;"></i></div></div></a></div>
+        <div class="col-12 col-sm-6 col-lg-4"><a href="customers.html" class="text-decoration-none"><div class="card h-100 border-0 shadow-sm" style="cursor:pointer;"><div class="card-body d-flex align-items-center gap-3 p-3"><div class="stat-icon blue"><i class="fas fa-map-marker-alt"></i></div><div><div style="font-weight:700;color:var(--primary-dark);">Facilitators & Locations</div><div style="font-size:.78rem;color:var(--text-secondary);">Facilitator and location info</div></div><i class="fas fa-chevron-right ms-auto text-muted" style="font-size:.75rem;"></i></div></div></a></div>
+      </div>
+
+      <!-- POS & Finance -->
+      <h5 class="mb-3" style="color:var(--primary-dark);font-weight:600;"><i class="fas fa-cash-register me-2"></i>POS &amp; Finance</h5>
+      <div class="row g-3">
+        <div class="col-12 col-sm-6 col-lg-4"><a href="pos-finance.html" class="text-decoration-none"><div class="card h-100 border-0 shadow-sm" style="cursor:pointer;"><div class="card-body d-flex align-items-center gap-3 p-3"><div class="stat-icon wine"><i class="fas fa-store"></i></div><div><div style="font-weight:700;color:var(--primary-dark);">POS Categories</div><div style="font-size:.78rem;color:var(--text-secondary);">Point of sale category codes</div></div><i class="fas fa-chevron-right ms-auto text-muted" style="font-size:.75rem;"></i></div></div></a></div>
+        <div class="col-12 col-sm-6 col-lg-4"><a href="pos-finance.html" class="text-decoration-none"><div class="card h-100 border-0 shadow-sm" style="cursor:pointer;"><div class="card-body d-flex align-items-center gap-3 p-3"><div class="stat-icon gold"><i class="fas fa-calendar-alt"></i></div><div><div style="font-weight:700;color:var(--primary-dark);">Fiscal Years</div><div style="font-size:.78rem;color:var(--text-secondary);">Fiscal year start/end dates</div></div><i class="fas fa-chevron-right ms-auto text-muted" style="font-size:.75rem;"></i></div></div></a></div>
+        <div class="col-12 col-sm-6 col-lg-4"><a href="pos-finance.html" class="text-decoration-none"><div class="card h-100 border-0 shadow-sm" style="cursor:pointer;"><div class="card-body d-flex align-items-center gap-3 p-3"><div class="stat-icon green"><i class="fas fa-glass-cheers"></i></div><div><div style="font-weight:700;color:var(--primary-dark);">Licores Group &amp; POS Status</div><div style="font-size:.78rem;color:var(--text-secondary);">Group and materials status</div></div><i class="fas fa-chevron-right ms-auto text-muted" style="font-size:.75rem;"></i></div></div></a></div>
+      </div>
+    </main>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../../js/i18n.js"></script><script src="../../js/api.js"></script><script src="../../js/auth.js"></script><script src="../../js/sidebar.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded',()=>{
+    if(!Auth.requireAuth())return;Auth.startExpiryWatcher();Auth.populateUserUI();Sidebar.init();
+    document.getElementById('btn-logout').addEventListener('click',e=>{e.preventDefault();Auth.logout();});
+  });
+</script>
+</body>
+</html>

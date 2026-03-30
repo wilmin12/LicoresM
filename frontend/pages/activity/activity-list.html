@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Activity Requests - Licores Maduro</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="../../css/main.css"/>
+  <style>
+    /* KPI Cards */
+    .kpi-card { border:none; border-radius:10px; padding:.8rem 1rem; cursor:pointer; position:relative; overflow:hidden; transition:transform .15s,box-shadow .15s; }
+    .kpi-card:hover { transform:translateY(-2px); box-shadow:0 4px 14px rgba(0,0,0,.14); }
+    .kpi-card.active { outline:2px solid rgba(255,255,255,.7); outline-offset:-3px; }
+    .kpi-card .kpi-value { font-size:1.75rem; font-weight:700; line-height:1; }
+    .kpi-card .kpi-label { font-size:.7rem; text-transform:uppercase; letter-spacing:.05em; opacity:.8; margin-top:.25rem; }
+    .kpi-card .kpi-icon  { font-size:2rem; opacity:.18; position:absolute; right:.9rem; top:50%; transform:translateY(-50%); }
+    /* Status badges */
+    .badge-draft     { background:#6c757d; color:#fff; }
+    .badge-pending   { background:#f59e0b; color:#fff; }
+    .badge-approved  { background:#16a34a; color:#fff; }
+    .badge-inprocess { background:#0ea5e9; color:#fff; }
+    .badge-ready     { background:#7c3aed; color:#fff; }
+    .badge-invoiced  { background:#1e293b; color:#fff; }
+    .badge-denied    { background:#dc2626; color:#fff; }
+    .status-badge { font-size:.72rem; padding:.25em .6em; border-radius:.35rem; font-weight:600; white-space:nowrap; }
+    /* Sortable */
+    th.sortable { cursor:pointer; user-select:none; white-space:nowrap; }
+    th.sortable:hover { background:rgba(0,0,0,.04); }
+    th.sortable .si { font-size:.65rem; margin-left:.25rem; opacity:.35; }
+    th.sortable.asc .si, th.sortable.desc .si { opacity:1; }
+    /* Year buttons */
+    .year-btn.active { background:var(--primary)!important; color:#fff!important; border-color:var(--primary)!important; }
+    /* Purple outline button (not in Bootstrap) */
+    .btn-outline-purple { color:#7c3aed; border-color:#7c3aed; background:transparent; }
+    .btn-outline-purple:hover { background:#7c3aed; color:#fff; border-color:#7c3aed; }
+  </style>
+</head>
+<body>
+<div id="sidebar-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;"></div>
+<div class="app-wrapper">
+  <nav id="sidebar" class="sidebar">
+    <div class="sidebar-header"><img src="../../img/LogoLicores.png" alt="Licores Maduro" class="sidebar-logo-img"/><span class="sidebar-logo-text">LICORES MADURO</span></div>
+    <div id="sidebar-nav" class="sidebar-nav"></div>
+    <div class="sidebar-footer"><div class="sidebar-user"><div class="sidebar-avatar" id="sidebar-user-initials">LM</div><div class="sidebar-text"><div id="sidebar-user-name" style="font-weight:600;">–</div></div></div></div>
+  </nav>
+  <div class="main-area">
+    <header class="topbar">
+      <button id="btn-sidebar-toggle" class="btn-sidebar-toggle"><i class="fas fa-bars"></i></button>
+      <span class="topbar-title"><i class="fas fa-clipboard-list me-2 text-wine"></i>Activity Requests</span>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown">
+            <span class="sidebar-avatar" id="topbar-user-initials" style="width:28px;height:28px;font-size:.75rem;">LM</span>
+            <span id="topbar-user-name" class="d-none d-md-inline">–</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+            <li><div class="dropdown-header"><strong id="topbar-user-fullname">User</strong><br/><small class="text-muted" id="topbar-user-role">Role</small></div></li>
+            <li><hr class="dropdown-divider"/></li>
+            <li><a class="dropdown-item text-danger" href="#" id="btn-logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+          </ul>
+        </div>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="../../dashboard.html"><i class="fas fa-home me-1"></i>Home</a></li>
+          <li class="breadcrumb-item"><a href="index.html">Activity Request</a></li>
+          <li class="breadcrumb-item active">Activity Requests</li>
+        </ol>
+      </nav>
+      <div class="page-title">Activity Requests</div>
+      <div class="page-subtitle">Manage and track activity requests through their approval workflow.</div>
+
+      <!-- KPI Cards -->
+      <div class="row g-2 mb-3" id="kpi-row">
+        <div class="col-6 col-md-3 col-xl">
+          <div class="kpi-card bg-secondary text-white active" onclick="filterByStatus('')" id="kpi-all">
+            <div class="kpi-value" id="kpi-val-total">–</div>
+            <div class="kpi-label">Total</div>
+            <i class="fas fa-list kpi-icon"></i>
+          </div>
+        </div>
+        <div class="col-6 col-md-3 col-xl">
+          <div class="kpi-card text-white" style="background:#6c757d" onclick="filterByStatus('DRAFT')" id="kpi-draft">
+            <div class="kpi-value" id="kpi-val-draft">–</div>
+            <div class="kpi-label">Draft</div>
+            <i class="fas fa-file kpi-icon"></i>
+          </div>
+        </div>
+        <div class="col-6 col-md-3 col-xl">
+          <div class="kpi-card text-white" style="background:#f59e0b" onclick="filterByStatus('PENDING')" id="kpi-pending">
+            <div class="kpi-value" id="kpi-val-pending">–</div>
+            <div class="kpi-label">Pending</div>
+            <i class="fas fa-clock kpi-icon"></i>
+          </div>
+        </div>
+        <div class="col-6 col-md-3 col-xl">
+          <div class="kpi-card text-white" style="background:#16a34a" onclick="filterByStatus('APPROVED')" id="kpi-approved">
+            <div class="kpi-value" id="kpi-val-approved">–</div>
+            <div class="kpi-label">Approved</div>
+            <i class="fas fa-check-circle kpi-icon"></i>
+          </div>
+        </div>
+        <div class="col-6 col-md-3 col-xl">
+          <div class="kpi-card text-white" style="background:#0ea5e9" onclick="filterByStatus('INPROCESS')" id="kpi-inprocess">
+            <div class="kpi-value" id="kpi-val-inprocess">–</div>
+            <div class="kpi-label">In Process</div>
+            <i class="fas fa-cogs kpi-icon"></i>
+          </div>
+        </div>
+        <div class="col-6 col-md-3 col-xl">
+          <div class="kpi-card text-white" style="background:#7c3aed" onclick="filterByStatus('READY')" id="kpi-ready">
+            <div class="kpi-value" id="kpi-val-ready">–</div>
+            <div class="kpi-label">Ready</div>
+            <i class="fas fa-flag-checkered kpi-icon"></i>
+          </div>
+        </div>
+        <div class="col-6 col-md-3 col-xl">
+          <div class="kpi-card text-white" style="background:#dc2626" onclick="filterByStatus('DENIED')" id="kpi-denied">
+            <div class="kpi-value" id="kpi-val-denied">–</div>
+            <div class="kpi-label">Denied</div>
+            <i class="fas fa-times-circle kpi-icon"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="card mb-3">
+        <div class="card-body d-flex flex-wrap align-items-center gap-2 py-2">
+          <div id="year-buttons" class="d-flex gap-1 flex-wrap"></div>
+          <div class="vr mx-1"></div>
+          <div class="search-wrapper" style="width:220px;">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" id="search-input" class="form-control form-control-sm" placeholder="Search AR#, supplier, brand…"/>
+          </div>
+          <div class="form-check form-switch ms-2 mb-0">
+            <input class="form-check-input" type="checkbox" id="show-inactive"/>
+            <label class="form-check-label small" for="show-inactive">Show inactive</label>
+          </div>
+          <button class="btn btn-wine btn-sm ms-auto" id="btn-new"><i class="fas fa-plus me-1"></i>New Request</button>
+          <!-- btn-new navigates to form after quick create -->
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="card">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <span><i class="fas fa-table me-2"></i>Activity Requests</span>
+          <span class="badge" style="background:var(--primary);color:#fff;" id="total-count">0 records</span>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0" id="main-table">
+              <thead>
+                <tr>
+                  <th class="sortable" data-col="ArNumber">AR # <span class="si">⇅</span></th>
+                  <th class="sortable" data-col="ArYear">Year <span class="si">⇅</span></th>
+                  <th class="sortable" data-col="ArSupplierName">Supplier <span class="si">⇅</span></th>
+                  <th class="sortable" data-col="ArBrand">Brand <span class="si">⇅</span></th>
+                  <th>Activity Type</th>
+                  <th class="sortable" data-col="ArStatus">Status <span class="si">⇅</span></th>
+                  <th class="sortable" data-col="ArStartDate">Start Date <span class="si">⇅</span></th>
+                  <th class="sortable" data-col="ArEndDate">End Date <span class="si">⇅</span></th>
+                  <th class="text-end">Budget</th>
+                  <th style="width:110px;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="data-tbody">
+                <tr><td colspan="10" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card-footer d-flex align-items-center justify-content-between flex-wrap gap-2">
+          <small class="text-muted" id="page-info">Page 1</small>
+          <nav><ul class="pagination pagination-sm mb-0" id="pagination"></ul></nav>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ── Create / Edit Modal ── -->
+<div class="modal fade" id="record-modal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modal-title"><i class="fas fa-plus me-2"></i>New Activity Request</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3">
+          <div class="col-md-2">
+            <label class="form-label fw-semibold">Year <span class="text-danger">*</span></label>
+            <input type="number" id="f-year" class="form-control" min="2020" max="2040"/>
+          </div>
+          <div class="col-md-5">
+            <label class="form-label fw-semibold">Supplier</label>
+            <select id="f-supplier" class="form-select">
+              <option value="">— No supplier —</option>
+            </select>
+          </div>
+          <div class="col-md-5">
+            <label class="form-label fw-semibold">Brand</label>
+            <input type="text" id="f-brand" class="form-control" placeholder="Brand name" maxlength="100"/>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Activity Type</label>
+            <select id="f-activity-type" class="form-select">
+              <option value="">— Select type —</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Start Date</label>
+            <input type="date" id="f-start-date" class="form-control"/>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">End Date</label>
+            <input type="date" id="f-end-date" class="form-control"/>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Location</label>
+            <select id="f-location" class="form-select">
+              <option value="">— Select location —</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Budget</label>
+            <input type="number" id="f-budget" class="form-control" min="0" step="0.01" placeholder="0.00"/>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Sponsoring Type</label>
+            <select id="f-sponsoring" class="form-select">
+              <option value="">— None —</option>
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Description</label>
+            <textarea id="f-description" class="form-control" rows="2" maxlength="500" placeholder="Activity description…"></textarea>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Notes</label>
+            <textarea id="f-notes" class="form-control" rows="2" maxlength="1000" placeholder="Internal notes…"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-wine" id="btn-save"><i class="fas fa-save me-1"></i>Save Draft</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Status Change Modal ── -->
+<div class="modal fade" id="status-modal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header" id="status-modal-header">
+        <h5 class="modal-title" id="status-modal-title">Change Status</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p id="status-modal-msg"></p>
+        <div id="reason-group" style="display:none;">
+          <label class="form-label fw-semibold">Denial Reason <span class="text-danger">*</span></label>
+          <textarea id="f-denial-reason" class="form-control" rows="3" maxlength="500" placeholder="Explain why this request is being denied…"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-wine" id="btn-confirm-status"><i class="fas fa-check me-1"></i>Confirm</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Delete Confirm Modal ── -->
+<div class="modal fade" id="delete-modal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title"><i class="fas fa-trash me-2"></i>Delete Request</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to delete this request? This action cannot be undone.</p>
+        <p class="fw-bold" id="delete-desc"></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger" id="btn-confirm-delete"><i class="fas fa-trash me-1"></i>Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../../js/i18n.js"></script>
+<script src="../../js/api.js"></script>
+<script src="../../js/auth.js"></script>
+<script src="../../js/sidebar.js"></script>
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   Activity Requests — main script
+═══════════════════════════════════════════════════════════════ */
+
+// Status config
+const STATUS_CFG = {
+  DRAFT:     { label:'Draft',      cls:'badge-draft',     next:['PENDING'] },
+  PENDING:   { label:'Pending',    cls:'badge-pending',   next:['APPROVED','DENIED'] },
+  APPROVED:  { label:'Approved',   cls:'badge-approved',  next:['INPROCESS'] },
+  INPROCESS: { label:'In Process', cls:'badge-inprocess', next:['READY'] },
+  READY:     { label:'Ready',      cls:'badge-ready',     next:['INVOICED'] },
+  INVOICED:  { label:'Invoiced',   cls:'badge-invoiced',  next:[] },
+  DENIED:    { label:'Denied',     cls:'badge-denied',    next:['DRAFT'] }
+};
+const NEXT_LABEL = {
+  PENDING:'Submit for Approval', APPROVED:'Approve', INPROCESS:'Mark In Process',
+  READY:'Mark Ready', INVOICED:'Mark Invoiced', DRAFT:'Reopen', DENIED:'Deny'
+};
+const NEXT_BTN_CFG = {
+  PENDING:   { cls:'btn-outline-warning',  icon:'fa-paper-plane',     label:'Submit'    },
+  APPROVED:  { cls:'btn-success',          icon:'fa-check',           label:'Approve'   },
+  DENIED:    { cls:'btn-danger',           icon:'fa-times',           label:'Deny'      },
+  INPROCESS: { cls:'btn-outline-info',     icon:'fa-cogs',            label:'In Process'},
+  READY:     { cls:'btn-outline-purple',   icon:'fa-flag-checkered',  label:'Ready'     },
+  INVOICED:  { cls:'btn-outline-dark',     icon:'fa-file-invoice',    label:'Invoiced'  },
+  DRAFT:     { cls:'btn-outline-secondary',icon:'fa-undo',            label:'Reopen'    }
+};
+
+let allRecords  = [];
+let currentYear = new Date().getFullYear();
+let activeStatus = '';
+let sortCol = 'ArId', sortAsc = false;
+let currentPage = 1;
+const PAGE_SIZE = 20;
+let editingId  = null;
+let deletingId = null;
+let statusTargetId = null, statusNewValue = null;
+
+const recordModal = new bootstrap.Modal(document.getElementById('record-modal'));
+const deleteModal = new bootstrap.Modal(document.getElementById('delete-modal'));
+const statusModal = new bootstrap.Modal(document.getElementById('status-modal'));
+
+// ── Year buttons ──────────────────────────────────────────────────────────────
+async function loadYears() {
+  try {
+    const body  = await API.get('/api/activity/requests/years');
+    const years = body.Data ?? [];
+    if (!years.includes(currentYear)) years.unshift(currentYear);
+    renderYearButtons(years);
+  } catch { renderYearButtons([currentYear]); }
+}
+
+function renderYearButtons(years) {
+  const c = document.getElementById('year-buttons');
+  c.innerHTML = '';
+  years.forEach(y => {
+    const btn = document.createElement('button');
+    btn.className = `btn btn-sm btn-outline-secondary year-btn${y === currentYear ? ' active' : ''}`;
+    btn.textContent = y;
+    btn.onclick = () => {
+      currentYear = y;
+      document.querySelectorAll('.year-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      Promise.all([loadSummary(), loadRecords()]);
+    };
+    c.appendChild(btn);
+  });
+}
+
+// ── KPI Summary ───────────────────────────────────────────────────────────────
+async function loadSummary() {
+  try {
+    const body = await API.get(`/api/activity/requests/summary?year=${currentYear}`);
+    const d    = body.Data ?? {};
+    document.getElementById('kpi-val-total').textContent     = d.Total     ?? 0;
+    document.getElementById('kpi-val-draft').textContent     = d.Draft     ?? 0;
+    document.getElementById('kpi-val-pending').textContent   = d.Pending   ?? 0;
+    document.getElementById('kpi-val-approved').textContent  = d.Approved  ?? 0;
+    document.getElementById('kpi-val-inprocess').textContent = d.InProcess ?? 0;
+    document.getElementById('kpi-val-ready').textContent     = d.Ready     ?? 0;
+    document.getElementById('kpi-val-denied').textContent    = d.Denied    ?? 0;
+  } catch { /* silent */ }
+}
+
+function filterByStatus(status) {
+  activeStatus = status;
+  document.querySelectorAll('.kpi-card').forEach(c => c.classList.remove('active'));
+  const map = { '':'kpi-all', DRAFT:'kpi-draft', PENDING:'kpi-pending',
+    APPROVED:'kpi-approved', INPROCESS:'kpi-inprocess', READY:'kpi-ready',
+    DENIED:'kpi-denied' };
+  document.getElementById(map[status] ?? 'kpi-all')?.classList.add('active');
+  currentPage = 1;
+  loadRecords();
+}
+
+// ── Load records ──────────────────────────────────────────────────────────────
+async function loadRecords() {
+  document.getElementById('data-tbody').innerHTML =
+    '<tr><td colspan="10" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading…</td></tr>';
+
+  const search   = document.getElementById('search-input').value.trim();
+  const inactive = document.getElementById('show-inactive').checked;
+
+  const params = { year: currentYear, pageSize: 500 };
+  if (search)        params.search          = search;
+  if (activeStatus)  params.status          = activeStatus;
+  if (inactive)      params.includeInactive = true;
+
+  try {
+    const res  = await API.catalogs.activityRequests.getAll(params);
+    allRecords = res.Data ?? [];
+    currentPage = 1;
+    renderTable();
+    document.getElementById('total-count').textContent = `${allRecords.length} record(s)`;
+  } catch (err) {
+    document.getElementById('data-tbody').innerHTML =
+      `<tr><td colspan="10" class="text-center py-4 text-danger"><i class="fas fa-exclamation-triangle me-2"></i>${escHtml(err.message)}</td></tr>`;
+  }
+}
+
+// ── Render table with sort + pagination ───────────────────────────────────────
+function renderTable() {
+  const sorted = [...allRecords].sort((a, b) => {
+    const av = a[sortCol] ?? '', bv = b[sortCol] ?? '';
+    return sortAsc ? String(av).localeCompare(String(bv)) : String(bv).localeCompare(String(av));
+  });
+  const total  = sorted.length;
+  const pages  = Math.ceil(total / PAGE_SIZE) || 1;
+  if (currentPage > pages) currentPage = pages;
+  const slice  = sorted.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  const tbody = document.getElementById('data-tbody');
+  if (!slice.length) {
+    tbody.innerHTML = '<tr><td colspan="10" class="text-center py-4 text-muted">No records found.</td></tr>';
+    renderPagination(0, 1);
+    return;
+  }
+
+  tbody.innerHTML = slice.map(r => {
+    const cfg    = STATUS_CFG[r.ArStatus] ?? { label: r.ArStatus, cls: 'badge-draft' };
+    const budget = r.ArBudget != null ? '$' + Number(r.ArBudget).toLocaleString('en-US', { minimumFractionDigits: 2 }) : '–';
+    const nexts  = cfg.next ?? [];
+    const nextBtns = nexts.map(n => {
+      const bc = NEXT_BTN_CFG[n] ?? { cls:'btn-outline-secondary', icon:'fa-arrow-right', label:n };
+      return `<button class="btn btn-sm ${bc.cls}" style="font-size:.72rem;padding:.2rem .45rem;"
+         onclick="openStatusModal(${r.ArId},'${n}')" title="${NEXT_LABEL[n] ?? n}">
+         <i class="fas ${bc.icon} me-1"></i>${bc.label}
+       </button>`;
+    }).join('');
+    const isDraft = r.ArStatus === 'DRAFT';
+    return `<tr class="${r.IsActive ? '' : 'table-secondary text-muted'}">
+      <td><strong class="text-wine">${escHtml(r.ArNumber)}</strong></td>
+      <td>${r.ArYear}</td>
+      <td>${escHtml(r.ArSupplierName ?? r.ArSupplierCode ?? '–')}</td>
+      <td>${escHtml(r.ArBrand ?? '–')}</td>
+      <td><small>${escHtml(r.ArActivityTypeDesc ?? r.ArActivityTypeCode ?? '–')}</small></td>
+      <td><span class="status-badge ${cfg.cls}">${cfg.label}</span></td>
+      <td>${r.ArStartDate ? r.ArStartDate.substring(0, 10) : '–'}</td>
+      <td>${r.ArEndDate   ? r.ArEndDate.substring(0, 10)   : '–'}</td>
+      <td class="text-end">${budget}</td>
+      <td>
+        <div class="d-flex gap-1 align-items-center">
+          <button class="btn btn-sm btn-outline-primary" onclick="openForm(${r.ArId})" title="Open"><i class="fas fa-folder-open"></i></button>
+          ${nextBtns}
+          ${isDraft ? `<button class="btn btn-sm btn-outline-danger" onclick="openDelete(${r.ArId})" title="Delete"><i class="fas fa-trash"></i></button>` : ''}
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  renderPagination(total, pages);
+}
+
+function renderPagination(total, pages) {
+  document.getElementById('page-info').textContent = `Page ${currentPage} of ${pages} (${total} records)`;
+  const ul = document.getElementById('pagination');
+  let html = `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}"><a class="page-link" href="#" onclick="event.preventDefault();gotoPage(${currentPage - 1})">‹</a></li>`;
+  for (let p = Math.max(1, currentPage - 2); p <= Math.min(pages, currentPage + 2); p++)
+    html += `<li class="page-item ${p === currentPage ? 'active' : ''}"><a class="page-link" href="#" onclick="event.preventDefault();gotoPage(${p})">${p}</a></li>`;
+  html += `<li class="page-item ${currentPage >= pages ? 'disabled' : ''}"><a class="page-link" href="#" onclick="event.preventDefault();gotoPage(${currentPage + 1})">›</a></li>`;
+  ul.innerHTML = html;
+}
+
+function gotoPage(p) { currentPage = p; renderTable(); }
+
+// ── Sort ──────────────────────────────────────────────────────────────────────
+document.querySelectorAll('th.sortable').forEach(th => {
+  th.addEventListener('click', () => {
+    const col = th.dataset.col;
+    if (sortCol === col) sortAsc = !sortAsc;
+    else { sortCol = col; sortAsc = true; }
+    document.querySelectorAll('th.sortable').forEach(t => t.classList.remove('asc', 'desc'));
+    th.classList.add(sortAsc ? 'asc' : 'desc');
+    renderTable();
+  });
+});
+
+// ── Catalogs for dropdowns ────────────────────────────────────────────────────
+async function loadCatalogs() {
+  try {
+    const [suppRes, actRes, locRes, spoRes] = await Promise.all([
+      API.catalogs.suppliers.getAll({ pageSize: 500 }),
+      API.catalogs.activityTypes.getAll({ pageSize: 500 }),
+      API.catalogs.locationInfo.getAll({ pageSize: 500 }),
+      API.catalogs.sponsoringType.getAll({ pageSize: 500 })
+    ]);
+    fillSelect('f-supplier', suppRes.Data ?? [], r => ({
+      value: (r.Supplier ?? '').trim(),
+      label: `${(r.Supplier ?? '').trim()} — ${(r.SupplierName ?? '').trim()}`,
+      data:  { name: (r.SupplierName ?? '').trim() }
+    }), '— No supplier —');
+    fillSelect('f-activity-type', actRes.Data ?? [], r => ({
+      value: r.Code, label: r.Description,
+      data: { desc: r.Description }
+    }), '— Select type —');
+    fillSelect('f-location', locRes.Data ?? [], r => ({
+      value: r.Code, label: r.Description,
+      data: { name: r.Description }
+    }), '— Select location —');
+    fillSelect('f-sponsoring', spoRes.Data ?? [], r => ({
+      value: r.Code, label: r.Description
+    }), '— None —');
+  } catch { /* catalogs optional */ }
+}
+
+function fillSelect(id, items, mapper, placeholder) {
+  const sel = document.getElementById(id);
+  sel.innerHTML = `<option value="">${placeholder}</option>`;
+  items.filter(r => r.IsActive !== false).forEach(r => {
+    const m = mapper(r);
+    const opt = document.createElement('option');
+    opt.value = m.value;
+    opt.textContent = m.label;
+    if (m.data) Object.assign(opt.dataset, m.data);
+    sel.appendChild(opt);
+  });
+}
+
+// ── Create modal ──────────────────────────────────────────────────────────────
+document.getElementById('btn-new').addEventListener('click', () => {
+  editingId = null;
+  document.getElementById('modal-title').innerHTML = '<i class="fas fa-plus me-2"></i>New Activity Request';
+  clearForm();
+  recordModal.show();
+});
+
+function clearForm() {
+  document.getElementById('f-year').value        = currentYear;
+  document.getElementById('f-supplier').value    = '';
+  document.getElementById('f-brand').value       = '';
+  document.getElementById('f-activity-type').value = '';
+  document.getElementById('f-start-date').value  = '';
+  document.getElementById('f-end-date').value    = '';
+  document.getElementById('f-location').value    = '';
+  document.getElementById('f-budget').value      = '';
+  document.getElementById('f-sponsoring').value  = '';
+  document.getElementById('f-description').value = '';
+  document.getElementById('f-notes').value       = '';
+}
+
+// ── Edit modal ────────────────────────────────────────────────────────────────
+function openEdit(id) {
+  const r = allRecords.find(x => x.ArId === id);
+  if (!r) return;
+  editingId = id;
+  document.getElementById('modal-title').innerHTML = '<i class="fas fa-edit me-2"></i>Edit Activity Request';
+  document.getElementById('f-year').value           = r.ArYear;
+  document.getElementById('f-supplier').value       = r.ArSupplierCode ?? '';
+  document.getElementById('f-brand').value          = r.ArBrand ?? '';
+  document.getElementById('f-activity-type').value  = r.ArActivityTypeCode ?? '';
+  document.getElementById('f-start-date').value     = r.ArStartDate ? r.ArStartDate.substring(0, 10) : '';
+  document.getElementById('f-end-date').value       = r.ArEndDate   ? r.ArEndDate.substring(0, 10)   : '';
+  document.getElementById('f-location').value       = r.ArLocationCode ?? '';
+  document.getElementById('f-budget').value         = r.ArBudget ?? '';
+  document.getElementById('f-sponsoring').value     = r.ArSponsoringTypeCode ?? '';
+  document.getElementById('f-description').value    = r.ArDescription ?? '';
+  document.getElementById('f-notes').value          = r.ArNotes ?? '';
+  recordModal.show();
+}
+
+// ── Save ──────────────────────────────────────────────────────────────────────
+document.getElementById('btn-save').addEventListener('click', async () => {
+  const year = parseInt(document.getElementById('f-year').value);
+  if (!year) { alert('Year is required.'); return; }
+
+  const supSel   = document.getElementById('f-supplier');
+  const actSel   = document.getElementById('f-activity-type');
+  const locSel   = document.getElementById('f-location');
+
+  const payload = {
+    ArYear:                 year,
+    ArSupplierCode:         supSel.value || null,
+    ArSupplierName:         supSel.selectedOptions[0]?.dataset.name || null,
+    ArBrand:                document.getElementById('f-brand').value.trim() || null,
+    ArActivityTypeCode:     actSel.value || null,
+    ArActivityTypeDesc:     actSel.selectedOptions[0]?.dataset.desc || null,
+    ArDescription:          document.getElementById('f-description').value.trim() || null,
+    ArStartDate:            document.getElementById('f-start-date').value || null,
+    ArEndDate:              document.getElementById('f-end-date').value   || null,
+    ArLocationCode:         locSel.value || null,
+    ArLocationName:         locSel.selectedOptions[0]?.dataset.name || null,
+    ArBudget:               parseFloat(document.getElementById('f-budget').value) || null,
+    ArSponsoringTypeCode:   document.getElementById('f-sponsoring').value || null,
+    ArNotes:                document.getElementById('f-notes').value.trim() || null,
+    ArSegmentCode: null, ArTargetGroupCode: null, ArSalesGroupCode: null,
+    ArNonClientCode: null, ArNonClientName: null,
+    ArFacilitatorCode: null, ArFacilitatorName: null, ArEntertainmentTypeCode: null
+  };
+
+  const btn = document.getElementById('btn-save');
+  btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Saving…';
+  try {
+    if (editingId) {
+      await API.catalogs.activityRequests.update(editingId, payload);
+      recordModal.hide();
+      await Promise.all([loadSummary(), loadYears(), loadRecords()]);
+    } else {
+      const res = await API.catalogs.activityRequests.create(payload);
+      const newId = res.Data?.ArId;
+      recordModal.hide();
+      if (newId) window.location.href = `activity-form.html?id=${newId}`;
+      else await Promise.all([loadSummary(), loadYears(), loadRecords()]);
+    }
+  } catch (err) {
+    alert(err?.message ?? 'Error saving request.');
+  } finally {
+    btn.disabled = false; btn.innerHTML = '<i class="fas fa-save me-1"></i>Save Draft';
+  }
+});
+
+// ── Status change ─────────────────────────────────────────────────────────────
+function openStatusModal(id, newStatus) {
+  const r = allRecords.find(x => x.ArId === id);
+  if (!r) return;
+  statusTargetId = id;
+  statusNewValue = newStatus;
+
+  const cfg    = STATUS_CFG[newStatus] ?? { label: newStatus };
+  const isDeny = newStatus === 'DENIED';
+  document.getElementById('status-modal-header').className = `modal-header ${isDeny ? 'bg-danger text-white' : 'bg-success text-white'}`;
+  document.getElementById('status-modal-title').textContent = `${NEXT_LABEL[newStatus] ?? newStatus}`;
+  document.getElementById('status-modal-msg').textContent =
+    `Change "${r.ArNumber}" status to "${cfg.label}"?`;
+  document.getElementById('reason-group').style.display = isDeny ? '' : 'none';
+  document.getElementById('f-denial-reason').value = '';
+  statusModal.show();
+}
+
+document.getElementById('btn-confirm-status').addEventListener('click', async () => {
+  if (!statusTargetId) return;
+  const reason = document.getElementById('f-denial-reason').value.trim();
+  if (statusNewValue === 'DENIED' && !reason) {
+    alert('Please enter a denial reason.'); return;
+  }
+  try {
+    await API.patch(`/api/activity/requests/${statusTargetId}/status`,
+      { Status: statusNewValue, Reason: reason || null });
+    statusModal.hide();
+    await Promise.all([loadSummary(), loadRecords()]);
+  } catch (err) {
+    alert(err?.message ?? 'Error changing status.');
+  }
+});
+
+// ── Delete ────────────────────────────────────────────────────────────────────
+function openDelete(id) {
+  const r = allRecords.find(x => x.ArId === id);
+  if (!r) return;
+  deletingId = id;
+  document.getElementById('delete-desc').textContent = `${r.ArNumber} — ${r.ArBrand ?? ''} (${r.ArYear})`;
+  deleteModal.show();
+}
+
+document.getElementById('btn-confirm-delete').addEventListener('click', async () => {
+  if (!deletingId) return;
+  try {
+    await API.catalogs.activityRequests.delete(deletingId);
+    deleteModal.hide();
+    await Promise.all([loadSummary(), loadRecords()]);
+  } catch (err) { alert(err?.message ?? 'Error deleting request.'); }
+});
+
+// ── Filters ───────────────────────────────────────────────────────────────────
+document.getElementById('search-input').addEventListener('input', debounce(loadRecords, 350));
+document.getElementById('show-inactive').addEventListener('change', loadRecords);
+
+function openForm(id) { window.location.href = `activity-form.html?id=${id}`; }
+
+function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
+function escHtml(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!Auth.requireAuth()) return;
+  Auth.startExpiryWatcher();
+  Auth.populateUserUI();
+  Sidebar.init();
+  document.getElementById('btn-logout').addEventListener('click', e => { e.preventDefault(); Auth.logout(); });
+
+  await Promise.all([loadYears(), loadCatalogs(), loadSummary()]);
+  loadRecords();
+});
+</script>
+</body>
+</html>

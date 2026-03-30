@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Active Users - Licores Maduro</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="../css/main.css"/>
+  <style>
+    .online-dot { display:inline-block; width:9px; height:9px; border-radius:50%; background:#198754; box-shadow:0 0 0 2px rgba(25,135,84,.25); }
+    .user-avatar-sm { width:32px; height:32px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:.75rem; font-weight:700; color:#fff; background:var(--primary); flex-shrink:0; }
+    .minutes-chip { font-size:.78rem; padding:.2em .6em; border-radius:20px; }
+  </style>
+</head>
+<body>
+<div id="sidebar-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;"></div>
+<div class="app-wrapper">
+  <nav id="sidebar" class="sidebar">
+    <div class="sidebar-header"><img src="../img/LogoLicores.png" alt="Licores Maduro" class="sidebar-logo-img"/><span class="sidebar-logo-text">LICORES MADURO</span></div>
+    <div id="sidebar-nav" class="sidebar-nav"></div>
+    <div class="sidebar-footer"><div class="sidebar-user"><div class="sidebar-avatar" id="sidebar-user-initials">LM</div><div class="sidebar-text"><div id="sidebar-user-name" style="font-weight:600;">–</div></div></div></div>
+  </nav>
+  <div class="main-area">
+    <header class="topbar">
+      <button id="btn-sidebar-toggle" class="btn-sidebar-toggle"><i class="fas fa-bars"></i></button>
+      <span class="topbar-title"><i class="fas fa-circle-dot me-2 text-wine"></i>Active Users</span>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown">
+            <span class="sidebar-avatar" id="topbar-user-initials" style="width:28px;height:28px;font-size:.75rem;">LM</span>
+            <span id="topbar-user-name" class="d-none d-md-inline">–</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+            <li><div class="dropdown-header"><strong id="topbar-user-fullname">User</strong><br/><small class="text-muted" id="topbar-user-role">Role</small></div></li>
+            <li><hr class="dropdown-divider"/></li>
+            <li><a class="dropdown-item text-danger" href="#" id="btn-logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+          </ul>
+        </div>
+      </div>
+    </header>
+    <main class="page-content">
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="../dashboard.html"><i class="fas fa-home me-1"></i>Home</a></li>
+          <li class="breadcrumb-item active">Active Users</li>
+        </ol>
+      </nav>
+
+      <div class="page-title">Active Users</div>
+      <div class="page-subtitle">Users currently logged in (last seen within 5 minutes). Auto-refreshes every 30 seconds.</div>
+
+      <div class="card">
+        <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+          <span>
+            <i class="fas fa-users me-2"></i>Online Sessions
+            <span id="online-count" class="badge bg-success ms-2">0</span>
+          </span>
+          <div class="d-flex align-items-center gap-2">
+            <span id="last-refresh" class="text-muted" style="font-size:.8rem;">–</span>
+            <button class="btn btn-sm btn-outline-secondary" onclick="loadSessions()" id="btn-refresh">
+              <i class="fas fa-sync-alt me-1"></i>Refresh
+            </button>
+          </div>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th style="width:40px;"></th>
+                  <th>User</th>
+                  <th>Role</th>
+                  <th>Login</th>
+                  <th>Last Activity</th>
+                  <th>IP Address</th>
+                  <th style="width:80px;"></th>
+                </tr>
+              </thead>
+              <tbody id="sessions-tbody">
+                <tr><td colspan="7" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty state -->
+      <div id="empty-state" class="text-center py-5 d-none">
+        <i class="fas fa-user-slash fa-3x text-muted mb-3"></i>
+        <div class="text-muted">No active users at this moment.</div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- Confirm force-logout modal -->
+<div class="modal fade" id="modal-force-logout" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content">
+      <div class="modal-header border-0 pb-0">
+        <h6 class="modal-title fw-bold"><i class="fas fa-sign-out-alt text-danger me-2"></i>Force Logout</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body pt-2">
+        <p class="text-muted mb-0">Terminate the session for <strong id="force-logout-name">–</strong>? They will be logged out on their next action.</p>
+      </div>
+      <div class="modal-footer border-0">
+        <button class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-sm btn-danger" id="btn-confirm-force-logout">Terminate</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index:9999">
+  <div id="toast" class="toast align-items-center text-white border-0 bg-success" role="alert">
+    <div class="d-flex">
+      <div class="toast-body" id="toast-msg">Done.</div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/sidebar.js"></script>
+<script>
+  let _forceLogoutId = null;
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    if (!Auth.requireAuth()) return;
+    const user = Auth.getCurrentUser();
+    if (user?.RoleName !== 'SuperAdmin') { window.location.href = '../dashboard.html'; return; }
+
+    Auth.startExpiryWatcher();
+    Auth.populateUserUI();
+    Sidebar.init();
+    document.getElementById('btn-logout').addEventListener('click', e => { e.preventDefault(); Auth.logout(); });
+
+    await loadSessions();
+
+    // Auto-refresh every 30 seconds
+    setInterval(loadSessions, 30_000);
+
+    // Force-logout confirm
+    document.getElementById('btn-confirm-force-logout').addEventListener('click', async () => {
+      if (!_forceLogoutId) return;
+      try {
+        await API.sessions.forceClose(_forceLogoutId);
+        bootstrap.Modal.getInstance(document.getElementById('modal-force-logout')).hide();
+        showToast('Session terminated.', 'success');
+        await loadSessions();
+      } catch (err) {
+        showToast(err.message, 'danger');
+      }
+    });
+  });
+
+  async function loadSessions() {
+    const btn = document.getElementById('btn-refresh');
+    btn.disabled = true;
+    try {
+      const res      = await API.sessions.getActive();
+      const sessions = res?.Data?.Sessions || [];
+      const total    = res?.Data?.Total    || 0;
+
+      document.getElementById('online-count').textContent = total;
+      document.getElementById('last-refresh').textContent = 'Updated ' + new Date().toLocaleTimeString();
+
+      const tbody      = document.getElementById('sessions-tbody');
+      const emptyState = document.getElementById('empty-state');
+
+      if (!sessions.length) {
+        tbody.innerHTML = '';
+        emptyState.classList.remove('d-none');
+        return;
+      }
+
+      emptyState.classList.add('d-none');
+      tbody.innerHTML = sessions.map(s => {
+        const initials = (s.FullName || s.Username || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
+        const loginTime = new Date(s.LoginAt).toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit', hour12:false });
+        const loginDate = new Date(s.LoginAt).toLocaleDateString();
+        const today     = new Date().toLocaleDateString();
+        const loginStr  = loginDate === today ? loginTime : loginDate + ' ' + loginTime;
+        const ago       = s.MinutesAgo === 0 ? 'just now' : `${s.MinutesAgo}m ago`;
+        const agoCls    = s.MinutesAgo <= 1 ? 'bg-success text-white' : s.MinutesAgo <= 3 ? 'bg-warning text-dark' : 'bg-secondary text-white';
+        const roleCls   = s.RoleName === 'SuperAdmin' ? 'bg-purple' : s.RoleName === 'Admin' ? 'bg-primary' : 'bg-secondary';
+
+        return `<tr>
+          <td class="text-center"><span class="online-dot"></span></td>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <div class="user-avatar-sm">${esc(initials)}</div>
+              <div>
+                <div class="fw-semibold" style="font-size:.9rem;">${esc(s.FullName || s.Username)}</div>
+                <div class="text-muted" style="font-size:.78rem;">@${esc(s.Username)}</div>
+              </div>
+            </div>
+          </td>
+          <td><span class="badge ${roleCls}">${esc(s.RoleName)}</span></td>
+          <td style="font-size:.85rem;">${esc(loginStr)}</td>
+          <td><span class="badge minutes-chip ${agoCls}">${esc(ago)}</span></td>
+          <td style="font-size:.82rem; color:#6c757d;">${esc(s.IpAddress || '–')}</td>
+          <td>
+            <button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="confirmForceLogout(${s.SessionId}, '${esc(s.FullName || s.Username)}')" title="Force logout">
+              <i class="fas fa-sign-out-alt"></i>
+            </button>
+          </td>
+        </tr>`;
+      }).join('');
+    } catch (err) {
+      document.getElementById('sessions-tbody').innerHTML =
+        `<tr><td colspan="7" class="text-center py-4 text-danger">${esc(err.message)}</td></tr>`;
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  function confirmForceLogout(id, name) {
+    _forceLogoutId = id;
+    document.getElementById('force-logout-name').textContent = name;
+    new bootstrap.Modal(document.getElementById('modal-force-logout')).show();
+  }
+
+  function esc(s) {
+    return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function showToast(msg, type = 'success') {
+    const el = document.getElementById('toast');
+    el.className = `toast align-items-center text-white border-0 bg-${type === 'success' ? 'success' : 'danger'}`;
+    document.getElementById('toast-msg').textContent = msg;
+    new bootstrap.Toast(el, { delay: 3000 }).show();
+  }
+</script>
+</body>
+</html>

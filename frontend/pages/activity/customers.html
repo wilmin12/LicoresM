@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Customer Data - Licores Maduro</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../../css/main.css" />
+  <style>.nav-tabs .nav-link{color:var(--primary);font-weight:500;}.nav-tabs .nav-link.active{color:#fff;background:var(--primary);border-color:var(--primary);}</style>
+</head>
+<body>
+<div id="sidebar-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;"></div>
+<div class="app-wrapper">
+  <nav id="sidebar" class="sidebar">
+    <div class="sidebar-header"><img src="../../img/LogoLicores.png" alt="Licores Maduro" class="sidebar-logo-img"/><span class="sidebar-logo-text">LICORES MADURO</span></div>
+    <div id="sidebar-nav" class="sidebar-nav"></div>
+    <div class="sidebar-footer"><div class="sidebar-user"><div class="sidebar-avatar" id="sidebar-user-initials">LM</div><div class="sidebar-text"><div id="sidebar-user-name" style="font-weight:600;">–</div></div></div></div>
+  </nav>
+  <div class="main-area">
+    <header class="topbar">
+      <button id="btn-sidebar-toggle" class="btn-sidebar-toggle"><i class="fas fa-bars"></i></button>
+      <span class="topbar-title"><i class="fas fa-users me-2 text-wine"></i>Customer Data</span>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown">
+            <span class="sidebar-avatar" id="topbar-user-initials" style="width:28px;height:28px;font-size:.75rem;">LM</span>
+            <span id="topbar-user-name" class="d-none d-md-inline">–</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+            <li><div class="dropdown-header"><strong id="topbar-user-fullname">User</strong><br/><small class="text-muted" id="topbar-user-role">Role</small></div></li>
+            <li><hr class="dropdown-divider"/></li>
+            <li><a class="dropdown-item text-danger" href="#" id="btn-logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+          </ul>
+        </div>
+      </div>
+    </header>
+    <main class="page-content">
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="../../dashboard.html"><i class="fas fa-home me-1"></i>Home</a></li>
+          <li class="breadcrumb-item"><a href="index.html">Activity Request</a></li>
+          <li class="breadcrumb-item active">Customer Data</li>
+        </ol>
+      </nav>
+      <div class="page-title">Customer Data</div>
+      <div class="page-subtitle">Manage non-clients, sales groups, segments, target groups, facilitators and locations.</div>
+
+      <ul class="nav nav-tabs mb-3" id="custTabs">
+        <li class="nav-item"><a class="nav-link active" href="#" onclick="switchTab('nonClient',this)">Non Clients</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="switchTab('salesGroup',this)">Sales Groups</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="switchTab('segmentInfo',this)">Segment Info</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="switchTab('targetGroup',this)">Target Groups</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="switchTab('facilitators',this)">Facilitators Info</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="switchTab('locationInfo',this)">Location Info</a></li>
+      </ul>
+
+      <div class="card mb-3">
+        <div class="card-body d-flex flex-wrap align-items-center gap-2 py-2">
+          <div class="search-wrapper flex-grow-1"><i class="fas fa-search search-icon"></i><input type="text" id="search-input" class="form-control form-control-sm" placeholder="Search..."/></div>
+          <button class="btn btn-wine btn-sm ms-auto" id="btn-new"><i class="fas fa-plus me-1"></i>New</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <span><i class="fas fa-table me-2"></i><span id="tab-title">Non Clients</span></span>
+          <span class="badge" style="background:var(--primary);color:#fff;" id="total-count">0 records</span>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead id="data-thead"><tr><th>#</th><th>Code</th><th>Name</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody id="data-tbody"><tr><td colspan="5" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card-footer d-flex align-items-center justify-content-between flex-wrap gap-2">
+          <small class="text-muted" id="page-info">Page 1</small>
+          <nav><ul class="pagination pagination-sm mb-0" id="pagination"></ul></nav>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Item Modal -->
+<div class="modal fade" id="itemModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title" id="modalTitle"><i class="fas fa-plus me-2"></i>Item</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body"><form id="item-form" novalidate><input type="hidden" id="edit-id"/>
+      <div class="mb-3"><label class="form-label">Code <span class="text-danger">*</span></label><input type="text" id="f-code" class="form-control text-uppercase" required maxlength="20"/><div class="invalid-feedback">Code is required.</div></div>
+      <div class="mb-3"><label class="form-label">Name <span class="text-danger">*</span></label><input type="text" id="f-name" class="form-control" required maxlength="100"/><div class="invalid-feedback">Name is required.</div></div>
+      <div class="mb-3" id="email-group" style="display:none;"><label class="form-label">Email</label><input type="email" id="f-email" class="form-control" maxlength="100"/></div>
+      <div class="mb-3" id="address-group" style="display:none;"><label class="form-label">Address</label><input type="text" id="f-address" class="form-control" maxlength="200"/></div>
+    </form></div>
+    <div class="modal-footer"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-wine btn-sm" id="btn-save"><i class="fas fa-save me-1"></i>Save</button></div>
+  </div></div>
+</div>
+
+<!-- Confirm Action Modal -->
+<div class="modal fade" id="modal-confirm-action" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header" id="confirm-header">
+        <h6 class="modal-title mb-0" id="confirm-title"></h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="confirm-body"></div>
+      <div class="modal-footer py-2">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-sm" id="confirm-btn" onclick="_pendingAction&&_pendingAction()"></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container"><div id="toast" class="toast align-items-center text-white border-0" role="alert"><div class="d-flex"><div class="toast-body" id="toast-msg"></div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div></div></div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../../js/i18n.js"></script><script src="../../js/api.js"></script><script src="../../js/auth.js"></script><script src="../../js/sidebar.js"></script>
+<script>
+  const TABS={
+    nonClient:   {label:'Non Clients',      api:API.catalogs.customerNonClient, endpoint:'/api/activity/customer-non-client',   idField:'CncId', nameKey:'Name',        descField:'Name',        hasEmail:false, hasAddress:false},
+    salesGroup:  {label:'Sales Groups',     api:API.catalogs.customerSalesGroup,endpoint:'/api/activity/customer-sales-group',  idField:'CsgId', nameKey:'Name',        descField:'Name',        hasEmail:false, hasAddress:false},
+    segmentInfo: {label:'Segment Info',     api:API.catalogs.customerSegment,   endpoint:'/api/activity/customer-segment-info', idField:'CsiId', nameKey:'Description', descField:'Description', hasEmail:false, hasAddress:false},
+    targetGroup: {label:'Target Groups',    api:API.catalogs.customerTarget,    endpoint:'/api/activity/customer-target-group', idField:'CtgId', nameKey:'Description', descField:'Description', hasEmail:false, hasAddress:false},
+    facilitators:{label:'Facilitators Info',api:API.catalogs.facilitators,      endpoint:'/api/activity/facilitators-info',     idField:'FiId',  nameKey:'Name',        descField:'Name',        hasEmail:true,  hasAddress:false},
+    locationInfo:{label:'Location Info',    api:API.catalogs.locationInfo,      endpoint:'/api/activity/location-info',         idField:'LiId',  nameKey:'Description', descField:'Description', hasEmail:false, hasAddress:true},
+  };
+  let currentTab=TABS.nonClient,allItems=[],filtered=[],currentPage=1,_pendingAction=null;const PAGE_SIZE=15;
+  document.addEventListener('DOMContentLoaded',async()=>{
+    if(!Auth.requireAuth())return;Auth.startExpiryWatcher();Auth.populateUserUI();Sidebar.init();
+    document.getElementById('btn-logout').addEventListener('click',e=>{e.preventDefault();Auth.logout();});
+    document.getElementById('btn-new').addEventListener('click',openCreate);
+    document.getElementById('btn-save').addEventListener('click',saveItem);
+    document.getElementById('search-input').addEventListener('input',filterAndRender);
+    await loadData();
+  });
+  async function switchTab(key,el){event.preventDefault();document.querySelectorAll('#custTabs .nav-link').forEach(a=>a.classList.remove('active'));el.classList.add('active');currentTab=TABS[key];document.getElementById('tab-title').textContent=currentTab.label;document.getElementById('search-input').value='';updateHead();await loadData();}
+  function updateHead(){let h=`<tr><th>#</th><th>${I18n.t('Code')}</th><th>${I18n.t(currentTab.nameKey)}</th>`;if(currentTab.hasEmail)h+=`<th>${I18n.t('Email')}</th>`;if(currentTab.hasAddress)h+=`<th>${I18n.t('Address')}</th>`;h+=`<th>${I18n.t('Status')}</th><th>${I18n.t('Actions')}</th></tr>`;document.getElementById('data-thead').innerHTML=h;}
+  async function loadData(){const tbody=document.getElementById('data-tbody');tbody.innerHTML='<tr><td colspan="7" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading...</td></tr>';try{const res=await currentTab.api.getAll();allItems=res?.Data||res||[];filterAndRender();}catch(err){showToast(err.message,'danger');}}
+  function filterAndRender(){const q=document.getElementById('search-input').value.toLowerCase();const df=currentTab.descField;filtered=allItems.filter(r=>(r.Code||'').toLowerCase().includes(q)||(r[df]||'').toLowerCase().includes(q)||(r.Email||'').toLowerCase().includes(q));currentPage=1;renderTable();renderPagination();}
+  function renderTable(){
+    const tbody=document.getElementById('data-tbody');const start=(currentPage-1)*PAGE_SIZE,page=filtered.slice(start,start+PAGE_SIZE);
+    document.getElementById('total-count').textContent=filtered.length+' '+I18n.t(filtered.length!==1?'records':'record');
+    if(!page.length){tbody.innerHTML=`<tr><td colspan="7" class="text-center py-4 text-muted">${I18n.t('No records found.')}</td></tr>`;return;}
+    tbody.innerHTML=page.map((r,i)=>{
+      const id=r[currentTab.idField];
+      let cols=`<td>${start+i+1}</td><td><strong>${esc(r.Code||'')}</strong></td><td>${esc(r[currentTab.descField]||'')}</td>`;
+      if(currentTab.hasEmail)cols+=`<td>${esc(r.Email||'')}</td>`;
+      if(currentTab.hasAddress)cols+=`<td>${esc(r.Address||'')}</td>`;
+      cols+=`<td><span class="${r.IsActive!==false?'badge-active':'badge-inactive'}">${I18n.t(r.IsActive!==false?'Active':'Inactive')}</span></td>`;
+      cols+=`<td><button class="btn-action edit me-1" onclick="openEdit(${id})" title="Edit"><i class="fas fa-edit"></i></button><button class="btn-action ${r.IsActive!==false?'delete':'edit'} me-1" onclick="toggleItem(${id})" title="Toggle status"><i class="fas fa-${r.IsActive!==false?'ban':'check'}"></i></button><button class="btn-action delete" onclick="confirmDelete(${id},'${esc(r.Code||'')}')" title="Delete"><i class="fas fa-trash"></i></button></td>`;
+      return`<tr>${cols}</tr>`;
+    }).join('');
+  }
+  function renderPagination(){const total=Math.ceil(filtered.length/PAGE_SIZE)||1;document.getElementById('page-info').textContent=`${I18n.t('Page')} ${currentPage} ${I18n.t('of')} ${total}`;let html=`<li class="page-item ${currentPage===1?'disabled':''}"><a class="page-link" href="#" onclick="event.preventDefault();gotoPage(${currentPage-1})">&#8249;</a></li>`;for(let p=1;p<=total;p++)html+=`<li class="page-item ${p===currentPage?'active':''}"><a class="page-link" href="#" onclick="event.preventDefault();gotoPage(${p})">${p}</a></li>`;html+=`<li class="page-item ${currentPage>=total?'disabled':''}"><a class="page-link" href="#" onclick="event.preventDefault();gotoPage(${currentPage+1})">&#8250;</a></li>`;document.getElementById('pagination').innerHTML=html;}
+  function gotoPage(p){const t=Math.ceil(filtered.length/PAGE_SIZE)||1;if(p<1||p>t)return;currentPage=p;renderTable();renderPagination();}
+  function openCreate(){document.getElementById('edit-id').value='';document.getElementById('item-form').reset();['f-code','f-name'].forEach(id=>document.getElementById(id).classList.remove('is-invalid'));document.getElementById('email-group').style.display=currentTab.hasEmail?'':'none';document.getElementById('address-group').style.display=currentTab.hasAddress?'':'none';document.getElementById('modalTitle').innerHTML=`<i class="fas fa-plus me-2"></i>New ${currentTab.label}`;new bootstrap.Modal('#itemModal').show();}
+  function openEdit(id){const r=allItems.find(x=>x[currentTab.idField]===id);if(!r)return;document.getElementById('edit-id').value=id;document.getElementById('f-code').value=r.Code||'';document.getElementById('f-name').value=r[currentTab.descField]||'';document.getElementById('f-email').value=r.Email||'';document.getElementById('f-address').value=r.Address||'';['f-code','f-name'].forEach(id=>document.getElementById(id).classList.remove('is-invalid'));document.getElementById('email-group').style.display=currentTab.hasEmail?'':'none';document.getElementById('address-group').style.display=currentTab.hasAddress?'':'none';document.getElementById('modalTitle').innerHTML=`<i class="fas fa-edit me-2"></i>Edit ${currentTab.label}`;new bootstrap.Modal('#itemModal').show();}
+  async function saveItem(){const id=document.getElementById('edit-id').value;const code=document.getElementById('f-code').value.trim().toUpperCase();const name=document.getElementById('f-name').value.trim();let valid=true;if(!code){document.getElementById('f-code').classList.add('is-invalid');valid=false;}else document.getElementById('f-code').classList.remove('is-invalid');if(!name){document.getElementById('f-name').classList.add('is-invalid');valid=false;}else document.getElementById('f-name').classList.remove('is-invalid');if(!valid)return;const dto={Code:code,[currentTab.descField]:name};if(currentTab.hasEmail)dto.Email=document.getElementById('f-email').value.trim();if(currentTab.hasAddress)dto.Address=document.getElementById('f-address').value.trim();try{if(id){await currentTab.api.update(id,dto);showToast(I18n.t('Updated.'),'success');}else{await currentTab.api.create(dto);showToast(I18n.t('Created.'),'success');}bootstrap.Modal.getInstance(document.getElementById('itemModal'))?.hide();await loadData();}catch(err){showToast(err.message,'danger');}}
+  async function toggleItem(id){const r=allItems.find(x=>x[currentTab.idField]===id);const isActive=r?.IsActive!==false;_pendingAction=async()=>{bootstrap.Modal.getInstance(document.getElementById('modal-confirm-action'))?.hide();try{await API.patch(`${currentTab.endpoint}/${id}/toggle`,{});showToast(I18n.t('Status updated.'),'success');await loadData();}catch(err){showToast(err.message,'danger');}};if(isActive){showConfirm({headerClass:'bg-warning text-dark',titleHtml:'<i class="fas fa-ban me-2"></i>Deactivate',bodyText:'Deactivate this item?',btnClass:'btn-warning text-dark',btnHtml:'<i class="fas fa-ban me-1"></i>Deactivate'});}else{showConfirm({headerClass:'bg-success text-white',titleHtml:'<i class="fas fa-check me-2"></i>Activate',bodyText:'Activate this item?',btnClass:'btn-success',btnHtml:'<i class="fas fa-check me-1"></i>Activate'});}}
+  function confirmDelete(id,name){_pendingAction=async()=>{bootstrap.Modal.getInstance(document.getElementById('modal-confirm-action'))?.hide();try{await currentTab.api.delete(id);showToast('Deleted.','success');await loadData();}catch(err){showToast(err.message,'danger');}};showConfirm({headerClass:'bg-danger text-white',titleHtml:'<i class="fas fa-trash me-2"></i>Delete',bodyText:`Delete "${name}"?`,btnClass:'btn-danger',btnHtml:'<i class="fas fa-trash me-1"></i>Delete'});}
+  function showConfirm({headerClass='bg-danger text-white',titleHtml='Confirm',bodyText='',btnClass='btn-danger',btnHtml='Confirm'}){document.getElementById('confirm-header').className='modal-header '+headerClass;document.getElementById('confirm-title').innerHTML=titleHtml;document.getElementById('confirm-body').textContent=bodyText;const btn=document.getElementById('confirm-btn');btn.className='btn btn-sm '+btnClass;btn.innerHTML=btnHtml;new bootstrap.Modal('#modal-confirm-action').show();}
+  function showToast(msg,type='success'){const el=document.getElementById('toast');el.className=`toast align-items-center text-white border-0 bg-${type==='success'?'success':'danger'}`;document.getElementById('toast-msg').textContent=msg;new bootstrap.Toast(el,{delay:3500}).show();}
+  function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+</script>
+</body>
+</html>

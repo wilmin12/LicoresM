@@ -1,0 +1,7 @@
+<Project>
+  <!-- Redirect build output outside OneDrive to prevent file-locking during sync -->
+  <PropertyGroup>
+    <BaseOutputPath>C:\Build\LicoresMaduro\bin\</BaseOutputPath>
+    <BaseIntermediateOutputPath>C:\Build\LicoresMaduro\obj\</BaseIntermediateOutputPath>
+  </PropertyGroup>
+</Project>

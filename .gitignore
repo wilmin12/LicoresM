@@ -1,0 +1,34 @@
+# .NET build outputs
+bin/
+obj/
+bin_local/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Logs
+logs/
+*.log
+
+# Uploaded files (user content, no va en git)
+frontend/uploads/
+src/LicoresMaduro.API/uploads/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Node (por si se usa en el futuro)
+node_modules/
+
+# Rider / JetBrains
+.idea/
+
+# Compiled Python (datawarehouse scripts)
+__pycache__/
+*.pyc

@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ocean Freight Quotes - Licores Maduro</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../../css/main.css" />
+  <style>
+    .level-card{border-left:3px solid var(--primary);margin-bottom:.5rem;}
+    .level-card .card-header{background:rgba(var(--bs-primary-rgb),.06);padding:.4rem .75rem;font-size:.85rem;font-weight:600;}
+    .level-2{border-left-color:#198754;margin-left:1rem;}
+    .level-3{border-left-color:#fd7e14;margin-left:2rem;}
+    .level-4{border-left-color:#6f42c1;margin-left:3rem;}
+    .tree-section{display:none;}
+    .tree-section.open{display:block;}
+    .btn-tree{background:none;border:none;padding:0 .3rem;cursor:pointer;color:var(--primary);}
+    /* Charges inline editable grid */
+    .charges-grid{font-size:.8rem;margin-bottom:0;}
+    .charges-grid thead th{background:rgba(111,66,193,.09);font-weight:600;font-size:.75rem;white-space:nowrap;padding:.3rem .4rem;}
+    .charges-grid td{vertical-align:middle;padding:.2rem .35rem;}
+    .charges-grid .form-select,.charges-grid .form-control{font-size:.78rem;padding:.18rem .3rem;height:auto;}
+    .charges-grid .desc-cell{color:#6c757d;font-style:italic;font-size:.75rem;min-width:110px;max-width:160px;}
+    .charges-grid .amount-col{width:85px;}
+    .charges-grid .currency-col{width:75px;}
+    .charges-grid .actions-col{width:60px;white-space:nowrap;}
+    .btn-row-save{background:none;border:none;color:#198754;cursor:pointer;padding:1px 4px;font-size:.85rem;}
+    .btn-row-save:hover{color:#0f5132;}
+    .btn-row-del{background:none;border:none;color:#dc3545;cursor:pointer;padding:1px 4px;font-size:.85rem;}
+    .btn-row-del:hover{color:#842029;}
+    .row-dirty .btn-row-save{color:#fd7e14;}
+  </style>
+</head>
+<body>
+<div id="sidebar-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;"></div>
+<div class="app-wrapper">
+  <nav id="sidebar" class="sidebar">
+    <div class="sidebar-header"><img src="../../img/LogoLicores.png" alt="Licores Maduro" class="sidebar-logo-img"/><span class="sidebar-logo-text">LICORES MADURO</span></div>
+    <div id="sidebar-nav" class="sidebar-nav"></div>
+    <div class="sidebar-footer"><div class="sidebar-user"><div class="sidebar-avatar" id="sidebar-user-initials">LM</div><div class="sidebar-text"><div id="sidebar-user-name" style="font-weight:600;">–</div></div></div></div>
+  </nav>
+  <div class="main-area">
+    <header class="topbar">
+      <button id="btn-sidebar-toggle" class="btn-sidebar-toggle"><i class="fas fa-bars"></i></button>
+      <span class="topbar-title"><i class="fas fa-ship me-2 text-wine"></i>Ocean Freight Quotes</span>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown">
+            <span class="sidebar-avatar" id="topbar-user-initials" style="width:28px;height:28px;font-size:.75rem;">LM</span>
+            <span id="topbar-user-name" class="d-none d-md-inline">–</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+            <li><div class="dropdown-header"><strong id="topbar-user-fullname">User</strong><br/><small class="text-muted" id="topbar-user-role">Role</small></div></li>
+            <li><hr class="dropdown-divider"/></li>
+            <li><a class="dropdown-item text-danger" href="#" id="btn-logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+          </ul>
+        </div>
+      </div>
+    </header>
+    <main class="page-content">
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="../../dashboard.html"><i class="fas fa-home me-1"></i>Home</a></li>
+          <li class="breadcrumb-item"><a href="index.html">Freight Forwarder</a></li>
+          <li class="breadcrumb-item active">Ocean Freight</li>
+        </ol>
+      </nav>
+      <div class="page-title">Ocean Freight Quotes</div>
+      <div class="page-subtitle">Manage ocean freight quotes by forwarder → port → shipping line → charges.</div>
+
+      <!-- Filter bar -->
+      <div class="card mb-3">
+        <div class="card-body d-flex flex-wrap align-items-center gap-2 py-2">
+          <select id="filter-forwarder" class="form-select form-select-sm" style="max-width:220px;">
+            <option value="">All Forwarders</option>
+          </select>
+          <button class="btn btn-wine btn-sm ms-auto" id="btn-new-header"><i class="fas fa-plus me-1"></i>New Quote</button>
+        </div>
+      </div>
+
+      <!-- Tree view -->
+      <div id="tree-container">
+        <div class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading...</div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Header Modal -->
+<div class="modal fade" id="headerModal" tabindex="-1">
+  <div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title" id="headerModalTitle">Quote Header</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body"><form id="header-form" novalidate>
+      <input type="hidden" id="h-id"/>
+      <div class="mb-3"><label class="form-label">Forwarder <span class="text-danger">*</span></label><select id="h-forwarder" class="form-select" required onchange="onNewQuoteForwarderChange(this)"><option value="">Select...</option></select><div class="invalid-feedback">Required.</div></div>
+      <div class="mb-3"><label class="form-label">Quote Number <span class="text-danger">*</span></label>
+        <div class="input-group">
+          <input type="text" id="h-quote" class="form-control text-uppercase" required maxlength="10"/>
+          <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-next-number" title="Get next number"><i class="fas fa-magic"></i></button>
+        </div>
+        <div class="invalid-feedback">Required.</div>
+      </div>
+      <div class="row g-2">
+        <div class="col-6"><label class="form-label">Start Date</label><input type="date" id="h-start" class="form-control"/></div>
+        <div class="col-6"><label class="form-label">End Date</label><input type="date" id="h-end" class="form-control"/></div>
+      </div>
+      <div class="mt-3"><label class="form-label">Remarks</label><textarea id="h-remarks" class="form-control" rows="2" maxlength="200"></textarea></div>
+    </form></div>
+    <div class="modal-footer"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-wine btn-sm" id="btn-save-header">Save</button></div>
+  </div></div>
+</div>
+
+<!-- Port Modal -->
+<div class="modal fade" id="portModal" tabindex="-1">
+  <div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title" id="portModalTitle">Port</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body"><form id="port-form" novalidate>
+      <input type="hidden" id="p-id"/><input type="hidden" id="p-header-id"/>
+      <div class="mb-3"><label class="form-label">Port <span class="text-danger">*</span></label><select id="p-port" class="form-select" required><option value="">Select port...</option></select><div class="invalid-feedback">Required.</div></div>
+      <div class="mb-3"><label class="form-label">Remarks</label><textarea id="p-remarks" class="form-control" rows="2" maxlength="200"></textarea></div>
+    </form></div>
+    <div class="modal-footer"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-wine btn-sm" id="btn-save-port">Save</button></div>
+  </div></div>
+</div>
+
+<!-- SLine Modal -->
+<div class="modal fade" id="slineModal" tabindex="-1">
+  <div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title" id="slineModalTitle">Shipping Line</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body"><form id="sline-form" novalidate>
+      <input type="hidden" id="sl-id"/><input type="hidden" id="sl-port-id"/>
+      <div class="mb-3"><label class="form-label">Shipping Line <span class="text-danger">*</span></label><select id="sl-line" class="form-select" required><option value="">Select...</option></select><div class="invalid-feedback">Required.</div></div>
+      <div class="mb-3"><label class="form-label">Route</label><select id="sl-route" class="form-select"><option value="">Select route...</option></select></div>
+      <div class="mb-3"><label class="form-label">Days</label><input type="number" id="sl-days" class="form-control" min="1" max="999"/></div>
+      <div class="mb-3"><label class="form-label">Remarks</label><textarea id="sl-remarks" class="form-control" rows="2" maxlength="200"></textarea></div>
+    </form></div>
+    <div class="modal-footer"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-wine btn-sm" id="btn-save-sline">Save</button></div>
+  </div></div>
+</div>
+
+<div class="toast-container"><div id="toast" class="toast align-items-center text-white border-0" role="alert"><div class="d-flex"><div class="toast-body" id="toast-msg"></div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div></div></div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../../js/i18n.js"></script><script src="../../js/api.js"></script><script src="../../js/auth.js"></script><script src="../../js/sidebar.js"></script>
+<script>
+const fq = API.freightQuotes;
+let allHeaders=[], forwarders=[], ports=[], shippingLines=[], routes=[], chargeTypes=[], containerTypes=[], currencies=[];
+
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!Auth.requireAuth()) return;
+  Auth.startExpiryWatcher(); Auth.populateUserUI(); Sidebar.init();
+  document.getElementById('btn-logout').addEventListener('click', e=>{e.preventDefault();Auth.logout();});
+  document.getElementById('btn-new-header').addEventListener('click', ()=>openHeaderModal());
+  document.getElementById('btn-save-header').addEventListener('click', saveHeader);
+  document.getElementById('btn-save-port').addEventListener('click', savePort);
+  document.getElementById('btn-save-sline').addEventListener('click', saveSLine);
+  document.getElementById('btn-next-number').addEventListener('click', fillNextNumber);
+  document.getElementById('filter-forwarder').addEventListener('change', loadHeaders);
+  await loadCatalogs();
+  await loadHeaders();
+});
+
+async function loadCatalogs() {
+  try {
+    const [fw,po,sl,ro,ct,cnt,cu] = await Promise.all([
+      API.catalogs.freightForwarders.getAll(),
+      API.catalogs.portsOfLoading.getAll(),
+      API.catalogs.shippingLines.getAll(),
+      API.catalogs.routes.getAll(),
+      API.catalogs.oceanFreight.getAll(),
+      API.catalogs.containerTypes.getAll(),
+      API.catalogs.currencies.getAll()
+    ]);
+    forwarders    = fw?.Data||fw||[];
+    ports         = po?.Data||po||[];
+    shippingLines = sl?.Data||sl||[];
+    routes        = ro?.Data||ro||[];
+    chargeTypes   = ct?.Data||ct||[];
+    containerTypes= cnt?.Data||cnt||[];
+    currencies    = cu?.Data||cu||[];
+    console.log('Catalogs loaded — chargeTypes:', chargeTypes.length, 'containerTypes:', containerTypes.length, 'currencies:', currencies.length);
+
+    const ffSel = document.getElementById('filter-forwarder');
+    forwarders.forEach(f=>{
+      const o=document.createElement('option'); o.value=f.FfCode; o.textContent=`${f.FfCode} - ${f.FfName}`; ffSel.appendChild(o);
+    });
+    populateSelect('h-forwarder', forwarders, f=>({value:f.FfCode, text:`${f.FfCode} - ${f.FfName}`}));
+    populateSelect('p-port', ports, p=>({value:p.PlCode, text:`${p.PlCode} - ${p.PlName}`}));
+    populateSelect('sl-line', shippingLines, s=>({value:s.SlCode, text:`${s.SlCode} - ${s.SlName}`}));
+    populateSelect('sl-route', routes, r=>({value:r.RouCode, text:`${r.RouCode} - ${r.RouDescription}`}));
+  } catch(err){showToast(err.message,'danger');}
+}
+
+function populateSelect(id, items, fn) {
+  const el = document.getElementById(id);
+  if(!el) return;
+  items.forEach(item=>{
+    const {value,text}=fn(item);
+    const o=document.createElement('option'); o.value=value; o.textContent=text; el.appendChild(o);
+  });
+}
+
+// ── Catalog option builders for inline grid ────────────────────────────────────
+function buildChargeTypeOpts(selected) {
+  return `<option value=""></option>` +
+    chargeTypes.map(c=>`<option value="${esc(c.OfctCode)}"${c.OfctCode===selected?' selected':''}>${esc(c.OfctCode)}</option>`).join('');
+}
+function buildContainerTypeOpts(selected) {
+  return `<option value="">–</option>` +
+    containerTypes.map(c=>`<option value="${esc(c.CtCode)}"${c.CtCode===selected?' selected':''}>${esc(c.CtCode)}</option>`).join('');
+}
+function buildCurrencyOpts(selected) {
+  return `<option value="">–</option>` +
+    currencies.map(c=>`<option value="${esc(c.CurCode)}"${c.CurCode===selected?' selected':''}>${esc(c.CurCode)}</option>`).join('');
+}
+function chargeTypeDesc(code) {
+  const f = chargeTypes.find(c=>c.OfctCode===code);
+  return f ? esc(f.OfctDescription) : '';
+}
+function containerTypeDesc(code) {
+  const f = containerTypes.find(c=>c.CtCode===code);
+  return f ? esc(f.CtDescription) : '';
+}
+
+async function loadHeaders() {
+  const fw = document.getElementById('filter-forwarder').value;
+  try {
+    const params = fw ? {forwarder:fw} : {};
+    const res = await fq.getOceanHeaders(params);
+    allHeaders = res?.Data||res||[];
+    renderTree();
+  } catch(err){showToast(err.message,'danger');}
+}
+
+async function loadFullHeader(id) {
+  try {
+    const res = await fq.getOceanHeader(id);
+    return res?.Data||res;
+  } catch(err){showToast(err.message,'danger'); return null;}
+}
+
+function renderTree() {
+  const container = document.getElementById('tree-container');
+  if (!allHeaders.length) {
+    container.innerHTML = '<p class="text-muted text-center py-4">No ocean freight quotes found.</p>';
+    return;
+  }
+  container.innerHTML = allHeaders.map(h=>`
+    <div class="card level-card mb-2" id="hcard-${h.FqohId}">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <span>
+          <button class="btn-tree" onclick="toggleSection('hsec-${h.FqohId}')"><i class="fas fa-chevron-right" id="htoggle-${h.FqohId}"></i></button>
+          <i class="fas fa-file-invoice me-2"></i>
+          <strong>${esc(h.FqohForwarder)}</strong> &nbsp;·&nbsp; Quote: <strong>${esc(h.FqohQuoteNumber)}</strong>
+          ${h.FqohStartDate?`<small class="ms-2 text-muted">${h.FqohStartDate} – ${h.FqohEndDate||'?'}</small>`:''}
+        </span>
+        <div class="d-flex gap-1">
+          <button class="btn btn-outline-success btn-sm" onclick="loadAndShowPorts(${h.FqohId})"><i class="fas fa-plus me-1"></i>Port</button>
+          <button class="btn btn-outline-info btn-sm" title="Copy quote" onclick="copyHeader(${h.FqohId})"><i class="fas fa-copy"></i></button>
+          <button class="btn btn-outline-secondary btn-sm" onclick="openHeaderModal(${h.FqohId})"><i class="fas fa-edit"></i></button>
+          <button class="btn btn-outline-danger btn-sm" onclick="deleteHeader(${h.FqohId})"><i class="fas fa-trash"></i></button>
+        </div>
+      </div>
+      <div class="card-body p-2 tree-section" id="hsec-${h.FqohId}">
+        <div class="text-muted small fst-italic p-2" id="hloading-${h.FqohId}">Click to expand or add port...</div>
+      </div>
+    </div>`).join('');
+}
+
+async function loadAndShowPorts(headerId) {
+  const sec = document.getElementById(`hsec-${headerId}`);
+  sec.classList.add('open');
+  document.getElementById(`htoggle-${headerId}`).className='fas fa-chevron-down';
+  const full = await loadFullHeader(headerId);
+  if(!full) return;
+  const container = document.getElementById(`hloading-${headerId}`);
+  container.id = `hports-${headerId}`;
+  renderPorts(headerId, full.Ports||[]);
+  openPortModal(headerId);
+}
+
+function toggleSection(secId) {
+  const sec = document.getElementById(secId);
+  const headerId = secId.replace('hsec-','');
+  const icon = document.getElementById(`htoggle-${headerId}`);
+  if(sec.classList.contains('open')) {
+    sec.classList.remove('open');
+    icon.className='fas fa-chevron-right';
+  } else {
+    sec.classList.add('open');
+    icon.className='fas fa-chevron-down';
+    loadFullHeader(headerId).then(full=>{
+      if(full) renderPorts(headerId, full.Ports||[]);
+    });
+  }
+}
+
+function renderPorts(headerId, portsArr) {
+  let container = document.getElementById(`hports-${headerId}`);
+  if(!container){ container=document.getElementById(`hloading-${headerId}`); if(container) container.id=`hports-${headerId}`; }
+  if(!container) return;
+  if(!portsArr.length){container.innerHTML='<p class="text-muted small ps-2">No ports added yet.</p>';return;}
+  container.innerHTML = portsArr.map(p=>{
+    const hasSLines = (p.ShippingLines||[]).length > 0;
+    return `
+    <div class="card level-card level-2 mb-1" id="pcard-${p.FqopId}">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <span>
+          <button class="btn-tree" onclick="togglePortSection(${p.FqopId})"><i class="fas fa-chevron-${hasSLines?'down':'right'}" id="ptoggle-${p.FqopId}"></i></button>
+          <i class="fas fa-anchor me-2 text-success"></i><strong>${esc(p.FqopPort)}</strong>
+          ${p.FqopRemarks?`<small class="ms-2 text-muted">${esc(p.FqopRemarks)}</small>`:''}
+        </span>
+        <div class="d-flex gap-1">
+          <button class="btn btn-outline-info btn-sm" onclick="addPortChargeRow(${p.FqopId},${headerId})"><i class="fas fa-plus me-1"></i>Port Charge</button>
+          <button class="btn btn-outline-warning btn-sm" onclick="openSLineModal(${p.FqopId},null,${headerId})"><i class="fas fa-plus me-1"></i>SLine</button>
+          <button class="btn btn-outline-secondary btn-sm" onclick="openPortModal(${headerId},${p.FqopId})"><i class="fas fa-edit"></i></button>
+          <button class="btn btn-outline-danger btn-sm" onclick="deletePort(${p.FqopId},${headerId})"><i class="fas fa-trash"></i></button>
+        </div>
+      </div>
+      <div class="card-body p-2 tree-section${hasSLines?' open':''}" id="psec-${p.FqopId}">
+        ${renderPortChargesSection(p.PortCharges||[], p.FqopId, headerId)}
+        ${renderSLines(p.ShippingLines||[], p.FqopId, headerId)}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function togglePortSection(portId) {
+  const sec=document.getElementById(`psec-${portId}`);
+  const icon=document.getElementById(`ptoggle-${portId}`);
+  sec.classList.toggle('open');
+  icon.className=sec.classList.contains('open')?'fas fa-chevron-down':'fas fa-chevron-right';
+}
+
+// ── Port-Level Charges ────────────────────────────────────────────────────────
+function renderPortChargesSection(chargesArr, portId, headerId) {
+  if (!chargesArr.length) return '';
+  return `
+  <div class="mb-2">
+    <div class="d-flex align-items-center mb-1">
+      <small class="fw-semibold text-info me-2"><i class="fas fa-receipt me-1"></i>Port Charges</small>
+    </div>
+    <table class="table table-sm table-bordered charges-grid" id="pctbl-${portId}">
+      <thead><tr>
+        <th>Charge Type</th><th class="desc-cell">Description</th>
+        <th>Container</th><th class="desc-cell">Description</th>
+        <th class="amount-col text-end">Amount</th><th class="currency-col">Currency</th>
+        <th class="actions-col"></th>
+      </tr></thead>
+      <tbody id="pctbody-${portId}">
+        ${chargesArr.map(c => portChargeRowHtml(c.FqopcId, portId, headerId, c.FqopcChargeType, c.FqopcContainerType||'', c.FqopcAmount, c.FqopcCurrency||'')).join('')}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+function portChargeRowHtml(chargeId, portId, headerId, chargeType, containerType, amount, currency) {
+  const ctDesc   = chargeTypeDesc(chargeType);
+  const contDesc = containerTypeDesc(containerType);
+  return `
+  <tr data-pcharge-id="${chargeId||''}" data-port-id="${portId}" data-header-id="${headerId}">
+    <td><select class="form-select charge-type-sel" onchange="onPChargeTypeChange(this)">${buildChargeTypeOpts(chargeType)}</select></td>
+    <td class="desc-cell pcharge-type-desc">${ctDesc}</td>
+    <td><select class="form-select container-type-sel" onchange="onPContainerTypeChange(this)">${buildContainerTypeOpts(containerType)}</select></td>
+    <td class="desc-cell pcontainer-type-desc">${contDesc}</td>
+    <td class="amount-col"><input type="number" class="form-control pcharge-amount" step="0.01" value="${amount!=null?amount:''}" /></td>
+    <td class="currency-col"><select class="form-select pcharge-currency">${buildCurrencyOpts(currency)}</select></td>
+    <td class="actions-col">
+      <button class="btn-row-save" title="Save" onclick="savePortChargeRow(this)"><i class="fas fa-save"></i></button>
+      <button class="btn-row-del" title="Delete" onclick="deletePortChargeRow(this)"><i class="fas fa-trash"></i></button>
+    </td>
+  </tr>`;
+}
+
+function onPChargeTypeChange(sel) {
+  const row = sel.closest('tr');
+  row.querySelector('.pcharge-type-desc').textContent = chargeTypes.find(c=>c.OfctCode===sel.value)?.OfctDescription || '';
+  row.classList.add('row-dirty');
+}
+function onPContainerTypeChange(sel) {
+  const row = sel.closest('tr');
+  row.querySelector('.pcontainer-type-desc').textContent = containerTypes.find(c=>c.CtCode===sel.value)?.CtDescription || '';
+  row.classList.add('row-dirty');
+}
+
+function addPortChargeRow(portId, headerId) {
+  const sec = document.getElementById(`psec-${portId}`);
+  if (sec && !sec.classList.contains('open')) { sec.classList.add('open'); document.getElementById(`ptoggle-${portId}`).className='fas fa-chevron-down'; }
+
+  let tbody = document.getElementById(`pctbody-${portId}`);
+  if (!tbody) {
+    // Section doesn't have the table yet — insert it before the slines
+    const slineNode = document.getElementById(`pslsec-${portId}`) || sec.querySelector('.card.level-3');
+    const tableWrap = document.createElement('div');
+    tableWrap.className = 'mb-2';
+    tableWrap.innerHTML = `<div class="d-flex align-items-center mb-1"><small class="fw-semibold text-info me-2"><i class="fas fa-receipt me-1"></i>Port Charges</small></div>
+      <table class="table table-sm table-bordered charges-grid" id="pctbl-${portId}">
+        <thead><tr><th>Charge Type</th><th class="desc-cell">Description</th><th>Container</th><th class="desc-cell">Description</th><th class="amount-col text-end">Amount</th><th class="currency-col">Currency</th><th class="actions-col"></th></tr></thead>
+        <tbody id="pctbody-${portId}"></tbody>
+      </table>`;
+    sec.insertBefore(tableWrap, sec.firstChild);
+    tbody = document.getElementById(`pctbody-${portId}`);
+  }
+
+  const tr = document.createElement('tr');
+  tr.dataset.pchargeId = '';
+  tr.dataset.portId    = portId;
+  tr.dataset.headerId  = headerId;
+  tr.innerHTML = `
+    <td><select class="form-select charge-type-sel" onchange="onPChargeTypeChange(this)">${buildChargeTypeOpts('')}</select></td>
+    <td class="desc-cell pcharge-type-desc"></td>
+    <td><select class="form-select container-type-sel" onchange="onPContainerTypeChange(this)">${buildContainerTypeOpts('')}</select></td>
+    <td class="desc-cell pcontainer-type-desc"></td>
+    <td class="amount-col"><input type="number" class="form-control pcharge-amount" step="0.01" value="" /></td>
+    <td class="currency-col"><select class="form-select pcharge-currency">${buildCurrencyOpts('')}</select></td>
+    <td class="actions-col">
+      <button class="btn-row-save row-dirty" title="Save" onclick="savePortChargeRow(this)"><i class="fas fa-save"></i></button>
+      <button class="btn-row-del" title="Delete" onclick="deletePortChargeRow(this)"><i class="fas fa-trash"></i></button>
+    </td>`;
+  tbody.appendChild(tr);
+  tr.querySelector('select').focus();
+}
+
+async function savePortChargeRow(btn) {
+  const row      = btn.closest('tr');
+  const chargeId = row.dataset.pchargeId;
+  const portId   = row.dataset.portId;
+  const headerId = row.dataset.headerId;
+  const dto = {
+    ChargeType:    row.querySelector('.charge-type-sel').value,
+    ContainerType: row.querySelector('.container-type-sel').value || null,
+    Amount:        row.querySelector('.pcharge-amount').value ? parseFloat(row.querySelector('.pcharge-amount').value) : null,
+    Currency:      row.querySelector('.pcharge-currency').value || null
+  };
+  if (!dto.ChargeType) { showToast('Charge type required.','danger'); return; }
+  try {
+    const res = chargeId
+      ? await fq.updateOceanPortCharge(chargeId, dto)
+      : await fq.addOceanPortCharge(portId, dto);
+    const saved = res?.Data || res;
+    row.dataset.pchargeId = saved.FqopcId;
+    row.classList.remove('row-dirty');
+    showToast('Saved.','success');
+    const full = await loadFullHeader(headerId);
+    if (full) renderPorts(headerId, full.Ports||[]);
+  } catch(err) { showToast(err.message,'danger'); }
+}
+
+async function deletePortChargeRow(btn) {
+  const row      = btn.closest('tr');
+  const chargeId = row.dataset.pchargeId;
+  const headerId = row.dataset.headerId;
+  if (chargeId) {
+    if (!confirm('Delete port charge?')) return;
+    try { await fq.deleteOceanPortCharge(chargeId); showToast('Deleted.','success'); }
+    catch(err) { showToast(err.message,'danger'); return; }
+  }
+  row.remove();
+  const full = await loadFullHeader(headerId);
+  if (full) renderPorts(headerId, full.Ports||[]);
+}
+
+function renderSLines(slArr, portId, headerId) {
+  if(!slArr.length) return '<p class="text-muted small ps-2">No shipping lines added yet.</p>';
+  return slArr.map(sl=>{
+    const hasCharges = (sl.Charges||[]).length > 0;
+    return `
+    <div class="card level-card level-3 mb-1">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <span>
+          <button class="btn-tree" onclick="toggleSec('slsec-${sl.FqoplId}','sltoggle-${sl.FqoplId}')"><i class="fas fa-chevron-${hasCharges?'down':'right'}" id="sltoggle-${sl.FqoplId}"></i></button>
+          <i class="fas fa-ship me-2 text-warning"></i>
+          <strong>${esc(sl.FqoplShipLine)}</strong>
+          ${sl.FqoplRoute?`<span class="ms-2 badge bg-secondary">${esc(sl.FqoplRoute)}</span>`:''}
+          ${sl.FqoplDays?`<small class="ms-2 text-muted">${sl.FqoplDays}d</small>`:''}
+          ${hasCharges?`<small class="ms-2 text-muted">(${sl.Charges.length} charge${sl.Charges.length!==1?'s':''})</small>`:''}
+        </span>
+        <div class="d-flex gap-1">
+          <button class="btn btn-outline-primary btn-sm" onclick="addChargeRow(${sl.FqoplId},${headerId})"><i class="fas fa-plus me-1"></i>Charge</button>
+          <button class="btn btn-outline-secondary btn-sm" onclick="openSLineModal(${portId},${sl.FqoplId},${headerId})"><i class="fas fa-edit"></i></button>
+          <button class="btn btn-outline-danger btn-sm" onclick="deleteSLine(${sl.FqoplId},${headerId})"><i class="fas fa-trash"></i></button>
+        </div>
+      </div>
+      <div class="card-body p-2 tree-section${hasCharges?' open':''}" id="slsec-${sl.FqoplId}">
+        ${renderChargesGrid(sl.Charges||[], sl.FqoplId, headerId)}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleSec(secId, iconId) {
+  const sec=document.getElementById(secId);
+  const icon=document.getElementById(iconId);
+  if(!sec||!icon) return;
+  sec.classList.toggle('open');
+  icon.className=sec.classList.contains('open')?'fas fa-chevron-down':'fas fa-chevron-right';
+}
+
+// ── Charges inline editable grid ──────────────────────────────────────────────
+function renderChargesGrid(chargesArr, slId, headerId) {
+  const rows = chargesArr.map(c => chargeRowHtml(c.FqoplcId, slId, headerId,
+    c.FqoplcChargeType, c.FqoplcContainerType||'', c.FqoplcAmount, c.FqoplcCurrency||''
+  )).join('');
+
+  return `
+  <table class="table table-sm table-bordered charges-grid" id="ctbl-${slId}">
+    <thead>
+      <tr>
+        <th>Charge Type</th>
+        <th class="desc-cell">Description</th>
+        <th>Container</th>
+        <th class="desc-cell">Description</th>
+        <th class="amount-col text-end">Amount</th>
+        <th class="currency-col">Currency</th>
+        <th class="actions-col"></th>
+      </tr>
+    </thead>
+    <tbody id="ctbody-${slId}">${rows}</tbody>
+  </table>`;
+}
+
+function chargeRowHtml(chargeId, slId, headerId, chargeType, containerType, amount, currency) {
+  const ctDesc = chargeTypeDesc(chargeType);
+  const contDesc = containerTypeDesc(containerType);
+  return `
+  <tr data-charge-id="${chargeId||''}" data-sline-id="${slId}" data-header-id="${headerId}">
+    <td><select class="form-select charge-type-sel" onchange="onChargeTypeChange(this)">${buildChargeTypeOpts(chargeType)}</select></td>
+    <td class="desc-cell charge-type-desc">${ctDesc}</td>
+    <td><select class="form-select container-type-sel" onchange="onContainerTypeChange(this)">${buildContainerTypeOpts(containerType)}</select></td>
+    <td class="desc-cell container-type-desc">${contDesc}</td>
+    <td class="amount-col"><input type="number" class="form-control charge-amount" step="0.01" value="${amount!=null?amount:''}" /></td>
+    <td class="currency-col"><select class="form-select charge-currency">${buildCurrencyOpts(currency)}</select></td>
+    <td class="actions-col">
+      <button class="btn-row-save" title="Save" onclick="saveChargeRow(this)"><i class="fas fa-save"></i></button>
+      <button class="btn-row-del" title="Delete" onclick="deleteChargeRow(this)"><i class="fas fa-trash"></i></button>
+    </td>
+  </tr>`;
+}
+
+function onChargeTypeChange(sel) {
+  const row = sel.closest('tr');
+  row.querySelector('.charge-type-desc').textContent = chargeTypes.find(c=>c.OfctCode===sel.value)?.OfctDescription || '';
+  row.classList.add('row-dirty');
+}
+
+function onContainerTypeChange(sel) {
+  const row = sel.closest('tr');
+  row.querySelector('.container-type-desc').textContent = containerTypes.find(c=>c.CtCode===sel.value)?.CtDescription || '';
+  row.classList.add('row-dirty');
+}
+
+function addChargeRow(slId, headerId) {
+  // Expand the section first
+  const sec = document.getElementById(`slsec-${slId}`);
+  const iconEl = document.getElementById(`sltoggle-${slId}`);
+  if(sec && !sec.classList.contains('open')){
+    sec.classList.add('open');
+    if(iconEl) iconEl.className='fas fa-chevron-down';
+  }
+
+  // If table doesn't exist yet (no charges), build it
+  let tbody = document.getElementById(`ctbody-${slId}`);
+  if(!tbody) {
+    sec.innerHTML = renderChargesGrid([], slId, headerId);
+    tbody = document.getElementById(`ctbody-${slId}`);
+  }
+
+  // Append blank editable row
+  const tr = document.createElement('tr');
+  tr.dataset.chargeId = '';
+  tr.dataset.slineId  = slId;
+  tr.dataset.headerId = headerId;
+  tr.innerHTML = `
+    <td><select class="form-select charge-type-sel" onchange="onChargeTypeChange(this)">${buildChargeTypeOpts('')}</select></td>
+    <td class="desc-cell charge-type-desc"></td>
+    <td><select class="form-select container-type-sel" onchange="onContainerTypeChange(this)">${buildContainerTypeOpts('')}</select></td>
+    <td class="desc-cell container-type-desc"></td>
+    <td class="amount-col"><input type="number" class="form-control charge-amount" step="0.01" value="" /></td>
+    <td class="currency-col"><select class="form-select charge-currency">${buildCurrencyOpts('')}</select></td>
+    <td class="actions-col">
+      <button class="btn-row-del" title="Delete" onclick="deleteChargeRow(this)"><i class="fas fa-trash"></i></button>
+    </td>`;
+  tbody.appendChild(tr);
+  tr.querySelector('.charge-type-sel').focus();
+}
+
+async function saveChargeRow(btn) {
+  const row      = btn.closest('tr');
+  const chargeId = row.dataset.chargeId;
+  const slId     = row.dataset.slineId;
+  const headerId = row.dataset.headerId;
+
+  const chargeType    = row.querySelector('.charge-type-sel').value;
+  const containerType = row.querySelector('.container-type-sel').value || null;
+  const amountVal     = row.querySelector('.charge-amount').value;
+  const currency      = row.querySelector('.charge-currency').value || null;
+
+  if(!chargeType){ showToast('Select a Charge Type.','danger'); return; }
+
+  const dto = {
+    ChargeType:    chargeType,
+    ContainerType: containerType,
+    Amount:        amountVal ? parseFloat(amountVal) : null,
+    Currency:      currency
+  };
+
+  try {
+    let res;
+    if(chargeId) {
+      res = await fq.updateOceanCharge(chargeId, dto);
+    } else {
+      res = await fq.addOceanCharge(slId, dto);
+      const saved = res?.Data || res;
+      if(saved?.FqoplcId) row.dataset.chargeId = saved.FqoplcId;
+    }
+    row.classList.remove('row-dirty');
+    showToast('Saved.','success');
+  } catch(err){ showToast(err.message,'danger'); }
+}
+
+async function deleteChargeRow(btn) {
+  const row      = btn.closest('tr');
+  const chargeId = row.dataset.chargeId;
+  const headerId = row.dataset.headerId;
+
+  if(chargeId) {
+    if(!confirm('Delete this charge?')) return;
+    try {
+      await fq.deleteOceanCharge(chargeId);
+      showToast('Deleted.','success');
+    } catch(err){ showToast(err.message,'danger'); return; }
+  }
+  row.remove();
+}
+
+async function onNewQuoteForwarderChange(sel) {
+  document.getElementById('h-start').value   = '';
+  document.getElementById('h-end').value     = '';
+  document.getElementById('h-remarks').value = '';
+  if (document.getElementById('h-id').value) return;
+  const fw = (sel.value || '').trim();
+  if (!fw) return;
+  try {
+    const res = await fq.getOceanHeaders({forwarder: fw});
+    if (document.getElementById('h-forwarder').value !== fw) return;
+    const headers = res?.Data || res || [];
+    if (!headers.length) return;
+    const latest = headers.sort((a, b) => (b.FqohStartDate||'') > (a.FqohStartDate||'') ? 1 : -1)[0];
+    document.getElementById('h-start').value   = latest.FqohStartDate || '';
+    document.getElementById('h-end').value     = latest.FqohEndDate   || '';
+    document.getElementById('h-remarks').value = latest.FqohRemarks   || '';
+  } catch(e) { /* silently ignore */ }
+}
+
+// ── Header CRUD ───────────────────────────────────────────────────────────────
+function openHeaderModal(id=null) {
+  document.getElementById('h-id').value=id||'';
+  document.getElementById('header-form').reset();
+  // Explicit clear — form.reset() doesn't clear fields set programmatically via JS
+  document.getElementById('h-forwarder').value='';
+  document.getElementById('h-quote').value='';
+  document.getElementById('h-start').value='';
+  document.getElementById('h-end').value='';
+  document.getElementById('h-remarks').value='';
+  document.getElementById('headerModalTitle').textContent = id?'Edit Quote Header':'New Quote Header';
+  if(id){
+    const h=allHeaders.find(x=>x.FqohId===id);
+    if(h){
+      document.getElementById('h-forwarder').value=h.FqohForwarder;
+      document.getElementById('h-quote').value=h.FqohQuoteNumber;
+      document.getElementById('h-start').value=h.FqohStartDate||'';
+      document.getElementById('h-end').value=h.FqohEndDate||'';
+      document.getElementById('h-remarks').value=h.FqohRemarks||'';
+    }
+  }
+  new bootstrap.Modal('#headerModal').show();
+}
+
+async function fillNextNumber() {
+  try {
+    const res = await fq.getOceanNextNumber();
+    const num = res?.Data ?? res;
+    document.getElementById('h-quote').value = String(num);
+  } catch(err){ showToast(err.message,'danger'); }
+}
+
+async function saveHeader() {
+  const id=document.getElementById('h-id').value;
+  const forwarder=document.getElementById('h-forwarder').value;
+  const quote=document.getElementById('h-quote').value.trim().toUpperCase();
+  let valid=true;
+  if(!forwarder){document.getElementById('h-forwarder').classList.add('is-invalid');valid=false;}else document.getElementById('h-forwarder').classList.remove('is-invalid');
+  if(!quote){document.getElementById('h-quote').classList.add('is-invalid');valid=false;}else document.getElementById('h-quote').classList.remove('is-invalid');
+  if(!valid) return;
+  const dto={Forwarder:forwarder,QuoteNumber:quote,
+    StartDate:document.getElementById('h-start').value||null,
+    EndDate:document.getElementById('h-end').value||null,
+    Remarks:document.getElementById('h-remarks').value.trim()||null};
+  try{
+    if(id){await fq.updateOceanHeader(id,dto);}else{await fq.createOceanHeader(dto);}
+    showToast(id?'Updated.':'Created.','success');
+    bootstrap.Modal.getInstance(document.getElementById('headerModal'))?.hide();
+    await loadHeaders();
+  }catch(err){showToast(err.message,'danger');}
+}
+
+async function deleteHeader(id){
+  if(!confirm('Delete this quote header and all its data?')) return;
+  try{await fq.deleteOceanHeader(id);showToast('Deleted.','success');await loadHeaders();}catch(err){showToast(err.message,'danger');}
+}
+
+async function copyHeader(id) {
+  if(!confirm('Copy this quote to a new quote number?')) return;
+  try {
+    const res = await fq.copyOceanHeader(id);
+    showToast((res?.Message||'Quote copied.'),'success');
+    await loadHeaders();
+  } catch(err){ showToast(err.message,'danger'); }
+}
+
+// ── Port CRUD ─────────────────────────────────────────────────────────────────
+function openPortModal(headerId, portId=null) {
+  document.getElementById('p-id').value=portId||'';
+  document.getElementById('p-header-id').value=headerId;
+  document.getElementById('port-form').reset();
+  document.getElementById('portModalTitle').textContent=portId?'Edit Port':'Add Port';
+  if(portId){
+    fq.getOceanHeader(headerId).then(res=>{
+      const full=res?.Data||res;
+      const p=(full?.Ports||[]).find(x=>x.FqopId===portId);
+      if(p){document.getElementById('p-port').value=p.FqopPort;document.getElementById('p-remarks').value=p.FqopRemarks||'';}
+    });
+  }
+  new bootstrap.Modal('#portModal').show();
+}
+
+async function savePort() {
+  const id=document.getElementById('p-id').value;
+  const headerId=document.getElementById('p-header-id').value;
+  const port=document.getElementById('p-port').value;
+  if(!port){document.getElementById('p-port').classList.add('is-invalid');return;}
+  document.getElementById('p-port').classList.remove('is-invalid');
+  const dto={Port:port,Remarks:document.getElementById('p-remarks').value.trim()||null};
+  try{
+    if(id){await fq.updateOceanPort(id,dto);}else{await fq.addOceanPort(headerId,dto);}
+    showToast(id?'Updated.':'Added.','success');
+    bootstrap.Modal.getInstance(document.getElementById('portModal'))?.hide();
+    const full=await loadFullHeader(headerId);
+    if(full) renderPorts(headerId, full.Ports||[]);
+  }catch(err){showToast(err.message,'danger');}
+}
+
+async function deletePort(id, headerId){
+  if(!confirm('Delete port and all its data?')) return;
+  try{await fq.deleteOceanPort(id);showToast('Deleted.','success');const full=await loadFullHeader(headerId);if(full)renderPorts(headerId,full.Ports||[]);}catch(err){showToast(err.message,'danger');}
+}
+
+// ── SLine CRUD ────────────────────────────────────────────────────────────────
+function openSLineModal(portId, slId=null, headerId=null) {
+  document.getElementById('sl-id').value=slId||'';
+  document.getElementById('sl-port-id').value=portId;
+  document.getElementById('sline-form').reset();
+  document.getElementById('slineModalTitle').textContent=slId?'Edit Shipping Line':'Add Shipping Line';
+  if(slId && headerId){
+    fq.getOceanHeader(headerId).then(res=>{
+      const full=res?.Data||res;
+      const port=(full?.Ports||[]).find(x=>x.FqopId===portId);
+      const sl=(port?.ShippingLines||[]).find(x=>x.FqoplId===slId);
+      if(sl){document.getElementById('sl-line').value=sl.FqoplShipLine;document.getElementById('sl-route').value=sl.FqoplRoute||'';document.getElementById('sl-days').value=sl.FqoplDays||'';document.getElementById('sl-remarks').value=sl.FqoplRemarks||'';}
+    });
+  }
+  document.getElementById('sl-port-id').dataset.headerId=headerId||'';
+  new bootstrap.Modal('#slineModal').show();
+}
+
+async function saveSLine(){
+  const id=document.getElementById('sl-id').value;
+  const portId=document.getElementById('sl-port-id').value;
+  const headerId=document.getElementById('sl-port-id').dataset.headerId;
+  const line=document.getElementById('sl-line').value;
+  if(!line){document.getElementById('sl-line').classList.add('is-invalid');return;}
+  document.getElementById('sl-line').classList.remove('is-invalid');
+  const dto={ShipLine:line,Route:document.getElementById('sl-route').value||null,Days:document.getElementById('sl-days').value?parseInt(document.getElementById('sl-days').value):null,Remarks:document.getElementById('sl-remarks').value.trim()||null};
+  try{
+    if(id){await fq.updateOceanSLine(id,dto);}else{await fq.addOceanSLine(portId,dto);}
+    showToast(id?'Updated.':'Added.','success');
+    bootstrap.Modal.getInstance(document.getElementById('slineModal'))?.hide();
+    if(headerId){const full=await loadFullHeader(headerId);if(full)renderPorts(headerId,full.Ports||[]);}
+  }catch(err){showToast(err.message,'danger');}
+}
+
+async function deleteSLine(id,headerId){
+  if(!confirm('Delete shipping line and charges?')) return;
+  try{await fq.deleteOceanSLine(id);showToast('Deleted.','success');const full=await loadFullHeader(headerId);if(full)renderPorts(headerId,full.Ports||[]);}catch(err){showToast(err.message,'danger');}
+}
+
+function showToast(msg,type='success'){const el=document.getElementById('toast');el.className=`toast align-items-center text-white border-0 bg-${type==='success'?'success':'danger'}`;document.getElementById('toast-msg').textContent=msg;new bootstrap.Toast(el,{delay:3500}).show();}
+function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+</script>
+</body>
+</html>

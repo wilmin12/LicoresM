@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stock Analysis Results - Licores Maduro</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../../css/main.css" />
+  <style>
+    /* ── Sticky-column analysis table ─────────────────────────────── */
+    .analysis-table-wrapper {
+      overflow-x: auto;
+      max-height: calc(100vh - 340px);
+      overflow-y: auto;
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+    }
+    .analysis-table { font-size: .76rem; white-space: nowrap; border-collapse: separate; border-spacing: 0; }
+    .analysis-table thead tr { position: sticky; top: 0; z-index: 10; }
+    .analysis-table thead th { background: #343a40; color: #fff; padding: 6px 10px; border-bottom: 2px solid #495057; vertical-align: bottom; }
+    .analysis-table thead tr.group-row th { background: #495057; font-size: .7rem; text-transform: uppercase; letter-spacing: .04em; padding: 3px 10px; }
+    .analysis-table tbody td { padding: 5px 10px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+    /* Sticky columns */
+    .sticky-col { position: sticky; left: 0; z-index: 5; background: #fff; }
+    .sticky-col-2 { position: sticky; left: 100px; z-index: 5; background: #fff; }
+    .sticky-col-3 { position: sticky; left: 220px; z-index: 5; background: #fff; }
+    .sticky-col-4 { position: sticky; left: 340px; z-index: 5; background: #fff; }
+    .analysis-table thead th.sticky-col,
+    .analysis-table thead th.sticky-col-2,
+    .analysis-table thead th.sticky-col-3,
+    .analysis-table thead th.sticky-col-4 { z-index: 20; background: #343a40; }
+    /* Row coloring */
+    tr.row-overstock td { background: #fff5f5 !important; }
+    tr.row-understock td { background: #f0fff4 !important; }
+    tr.row-overstock .sticky-col,
+    tr.row-overstock .sticky-col-2,
+    tr.row-overstock .sticky-col-3,
+    tr.row-overstock .sticky-col-4 { background: #fff5f5 !important; }
+    tr.row-understock .sticky-col,
+    tr.row-understock .sticky-col-2,
+    tr.row-understock .sticky-col-3,
+    tr.row-understock .sticky-col-4 { background: #f0fff4 !important; }
+    /* KPI strip */
+    .kpi-strip .badge { font-size: .78rem; padding: .45em .75em; }
+    /* Spinner overlay */
+    #loading-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:9999; align-items:center; justify-content:center; }
+  </style>
+</head>
+<body>
+<div id="loading-overlay"><div class="spinner-border text-light" role="status" style="width:3rem;height:3rem;"></div></div>
+<div id="sidebar-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;"></div>
+<div class="app-wrapper">
+  <nav id="sidebar" class="sidebar">
+    <div class="sidebar-header"><img src="../../img/LogoLicores.png" alt="Licores Maduro" class="sidebar-logo-img"/><span class="sidebar-logo-text">LICORES MADURO</span></div>
+    <div id="sidebar-nav" class="sidebar-nav"></div>
+    <div class="sidebar-footer"><div class="sidebar-user"><div class="sidebar-avatar" id="sidebar-user-initials">LM</div><div class="sidebar-text"><div id="sidebar-user-name" style="font-weight:600;">–</div></div></div></div>
+  </nav>
+  <div class="main-area">
+    <header class="topbar">
+      <button id="btn-sidebar-toggle" class="btn-sidebar-toggle"><i class="fas fa-bars"></i></button>
+      <span class="topbar-title"><i class="fas fa-chart-bar me-2 text-wine"></i>Stock Analysis Results</span>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown">
+            <span class="sidebar-avatar" id="topbar-user-initials" style="width:28px;height:28px;font-size:.75rem;">LM</span>
+            <span id="topbar-user-name" class="d-none d-md-inline">–</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+            <li><div class="dropdown-header"><strong id="topbar-user-fullname">User</strong><br/><small class="text-muted" id="topbar-user-role">Role</small></div></li>
+            <li><hr class="dropdown-divider"/></li>
+            <li><a class="dropdown-item text-danger" href="#" id="btn-logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+          </ul>
+        </div>
+      </div>
+    </header>
+    <main class="page-content">
+      <nav aria-label="breadcrumb" class="mb-2">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="../../dashboard.html"><i class="fas fa-home me-1"></i>Home</a></li>
+          <li class="breadcrumb-item"><a href="index.html">Stock Analysis</a></li>
+          <li class="breadcrumb-item active">Analysis Results</li>
+        </ol>
+      </nav>
+
+      <!-- Top bar: controls -->
+      <div class="card mb-2">
+        <div class="card-body py-2 d-flex flex-wrap align-items-center gap-2">
+          <select id="sel-year" class="form-select form-select-sm" style="width:90px;"></select>
+          <select id="sel-month" class="form-select form-select-sm" style="width:130px;">
+            <option value="">-- Month --</option>
+            <option value="1">January</option><option value="2">February</option>
+            <option value="3">March</option><option value="4">April</option>
+            <option value="5">May</option><option value="6">June</option>
+            <option value="7">July</option><option value="8">August</option>
+            <option value="9">September</option><option value="10">October</option>
+            <option value="11">November</option><option value="12">December</option>
+          </select>
+          <button class="btn btn-wine btn-sm" id="btn-load-results"><i class="fas fa-search me-1"></i>Load</button>
+          <span class="vr d-none d-md-block"></span>
+          <button class="btn btn-outline-success btn-sm" id="btn-generate-open"><i class="fas fa-cogs me-1"></i>Generate</button>
+          <span class="vr d-none d-md-block"></span>
+          <div class="search-wrapper" style="width:200px;">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" id="search-item" class="form-control form-control-sm" placeholder="Item code / desc..."/>
+          </div>
+          <input type="text" id="filter-class" class="form-control form-control-sm" style="width:120px;" placeholder="Product class"/>
+          <input type="text" id="filter-supplier" class="form-control form-control-sm" style="width:120px;" placeholder="Supplier"/>
+          <input type="text" id="filter-brand" class="form-control form-control-sm" style="width:120px;" placeholder="Brand"/>
+          <button class="btn btn-outline-secondary btn-sm ms-auto" id="btn-export-csv"><i class="fas fa-download me-1"></i>Export CSV</button>
+        </div>
+      </div>
+
+      <!-- KPI strip -->
+      <div class="kpi-strip d-flex flex-wrap gap-2 mb-2" id="kpi-strip">
+        <span class="badge bg-primary" id="k-total">Items: –</span>
+        <span class="badge bg-danger" id="k-overstock">Overstocked: –</span>
+        <span class="badge bg-success" id="k-understock">Understocked: –</span>
+        <span class="badge bg-info text-dark" id="k-inv-val">Inv Value: –</span>
+        <span class="badge bg-warning text-dark" id="k-ov-ang">Overstock ANG: –</span>
+        <span class="badge bg-secondary" id="k-avg-months">Avg Months: –</span>
+      </div>
+
+      <!-- Analysis table -->
+      <div class="analysis-table-wrapper" id="table-wrapper">
+        <table class="analysis-table table mb-0" id="analysis-table">
+          <thead>
+            <tr class="group-row">
+              <th colspan="4" class="sticky-col text-center border-end">Identity</th>
+              <th colspan="4" class="text-center border-end">Stock On-Hand</th>
+              <th colspan="4" class="text-center border-end">On Order</th>
+              <th colspan="3" class="text-center border-end">Sales</th>
+              <th colspan="6" class="text-center border-end">Budget</th>
+              <th colspan="8" class="text-center border-end">Overstock / Stock Months</th>
+              <th colspan="7" class="text-center border-end">Value (ANG)</th>
+              <th colspan="7" class="text-center">Arrival Analysis</th>
+            </tr>
+            <tr>
+              <!-- Identity (sticky) -->
+              <th class="sticky-col" style="min-width:100px;">Item Code</th>
+              <th class="sticky-col-2" style="min-width:120px;">Description</th>
+              <th class="sticky-col-3" style="min-width:120px;">Supplier</th>
+              <th class="sticky-col-4 border-end" style="min-width:120px;">Brand</th>
+              <!-- Stock OH -->
+              <th>WH 11010</th><th>WH 11020</th><th>WH 11060</th><th class="border-end">Total OH</th>
+              <!-- On Order -->
+              <th>OO 11010</th><th>OO 11020</th><th>OO 11060</th><th class="border-end">Total OO</th>
+              <!-- Sales -->
+              <th>Monthly Sales</th><th>YTD Sales</th><th class="border-end">Daily Rate</th>
+              <!-- Budget -->
+              <th>Total Bgt Units</th><th>YTD Bgt Units</th><th>Total Bgt Sales</th><th>YTD Bgt Sales</th><th>Total Bgt Cost</th><th class="border-end">YTD Bgt Cost</th>
+              <!-- Overstock / months -->
+              <th>Ideal Months</th><th>Ideal Stock Units</th><th>Overstock Units</th><th>OO+OH Overstock</th>
+              <th>Months OH</th><th>Months OH+OO</th><th>Months Overstock</th><th class="border-end">OO+OH Months OS</th>
+              <!-- Value -->
+              <th>Avg Cost/Case</th><th>Inv Value OH</th><th>Inv Value OO</th><th>Total Inv Value</th>
+              <th>Ideal Stock ANG</th><th>Overstock ANG</th><th class="border-end">OO Overstock ANG</th>
+              <!-- Arrival -->
+              <th>On Order ETA</th><th>Days to ETA</th><th>Months to ETA</th><th>Sales Before ETA</th>
+              <th>OH at ETA</th><th>Overstock at ETA</th><th>Months to Ideal</th>
+            </tr>
+          </thead>
+          <tbody id="analysis-tbody">
+            <tr><td colspan="42" class="text-center py-4 text-muted">Select a period and click Load.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mt-2">
+        <small class="text-muted" id="page-info">–</small>
+        <nav><ul class="pagination pagination-sm mb-0" id="pagination"></ul></nav>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Generate Modal -->
+<div class="modal fade" id="generateModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title"><i class="fas fa-cogs me-2"></i>Generate Stock Analysis</h5>
+      <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    </div>
+    <div class="modal-body">
+      <div class="row g-3">
+        <div class="col-6">
+          <label class="form-label">Year <span class="text-danger">*</span></label>
+          <input type="number" id="gen-year" class="form-control" min="2020" max="2099"/>
+        </div>
+        <div class="col-6">
+          <label class="form-label">Month <span class="text-danger">*</span></label>
+          <select id="gen-month" class="form-select">
+            <option value="1">January</option><option value="2">February</option>
+            <option value="3">March</option><option value="4">April</option>
+            <option value="5">May</option><option value="6">June</option>
+            <option value="7">July</option><option value="8">August</option>
+            <option value="9">September</option><option value="10">October</option>
+            <option value="11">November</option><option value="12">December</option>
+          </select>
+        </div>
+      </div>
+      <div id="gen-status" class="mt-3"></div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-wine btn-sm" id="btn-run-gen">
+        <i class="fas fa-play me-1"></i>Run Analysis
+      </button>
+    </div>
+  </div></div>
+</div>
+
+<div class="toast-container"><div id="toast" class="toast align-items-center text-white border-0" role="alert"><div class="d-flex"><div class="toast-body" id="toast-msg"></div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div></div></div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../../js/i18n.js"></script>
+<script src="../../js/api.js"></script>
+<script src="../../js/auth.js"></script>
+<script src="../../js/sidebar.js"></script>
+<script>
+  let currentPage = 1, totalPages = 1, allResults = [];
+  const PAGE_SIZE = 50;
+  let filterDebounce = null;
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    if (!Auth.requireAuth()) return;
+    Auth.startExpiryWatcher();
+    Auth.populateUserUI();
+    Sidebar.init();
+    document.getElementById('btn-logout').addEventListener('click', e => { e.preventDefault(); Auth.logout(); });
+
+    document.getElementById('btn-load-results').addEventListener('click', () => { currentPage = 1; loadResults(); });
+    document.getElementById('btn-generate-open').addEventListener('click', openGenerateModal);
+    document.getElementById('btn-run-gen').addEventListener('click', runGenerate);
+    document.getElementById('btn-export-csv').addEventListener('click', exportCsv);
+
+    ['search-item', 'filter-class', 'filter-supplier', 'filter-brand'].forEach(id => {
+      document.getElementById(id).addEventListener('input', () => {
+        clearTimeout(filterDebounce);
+        filterDebounce = setTimeout(() => { currentPage = 1; loadResults(); }, 400);
+      });
+    });
+
+    // Load available periods and populate year/month dropdowns
+    await loadPeriods();
+  });
+
+  async function loadPeriods() {
+    try {
+      const res = await API.stockAnalysis.getAvailablePeriods();
+      const periods = res?.Data || [];
+      const yearSel = document.getElementById('sel-year');
+      const years = [...new Set(periods.map(p => p.SarYear))].sort((a, b) => b - a);
+      yearSel.innerHTML = '<option value="">-- Year --</option>' +
+        years.map(y => `<option value="${y}">${y}</option>`).join('');
+
+      if (periods.length > 0) {
+        yearSel.value = periods[0].SarYear;
+        document.getElementById('sel-month').value = periods[0].SarMonth;
+        await loadResults();
+      }
+    } catch(e) { showToast(e.message, 'danger'); }
+  }
+
+  async function loadResults() {
+    const year   = document.getElementById('sel-year').value;
+    const month  = document.getElementById('sel-month').value;
+    const search = document.getElementById('search-item').value.trim();
+    const cls    = document.getElementById('filter-class').value.trim();
+    const sup    = document.getElementById('filter-supplier').value.trim();
+    const brand  = document.getElementById('filter-brand').value.trim();
+
+    const params = { page: currentPage, pageSize: PAGE_SIZE };
+    if (year)   params.year   = year;
+    if (month)  params.month  = month;
+    if (search) params.search = search;
+    if (cls)    params.productClass = cls;
+    if (sup)    params.supplier = sup;
+    if (brand)  params.brand  = brand;
+
+    showLoading(true);
+    try {
+      const [resultsRes, summaryRes] = await Promise.all([
+        API.stockAnalysis.getResults(params),
+        (year && month) ? API.stockAnalysis.getSummary({ year, month }) : Promise.resolve(null)
+      ]);
+
+      allResults = resultsRes?.Data || [];
+      totalPages = resultsRes?.TotalPages || 1;
+      renderTable(allResults);
+      renderPagination(resultsRes?.TotalCount || 0);
+
+      const s = summaryRes?.Data;
+      updateKpiStrip(s);
+    } catch(e) { showToast(e.message, 'danger'); }
+    finally { showLoading(false); }
+  }
+
+  function renderTable(rows) {
+    const tbody = document.getElementById('analysis-tbody');
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="42" class="text-center py-4 text-muted">No results found.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = rows.map(r => {
+      const os = r.SarOverstockUnits ?? 0;
+      const cls = os > 0 ? 'row-overstock' : (os < 0 ? 'row-understock' : '');
+      return `<tr class="${cls}">
+        <td class="sticky-col"><strong>${esc(r.SarItemCode)}</strong></td>
+        <td class="sticky-col-2">${esc(r.SarItemDesc||'')}</td>
+        <td class="sticky-col-3"><small>${esc(r.SarSupplierName||r.SarSupplierCode||'')}</small></td>
+        <td class="sticky-col-4 border-end"><small>${esc(r.SarBrandDesc||r.SarBrandCode||'')}</small></td>
+        <!-- OH -->
+        <td class="text-end">${fmt(r.SarOh11010)}</td>
+        <td class="text-end">${fmt(r.SarOh11020)}</td>
+        <td class="text-end">${fmt(r.SarOh11060)}</td>
+        <td class="text-end border-end"><strong>${fmt(r.SarCurrentOhUnits)}</strong></td>
+        <!-- On Order -->
+        <td class="text-end">${fmt(r.SarOnOrder11010)}</td>
+        <td class="text-end">${fmt(r.SarOnOrder11020)}</td>
+        <td class="text-end">${fmt(r.SarOnOrder11060)}</td>
+        <td class="text-end border-end"><strong>${fmt(r.SarOnOrderUnits)}</strong></td>
+        <!-- Sales -->
+        <td class="text-end">${fmt(r.SarMonthlySalesUnits,2)}</td>
+        <td class="text-end">${fmt(r.SarYtdSalesUnits,2)}</td>
+        <td class="text-end border-end">${fmt(r.SarDailyRateOfSale,2)}</td>
+        <!-- Budget -->
+        <td class="text-end">${fmt(r.SarTotalBudgetUnits,2)}</td>
+        <td class="text-end">${fmt(r.SarYtdBudgetUnits,2)}</td>
+        <td class="text-end">${fmtAng(r.SarTotalBudgetSales)}</td>
+        <td class="text-end">${fmtAng(r.SarYtdBudgetSales)}</td>
+        <td class="text-end">${fmtAng(r.SarTotalBudgetCost)}</td>
+        <td class="text-end border-end">${fmtAng(r.SarYtdBudgetCost)}</td>
+        <!-- Overstock / months -->
+        <td class="text-end">${fmt(r.SarIdealMonthsOfStock,1)}</td>
+        <td class="text-end">${fmt(r.SarIdealStockUnits,2)}</td>
+        <td class="text-end ${(r.SarOverstockUnits??0)>0?'text-danger fw-semibold':((r.SarOverstockUnits??0)<0?'text-success fw-semibold':'')}">${fmt(r.SarOverstockUnits,2)}</td>
+        <td class="text-end">${fmt(r.SarOverstockUnitsInclOrders,2)}</td>
+        <td class="text-end">${fmt(r.SarMonthsOfStock,2)}</td>
+        <td class="text-end">${fmt(r.SarMonthsOfStockInclOnOrder,2)}</td>
+        <td class="text-end">${fmt(r.SarMonthsOfOverstock,2)}</td>
+        <td class="text-end border-end">${fmt(r.SarMonthsOfOverstockInclOnOrder,2)}</td>
+        <!-- Value -->
+        <td class="text-end">${fmtAng(r.SarAvgCostPerCase)}</td>
+        <td class="text-end">${fmtAng(r.SarInventoryValue)}</td>
+        <td class="text-end">${fmtAng(r.SarInventoryValueOnOrder)}</td>
+        <td class="text-end"><strong>${fmtAng(r.SarTotalInventoryValue)}</strong></td>
+        <td class="text-end">${fmtAng(r.SarIdealStockAng)}</td>
+        <td class="text-end ${(r.SarOverstockAng??0)>0?'text-danger':''}">${fmtAng(r.SarOverstockAng)}</td>
+        <td class="text-end border-end">${fmtAng(r.SarOverstockAngInclOrder)}</td>
+        <!-- Arrival -->
+        <td class="text-center">${r.SarOnOrderEta ? r.SarOnOrderEta.substring(0,10) : '–'}</td>
+        <td class="text-end">${r.SarDaysBeforeArrivalOrder != null ? r.SarDaysBeforeArrivalOrder : '–'}</td>
+        <td class="text-end">${fmt(r.SarMonthsBeforeArrivalOrder,2)}</td>
+        <td class="text-end">${fmt(r.SarUnitSalesBeforeArrivalOrder,2)}</td>
+        <td class="text-end">${fmt(r.SarTotalOhAtArrivalOrder,2)}</td>
+        <td class="text-end">${fmt(r.SarOverstockAtArrivalOrder,2)}</td>
+        <td class="text-end">${fmt(r.SarTotalMonthsBeforeIdealStock,2)}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  function renderPagination(total) {
+    document.getElementById('page-info').textContent = `Page ${currentPage} of ${totalPages} — ${total} items`;
+    let html = `<li class="page-item ${currentPage===1?'disabled':''}"><a class="page-link" href="#" onclick="event.preventDefault();gotoPage(${currentPage-1})">&#8249;</a></li>`;
+    const start = Math.max(1, currentPage - 3);
+    const end   = Math.min(totalPages, currentPage + 3);
+    if (start > 1) html += `<li class="page-item disabled"><span class="page-link">…</span></li>`;
+    for (let p = start; p <= end; p++)
+      html += `<li class="page-item ${p===currentPage?'active':''}"><a class="page-link" href="#" onclick="event.preventDefault();gotoPage(${p})">${p}</a></li>`;
+    if (end < totalPages) html += `<li class="page-item disabled"><span class="page-link">…</span></li>`;
+    html += `<li class="page-item ${currentPage>=totalPages?'disabled':''}"><a class="page-link" href="#" onclick="event.preventDefault();gotoPage(${currentPage+1})">&#8250;</a></li>`;
+    document.getElementById('pagination').innerHTML = html;
+  }
+
+  function gotoPage(p) { if (p < 1 || p > totalPages) return; currentPage = p; loadResults(); }
+
+  function updateKpiStrip(s) {
+    if (!s) {
+      ['k-total','k-overstock','k-understock','k-inv-val','k-ov-ang','k-avg-months']
+        .forEach(id => { document.getElementById(id).textContent = document.getElementById(id).textContent.split(':')[0] + ': –'; });
+      return;
+    }
+    document.getElementById('k-total').textContent       = `Items: ${s.TotalItems}`;
+    document.getElementById('k-overstock').textContent   = `Overstocked: ${s.ItemsOverstocked}`;
+    document.getElementById('k-understock').textContent  = `Understocked: ${s.ItemsUnderstocked}`;
+    document.getElementById('k-inv-val').textContent     = `Inv Value: ƒ ${fmtNum(s.TotalInventoryValue,0)}`;
+    document.getElementById('k-ov-ang').textContent      = `Overstock ANG: ƒ ${fmtNum(s.TotalOverstockAng,0)}`;
+    document.getElementById('k-avg-months').textContent  = `Avg Months: ${fmtNum(s.AvgMonthsOfStock,1)}`;
+  }
+
+  function openGenerateModal() {
+    const now = new Date();
+    document.getElementById('gen-year').value  = document.getElementById('sel-year').value  || now.getFullYear();
+    document.getElementById('gen-month').value = document.getElementById('sel-month').value || (now.getMonth()+1);
+    document.getElementById('gen-status').innerHTML = '';
+    new bootstrap.Modal('#generateModal').show();
+  }
+
+  async function runGenerate() {
+    const year  = parseInt(document.getElementById('gen-year').value);
+    const month = parseInt(document.getElementById('gen-month').value);
+    if (!year || !month) return;
+    const statusEl = document.getElementById('gen-status');
+    statusEl.innerHTML = '<div class="alert alert-info py-2"><i class="fas fa-spinner fa-spin me-2"></i>Running analysis...</div>';
+    document.getElementById('btn-run-gen').disabled = true;
+    try {
+      const res = await API.stockAnalysis.generate({ Year: year, Month: month });
+      const d = res?.Data;
+      statusEl.innerHTML = `<div class="alert alert-success py-2"><i class="fas fa-check me-2"></i>${d?.ItemsProcessed} items processed.</div>`;
+      showToast('Analysis generated.', 'success');
+      // Reload periods and results
+      document.getElementById('sel-year').value  = year;
+      document.getElementById('sel-month').value = month;
+      currentPage = 1;
+      await loadPeriods();
+    } catch(e) {
+      statusEl.innerHTML = `<div class="alert alert-danger py-2">${esc(e.message)}</div>`;
+    } finally {
+      document.getElementById('btn-run-gen').disabled = false;
+    }
+  }
+
+  function exportCsv() {
+    if (!allResults.length) { showToast('No results to export.', 'danger'); return; }
+    const headers = [
+      'ItemCode','ItemDesc','Supplier','Brand','ProductClass',
+      'OH_11010','OH_11020','OH_11060','TotalOH',
+      'OO_11010','OO_11020','OO_11060','TotalOO','OnOrderETA',
+      'MonthlySales','YtdSales','DailyRate',
+      'TotalBgtUnits','YtdBgtUnits','TotalBgtSales','YtdBgtSales','TotalBgtCost','YtdBgtCost',
+      'IdealMonths','IdealStockUnits','OverstockUnits','OverstockUnitsInclOO',
+      'MonthsOH','MonthsOH_OO','MonthsOverstock','MonthsOverstockInclOO',
+      'AvgCostCase','InvValueOH','InvValueOO','TotalInvValue',
+      'IdealStockANG','OverstockANG','OverstockANGInclOO',
+      'DaysToETA','MonthsToETA','SalesBeforeETA','OHatETA','OverstockAtETA','MonthsToIdeal'
+    ];
+    const rows = allResults.map(r => [
+      r.SarItemCode, r.SarItemDesc, r.SarSupplierName, r.SarBrandDesc, r.SarProductClassDesc,
+      r.SarOh11010, r.SarOh11020, r.SarOh11060, r.SarCurrentOhUnits,
+      r.SarOnOrder11010, r.SarOnOrder11020, r.SarOnOrder11060, r.SarOnOrderUnits,
+      r.SarOnOrderEta ? r.SarOnOrderEta.substring(0,10) : '',
+      r.SarMonthlySalesUnits, r.SarYtdSalesUnits, r.SarDailyRateOfSale,
+      r.SarTotalBudgetUnits, r.SarYtdBudgetUnits, r.SarTotalBudgetSales, r.SarYtdBudgetSales, r.SarTotalBudgetCost, r.SarYtdBudgetCost,
+      r.SarIdealMonthsOfStock, r.SarIdealStockUnits, r.SarOverstockUnits, r.SarOverstockUnitsInclOrders,
+      r.SarMonthsOfStock, r.SarMonthsOfStockInclOnOrder, r.SarMonthsOfOverstock, r.SarMonthsOfOverstockInclOnOrder,
+      r.SarAvgCostPerCase, r.SarInventoryValue, r.SarInventoryValueOnOrder, r.SarTotalInventoryValue,
+      r.SarIdealStockAng, r.SarOverstockAng, r.SarOverstockAngInclOrder,
+      r.SarDaysBeforeArrivalOrder, r.SarMonthsBeforeArrivalOrder, r.SarUnitSalesBeforeArrivalOrder,
+      r.SarTotalOhAtArrivalOrder, r.SarOverstockAtArrivalOrder, r.SarTotalMonthsBeforeIdealStock
+    ].map(v => v == null ? '' : String(v)).join(','));
+
+    const csv = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    const year  = document.getElementById('sel-year').value  || 'all';
+    const month = document.getElementById('sel-month').value || 'all';
+    a.href     = url;
+    a.download = `stock-analysis-${year}-${String(month).padStart(2,'0')}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function showLoading(show) { document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none'; }
+
+  function fmt(v, decimals = 0) {
+    if (v == null) return '–';
+    return Number(v).toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+  }
+  function fmtNum(v, decimals = 0) {
+    if (v == null) return '–';
+    return Number(v).toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+  }
+  function fmtAng(v) {
+    if (v == null) return '–';
+    return 'ƒ' + Number(v).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  }
+  function showToast(msg, type='success') {
+    const el = document.getElementById('toast');
+    el.className = `toast align-items-center text-white border-0 bg-${type==='success'?'success':'danger'}`;
+    document.getElementById('toast-msg').textContent = msg;
+    new bootstrap.Toast(el, { delay: 3500 }).show();
+  }
+  function esc(s) { return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+</script>
+</body>
+</html>

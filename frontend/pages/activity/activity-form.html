@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Activity Request - Licores Maduro</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="../../css/main.css"/>
+  <style>
+    .badge-draft     { background:#6c757d; }
+    .badge-pending   { background:#f59e0b; }
+    .badge-approved  { background:#16a34a; }
+    .badge-inprocess { background:#0ea5e9; }
+    .badge-ready     { background:#7c3aed; }
+    .badge-invoiced  { background:#1e293b; }
+    .badge-denied    { background:#dc2626; }
+    .status-badge { font-size:.8rem; padding:.3em .75em; border-radius:.4rem; font-weight:700; color:#fff; }
+
+    .nav-tabs .nav-link { color:var(--primary); font-weight:500; }
+    .nav-tabs .nav-link.active { color:#fff; background:var(--primary); border-color:var(--primary); }
+
+    .field-label { font-size:.72rem; font-weight:600; color:#6c757d; text-transform:uppercase; letter-spacing:.04em; margin-bottom:.2rem; }
+    .field-value { font-size:.95rem; }
+
+    .section-title { font-size:.8rem; font-weight:700; color:var(--primary); text-transform:uppercase; letter-spacing:.06em; border-bottom:2px solid var(--primary); padding-bottom:.3rem; margin-bottom:1rem; }
+
+    .sub-table td, .sub-table th { vertical-align:middle; font-size:.83rem; }
+    .sub-table th { white-space:nowrap; }
+
+    .readonly-field { background:#f8f9fa; border:1px solid #dee2e6; border-radius:.375rem; padding:.375rem .75rem; color:#212529; min-height:38px; }
+  </style>
+</head>
+<body>
+<div id="sidebar-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;"></div>
+<div class="app-wrapper">
+  <nav id="sidebar" class="sidebar">
+    <div class="sidebar-header"><img src="../../img/LogoLicores.png" alt="Licores Maduro" class="sidebar-logo-img"/><span class="sidebar-logo-text">LICORES MADURO</span></div>
+    <div id="sidebar-nav" class="sidebar-nav"></div>
+    <div class="sidebar-footer"><div class="sidebar-user"><div class="sidebar-avatar" id="sidebar-user-initials">LM</div><div class="sidebar-text"><div id="sidebar-user-name" style="font-weight:600;">–</div></div></div></div>
+  </nav>
+  <div class="main-area">
+    <header class="topbar">
+      <button id="btn-sidebar-toggle" class="btn-sidebar-toggle"><i class="fas fa-bars"></i></button>
+      <span class="topbar-title"><i class="fas fa-clipboard-list me-2 text-wine"></i>Activity Request</span>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown">
+            <span class="sidebar-avatar" id="topbar-user-initials" style="width:28px;height:28px;font-size:.75rem;">LM</span>
+            <span id="topbar-user-name" class="d-none d-md-inline">–</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+            <li><div class="dropdown-header"><strong id="topbar-user-fullname">User</strong><br/><small class="text-muted" id="topbar-user-role">Role</small></div></li>
+            <li><hr class="dropdown-divider"/></li>
+            <li><a class="dropdown-item text-danger" href="#" id="btn-logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+          </ul>
+        </div>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <!-- Breadcrumb -->
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="../../dashboard.html"><i class="fas fa-home me-1"></i>Home</a></li>
+          <li class="breadcrumb-item"><a href="activity-list.html">Activity Requests</a></li>
+          <li class="breadcrumb-item active" id="bc-number">–</li>
+        </ol>
+      </nav>
+
+      <!-- Loading -->
+      <div id="loading-state" class="text-center py-5 text-muted">
+        <i class="fas fa-spinner fa-spin fa-2x mb-3"></i><br/>Loading activity request…
+      </div>
+
+      <!-- Main content -->
+      <div id="main-content" style="display:none;">
+
+        <!-- Header card -->
+        <div class="card mb-3">
+          <div class="card-body">
+            <div class="d-flex flex-wrap align-items-center gap-3">
+              <div>
+                <div class="field-label">AR Number</div>
+                <div class="fw-bold fs-5" style="color:var(--primary-dark);" id="hdr-number">–</div>
+              </div>
+              <div>
+                <div class="field-label">Status</div>
+                <span class="status-badge" id="hdr-status-badge">–</span>
+              </div>
+              <div>
+                <div class="field-label">Year</div>
+                <div class="field-value" id="hdr-year">–</div>
+              </div>
+              <div class="flex-grow-1">
+                <div class="field-label">Supplier / Brand</div>
+                <div class="field-value" id="hdr-supplier-brand">–</div>
+              </div>
+              <div class="d-flex gap-2 ms-auto flex-wrap">
+                <!-- Status action buttons — rendered by JS -->
+                <div id="status-btn-group"></div>
+                <a href="activity-list.html" class="btn btn-outline-secondary btn-sm">
+                  <i class="fas fa-arrow-left me-1"></i>Back to List
+                </a>
+              </div>
+            </div>
+            <!-- Denial reason (shown if DENIED) -->
+            <div id="denial-banner" class="mt-2 p-2 rounded bg-danger bg-opacity-10 border border-danger text-danger small" style="display:none;">
+              <i class="fas fa-times-circle me-1"></i><strong>Denial Reason:</strong> <span id="denial-reason-text"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <ul class="nav nav-tabs mb-0 flex-wrap" id="form-tabs">
+          <li class="nav-item"><a class="nav-link active" href="#" onclick="switchTab('general',this);return false;"><i class="fas fa-info-circle me-1"></i>General</a></li>
+          <li class="nav-item"><a class="nav-link" href="#" onclick="switchTab('brands',this);return false;"><i class="fas fa-tags me-1"></i>Brands <span class="badge bg-secondary ms-1" id="badge-brands">0</span></a></li>
+          <li class="nav-item"><a class="nav-link" href="#" onclick="switchTab('products',this);return false;"><i class="fas fa-box me-1"></i>Products <span class="badge bg-secondary ms-1" id="badge-products">0</span></a></li>
+          <li class="nav-item"><a class="nav-link" href="#" onclick="switchTab('cash',this);return false;"><i class="fas fa-money-bill-wave me-1"></i>Cash <span class="badge bg-secondary ms-1" id="badge-cash">0</span></a></li>
+          <li class="nav-item"><a class="nav-link" href="#" onclick="switchTab('print',this);return false;"><i class="fas fa-print me-1"></i>Print <span class="badge bg-secondary ms-1" id="badge-print">0</span></a></li>
+          <li class="nav-item"><a class="nav-link" href="#" onclick="switchTab('radio',this);return false;"><i class="fas fa-broadcast-tower me-1"></i>Radio <span class="badge bg-secondary ms-1" id="badge-radio">0</span></a></li>
+          <li class="nav-item"><a class="nav-link" href="#" onclick="switchTab('posmat',this);return false;"><i class="fas fa-boxes me-1"></i>POS Mat. <span class="badge bg-secondary ms-1" id="badge-posmat">0</span></a></li>
+          <li class="nav-item"><a class="nav-link" href="#" onclick="switchTab('promotions',this);return false;"><i class="fas fa-percentage me-1"></i>Promotions <span class="badge bg-secondary ms-1" id="badge-promotions">0</span></a></li>
+          <li class="nav-item"><a class="nav-link" href="#" onclick="switchTab('others',this);return false;"><i class="fas fa-ellipsis-h me-1"></i>Others <span class="badge bg-secondary ms-1" id="badge-others">0</span></a></li>
+        </ul>
+
+        <!-- ── Tab: General ── -->
+        <div id="tab-general" class="card border-top-0 rounded-0 rounded-bottom mb-3">
+          <div class="card-body">
+            <div class="row g-3">
+              <!-- Row 1 -->
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Supplier</label>
+                <select id="f-supplier" class="form-select"></select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Brand</label>
+                <input type="text" id="f-brand" class="form-control" maxlength="100" placeholder="Brand name"/>
+              </div>
+              <!-- Row 2 -->
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Activity Type</label>
+                <select id="f-activity-type" class="form-select"></select>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Start Date</label>
+                <input type="date" id="f-start-date" class="form-control"/>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">End Date</label>
+                <input type="date" id="f-end-date" class="form-control"/>
+              </div>
+              <!-- Row 3 -->
+              <div class="col-md-5">
+                <label class="form-label fw-semibold">Location</label>
+                <select id="f-location" class="form-select"></select>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Budget</label>
+                <div class="input-group">
+                  <span class="input-group-text">$</span>
+                  <input type="number" id="f-budget" class="form-control" min="0" step="0.01" placeholder="0.00"/>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Sponsoring Type</label>
+                <select id="f-sponsoring" class="form-select"></select>
+              </div>
+              <!-- Row 4 -->
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Segment</label>
+                <select id="f-segment" class="form-select"></select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Target Group</label>
+                <select id="f-target-group" class="form-select"></select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Sales Group</label>
+                <select id="f-sales-group" class="form-select"></select>
+              </div>
+              <!-- Row 5 -->
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Facilitator</label>
+                <select id="f-facilitator" class="form-select"></select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Entertainment Type</label>
+                <select id="f-entertainment" class="form-select"></select>
+              </div>
+              <!-- Row 6 -->
+              <div class="col-12">
+                <label class="form-label fw-semibold">Description</label>
+                <textarea id="f-description" class="form-control" rows="2" maxlength="500" placeholder="Activity description…"></textarea>
+              </div>
+              <div class="col-12">
+                <label class="form-label fw-semibold">Notes</label>
+                <textarea id="f-notes" class="form-control" rows="2" maxlength="1000" placeholder="Internal notes…"></textarea>
+              </div>
+              <!-- Audit info (read-only) -->
+              <div class="col-12">
+                <div class="section-title mt-2">Audit</div>
+                <div class="row g-2">
+                  <div class="col-md-3">
+                    <div class="field-label">Created By</div>
+                    <div class="readonly-field" id="audit-created-by">–</div>
+                  </div>
+                  <div class="col-md-3">
+                    <div class="field-label">Created At</div>
+                    <div class="readonly-field" id="audit-created-at">–</div>
+                  </div>
+                  <div class="col-md-3">
+                    <div class="field-label">Approved By</div>
+                    <div class="readonly-field" id="audit-approved-by">–</div>
+                  </div>
+                  <div class="col-md-3">
+                    <div class="field-label">Approved At</div>
+                    <div class="readonly-field" id="audit-approved-at">–</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Save button (only DRAFT) -->
+            <div class="mt-3 d-flex justify-content-end" id="general-save-bar">
+              <button class="btn btn-wine" id="btn-save-general"><i class="fas fa-save me-1"></i>Save Changes</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Tab: Brand Info ── -->
+        <div id="tab-brands" class="card border-top-0 rounded-0 rounded-bottom mb-3" style="display:none;">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div class="section-title mb-0">Brands Involved</div>
+              <button class="btn btn-wine btn-sm" id="btn-add-brand"><i class="fas fa-plus me-1"></i>Add Brand</button>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-hover sub-table mb-0">
+                <thead class="table-dark">
+                  <tr>
+                    <th>Supplier</th>
+                    <th>Brand</th>
+                    <th class="text-end">Budget</th>
+                    <th>Notes</th>
+                    <th style="width:60px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="brands-tbody">
+                  <tr><td colspan="5" class="text-center py-3 text-muted">No brands added yet.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Tab: Products ── -->
+        <div id="tab-products" class="card border-top-0 rounded-0 rounded-bottom mb-3" style="display:none;">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div class="section-title mb-0">Products</div>
+              <button class="btn btn-wine btn-sm" id="btn-add-product"><i class="fas fa-plus me-1"></i>Add Product</button>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-hover sub-table mb-0">
+                <thead class="table-dark">
+                  <tr>
+                    <th>Product Code</th>
+                    <th>Product Name</th>
+                    <th class="text-end">Quantity</th>
+                    <th>Unit</th>
+                    <th>Notes</th>
+                    <th style="width:60px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="products-tbody">
+                  <tr><td colspan="6" class="text-center py-3 text-muted">No products added yet.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Tab: Cash ── -->
+        <div id="tab-cash" class="card border-top-0 rounded-0 rounded-bottom mb-3" style="display:none;">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div class="section-title mb-0">Cash Contributions</div>
+              <button class="btn btn-wine btn-sm" id="btn-add-cash"><i class="fas fa-plus me-1"></i>Add</button>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-hover sub-table mb-0">
+                <thead class="table-dark"><tr><th>Type</th><th class="text-end">Amount</th><th>Reference</th><th>Notes</th><th style="width:50px;"></th></tr></thead>
+                <tbody id="cash-tbody"><tr><td colspan="5" class="text-center py-3 text-muted">No entries yet.</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Tab: Print ── -->
+        <div id="tab-print" class="card border-top-0 rounded-0 rounded-bottom mb-3" style="display:none;">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div class="section-title mb-0">Print Media</div>
+              <button class="btn btn-wine btn-sm" id="btn-add-print"><i class="fas fa-plus me-1"></i>Add</button>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-hover sub-table mb-0">
+                <thead class="table-dark"><tr><th>Publication</th><th>Format</th><th>Size</th><th class="text-end">Cost</th><th>Notes</th><th style="width:50px;"></th></tr></thead>
+                <tbody id="print-tbody"><tr><td colspan="6" class="text-center py-3 text-muted">No entries yet.</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Tab: Radio ── -->
+        <div id="tab-radio" class="card border-top-0 rounded-0 rounded-bottom mb-3" style="display:none;">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div class="section-title mb-0">Radio Advertising</div>
+              <button class="btn btn-wine btn-sm" id="btn-add-radio"><i class="fas fa-plus me-1"></i>Add</button>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-hover sub-table mb-0">
+                <thead class="table-dark"><tr><th>Station</th><th>Duration</th><th class="text-center">Frequency</th><th class="text-end">Cost</th><th>Notes</th><th style="width:50px;"></th></tr></thead>
+                <tbody id="radio-tbody"><tr><td colspan="6" class="text-center py-3 text-muted">No entries yet.</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Tab: POS Materials ── -->
+        <div id="tab-posmat" class="card border-top-0 rounded-0 rounded-bottom mb-3" style="display:none;">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div class="section-title mb-0">POS Materials</div>
+              <button class="btn btn-wine btn-sm" id="btn-add-posmat"><i class="fas fa-plus me-1"></i>Add</button>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-hover sub-table mb-0">
+                <thead class="table-dark"><tr><th>Code</th><th>Material</th><th class="text-end">Qty</th><th>Unit</th><th>Notes</th><th style="width:50px;"></th></tr></thead>
+                <tbody id="posmat-tbody"><tr><td colspan="6" class="text-center py-3 text-muted">No entries yet.</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Tab: Promotions ── -->
+        <div id="tab-promotions" class="card border-top-0 rounded-0 rounded-bottom mb-3" style="display:none;">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div class="section-title mb-0">Promotions</div>
+              <button class="btn btn-wine btn-sm" id="btn-add-promotion"><i class="fas fa-plus me-1"></i>Add</button>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-hover sub-table mb-0">
+                <thead class="table-dark"><tr><th>Type</th><th>Description</th><th class="text-end">Cost</th><th>Notes</th><th style="width:50px;"></th></tr></thead>
+                <tbody id="promotions-tbody"><tr><td colspan="5" class="text-center py-3 text-muted">No entries yet.</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Tab: Others ── -->
+        <div id="tab-others" class="card border-top-0 rounded-0 rounded-bottom mb-3" style="display:none;">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div class="section-title mb-0">Others</div>
+              <button class="btn btn-wine btn-sm" id="btn-add-other"><i class="fas fa-plus me-1"></i>Add</button>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-hover sub-table mb-0">
+                <thead class="table-dark"><tr><th>Description</th><th class="text-end">Cost</th><th>Notes</th><th style="width:50px;"></th></tr></thead>
+                <tbody id="others-tbody"><tr><td colspan="4" class="text-center py-3 text-muted">No entries yet.</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /main-content -->
+    </main>
+  </div>
+</div>
+
+<!-- ── Add Brand Modal ── -->
+<div class="modal fade" id="brand-modal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-tag me-2"></i>Add Brand</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label fw-semibold">Supplier</label>
+            <select id="fb-supplier" class="form-select"></select>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Brand</label>
+            <input type="text" id="fb-brand" class="form-control" maxlength="100" placeholder="Brand name"/>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Budget</label>
+            <div class="input-group"><span class="input-group-text">$</span>
+              <input type="number" id="fb-budget" class="form-control" min="0" step="0.01"/>
+            </div>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Notes</label>
+            <input type="text" id="fb-notes" class="form-control" maxlength="300"/>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-wine" id="btn-save-brand"><i class="fas fa-save me-1"></i>Add</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Add Product Modal ── -->
+<div class="modal fade" id="product-modal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-box me-2"></i>Add Product</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Product Code</label>
+            <input type="text" id="fp-code" class="form-control text-uppercase" maxlength="20"/>
+          </div>
+          <div class="col-md-8">
+            <label class="form-label fw-semibold">Product Name</label>
+            <input type="text" id="fp-name" class="form-control" maxlength="150" placeholder="Product description"/>
+          </div>
+          <div class="col-md-5">
+            <label class="form-label fw-semibold">Quantity</label>
+            <input type="number" id="fp-qty" class="form-control" min="0" step="0.001"/>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Unit</label>
+            <input type="text" id="fp-unit" class="form-control" maxlength="20" placeholder="cs, btl, kg…"/>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Notes</label>
+            <input type="text" id="fp-notes" class="form-control" maxlength="300"/>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-wine" id="btn-save-product"><i class="fas fa-save me-1"></i>Add</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Cash Modal ── -->
+<div class="modal fade" id="cash-modal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+  <div class="modal-header"><h5 class="modal-title"><i class="fas fa-money-bill-wave me-2"></i>Add Cash</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body"><div class="row g-3">
+    <div class="col-md-6"><label class="form-label fw-semibold">Type</label>
+      <select id="fc-type" class="form-select"><option value="">— Select —</option><option>Cash</option><option>Check</option><option>Transfer</option></select></div>
+    <div class="col-md-6"><label class="form-label fw-semibold">Amount</label>
+      <div class="input-group"><span class="input-group-text">$</span><input type="number" id="fc-amount" class="form-control" min="0" step="0.01"/></div></div>
+    <div class="col-12"><label class="form-label fw-semibold">Reference</label><input type="text" id="fc-reference" class="form-control" maxlength="100"/></div>
+    <div class="col-12"><label class="form-label fw-semibold">Notes</label><input type="text" id="fc-notes" class="form-control" maxlength="300"/></div>
+  </div></div>
+  <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-wine" id="btn-save-cash"><i class="fas fa-save me-1"></i>Add</button></div>
+</div></div></div>
+
+<!-- ── Print Modal ── -->
+<div class="modal fade" id="print-modal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+  <div class="modal-header"><h5 class="modal-title"><i class="fas fa-print me-2"></i>Add Print</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body"><div class="row g-3">
+    <div class="col-12"><label class="form-label fw-semibold">Publication</label><input type="text" id="fpr-publication" class="form-control" maxlength="150" placeholder="Newspaper, magazine…"/></div>
+    <div class="col-md-6"><label class="form-label fw-semibold">Format</label><input type="text" id="fpr-format" class="form-control" maxlength="100" placeholder="Full page, half page…"/></div>
+    <div class="col-md-6"><label class="form-label fw-semibold">Size</label><input type="text" id="fpr-size" class="form-control" maxlength="50" placeholder="A4, tabloid…"/></div>
+    <div class="col-md-6"><label class="form-label fw-semibold">Cost</label><div class="input-group"><span class="input-group-text">$</span><input type="number" id="fpr-cost" class="form-control" min="0" step="0.01"/></div></div>
+    <div class="col-12"><label class="form-label fw-semibold">Notes</label><input type="text" id="fpr-notes" class="form-control" maxlength="300"/></div>
+  </div></div>
+  <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-wine" id="btn-save-print"><i class="fas fa-save me-1"></i>Add</button></div>
+</div></div></div>
+
+<!-- ── Radio Modal ── -->
+<div class="modal fade" id="radio-modal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+  <div class="modal-header"><h5 class="modal-title"><i class="fas fa-broadcast-tower me-2"></i>Add Radio</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body"><div class="row g-3">
+    <div class="col-12"><label class="form-label fw-semibold">Station</label><input type="text" id="frr-station" class="form-control" maxlength="150" placeholder="Radio station name…"/></div>
+    <div class="col-md-4"><label class="form-label fw-semibold">Duration</label><input type="text" id="frr-duration" class="form-control" maxlength="50" placeholder="30s, 60s…"/></div>
+    <div class="col-md-4"><label class="form-label fw-semibold">Frequency (spots)</label><input type="number" id="frr-frequency" class="form-control" min="0"/></div>
+    <div class="col-md-4"><label class="form-label fw-semibold">Cost</label><div class="input-group"><span class="input-group-text">$</span><input type="number" id="frr-cost" class="form-control" min="0" step="0.01"/></div></div>
+    <div class="col-12"><label class="form-label fw-semibold">Notes</label><input type="text" id="frr-notes" class="form-control" maxlength="300"/></div>
+  </div></div>
+  <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-wine" id="btn-save-radio"><i class="fas fa-save me-1"></i>Add</button></div>
+</div></div></div>
+
+<!-- ── POS Mat Modal ── -->
+<div class="modal fade" id="posmat-modal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+  <div class="modal-header"><h5 class="modal-title"><i class="fas fa-boxes me-2"></i>Add POS Material</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body"><div class="row g-3">
+    <div class="col-md-4"><label class="form-label fw-semibold">Code</label><input type="text" id="fpm-code" class="form-control" maxlength="20"/></div>
+    <div class="col-md-8"><label class="form-label fw-semibold">Material Name <span class="text-danger">*</span></label><input type="text" id="fpm-name" class="form-control" maxlength="150"/></div>
+    <div class="col-md-4"><label class="form-label fw-semibold">Quantity</label><input type="number" id="fpm-qty" class="form-control" min="0"/></div>
+    <div class="col-md-4"><label class="form-label fw-semibold">Unit</label><input type="text" id="fpm-unit" class="form-control" maxlength="20" placeholder="UND, BOX…"/></div>
+    <div class="col-12"><label class="form-label fw-semibold">Notes</label><input type="text" id="fpm-notes" class="form-control" maxlength="300"/></div>
+  </div></div>
+  <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-wine" id="btn-save-posmat"><i class="fas fa-save me-1"></i>Add</button></div>
+</div></div></div>
+
+<!-- ── Promotion Modal ── -->
+<div class="modal fade" id="promotion-modal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+  <div class="modal-header"><h5 class="modal-title"><i class="fas fa-percentage me-2"></i>Add Promotion</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body"><div class="row g-3">
+    <div class="col-12"><label class="form-label fw-semibold">Type</label><input type="text" id="fpo-type" class="form-control" maxlength="100" placeholder="Discount, BOGO, Gift…"/></div>
+    <div class="col-12"><label class="form-label fw-semibold">Description</label><textarea id="fpo-description" class="form-control" rows="2" maxlength="300"></textarea></div>
+    <div class="col-md-6"><label class="form-label fw-semibold">Cost</label><div class="input-group"><span class="input-group-text">$</span><input type="number" id="fpo-cost" class="form-control" min="0" step="0.01"/></div></div>
+    <div class="col-12"><label class="form-label fw-semibold">Notes</label><input type="text" id="fpo-notes" class="form-control" maxlength="300"/></div>
+  </div></div>
+  <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-wine" id="btn-save-promotion"><i class="fas fa-save me-1"></i>Add</button></div>
+</div></div></div>
+
+<!-- ── Others Modal ── -->
+<div class="modal fade" id="other-modal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+  <div class="modal-header"><h5 class="modal-title"><i class="fas fa-ellipsis-h me-2"></i>Add Other</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+  <div class="modal-body"><div class="row g-3">
+    <div class="col-12"><label class="form-label fw-semibold">Description <span class="text-danger">*</span></label><textarea id="fo-description" class="form-control" rows="2" maxlength="300"></textarea></div>
+    <div class="col-md-6"><label class="form-label fw-semibold">Cost</label><div class="input-group"><span class="input-group-text">$</span><input type="number" id="fo-cost" class="form-control" min="0" step="0.01"/></div></div>
+    <div class="col-12"><label class="form-label fw-semibold">Notes</label><input type="text" id="fo-notes" class="form-control" maxlength="300"/></div>
+  </div></div>
+  <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-wine" id="btn-save-other"><i class="fas fa-save me-1"></i>Add</button></div>
+</div></div></div>
+
+<!-- ── Status Change Modal ── -->
+<div class="modal fade" id="status-modal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header" id="status-modal-header">
+        <h5 class="modal-title" id="status-modal-title">Change Status</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p id="status-modal-msg"></p>
+        <div id="reason-group" style="display:none;">
+          <label class="form-label fw-semibold">Denial Reason <span class="text-danger">*</span></label>
+          <textarea id="f-denial-reason" class="form-control" rows="3" maxlength="500"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-wine" id="btn-confirm-status">Confirm</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../../js/i18n.js"></script>
+<script src="../../js/api.js"></script>
+<script src="../../js/auth.js"></script>
+<script src="../../js/sidebar.js"></script>
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   Activity Request Form
+═══════════════════════════════════════════════════════════════ */
+const STATUS_CFG = {
+  DRAFT:     { label:'Draft',      cls:'badge-draft'     },
+  PENDING:   { label:'Pending',    cls:'badge-pending',  next:[{s:'APPROVED',lbl:'Approve',cls:'btn-success'},{s:'DENIED',lbl:'Deny',cls:'btn-danger'}] },
+  APPROVED:  { label:'Approved',   cls:'badge-approved', next:[{s:'INPROCESS',lbl:'Mark In Process',cls:'btn-info'}] },
+  INPROCESS: { label:'In Process', cls:'badge-inprocess',next:[{s:'READY',lbl:'Mark Ready',cls:'btn-outline-purple'}] },
+  READY:     { label:'Ready',      cls:'badge-ready',    next:[{s:'INVOICED',lbl:'Mark Invoiced',cls:'btn-outline-dark'}] },
+  INVOICED:  { label:'Invoiced',   cls:'badge-invoiced', next:[] },
+  DENIED:    { label:'Denied',     cls:'badge-denied',   next:[{s:'DRAFT',lbl:'Reopen',cls:'btn-outline-secondary'}] }
+};
+
+const arId = new URLSearchParams(location.search).get('id');
+let arData = null;
+let isDraft = false;
+
+const brandModal   = new bootstrap.Modal(document.getElementById('brand-modal'));
+const productModal = new bootstrap.Modal(document.getElementById('product-modal'));
+const statusModal  = new bootstrap.Modal(document.getElementById('status-modal'));
+let pendingStatus  = null;
+
+// ── Load ──────────────────────────────────────────────────────────────────────
+async function loadAR() {
+  if (!arId) { showError('No activity request ID specified.'); return; }
+  try {
+    const res = await API.catalogs.activityRequests.getById(arId);
+    arData  = res.Data;
+    isDraft = arData.ArStatus === 'DRAFT';
+    populateHeader();
+    populateGeneral();
+    setFormReadOnly(!isDraft);
+    document.getElementById('general-save-bar').style.display = isDraft ? '' : 'none';
+    document.getElementById('btn-add-brand').style.display   = isDraft ? '' : 'none';
+    document.getElementById('btn-add-product').style.display = isDraft ? '' : 'none';
+    await Promise.all([loadBrands(), loadProducts(), loadCash(), loadPrint(), loadRadio(), loadPosMat(), loadPromotions(), loadOthers()]);
+    document.getElementById('loading-state').style.display = 'none';
+    document.getElementById('main-content').style.display  = '';
+  } catch (err) { showError(err.message ?? 'Error loading activity request.'); }
+}
+
+function populateHeader() {
+  const cfg = STATUS_CFG[arData.ArStatus] ?? { label: arData.ArStatus, cls: 'badge-draft' };
+  document.getElementById('bc-number').textContent          = arData.ArNumber;
+  document.getElementById('hdr-number').textContent         = arData.ArNumber;
+  document.getElementById('hdr-year').textContent           = arData.ArYear;
+  document.getElementById('hdr-supplier-brand').textContent =
+    [arData.ArSupplierName ?? arData.ArSupplierCode, arData.ArBrand].filter(Boolean).join(' / ') || '–';
+
+  const badge = document.getElementById('hdr-status-badge');
+  badge.className = `status-badge ${cfg.cls}`;
+  badge.textContent = cfg.label;
+
+  // Status action buttons
+  const group = document.getElementById('status-btn-group');
+  const nexts = cfg.next ?? (isDraft ? [{s:'PENDING',lbl:'Submit for Approval',cls:'btn-warning'}] : []);
+  group.innerHTML = nexts.map(n =>
+    `<button class="btn btn-sm ${n.cls}" onclick="openStatusModal('${n.s}','${n.lbl}')">
+      <i class="fas fa-arrow-right me-1"></i>${n.lbl}
+    </button>`
+  ).join('');
+
+  // Denial banner
+  if (arData.ArStatus === 'DENIED' && arData.ArDenialReason) {
+    document.getElementById('denial-reason-text').textContent = arData.ArDenialReason;
+    document.getElementById('denial-banner').style.display = '';
+  }
+
+  document.title = `${arData.ArNumber} - Licores Maduro`;
+}
+
+function populateGeneral() {
+  setVal('f-supplier',      arData.ArSupplierCode ?? '');
+  setVal('f-brand',         arData.ArBrand ?? '');
+  setVal('f-activity-type', arData.ArActivityTypeCode ?? '');
+  setVal('f-start-date',    arData.ArStartDate ? arData.ArStartDate.substring(0,10) : '');
+  setVal('f-end-date',      arData.ArEndDate   ? arData.ArEndDate.substring(0,10)   : '');
+  setVal('f-location',      arData.ArLocationCode ?? '');
+  setVal('f-budget',        arData.ArBudget ?? '');
+  setVal('f-sponsoring',    arData.ArSponsoringTypeCode ?? '');
+  setVal('f-segment',       arData.ArSegmentCode ?? '');
+  setVal('f-target-group',  arData.ArTargetGroupCode ?? '');
+  setVal('f-sales-group',   arData.ArSalesGroupCode ?? '');
+  setVal('f-facilitator',   arData.ArFacilitatorCode ?? '');
+  setVal('f-entertainment', arData.ArEntertainmentTypeCode ?? '');
+  setVal('f-description',   arData.ArDescription ?? '');
+  setVal('f-notes',         arData.ArNotes ?? '');
+
+  // Audit
+  document.getElementById('audit-created-by').textContent  = arData.ArCreatedByName  ?? '–';
+  document.getElementById('audit-created-at').textContent  = fmtDate(arData.CreatedAt);
+  document.getElementById('audit-approved-by').textContent = arData.ArApprovedByName ?? '–';
+  document.getElementById('audit-approved-at').textContent = fmtDate(arData.ArApprovedAt);
+}
+
+function setFormReadOnly(readonly) {
+  ['f-supplier','f-brand','f-activity-type','f-start-date','f-end-date',
+   'f-location','f-budget','f-sponsoring','f-segment','f-target-group',
+   'f-sales-group','f-facilitator','f-entertainment','f-description','f-notes']
+  .forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (readonly) el.setAttribute('disabled','');
+    else          el.removeAttribute('disabled');
+  });
+}
+
+// ── Catalogs ──────────────────────────────────────────────────────────────────
+async function loadCatalogs() {
+  const [suppRes, actRes, locRes, spoRes, segRes, tgtRes, sgRes, facRes, entRes] = await Promise.allSettled([
+    API.catalogs.suppliers.getAll({ pageSize: 500 }),
+    API.catalogs.activityTypes.getAll({ pageSize: 500 }),
+    API.catalogs.locationInfo.getAll({ pageSize: 500 }),
+    API.catalogs.sponsoringType.getAll({ pageSize: 500 }),
+    API.catalogs.customerSegment.getAll({ pageSize: 500 }),
+    API.catalogs.customerTarget.getAll({ pageSize: 500 }),
+    API.catalogs.customerSalesGroup.getAll({ pageSize: 500 }),
+    API.catalogs.facilitators.getAll({ pageSize: 500 }),
+    API.catalogs.entertainmentTypes.getAll({ pageSize: 500 })
+  ]);
+
+  fillSel('f-supplier',    suppRes, r => ({ v:(r.Supplier??'').trim(), l:`${(r.Supplier??'').trim()} — ${(r.SupplierName??'').trim()}`, d:{name:(r.SupplierName??'').trim()} }), '— No supplier —');
+  fillSel('f-activity-type', actRes, r => ({ v:r.Code, l:r.Description, d:{desc:r.Description} }), '— Select type —');
+  fillSel('f-location',    locRes, r => ({ v:r.Code, l:r.Description, d:{name:r.Description} }), '— Select location —');
+  fillSel('f-sponsoring',  spoRes, r => ({ v:r.Code, l:r.Description }), '— None —');
+  fillSel('f-segment',     segRes, r => ({ v:r.Code, l:r.Description }), '— Segment —');
+  fillSel('f-target-group',tgtRes, r => ({ v:r.Code, l:r.Description }), '— Target Group —');
+  fillSel('f-sales-group', sgRes,  r => ({ v:r.Code, l:r.Description }), '— Sales Group —');
+  fillSel('f-facilitator', facRes, r => ({ v:r.Code, l:r.Name }), '— Facilitator —');
+  fillSel('f-entertainment',entRes,r => ({ v:r.Code, l:r.Description }), '— None —');
+
+  // Mirror suppliers in brand modal
+  mirrorSelect('f-supplier', 'fb-supplier', '— No supplier —');
+}
+
+function fillSel(id, settled, mapper, placeholder) {
+  const sel = document.getElementById(id);
+  if (!sel) return;
+  sel.innerHTML = `<option value="">${placeholder}</option>`;
+  if (settled.status !== 'fulfilled') return;
+  const items = settled.value?.Data ?? [];
+  items.filter(r => r.IsActive !== false).forEach(r => {
+    const m = mapper(r);
+    const o = document.createElement('option');
+    o.value = m.v; o.textContent = m.l;
+    if (m.d) Object.assign(o.dataset, m.d);
+    sel.appendChild(o);
+  });
+}
+
+function mirrorSelect(srcId, dstId, placeholder) {
+  const src = document.getElementById(srcId);
+  const dst = document.getElementById(dstId);
+  if (!src || !dst) return;
+  dst.innerHTML = src.innerHTML;
+  dst.querySelector('option').textContent = placeholder;
+}
+
+// ── Sub-tables ────────────────────────────────────────────────────────────────
+async function loadBrands() {
+  const res   = await API.get(`/api/activity/requests/${arId}/brands`);
+  const items = res.Data ?? [];
+  document.getElementById('badge-brands').textContent = items.length;
+  const tbody = document.getElementById('brands-tbody');
+  if (!items.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-3 text-muted">No brands added yet.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = items.map(b => `<tr>
+    <td>${escHtml(b.ArbSupplierName ?? b.ArbSupplierCode ?? '–')}</td>
+    <td>${escHtml(b.ArbBrand ?? '–')}</td>
+    <td class="text-end">${b.ArbBudget != null ? '$'+Number(b.ArbBudget).toLocaleString('en-US',{minimumFractionDigits:2}) : '–'}</td>
+    <td>${escHtml(b.ArbNotes ?? '–')}</td>
+    <td>${isDraft ? `<button class="btn btn-sm btn-outline-danger py-0" onclick="removeBrand(${b.ArbId})"><i class="fas fa-trash"></i></button>` : ''}</td>
+  </tr>`).join('');
+}
+
+async function loadProducts() {
+  const res   = await API.get(`/api/activity/requests/${arId}/products`);
+  const items = res.Data ?? [];
+  document.getElementById('badge-products').textContent = items.length;
+  const tbody = document.getElementById('products-tbody');
+  if (!items.length) {
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-3 text-muted">No products added yet.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = items.map(p => `<tr>
+    <td><code>${escHtml(p.ArpProductCode ?? '–')}</code></td>
+    <td>${escHtml(p.ArpProductName ?? '–')}</td>
+    <td class="text-end">${p.ArpQuantity != null ? Number(p.ArpQuantity).toLocaleString('en-US') : '–'}</td>
+    <td>${escHtml(p.ArpUnit ?? '–')}</td>
+    <td>${escHtml(p.ArpNotes ?? '–')}</td>
+    <td>${isDraft ? `<button class="btn btn-sm btn-outline-danger py-0" onclick="removeProduct(${p.ArpId})"><i class="fas fa-trash"></i></button>` : ''}</td>
+  </tr>`).join('');
+}
+
+// Add brand
+document.getElementById('btn-add-brand').addEventListener('click', () => {
+  document.getElementById('fb-supplier').value = '';
+  document.getElementById('fb-brand').value    = '';
+  document.getElementById('fb-budget').value   = '';
+  document.getElementById('fb-notes').value    = '';
+  brandModal.show();
+});
+
+document.getElementById('btn-save-brand').addEventListener('click', async () => {
+  const supSel = document.getElementById('fb-supplier');
+  const payload = {
+    ArbSupplierCode: supSel.value || null,
+    ArbSupplierName: supSel.selectedOptions[0]?.dataset.name || null,
+    ArbBrand:        document.getElementById('fb-brand').value.trim() || null,
+    ArbBudget:       parseFloat(document.getElementById('fb-budget').value) || null,
+    ArbNotes:        document.getElementById('fb-notes').value.trim() || null
+  };
+  try {
+    await API.post(`/api/activity/requests/${arId}/brands`, payload);
+    brandModal.hide();
+    await loadBrands();
+  } catch (err) { alert(err.message ?? 'Error adding brand.'); }
+});
+
+async function removeBrand(id) {
+  if (!confirm('Remove this brand?')) return;
+  await API.del(`/api/activity/requests/${arId}/brands/${id}`);
+  await loadBrands();
+}
+
+// Add product
+document.getElementById('btn-add-product').addEventListener('click', () => {
+  ['fp-code','fp-name','fp-unit','fp-notes'].forEach(i => document.getElementById(i).value = '');
+  document.getElementById('fp-qty').value = '';
+  productModal.show();
+});
+
+document.getElementById('btn-save-product').addEventListener('click', async () => {
+  const payload = {
+    ArpProductCode: document.getElementById('fp-code').value.trim().toUpperCase() || null,
+    ArpProductName: document.getElementById('fp-name').value.trim() || null,
+    ArpQuantity:    parseFloat(document.getElementById('fp-qty').value) || null,
+    ArpUnit:        document.getElementById('fp-unit').value.trim() || null,
+    ArpNotes:       document.getElementById('fp-notes').value.trim() || null
+  };
+  try {
+    await API.post(`/api/activity/requests/${arId}/products`, payload);
+    productModal.hide();
+    await loadProducts();
+  } catch (err) { alert(err.message ?? 'Error adding product.'); }
+});
+
+async function removeProduct(id) {
+  if (!confirm('Remove this product?')) return;
+  await API.del(`/api/activity/requests/${arId}/products/${id}`);
+  await loadProducts();
+}
+
+// ── Save General ──────────────────────────────────────────────────────────────
+document.getElementById('btn-save-general').addEventListener('click', async () => {
+  const supSel  = document.getElementById('f-supplier');
+  const actSel  = document.getElementById('f-activity-type');
+  const locSel  = document.getElementById('f-location');
+  const payload = {
+    ArYear:                 arData.ArYear,
+    ArSupplierCode:         supSel.value || null,
+    ArSupplierName:         supSel.selectedOptions[0]?.dataset.name || null,
+    ArBrand:                document.getElementById('f-brand').value.trim() || null,
+    ArActivityTypeCode:     actSel.value || null,
+    ArActivityTypeDesc:     actSel.selectedOptions[0]?.dataset.desc || null,
+    ArDescription:          document.getElementById('f-description').value.trim() || null,
+    ArStartDate:            document.getElementById('f-start-date').value || null,
+    ArEndDate:              document.getElementById('f-end-date').value   || null,
+    ArLocationCode:         locSel.value || null,
+    ArLocationName:         locSel.selectedOptions[0]?.dataset.name || null,
+    ArBudget:               parseFloat(document.getElementById('f-budget').value) || null,
+    ArSponsoringTypeCode:   document.getElementById('f-sponsoring').value || null,
+    ArSegmentCode:          document.getElementById('f-segment').value || null,
+    ArTargetGroupCode:      document.getElementById('f-target-group').value || null,
+    ArSalesGroupCode:       document.getElementById('f-sales-group').value || null,
+    ArFacilitatorCode:      document.getElementById('f-facilitator').value || null,
+    ArEntertainmentTypeCode:document.getElementById('f-entertainment').value || null,
+    ArNotes:                document.getElementById('f-notes').value.trim() || null,
+    ArNonClientCode: null, ArNonClientName: null
+  };
+
+  const btn = document.getElementById('btn-save-general');
+  btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Saving…';
+  try {
+    const res = await API.catalogs.activityRequests.update(arId, payload);
+    arData = res.Data;
+    populateHeader();
+    showToast('Changes saved successfully.', 'success');
+  } catch (err) {
+    showToast(err.message ?? 'Error saving.', 'danger');
+  } finally {
+    btn.disabled = false; btn.innerHTML = '<i class="fas fa-save me-1"></i>Save Changes';
+  }
+});
+
+// ── Status change ─────────────────────────────────────────────────────────────
+function openStatusModal(newStatus, label) {
+  pendingStatus = newStatus;
+  const isDeny  = newStatus === 'DENIED';
+  document.getElementById('status-modal-header').className = `modal-header ${isDeny ? 'bg-danger text-white' : 'bg-success text-white'}`;
+  document.getElementById('status-modal-title').textContent = label;
+  document.getElementById('status-modal-msg').textContent   = `Change "${arData.ArNumber}" to "${label}"?`;
+  document.getElementById('reason-group').style.display     = isDeny ? '' : 'none';
+  document.getElementById('f-denial-reason').value          = '';
+  statusModal.show();
+}
+
+document.getElementById('btn-confirm-status').addEventListener('click', async () => {
+  if (!pendingStatus) return;
+  const reason = document.getElementById('f-denial-reason').value.trim();
+  if (pendingStatus === 'DENIED' && !reason) { alert('Please enter a denial reason.'); return; }
+  try {
+    const res = await API.patch(`/api/activity/requests/${arId}/status`, { Status: pendingStatus, Reason: reason || null });
+    arData  = res.Data;
+    isDraft = arData.ArStatus === 'DRAFT';
+    statusModal.hide();
+    populateHeader();
+    setFormReadOnly(!isDraft);
+    document.getElementById('general-save-bar').style.display   = isDraft ? '' : 'none';
+    document.getElementById('btn-add-brand').style.display       = isDraft ? '' : 'none';
+    document.getElementById('btn-add-product').style.display     = isDraft ? '' : 'none';
+    if (arData.ArStatus === 'DENIED') {
+      document.getElementById('denial-reason-text').textContent = arData.ArDenialReason ?? '';
+      document.getElementById('denial-banner').style.display = '';
+    } else {
+      document.getElementById('denial-banner').style.display = 'none';
+    }
+    await Promise.all([loadBrands(), loadProducts()]);
+    showToast(`Status changed to ${arData.ArStatus}.`, 'success');
+  } catch (err) { showToast(err.message ?? 'Error changing status.', 'danger'); }
+});
+
+// ── Tab switch ────────────────────────────────────────────────────────────────
+const ALL_TABS = ['general','brands','products','cash','print','radio','posmat','promotions','others'];
+function switchTab(tab, el) {
+  document.querySelectorAll('#form-tabs .nav-link').forEach(a => a.classList.remove('active'));
+  el.classList.add('active');
+  ALL_TABS.forEach(t => {
+    const el2 = document.getElementById(`tab-${t}`);
+    if (el2) el2.style.display = t === tab ? '' : 'none';
+  });
+}
+
+// ── Advanced sub-tables helpers ───────────────────────────────────────────────
+const fmt$ = v => v != null ? '$' + Number(v).toLocaleString('en-US', { minimumFractionDigits:2 }) : '–';
+
+function subTableLoad(tabKey, endpoint, cols, renderRow) {
+  return async function() {
+    const res   = await API.get(`/api/activity/requests/${arId}/${endpoint}`);
+    const items = res.Data ?? [];
+    document.getElementById(`badge-${tabKey}`).textContent = items.length;
+    const tbody = document.getElementById(`${tabKey}-tbody`);
+    if (!items.length) {
+      tbody.innerHTML = `<tr><td colspan="${cols}" class="text-center py-3 text-muted">No entries yet.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = items.map(r => renderRow(r)).join('');
+  };
+}
+
+// Cash
+const loadCash = subTableLoad('cash', 'cash', 5, r =>
+  `<tr><td>${escHtml(r.ArcType??'–')}</td><td class="text-end">${fmt$(r.ArcAmount)}</td><td>${escHtml(r.ArcReference??'–')}</td><td>${escHtml(r.ArcNotes??'–')}</td>
+   <td>${isDraft?`<button class="btn btn-sm btn-outline-danger py-0" onclick="removeRow('cash',${r.ArcId})"><i class="fas fa-trash"></i></button>`:''}</td></tr>`);
+
+// Print
+const loadPrint = subTableLoad('print', 'print', 6, r =>
+  `<tr><td>${escHtml(r.ArprPublication??'–')}</td><td>${escHtml(r.ArprFormat??'–')}</td><td>${escHtml(r.ArprSize??'–')}</td><td class="text-end">${fmt$(r.ArprCost)}</td><td>${escHtml(r.ArprNotes??'–')}</td>
+   <td>${isDraft?`<button class="btn btn-sm btn-outline-danger py-0" onclick="removeRow('print',${r.ArprId})"><i class="fas fa-trash"></i></button>`:''}</td></tr>`);
+
+// Radio
+const loadRadio = subTableLoad('radio', 'radio', 6, r =>
+  `<tr><td>${escHtml(r.ArrStation??'–')}</td><td>${escHtml(r.ArrDuration??'–')}</td><td class="text-center">${r.ArrFrequency??'–'}</td><td class="text-end">${fmt$(r.ArrCost)}</td><td>${escHtml(r.ArrNotes??'–')}</td>
+   <td>${isDraft?`<button class="btn btn-sm btn-outline-danger py-0" onclick="removeRow('radio',${r.ArrId})"><i class="fas fa-trash"></i></button>`:''}</td></tr>`);
+
+// POS Mat
+const loadPosMat = subTableLoad('posmat', 'pos-mat', 6, r =>
+  `<tr><td><code>${escHtml(r.ArpmCode??'–')}</code></td><td>${escHtml(r.ArpmName??'–')}</td><td class="text-end">${r.ArpmQuantity??'–'}</td><td>${escHtml(r.ArpmUnit??'–')}</td><td>${escHtml(r.ArpmNotes??'–')}</td>
+   <td>${isDraft?`<button class="btn btn-sm btn-outline-danger py-0" onclick="removeRow('pos-mat',${r.ArpmId})"><i class="fas fa-trash"></i></button>`:''}</td></tr>`);
+
+// Promotions
+const loadPromotions = subTableLoad('promotions', 'promotions', 5, r =>
+  `<tr><td>${escHtml(r.ArpoType??'–')}</td><td>${escHtml(r.ArpoDescription??'–')}</td><td class="text-end">${fmt$(r.ArpoCost)}</td><td>${escHtml(r.ArpoNotes??'–')}</td>
+   <td>${isDraft?`<button class="btn btn-sm btn-outline-danger py-0" onclick="removeRow('promotions',${r.ArpoId})"><i class="fas fa-trash"></i></button>`:''}</td></tr>`);
+
+// Others
+const loadOthers = subTableLoad('others', 'others', 4, r =>
+  `<tr><td>${escHtml(r.AroDescription??'–')}</td><td class="text-end">${fmt$(r.AroCost)}</td><td>${escHtml(r.AroNotes??'–')}</td>
+   <td>${isDraft?`<button class="btn btn-sm btn-outline-danger py-0" onclick="removeRow('others',${r.AroId})"><i class="fas fa-trash"></i></button>`:''}</td></tr>`);
+
+async function removeRow(endpoint, rowId) {
+  if (!confirm('Remove this entry?')) return;
+  await API.del(`/api/activity/requests/${arId}/${endpoint}/${rowId}`);
+  // reload the relevant sub-table
+  const loaders = { cash:loadCash, print:loadPrint, radio:loadRadio, 'pos-mat':loadPosMat, promotions:loadPromotions, others:loadOthers };
+  if (loaders[endpoint]) await loaders[endpoint]();
+}
+
+// ── Modal wiring ───────────────────────────────────────────────────────────────
+let cashModal, printModal, radioModal, posmatModal, promotionModal, otherModal;
+function initAdvancedModals() {
+  cashModal      = new bootstrap.Modal(document.getElementById('cash-modal'));
+  printModal     = new bootstrap.Modal(document.getElementById('print-modal'));
+  radioModal     = new bootstrap.Modal(document.getElementById('radio-modal'));
+  posmatModal    = new bootstrap.Modal(document.getElementById('posmat-modal'));
+  promotionModal = new bootstrap.Modal(document.getElementById('promotion-modal'));
+  otherModal     = new bootstrap.Modal(document.getElementById('other-modal'));
+
+  document.getElementById('btn-add-cash').addEventListener('click', () => {
+    ['fc-type','fc-amount','fc-reference','fc-notes'].forEach(i => { const el=document.getElementById(i); if(el) el.value=''; });
+    cashModal.show();
+  });
+  document.getElementById('btn-save-cash').addEventListener('click', async () => {
+    const payload = { ArcType:document.getElementById('fc-type').value||null, ArcAmount:parseFloat(document.getElementById('fc-amount').value)||null, ArcReference:document.getElementById('fc-reference').value.trim()||null, ArcNotes:document.getElementById('fc-notes').value.trim()||null };
+    try { await API.post(`/api/activity/requests/${arId}/cash`, payload); cashModal.hide(); await loadCash(); } catch(e){ alert(e.message??'Error'); }
+  });
+
+  document.getElementById('btn-add-print').addEventListener('click', () => {
+    ['fpr-publication','fpr-format','fpr-size','fpr-cost','fpr-notes'].forEach(i => { const el=document.getElementById(i); if(el) el.value=''; });
+    printModal.show();
+  });
+  document.getElementById('btn-save-print').addEventListener('click', async () => {
+    const payload = { ArprPublication:document.getElementById('fpr-publication').value.trim()||null, ArprFormat:document.getElementById('fpr-format').value.trim()||null, ArprSize:document.getElementById('fpr-size').value.trim()||null, ArprCost:parseFloat(document.getElementById('fpr-cost').value)||null, ArprNotes:document.getElementById('fpr-notes').value.trim()||null };
+    try { await API.post(`/api/activity/requests/${arId}/print`, payload); printModal.hide(); await loadPrint(); } catch(e){ alert(e.message??'Error'); }
+  });
+
+  document.getElementById('btn-add-radio').addEventListener('click', () => {
+    ['frr-station','frr-duration','frr-frequency','frr-cost','frr-notes'].forEach(i => { const el=document.getElementById(i); if(el) el.value=''; });
+    radioModal.show();
+  });
+  document.getElementById('btn-save-radio').addEventListener('click', async () => {
+    const payload = { ArrStation:document.getElementById('frr-station').value.trim()||null, ArrDuration:document.getElementById('frr-duration').value.trim()||null, ArrFrequency:parseInt(document.getElementById('frr-frequency').value)||null, ArrCost:parseFloat(document.getElementById('frr-cost').value)||null, ArrNotes:document.getElementById('frr-notes').value.trim()||null };
+    try { await API.post(`/api/activity/requests/${arId}/radio`, payload); radioModal.hide(); await loadRadio(); } catch(e){ alert(e.message??'Error'); }
+  });
+
+  document.getElementById('btn-add-posmat').addEventListener('click', () => {
+    ['fpm-code','fpm-name','fpm-qty','fpm-unit','fpm-notes'].forEach(i => { const el=document.getElementById(i); if(el) el.value=''; });
+    posmatModal.show();
+  });
+  document.getElementById('btn-save-posmat').addEventListener('click', async () => {
+    const name = document.getElementById('fpm-name').value.trim();
+    if(!name){ alert('Material name required.'); return; }
+    const payload = { ArpmCode:document.getElementById('fpm-code').value.trim()||null, ArpmName:name, ArpmQuantity:parseInt(document.getElementById('fpm-qty').value)||null, ArpmUnit:document.getElementById('fpm-unit').value.trim()||null, ArpmNotes:document.getElementById('fpm-notes').value.trim()||null };
+    try { await API.post(`/api/activity/requests/${arId}/pos-mat`, payload); posmatModal.hide(); await loadPosMat(); } catch(e){ alert(e.message??'Error'); }
+  });
+
+  document.getElementById('btn-add-promotion').addEventListener('click', () => {
+    ['fpo-type','fpo-description','fpo-cost','fpo-notes'].forEach(i => { const el=document.getElementById(i); if(el) el.value=''; });
+    promotionModal.show();
+  });
+  document.getElementById('btn-save-promotion').addEventListener('click', async () => {
+    const payload = { ArpoType:document.getElementById('fpo-type').value.trim()||null, ArpoDescription:document.getElementById('fpo-description').value.trim()||null, ArpoCost:parseFloat(document.getElementById('fpo-cost').value)||null, ArpoNotes:document.getElementById('fpo-notes').value.trim()||null };
+    try { await API.post(`/api/activity/requests/${arId}/promotions`, payload); promotionModal.hide(); await loadPromotions(); } catch(e){ alert(e.message??'Error'); }
+  });
+
+  document.getElementById('btn-add-other').addEventListener('click', () => {
+    ['fo-description','fo-cost','fo-notes'].forEach(i => { const el=document.getElementById(i); if(el) el.value=''; });
+    otherModal.show();
+  });
+  document.getElementById('btn-save-other').addEventListener('click', async () => {
+    const desc = document.getElementById('fo-description').value.trim();
+    if(!desc){ alert('Description required.'); return; }
+    const payload = { AroDescription:desc, AroCost:parseFloat(document.getElementById('fo-cost').value)||null, AroNotes:document.getElementById('fo-notes').value.trim()||null };
+    try { await API.post(`/api/activity/requests/${arId}/others`, payload); otherModal.hide(); await loadOthers(); } catch(e){ alert(e.message??'Error'); }
+  });
+
+  // Hide add buttons when not DRAFT
+  ['btn-add-cash','btn-add-print','btn-add-radio','btn-add-posmat','btn-add-promotion','btn-add-other']
+    .forEach(id => { const el=document.getElementById(id); if(el) el.style.display = isDraft ? '' : 'none'; });
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function setVal(id, val) { const el = document.getElementById(id); if (el) el.value = val; }
+function escHtml(s) { return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmtDate(d) { if (!d) return '–'; return new Date(d).toLocaleDateString('en-US', { year:'numeric', month:'short', day:'2-digit' }); }
+function showError(msg) {
+  document.getElementById('loading-state').innerHTML =
+    `<i class="fas fa-exclamation-triangle fa-2x mb-3 text-danger"></i><br/><span class="text-danger">${escHtml(msg)}</span>`;
+}
+
+let _toast;
+function showToast(msg, type) {
+  if (!_toast) {
+    const div = document.createElement('div');
+    div.style.cssText = 'position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;';
+    div.innerHTML = `<div id="_toastEl" class="toast align-items-center text-white border-0" role="alert">
+      <div class="d-flex"><div class="toast-body" id="_toastMsg"></div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div></div>`;
+    document.body.appendChild(div);
+    _toast = new bootstrap.Toast(document.getElementById('_toastEl'), { delay: 3000 });
+  }
+  const el = document.getElementById('_toastEl');
+  el.className = `toast align-items-center text-white border-0 bg-${type === 'success' ? 'success' : 'danger'}`;
+  document.getElementById('_toastMsg').textContent = msg;
+  _toast.show();
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!Auth.requireAuth()) return;
+  Auth.startExpiryWatcher();
+  Auth.populateUserUI();
+  Sidebar.init();
+  document.getElementById('btn-logout').addEventListener('click', e => { e.preventDefault(); Auth.logout(); });
+
+  await loadCatalogs();
+  await loadAR();
+  initAdvancedModals();
+});
+</script>
+</body>
+</html>

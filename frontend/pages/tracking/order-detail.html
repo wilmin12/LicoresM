@@ -1,0 +1,1366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tracking Order Detail - Licores Maduro</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="../../css/main.css"/>
+  <style>
+    .bg-purple { background-color: #7c3aed !important; color: #fff !important; }
+    .field-locked { background-color: #f0f4f8 !important; cursor: not-allowed !important; border-color: #ced4da !important; }
+  </style>
+</head>
+<body>
+<div id="sidebar-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;"></div>
+<div class="app-wrapper">
+  <nav id="sidebar" class="sidebar">
+    <div class="sidebar-header"><img src="../../img/LogoLicores.png" alt="Licores Maduro" class="sidebar-logo-img"/><span class="sidebar-logo-text">LICORES MADURO</span></div>
+    <div id="sidebar-nav" class="sidebar-nav"></div>
+    <div class="sidebar-footer"><div class="sidebar-user"><div class="sidebar-avatar" id="sidebar-user-initials">LM</div><div class="sidebar-text"><div id="sidebar-user-name" style="font-weight:600;">–</div></div></div></div>
+  </nav>
+  <div class="main-area">
+    <header class="topbar">
+      <button id="btn-sidebar-toggle" class="btn-sidebar-toggle"><i class="fas fa-bars"></i></button>
+      <span class="topbar-title"><i class="fas fa-shipping-fast me-2 text-wine"></i>Tracking Order Detail</span>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown">
+            <span class="sidebar-avatar" id="topbar-user-initials" style="width:28px;height:28px;font-size:.75rem;">LM</span>
+            <span id="topbar-user-name" class="d-none d-md-inline">–</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+            <li><div class="dropdown-header"><strong id="topbar-user-fullname">User</strong><br/><small class="text-muted" id="topbar-user-role">Role</small></div></li>
+            <li><hr class="dropdown-divider"/></li>
+            <li><a class="dropdown-item text-danger" href="#" id="btn-logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+          </ul>
+        </div>
+      </div>
+    </header>
+    <main class="page-content">
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="../../dashboard.html"><i class="fas fa-home me-1"></i>Home</a></li>
+          <li class="breadcrumb-item"><a href="index.html">Purchase Order Tracking</a></li>
+          <li class="breadcrumb-item active" id="breadcrumb-pono">–</li>
+        </ol>
+      </nav>
+
+      <!-- Loading state -->
+      <div id="loading-state" class="text-center py-5 text-muted">
+        <i class="fas fa-spinner fa-spin fa-2x mb-3"></i><br/>Loading tracking order...
+      </div>
+
+      <!-- Main content (hidden until loaded) -->
+      <div id="main-content" style="display:none;">
+
+        <!-- PO Header (read-only, auto-filled from VIP) -->
+        <div class="card mb-3">
+          <div class="card-header d-flex align-items-center justify-content-between">
+            <span><i class="fas fa-file-alt me-2"></i>Purchase Order Header <small class="text-muted ms-1">(auto-filled from VIP)</small></span>
+            <button class="btn btn-outline-secondary btn-sm" id="btn-sync-vip" title="Sync VIP Data">
+              <i class="fas fa-sync-alt me-1"></i>Sync VIP
+            </button>
+          </div>
+          <div class="card-body">
+            <div class="row g-2">
+              <div class="col-6 col-md-2">
+                <div class="fw-semibold text-muted" style="font-size:.75rem;">PO NUMBER</div>
+                <div id="hdr-pono" class="fw-bold" style="font-size:1.1rem;color:var(--primary-dark);">–</div>
+              </div>
+              <div class="col-6 col-md-2">
+                <div class="fw-semibold text-muted" style="font-size:.75rem;">WAREHOUSE</div>
+                <div id="hdr-warehouse">–</div>
+              </div>
+              <div class="col-6 col-md-2">
+                <div class="fw-semibold text-muted" style="font-size:.75rem;">SUPPLIER #</div>
+                <div id="hdr-supplier">–</div>
+              </div>
+              <div class="col-6 col-md-2">
+                <div class="fw-semibold text-muted" style="font-size:.75rem;">SUPPLIER CODE</div>
+                <div id="hdr-supplier-code">–</div>
+              </div>
+              <div class="col-6 col-md-2">
+                <div class="fw-semibold text-muted" style="font-size:.75rem;">B/W</div>
+                <div id="hdr-borw">–</div>
+              </div>
+              <div class="col-6 col-md-2">
+                <div class="fw-semibold text-muted" style="font-size:.75rem;">VIP STATUS</div>
+                <div id="hdr-vip-status">–</div>
+              </div>
+              <div class="col-6 col-md-2">
+                <div class="fw-semibold text-muted" style="font-size:.75rem;">ORDER DATE</div>
+                <div id="hdr-orderdate">–</div>
+              </div>
+              <div class="col-6 col-md-2">
+                <div class="fw-semibold text-muted" style="font-size:.75rem;">SHIP DATE</div>
+                <div id="hdr-shipdate">–</div>
+              </div>
+              <div class="col-6 col-md-2">
+                <div class="fw-semibold text-muted" style="font-size:.75rem;">ARRIVAL DATE</div>
+                <div id="hdr-arrivaldate">–</div>
+              </div>
+              <div class="col-6 col-md-2">
+                <div class="fw-semibold text-muted" style="font-size:.75rem;">TOTAL CASES</div>
+                <div id="hdr-cases">–</div>
+              </div>
+              <div class="col-6 col-md-2">
+                <div class="fw-semibold text-muted" style="font-size:.75rem;">TOTAL LINES</div>
+                <div id="hdr-lines">–</div>
+              </div>
+              <div class="col-6 col-md-2">
+                <div class="fw-semibold text-muted" style="font-size:.75rem;">WEIGHT (kg)</div>
+                <div id="hdr-weight">–</div>
+              </div>
+              <div class="col-6 col-md-2">
+                <div class="fw-semibold text-muted" style="font-size:.75rem;">LITERS</div>
+                <div id="hdr-liters">–</div>
+              </div>
+              <div class="col-6 col-md-2">
+                <div class="fw-semibold text-muted" style="font-size:.75rem;">TOTAL AMOUNT</div>
+                <div id="hdr-total-amount">–</div>
+              </div>
+              <div class="col-6 col-md-2">
+                <div class="fw-semibold text-muted" style="font-size:.75rem;">VENDOR / BRAND</div>
+                <div id="hdr-vendor-brand">–</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Field-lock info banner (non-SuperAdmin with filled fields) -->
+        <div id="field-lock-banner" class="alert alert-info d-flex align-items-center gap-2 mb-3" style="display:none;">
+          <i class="fas fa-lock fa-sm"></i>
+          <div>Los campos con datos ya guardados son <strong>de solo lectura</strong>. Solo SuperAdmin puede modificarlos.</div>
+        </div>
+
+        <!-- Locked banner -->
+        <div id="locked-banner" class="alert alert-danger d-flex align-items-center gap-2 mb-3" style="display:none;">
+          <i class="fas fa-lock fa-lg"></i>
+          <div class="flex-grow-1">
+            <strong>Tracking order is closed.</strong>
+            <span id="locked-by-text" class="ms-1 text-muted"></span>
+            All fields are read-only.
+          </div>
+          <button id="btn-reopen" class="btn btn-outline-danger btn-sm d-none">
+            <i class="fas fa-lock-open me-1"></i>Reopen (SuperAdmin)
+          </button>
+        </div>
+
+        <!-- Status bar -->
+        <div class="card mb-3">
+          <div class="card-body d-flex align-items-center gap-3 py-2 flex-wrap">
+            <span class="fw-semibold text-muted">Current Status:</span>
+            <span id="status-badge" class="badge bg-secondary fs-6">–</span>
+            <span class="text-muted">|</span>
+            <span class="fw-semibold text-muted">Receipt:</span>
+            <span id="receipt-badge" class="badge bg-secondary">–</span>
+            <small id="receipt-summary-text" class="text-muted"></small>
+            <div class="ms-auto d-flex gap-2">
+              <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modal-status" id="btn-update-status">
+                <i class="fas fa-exchange-alt me-1"></i>Update Status
+              </button>
+              <button class="btn btn-danger btn-sm" id="btn-close-tracking">
+                <i class="fas fa-lock me-1"></i>Close Tracking
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabs for 6 sections -->
+        <div class="card mb-4">
+          <div class="card-header p-0">
+            <ul class="nav nav-tabs card-header-tabs" id="detail-tabs" role="tablist">
+              <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#tab-general"><i class="fas fa-info-circle me-1"></i>General</a></li>
+              <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-shipping"><i class="fas fa-ship me-1"></i>Shipping</a></li>
+              <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-docs"><i class="fas fa-file-invoice me-1"></i>Documentation</a></li>
+              <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-customs"><i class="fas fa-stamp me-1"></i>Customs</a></li>
+              <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-container"><i class="fas fa-box me-1"></i>Container/CPS</a></li>
+              <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-admin"><i class="fas fa-folder-open me-1"></i>Administration</a></li>
+              <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab-products" id="tab-products-link"><i class="fas fa-boxes me-1"></i>PO Products</a></li>
+            </ul>
+          </div>
+          <div class="tab-content card-body">
+
+            <!-- TAB 1: General -->
+            <div class="tab-pane fade show active" id="tab-general">
+              <div class="row g-3 mt-1">
+                <div class="col-md-4">
+                  <label class="form-label">Status</label>
+                  <select id="f-status" class="form-select form-select-sm"></select>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Requested ETA</label>
+                  <input type="date" id="f-requested-eta" class="form-control form-control-sm"/>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Date Loading Shipper</label>
+                  <input type="date" id="f-date-loading-shipper" class="form-control form-control-sm"/>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Supplier Name</label>
+                  <input type="text" id="f-supplier-name" class="form-control form-control-sm" placeholder="Supplier name"/>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Vendor / Brand</label>
+                  <input type="text" id="f-vendor-brand" class="form-control form-control-sm" placeholder="e.g. Heineken, Stella Artois"/>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Country</label>
+                  <input type="text" id="f-country" class="form-control form-control-sm"
+                         list="country-datalist" placeholder="Search country..." autocomplete="off"/>
+                  <datalist id="country-datalist"></datalist>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Freight Forwarder</label>
+                  <input type="text" id="f-freight-forwarder" class="form-control form-control-sm" placeholder="Forwarder name"/>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="f-acknowledge-order"/>
+                    <label class="form-check-label" for="f-acknowledge-order">Acknowledge Order (4 Days)</label>
+                  </div>
+                </div>
+                <div class="col-12">
+                  <label class="form-label">Comments</label>
+                  <textarea id="f-comments" class="form-control form-control-sm" rows="3" placeholder="General comments..."></textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 2: Shipping -->
+            <div class="tab-pane fade" id="tab-shipping">
+              <div class="row g-3 mt-1">
+                <div class="col-md-4">
+                  <label class="form-label">Shipping Line</label>
+                  <input type="text" id="f-shipping-line" class="form-control form-control-sm" placeholder="e.g. MSC"/>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Shipping Agent</label>
+                  <input type="text" id="f-shipping-agent" class="form-control form-control-sm" placeholder="Agent name"/>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Vessel</label>
+                  <input type="text" id="f-vessel" class="form-control form-control-sm" placeholder="Vessel name"/>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Container Number</label>
+                  <input type="text" id="f-container-number" class="form-control form-control-sm" placeholder="e.g. MSCU1234567"/>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Consolidation Ref / BL No.</label>
+                  <input type="text" id="f-consolidation-ref" class="form-control form-control-sm" placeholder="BL or consolidation ref"/>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Container Size</label>
+                  <select id="f-container-size" class="form-select form-select-sm">
+                    <option value="">— Select —</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 3: Documentation -->
+            <div class="tab-pane fade" id="tab-docs">
+              <div class="row g-3 mt-1">
+                <div class="col-md-3">
+                  <label class="form-label">Date Pro Forma Received</label>
+                  <input type="date" id="f-date-proforma-received" class="form-control form-control-sm"/>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Qty Cases Pro Forma</label>
+                  <input type="number" id="f-qty-proforma" class="form-control form-control-sm" step="0.01" placeholder="0"/>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Factory Ready Date</label>
+                  <input type="date" id="f-factory-ready-date" class="form-control form-control-sm"/>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Est. Date of Departure</label>
+                  <input type="date" id="f-est-departure-date" class="form-control form-control-sm"/>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Est. Date of Arrival</label>
+                  <input type="date" id="f-est-arrival-date" class="form-control form-control-sm"/>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Transit Time</label>
+                  <input type="text" id="f-transit-time" class="form-control form-control-sm" placeholder="e.g. 21 days"/>
+                </div>
+                <div class="col-md-3 d-flex align-items-end pb-1">
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="f-bijlage-done"/>
+                    <label class="form-check-label" for="f-bijlage-done">Bijlage Done?</label>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Date Arrival Invoice</label>
+                  <input type="date" id="f-date-arrival-invoice" class="form-control form-control-sm"/>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Invoice Number</label>
+                  <input type="text" id="f-invoice-number" class="form-control form-control-sm" placeholder="Invoice #"/>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Date Arrival Bill of Lading</label>
+                  <input type="date" id="f-date-arrival-bol" class="form-control form-control-sm"/>
+                </div>
+                <div class="col-12">
+                  <label class="form-label">Remarks</label>
+                  <textarea id="f-remarks" class="form-control form-control-sm" rows="2" placeholder="Remarks..."></textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 4: Customs -->
+            <div class="tab-pane fade" id="tab-customs">
+              <div class="row g-3 mt-1">
+                <div class="col-md-4">
+                  <label class="form-label">Date Arrival Note Received</label>
+                  <input type="date" id="f-date-arrival-note-received" class="form-control form-control-sm"/>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Date Manifest Received</label>
+                  <input type="date" id="f-date-manifest-received" class="form-control form-control-sm"/>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Date Copies to Declarant</label>
+                  <input type="date" id="f-date-copies-declarant" class="form-control form-control-sm"/>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Date Customs Papers Ready</label>
+                  <input type="date" id="f-date-customs-papers-ready" class="form-control form-control-sm"/>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Date Customs Papers Assessed in Asycuda</label>
+                  <input type="date" id="f-date-customs-papers-asycuda" class="form-control form-control-sm"/>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 5: Container / CPS -->
+            <div class="tab-pane fade" id="tab-container">
+              <div class="row g-3 mt-1">
+                <div class="col-md-4">
+                  <label class="form-label">Date Container at CPS</label>
+                  <input type="date" id="f-date-container-at-cps" class="form-control form-control-sm"/>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Expiration Date at CPS</label>
+                  <input type="date" id="f-expiration-date-cps" class="form-control form-control-sm"/>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Date Customs Papers to CPS</label>
+                  <input type="date" id="f-date-customs-papers-to-cps" class="form-control form-control-sm"/>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Date Container Arrived at Licores</label>
+                  <input type="date" id="f-date-container-arrived-licores" class="form-control form-control-sm"/>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Date Container Opened by Customs</label>
+                  <input type="date" id="f-date-container-opened-customs" class="form-control form-control-sm"/>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Date Container Unload Ready</label>
+                  <input type="date" id="f-date-container-unload-ready" class="form-control form-control-sm"/>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Return Date Container</label>
+                  <input type="date" id="f-return-date-container" class="form-control form-control-sm"/>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                  <div class="w-100">
+                    <label class="form-label">Days Over Container <small class="text-muted">(calculated)</small></label>
+                    <div id="f-days-over-container" class="form-control form-control-sm" style="background:#f8f9fa;cursor:default;">–</div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Actual Delivery Date <small class="text-muted text-success fw-semibold">(real arrival)</small></label>
+                  <input type="date" id="f-actual-delivery-date" class="form-control form-control-sm border-success"/>
+                </div>
+              </div>
+
+              <!-- Other POs in same container (read-only) -->
+              <div id="container-group-panel" class="mt-3" style="display:none;">
+                <hr class="my-2"/>
+                <div class="fw-semibold mb-2" style="color:var(--primary-dark);">
+                  <i class="fas fa-layer-group me-2"></i>Other POs in this container
+                </div>
+                <div id="container-group-list" class="d-flex flex-wrap gap-2"></div>
+              </div>
+
+            </div>
+
+            <!-- TAB 6: Administration -->
+            <div class="tab-pane fade" id="tab-admin">
+              <div class="row g-3 mt-1">
+                <div class="col-md-4">
+                  <label class="form-label">Date Unload Papers to Administration</label>
+                  <input type="date" id="f-date-unload-papers-admin" class="form-control form-control-sm"/>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">SAD Number</label>
+                  <input type="text" id="f-sad-number" class="form-control form-control-sm" placeholder="SAD #"/>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">B-C Number of Orders</label>
+                  <input type="text" id="f-bc-number-orders" class="form-control form-control-sm" placeholder="BC #"/>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Exit Note Number</label>
+                  <input type="text" id="f-exit-note-number" class="form-control form-control-sm" placeholder="Exit note #"/>
+                </div>
+                <div class="col-12">
+                  <label class="form-label">Issues / Comments</label>
+                  <textarea id="f-issues-comments" class="form-control form-control-sm" rows="3" placeholder="Issues or administration comments..."></textarea>
+                </div>
+
+                <!-- Goods Receipt Validation -->
+                <div class="col-12 mt-3">
+                  <hr class="my-2"/>
+                  <div class="fw-semibold mb-2"><i class="fas fa-clipboard-check me-2 text-wine"></i>Goods Receipt Validation</div>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Total Ordered <small class="text-muted">(VIP)</small></label>
+                  <div id="f-receipt-ordered" class="form-control form-control-sm bg-light" style="cursor:default;">–</div>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Total Received <small class="text-muted">(VIP)</small></label>
+                  <div id="f-receipt-received" class="form-control form-control-sm bg-light" style="cursor:default;">–</div>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Difference</label>
+                  <div id="f-receipt-difference" class="form-control form-control-sm bg-light fw-bold" style="cursor:default;">–</div>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Receipt Status</label>
+                  <select id="f-receipt-status" class="form-select form-select-sm">
+                    <option value="">— Auto —</option>
+                    <option value="PENDING">PENDING</option>
+                    <option value="COMPLETE">COMPLETE</option>
+                    <option value="SHORTAGE">SHORTAGE</option>
+                    <option value="OVERAGE">OVERAGE</option>
+                    <option value="DAMAGED">DAMAGED</option>
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Qty Shortage</label>
+                  <input type="number" id="f-qty-shortage" class="form-control form-control-sm" step="0.01" placeholder="0"/>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label">Qty Damages</label>
+                  <input type="number" id="f-qty-damages" class="form-control form-control-sm" step="0.01" placeholder="0"/>
+                </div>
+                <div class="col-6">
+                  <label class="form-label">Receipt Comments</label>
+                  <textarea id="f-receipt-comments" class="form-control form-control-sm" rows="2" placeholder="Describe shortages, damages or discrepancies..."></textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 7: PO Products (from PODTLT/VIP) -->
+            <div class="tab-pane fade" id="tab-products">
+              <div class="d-flex align-items-center justify-content-between mt-2 mb-3">
+                <span class="text-muted" style="font-size:.85rem;"><i class="fas fa-info-circle me-1"></i>Product lines from VIP (read-only). Reflects current state in PODTLT.</span>
+                <button class="btn btn-outline-secondary btn-sm" id="btn-reload-products"><i class="fas fa-sync-alt me-1"></i>Reload</button>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0" style="font-size:.82rem;">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Line</th>
+                      <th>Item Code</th>
+                      <th>Description</th>
+                      <th>Brand</th>
+                      <th>Supplier</th>
+                      <th class="text-end">Qty Ordered</th>
+                      <th class="text-end">Qty Received</th>
+                      <th class="text-end">Unit Price</th>
+                      <th class="text-center">Units/Case</th>
+                      <th>B/W</th>
+                      <th>Status</th>
+                      <th>Receive Date</th>
+                    </tr>
+                  </thead>
+                  <tbody id="products-tbody">
+                    <tr><td colspan="12" class="text-center py-3 text-muted">Select this tab to load product lines.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div id="products-summary" class="mt-2 text-muted" style="font-size:.82rem;"></div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Action buttons -->
+        <div class="d-flex gap-2 justify-content-end mb-4">
+          <a href="index.html" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i>Back to List</a>
+          <button id="btn-save" class="btn btn-wine"><i class="fas fa-save me-1"></i>Save Changes</button>
+        </div>
+        <div id="locked-save-msg" class="alert alert-warning mb-4" style="display:none;">
+          <i class="fas fa-lock me-2"></i>This tracking order is <strong>closed</strong>. Only SuperAdmin can make changes.
+        </div>
+
+        <!-- Status History -->
+        <div class="card mb-4">
+          <div class="card-header"><i class="fas fa-history me-2"></i>Status History</div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-sm mb-0" style="font-size:.85rem;">
+                <thead><tr><th>Date</th><th>Status Code</th><th>Comments</th><th>Changed By</th></tr></thead>
+                <tbody id="history-tbody"><tr><td colspan="4" class="text-center py-3 text-muted">Loading...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- end main-content -->
+    </main>
+  </div>
+</div>
+
+<!-- Update Status Modal -->
+<div class="modal fade" id="modal-status" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-exchange-alt me-2 text-wine"></i>Update Status</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label fw-semibold">New Status</label>
+          <select id="ms-status" class="form-select"></select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Comment</label>
+          <textarea id="ms-comment" class="form-control" rows="2" placeholder="Reason for status change..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-wine" id="btn-save-status"><i class="fas fa-check me-1"></i>Update</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Unsaved Changes Modal -->
+<div class="modal fade" id="modal-unsaved" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header border-0 pb-0">
+        <div class="d-flex align-items-center gap-2">
+          <i class="fas fa-exclamation-triangle text-warning fs-5"></i>
+          <h5 class="modal-title fw-bold mb-0">Unsaved Changes</h5>
+        </div>
+      </div>
+      <div class="modal-body pt-2">
+        <p class="text-muted mb-0">You have unsaved changes. What would you like to do before leaving?</p>
+      </div>
+      <div class="modal-footer border-0 gap-2 flex-nowrap">
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-unsaved-cancel">
+          <i class="fas fa-times me-1"></i>Stay on page
+        </button>
+        <button type="button" class="btn btn-outline-danger btn-sm" id="btn-unsaved-discard">
+          <i class="fas fa-sign-out-alt me-1"></i>Leave without saving
+        </button>
+        <button type="button" class="btn btn-wine btn-sm" id="btn-unsaved-save">
+          <i class="fas fa-save me-1"></i>Save &amp; leave
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index:9999;">
+  <div id="toast" class="toast align-items-center text-white border-0" role="alert">
+    <div class="d-flex"><div class="toast-body" id="toast-msg"></div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../../js/i18n.js"></script><script src="../../js/api.js"></script><script src="../../js/auth.js"></script><script src="../../js/sidebar.js"></script>
+<script>
+  let trackingId = null;
+  let orderData  = null;
+
+  // ── Unsaved-changes guard ─────────────────────────────────────────────────
+  let _formSnapshot  = null;
+  let _pendingNavUrl = null;
+
+  const SNAPSHOT_FIELDS  = [
+    'f-status','f-requested-eta','f-date-loading-shipper','f-supplier-name',
+    'f-vendor-brand','f-country','f-freight-forwarder','f-comments',
+    'f-shipping-line','f-shipping-agent','f-vessel','f-container-number',
+    'f-consolidation-ref','f-container-size',
+    'f-date-proforma-received','f-qty-proforma','f-factory-ready-date',
+    'f-est-departure-date','f-est-arrival-date','f-transit-time',
+    'f-date-arrival-invoice','f-invoice-number','f-date-arrival-bol','f-remarks',
+    'f-date-arrival-note-received','f-date-manifest-received',
+    'f-date-copies-declarant','f-date-customs-papers-ready','f-date-customs-papers-asycuda',
+    'f-date-container-at-cps','f-expiration-date-cps','f-date-customs-papers-to-cps',
+    'f-date-container-arrived-licores','f-date-container-opened-customs',
+    'f-date-container-unload-ready','f-return-date-container','f-actual-delivery-date',
+    'f-date-unload-papers-admin','f-sad-number','f-bc-number-orders',
+    'f-exit-note-number','f-issues-comments',
+    'f-receipt-status','f-qty-shortage','f-qty-damages','f-receipt-comments',
+  ];
+  const SNAPSHOT_CHECKS  = ['f-acknowledge-order','f-bijlage-done'];
+
+  function snapshotForm() {
+    const snap = {};
+    SNAPSHOT_FIELDS.forEach(id => { const el = document.getElementById(id); if (el) snap[id] = el.value; });
+    SNAPSHOT_CHECKS.forEach(id  => { const el = document.getElementById(id); if (el) snap[id] = el.checked; });
+    return JSON.stringify(snap);
+  }
+
+  function markClean() { _formSnapshot = snapshotForm(); }
+
+  function isDirty() {
+    if (!_formSnapshot) return false;
+    return snapshotForm() !== _formSnapshot;
+  }
+
+  function _doNavigate(url) {
+    _formSnapshot = null; // disarm beforeunload
+    window.location.href = url;
+  }
+
+  // ── Auto-status: sequence and date→state mapping ──────────────────────────
+  const STATUS_SEQUENCE = ['INVIP', 'PEND', 'SHIP', 'ARR', 'PCPS', 'PCCS', 'DOCK', 'CLOS'];
+
+  const DATE_STATUS_MAP = [
+    { fieldId: 'f-requested-eta',                 status: 'PEND' },
+    { fieldId: 'f-date-loading-shipper',           status: 'SHIP' },
+    { fieldId: 'f-est-departure-date',             status: 'SHIP' },
+    { fieldId: 'f-est-arrival-date',               status: 'ARR'  },
+    { fieldId: 'f-date-container-arrived-licores', status: 'ARR'  },
+    { fieldId: 'f-date-container-at-cps',          status: 'PCPS' },
+    { fieldId: 'f-date-customs-papers-ready',      status: 'PCCS' },
+    { fieldId: 'f-date-customs-papers-asycuda',    status: 'PCCS' },
+    { fieldId: 'f-date-container-unload-ready',    status: 'DOCK' },
+    { fieldId: 'f-return-date-container',          status: 'CLOS' },
+    { fieldId: 'f-actual-delivery-date',           status: 'CLOS' },
+  ];
+
+  function tryAutoAdvanceStatus(targetStatus) {
+    const currentStatus = document.getElementById('f-status').value;
+    const currentIdx    = STATUS_SEQUENCE.indexOf(currentStatus);
+    const targetIdx     = STATUS_SEQUENCE.indexOf(targetStatus);
+    // Only advance if target is exactly the next state in sequence
+    if (targetIdx !== currentIdx + 1) return;
+    setSelectVal('f-status', targetStatus);
+    setStatusBadge(targetStatus);
+    // Brief visual feedback on the status field
+    const sel = document.getElementById('f-status');
+    sel.classList.add('border-success');
+    setTimeout(() => sel.classList.remove('border-success'), 2000);
+    showToast(`Estado actualizado automáticamente a ${targetStatus}`, 'info');
+  }
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    if (!Auth.requireAuth()) return;
+    Auth.startExpiryWatcher();
+    Auth.populateUserUI();
+    Sidebar.init();
+    document.getElementById('btn-logout').addEventListener('click', e => { e.preventDefault(); Auth.logout(); });
+
+    const params = new URLSearchParams(window.location.search);
+    trackingId = parseInt(params.get('id'), 10);
+    if (!trackingId) {
+      showToast('No tracking order ID provided.', 'danger');
+      return;
+    }
+
+    // Load catalogs
+    await Promise.all([loadStatusCodes(), loadContainerTypes(), loadCountries()]);
+
+    // Load order
+    await loadOrder();
+
+    // Wire save
+    document.getElementById('btn-save').addEventListener('click', saveOrder);
+    document.getElementById('btn-sync-vip').addEventListener('click', syncVip);
+    document.getElementById('btn-save-status').addEventListener('click', updateStatus);
+    document.getElementById('btn-close-tracking').addEventListener('click', closeTracking);
+    document.getElementById('btn-reopen').addEventListener('click', reopenTracking);
+
+    // Live-calc days over container when dates change
+    ['f-date-container-arrived-licores','f-return-date-container'].forEach(id => {
+      document.getElementById(id).addEventListener('change', calcDaysOver);
+    });
+
+    // Auto-advance status when a trigger date is filled
+    DATE_STATUS_MAP.forEach(({ fieldId, status }) => {
+      const el = document.getElementById(fieldId);
+      if (!el) return;
+      el.addEventListener('change', () => { if (el.value) tryAutoAdvanceStatus(status); });
+    });
+
+    // Acknowledge Order checkbox → PEND
+    document.getElementById('f-acknowledge-order').addEventListener('change', () => {
+      if (document.getElementById('f-acknowledge-order').checked) tryAutoAdvanceStatus('PEND');
+    });
+
+    // Load products when tab is first activated
+    let _productsLoaded = false;
+    document.getElementById('tab-products-link').addEventListener('shown.bs.tab', () => {
+      if (!_productsLoaded) { _productsLoaded = true; loadProducts(); }
+    });
+    document.getElementById('btn-reload-products').addEventListener('click', loadProducts);
+
+    // ── Unsaved-changes guard: browser back / refresh ──────────────────────
+    window.addEventListener('beforeunload', e => {
+      if (isDirty()) { e.preventDefault(); e.returnValue = ''; }
+    });
+
+    // ── Unsaved-changes guard: intercept in-app navigation links ──────────
+    document.addEventListener('click', e => {
+      const link = e.target.closest('a[href]');
+      if (!link) return;
+      const href = link.getAttribute('href');
+      if (!href || href.startsWith('#') || href.startsWith('javascript')) return;
+      if (!isDirty()) return;
+      e.preventDefault();
+      _pendingNavUrl = link.href;
+      new bootstrap.Modal(document.getElementById('modal-unsaved')).show();
+    });
+
+    // ── Unsaved modal button wiring ───────────────────────────────────────
+    document.getElementById('btn-unsaved-cancel').addEventListener('click', () => {
+      bootstrap.Modal.getInstance(document.getElementById('modal-unsaved')).hide();
+      _pendingNavUrl = null;
+    });
+    document.getElementById('btn-unsaved-discard').addEventListener('click', () => {
+      const url = _pendingNavUrl;
+      _pendingNavUrl = null;
+      bootstrap.Modal.getInstance(document.getElementById('modal-unsaved')).hide();
+      _doNavigate(url);
+    });
+    document.getElementById('btn-unsaved-save').addEventListener('click', async () => {
+      bootstrap.Modal.getInstance(document.getElementById('modal-unsaved')).hide();
+      await saveOrder(); // navigates after save if _pendingNavUrl is set
+    });
+  });
+
+  async function loadStatusCodes() {
+    try {
+      const res   = await API.catalogs.orderStatus.getAll({ pageSize: 200 });
+      const items = res?.Data || res || [];
+      const fsel  = document.getElementById('f-status');
+      const msel  = document.getElementById('ms-status');
+      items.forEach(s => {
+        const label = `${esc(s.OsCode)} - ${esc(s.OsDescription||s.OsCode)}`;
+        fsel.appendChild(new Option(label, s.OsCode));
+        msel.appendChild(new Option(label, s.OsCode));
+      });
+    } catch(e) { /* ignore */ }
+  }
+
+  async function loadContainerTypes() {
+    try {
+      const res   = await API.catalogs.trackingContainerTypes.getAll({ pageSize: 200 });
+      const items = res?.Data || res || [];
+      const sel   = document.getElementById('f-container-size');
+      items.forEach(t => {
+        sel.appendChild(new Option(`${esc(t.TctCode)} - ${esc(t.TctDescription)}`, t.TctCode));
+      });
+    } catch(e) { /* ignore */ }
+  }
+
+  async function loadCountries() {
+    try {
+      const res   = await API.catalogs.countries.getAll({ pageSize: 500 });
+      const items = res?.Data || res || [];
+      const dl    = document.getElementById('country-datalist');
+      items.forEach(c => {
+        const code  = (c.IsoAlpha3 || c.IsoAlpha2 || '').trim();
+        const desc  = (c.Description || '').trim();
+        const opt   = document.createElement('option');
+        opt.value   = code;
+        opt.label   = desc ? `${code} - ${desc}` : code;
+        dl.appendChild(opt);
+      });
+    } catch(e) { /* ignore */ }
+  }
+
+  async function loadOrder() {
+    try {
+      const res = await API.tracking.getOrder(trackingId);
+      const dto = res?.Data || res;
+      orderData = dto;
+      populateForm(dto);
+      await loadHistory();
+      document.getElementById('loading-state').style.display = 'none';
+      document.getElementById('main-content').style.display  = '';
+    } catch(err) {
+      showToast(`Failed to load: ${err.message}`, 'danger');
+      document.getElementById('loading-state').innerHTML = `<div class="text-danger">${esc(err.message)}</div>`;
+    }
+  }
+
+  function fmtDate(n) {
+    if (!n) return '';
+    const s = String(n);
+    if (s.length === 8) return s.substring(0,4)+'-'+s.substring(4,6)+'-'+s.substring(6,8);
+    return s;
+  }
+
+  function isoToDate(iso) {
+    if (!iso) return '';
+    return iso.split('T')[0];
+  }
+
+  // ── All editable field IDs that can be locked once they have a value ─────────
+  const LOCKABLE_FIELDS = [
+    'f-requested-eta', 'f-date-loading-shipper', 'f-supplier-name',
+    'f-vendor-brand', 'f-country', 'f-freight-forwarder', 'f-comments',
+    'f-shipping-line', 'f-shipping-agent', 'f-vessel', 'f-container-number',
+    'f-consolidation-ref', 'f-container-size',
+    'f-date-proforma-received', 'f-qty-proforma', 'f-factory-ready-date',
+    'f-est-departure-date', 'f-est-arrival-date', 'f-transit-time',
+    'f-date-arrival-invoice', 'f-invoice-number', 'f-date-arrival-bol', 'f-remarks',
+    'f-date-arrival-note-received', 'f-date-manifest-received',
+    'f-date-copies-declarant', 'f-date-customs-papers-ready', 'f-date-customs-papers-asycuda',
+    'f-date-container-at-cps', 'f-expiration-date-cps', 'f-date-customs-papers-to-cps',
+    'f-date-container-arrived-licores', 'f-date-container-opened-customs',
+    'f-date-container-unload-ready', 'f-return-date-container', 'f-actual-delivery-date',
+    'f-date-unload-papers-admin', 'f-sad-number', 'f-bc-number-orders',
+    'f-exit-note-number', 'f-issues-comments',
+    'f-receipt-status', 'f-qty-shortage', 'f-qty-damages', 'f-receipt-comments',
+  ];
+  const LOCKABLE_CHECKS = ['f-acknowledge-order', 'f-bijlage-done'];
+
+  function resetFieldLocks() {
+    [...LOCKABLE_FIELDS, ...LOCKABLE_CHECKS].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) { el.disabled = false; el.classList.remove('field-locked'); }
+    });
+    document.getElementById('field-lock-banner').style.display = 'none';
+  }
+
+  function applyFieldLocks(o) {
+    if (o.TrIsClosed) return; // applyLockedState already handles this case
+    const isSuperAdmin = Auth.getCurrentUser()?.RoleName === 'SuperAdmin';
+    if (isSuperAdmin) return;
+
+    let anyLocked = false;
+
+    LOCKABLE_FIELDS.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (el.value !== '' && el.value !== null && el.value !== undefined) {
+        el.disabled = true;
+        el.classList.add('field-locked');
+        anyLocked = true;
+      }
+    });
+
+    LOCKABLE_CHECKS.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (el.checked) {
+        el.disabled = true;
+        el.classList.add('field-locked');
+        anyLocked = true;
+      }
+    });
+
+    document.getElementById('field-lock-banner').style.display = anyLocked ? '' : 'none';
+  }
+
+  function populateForm(dto) {
+    const o = dto?.Order || dto || {};
+
+    // Reset all field locks before re-populating
+    resetFieldLocks();
+
+    // Breadcrumb / title
+    document.getElementById('breadcrumb-pono').textContent = o.TrPoNo || '–';
+    document.title = `PO ${o.TrPoNo||'?'} - Tracking - Licores Maduro`;
+
+    // Header (read-only)
+    document.getElementById('hdr-pono').textContent          = o.TrPoNo || '–';
+    document.getElementById('hdr-warehouse').textContent     = o.TrWarehouse || '–';
+    document.getElementById('hdr-supplier').textContent      = o.TrSupplier || '–';
+    document.getElementById('hdr-supplier-code').textContent = o.TrSupplierCode || '–';
+    document.getElementById('hdr-borw').textContent          = o.TrBorw === 'B' ? 'Beer' : o.TrBorw === 'W' ? 'Wine' : o.TrBorw || '–';
+    document.getElementById('hdr-vip-status').textContent    = o.TrVipStatus || '–';
+    document.getElementById('hdr-orderdate').textContent     = fmtDate(o.TrOrderDate) || '–';
+    document.getElementById('hdr-shipdate').textContent      = fmtDate(o.TrVipShipDate) || '–';
+    document.getElementById('hdr-arrivaldate').textContent   = fmtDate(o.TrVipArrivalDate) || '–';
+    document.getElementById('hdr-cases').textContent         = o.TrTotalCases != null ? Number(o.TrTotalCases).toLocaleString() : '–';
+    document.getElementById('hdr-lines').textContent         = o.TrVipTotalLines != null ? o.TrVipTotalLines : '–';
+    document.getElementById('hdr-weight').textContent        = o.TrVipWeight != null ? Number(o.TrVipWeight).toLocaleString() : '–';
+    document.getElementById('hdr-liters').textContent        = o.TrVipLiters != null ? Number(o.TrVipLiters).toLocaleString() : '–';
+    document.getElementById('hdr-total-amount').textContent  = o.TrVipTotalAmount != null ? '$' + Number(o.TrVipTotalAmount).toLocaleString('en-US', {minimumFractionDigits:2}) : '–';
+    document.getElementById('hdr-vendor-brand').textContent  = o.TrVendorBrand || '–';
+
+    // Status badge
+    setStatusBadge(o.TrStatusCode);
+
+    // Tab 1: General
+    setSelectVal('f-status', o.TrStatusCode);
+    setInputVal('f-requested-eta',        isoToDate(o.TrRequestedEta));
+    setInputVal('f-date-loading-shipper', isoToDate(o.TrDateLoadingShipper) || fmtDate(o.TrVipShipDate));
+    setInputVal('f-supplier-name',        o.TrSupplierName);
+    setInputVal('f-vendor-brand',         o.TrVendorBrand);
+    setInputVal('f-country',              o.TrCountry);
+    setInputVal('f-freight-forwarder',    o.TrFreightForwarder);
+    document.getElementById('f-acknowledge-order').checked = !!o.TrAcknowledgeOrder;
+    setInputVal('f-comments', o.TrComments, 'textarea');
+
+    // Tab 2: Shipping
+    setInputVal('f-shipping-line',       o.TrShippingLine);
+    setInputVal('f-shipping-agent',      o.TrShippingAgent);
+    setInputVal('f-vessel',              o.TrVessel);
+    setInputVal('f-container-number',    o.TrContainerNumber);
+    setInputVal('f-consolidation-ref',   o.TrConsolidationRef);
+    setSelectVal('f-container-size',     o.TrContainerSize);
+
+    // Tab 3: Documentation
+    setInputVal('f-date-proforma-received', isoToDate(o.TrDateProFormaReceived));
+    setInputVal('f-qty-proforma',           o.TrQtyProForma != null ? String(o.TrQtyProForma) : '');
+    setInputVal('f-factory-ready-date',     isoToDate(o.TrFactoryReadyDate));
+    setInputVal('f-est-departure-date',     isoToDate(o.TrEstDepartureDate) || fmtDate(o.TrVipShipDate));
+    setInputVal('f-est-arrival-date',       isoToDate(o.TrEstArrivalDate)   || fmtDate(o.TrVipArrivalDate));
+    setInputVal('f-transit-time',           o.TrTransitTime);
+    document.getElementById('f-bijlage-done').checked = !!o.TrBijlageDone;
+    setInputVal('f-date-arrival-invoice',   isoToDate(o.TrDateArrivalInvoice));
+    setInputVal('f-invoice-number',         o.TrInvoiceNumber);
+    setInputVal('f-date-arrival-bol',       isoToDate(o.TrDateArrivalBol));
+    setInputVal('f-remarks',                o.TrRemarks, 'textarea');
+
+    // Tab 4: Customs
+    setInputVal('f-date-arrival-note-received',   isoToDate(o.TrDateArrivalNoteReceived));
+    setInputVal('f-date-manifest-received',       isoToDate(o.TrDateManifestReceived));
+    setInputVal('f-date-copies-declarant',        isoToDate(o.TrDateCopiesToDeclarant));
+    setInputVal('f-date-customs-papers-ready',    isoToDate(o.TrDateCustomsPapersReady));
+    setInputVal('f-date-customs-papers-asycuda',  isoToDate(o.TrDateCustomsPapersAsycuda));
+
+    // Tab 5: Container/CPS
+    setInputVal('f-date-container-at-cps',          isoToDate(o.TrDateContainerAtCps));
+    setInputVal('f-expiration-date-cps',             isoToDate(o.TrExpirationDateCps));
+    setInputVal('f-date-customs-papers-to-cps',      isoToDate(o.TrDateCustomsPapersToCps));
+    setInputVal('f-date-container-arrived-licores',  isoToDate(o.TrDateContainerArrivedLicores) || fmtDate(o.TrVipArrivalDate));
+    setInputVal('f-date-container-opened-customs',   isoToDate(o.TrDateContainerOpenedCustoms));
+    setInputVal('f-date-container-unload-ready',     isoToDate(o.TrDateContainerUnloadReady));
+    setInputVal('f-return-date-container',           isoToDate(o.TrReturnDateContainer));
+    setInputVal('f-actual-delivery-date',            isoToDate(o.TrActualDeliveryDate));
+
+    // Days Over Container (from DTO)
+    const doc = dto?.DaysOverContainer;
+    const docEl = document.getElementById('f-days-over-container');
+    if (doc != null) {
+      docEl.textContent = doc + ' day(s)';
+      docEl.style.color = doc > 0 ? 'var(--danger, #dc3545)' : 'var(--success, #198754)';
+      docEl.style.fontWeight = '600';
+    } else {
+      docEl.textContent = '–';
+      docEl.style.color = '';
+      docEl.style.fontWeight = '';
+    }
+
+    // Tab 6: Administration
+    setInputVal('f-date-unload-papers-admin', isoToDate(o.TrDateUnloadPapersAdmin));
+    setInputVal('f-sad-number',               o.TrSadNumber);
+    setInputVal('f-bc-number-orders',         o.TrBcNumberOrders);
+    setInputVal('f-exit-note-number',         o.TrExitNoteNumber);
+    setInputVal('f-issues-comments',          o.TrIssuesComments, 'textarea');
+
+    // Receipt Validation
+    const rs = dto?.ReceiptSummary;
+    setReceiptSummary(rs, o.TrReceiptStatus);
+    setSelectVal('f-receipt-status', o.TrReceiptStatus || '');
+    setInputVal('f-qty-shortage',    o.TrQtyShortage != null ? String(o.TrQtyShortage) : '');
+    setInputVal('f-qty-damages',     o.TrQtyDamages  != null ? String(o.TrQtyDamages)  : '');
+    setInputVal('f-receipt-comments', o.TrReceiptComments, 'textarea');
+
+    // Close/lock state (order-level lock)
+    applyLockedState(o);
+
+    // Field-level lock: lock filled fields for non-SuperAdmin
+    applyFieldLocks(o);
+
+    // Container group (read-only indicator)
+    if (o.TrContainerNumber) loadContainerGroup(o.TrContainerNumber, o.TrId);
+    else document.getElementById('container-group-panel').style.display = 'none';
+
+    // Mark form as clean after population
+    markClean();
+  }
+
+  async function loadContainerGroup(containerNo, currentId) {
+    try {
+      const res    = await API.tracking.getByContainer(containerNo);
+      const orders = res?.Data || res || [];
+      const others = orders.filter(o => o.TrId !== currentId);
+      const panel  = document.getElementById('container-group-panel');
+      if (others.length === 0) { panel.style.display = 'none'; return; }
+      panel.style.display = '';
+      document.getElementById('container-group-list').innerHTML = others.map(o => `
+        <a href="order-detail.html?id=${o.TrId}" class="badge text-decoration-none d-inline-flex align-items-center gap-1"
+           style="background:var(--primary);color:#fff;font-size:.82rem;padding:.35em .7em;border-radius:6px;">
+          <i class="fas fa-file-alt"></i> ${esc(o.TrPoNo)}
+          <span class="badge bg-light text-dark ms-1" style="font-size:.7rem;">${esc(o.TrStatusCode||'?')}</span>
+        </a>`).join('');
+    } catch(e) { /* ignore */ }
+  }
+
+  function applyLockedState(o) {
+    const isClosed     = !!o.TrIsClosed;
+    const isSuperAdmin = Auth.getCurrentUser()?.RoleName === 'SuperAdmin';
+    const banner     = document.getElementById('locked-banner');
+    const lockedMsg  = document.getElementById('locked-save-msg');
+    const btnClose   = document.getElementById('btn-close-tracking');
+    const btnReopen  = document.getElementById('btn-reopen');
+    const btnSave    = document.getElementById('btn-save');
+    const btnStatus  = document.getElementById('btn-update-status');
+
+    if (isClosed) {
+      banner.style.display = '';
+      lockedMsg.style.display = '';
+      const closedAt  = o.TrClosedAt ? new Date(o.TrClosedAt).toLocaleDateString() : '';
+      const closedBy  = o.TrClosedBy || '';
+      document.getElementById('locked-by-text').textContent =
+        closedAt || closedBy ? `Closed ${closedAt ? 'on ' + closedAt : ''} ${closedBy ? 'by ' + closedBy : ''}.` : '';
+      btnClose.style.display = 'none';
+      if (isSuperAdmin) { btnReopen.classList.remove('d-none'); }
+      // Disable all form inputs (unless SuperAdmin)
+      if (!isSuperAdmin) {
+        document.querySelectorAll('#main-content input, #main-content select, #main-content textarea').forEach(el => {
+          el.disabled = true;
+        });
+        btnSave.disabled = true;
+        btnStatus.disabled = true;
+      }
+    } else {
+      banner.style.display = 'none';
+      lockedMsg.style.display = 'none';
+      btnClose.style.display = '';
+      btnReopen.classList.add('d-none');
+    }
+  }
+
+  function setReceiptSummary(rs, manualStatus) {
+    const badge   = document.getElementById('receipt-badge');
+    const sumText = document.getElementById('receipt-summary-text');
+    const ordEl   = document.getElementById('f-receipt-ordered');
+    const recEl   = document.getElementById('f-receipt-received');
+    const difEl   = document.getElementById('f-receipt-difference');
+
+    const status = manualStatus || rs?.Status || 'PENDING';
+    const colors = {
+      PENDING:  'bg-secondary',
+      COMPLETE: 'bg-success',
+      SHORTAGE: 'bg-danger',
+      OVERAGE:  'bg-warning text-dark',
+      DAMAGED:  'bg-purple'
+    };
+    badge.className   = `badge ${colors[status] || 'bg-secondary'}`;
+    badge.textContent = status;
+
+    if (rs) {
+      const diff = rs.Difference;
+      ordEl.textContent = Number(rs.TotalOrdered).toLocaleString();
+      recEl.textContent = Number(rs.TotalReceived).toLocaleString();
+      difEl.textContent = (diff >= 0 ? '+' : '') + Number(diff).toLocaleString();
+      difEl.style.color = diff < 0 ? '#dc3545' : diff > 0 ? '#f97316' : '#198754';
+      sumText.textContent = `Ordered: ${Number(rs.TotalOrdered).toLocaleString()} | Received: ${Number(rs.TotalReceived).toLocaleString()}`;
+    } else {
+      ordEl.textContent = '–';
+      recEl.textContent = '–';
+      difEl.textContent = '–';
+      difEl.style.color = '';
+      sumText.textContent = '';
+    }
+  }
+
+  function calcDaysOver() {
+    const arrivedVal = document.getElementById('f-date-container-arrived-licores').value;
+    const returnVal  = document.getElementById('f-return-date-container').value;
+    const docEl      = document.getElementById('f-days-over-container');
+    if (arrivedVal && returnVal) {
+      const days = Math.round((new Date(returnVal) - new Date(arrivedVal)) / 86400000);
+      docEl.textContent    = days + ' day(s)';
+      docEl.style.color    = days > 0 ? '#dc3545' : '#198754';
+      docEl.style.fontWeight = '600';
+    } else {
+      docEl.textContent    = '–';
+      docEl.style.color    = '';
+      docEl.style.fontWeight = '';
+    }
+  }
+
+  async function loadHistory() {
+    const tbody = document.getElementById('history-tbody');
+    try {
+      const res     = await API.tracking.getHistory(trackingId);
+      const history = res?.Data || res || [];
+      if (!history.length) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center py-3 text-muted">No status history found.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = history.map(h => `<tr>
+        <td>${h.TshStatusDate ? h.TshStatusDate.split('T')[0] : '–'}</td>
+        <td><span class="badge bg-secondary">${esc(h.TshStatusCode||'–')}</span></td>
+        <td>${esc(h.TshComments||'–')}</td>
+        <td>${esc(h.TshChangedBy||'–')}</td>
+      </tr>`).join('');
+    } catch(e) {
+      tbody.innerHTML = '<tr><td colspan="4" class="text-center py-3 text-muted">Could not load history.</td></tr>';
+    }
+  }
+
+  async function saveOrder() {
+    const dto = {
+      StatusCode:                   document.getElementById('f-status').value || null,
+      Comments:                     document.getElementById('f-comments').value.trim() || null,
+      RequestedEta:                 dateVal('f-requested-eta'),
+      AcknowledgeOrder:             document.getElementById('f-acknowledge-order').checked,
+      DateLoadingShipper:           dateVal('f-date-loading-shipper'),
+      SupplierName:                 document.getElementById('f-supplier-name').value.trim() || null,
+      VendorBrand:                  document.getElementById('f-vendor-brand').value.trim() || null,
+      Country:                      document.getElementById('f-country').value.trim() || null,
+      FreightForwarder:             document.getElementById('f-freight-forwarder').value.trim() || null,
+      ShippingLine:                 document.getElementById('f-shipping-line').value.trim() || null,
+      ShippingAgent:                document.getElementById('f-shipping-agent').value.trim() || null,
+      Vessel:                       document.getElementById('f-vessel').value.trim() || null,
+      ContainerNumber:              document.getElementById('f-container-number').value.trim() || null,
+      ConsolidationRef:             document.getElementById('f-consolidation-ref').value.trim() || null,
+      ContainerSize:                document.getElementById('f-container-size').value.trim() || null,
+      DateProFormaReceived:         dateVal('f-date-proforma-received'),
+      QtyProForma:                  numVal('f-qty-proforma'),
+      FactoryReadyDate:             dateVal('f-factory-ready-date'),
+      EstDepartureDate:             dateVal('f-est-departure-date'),
+      EstArrivalDate:               dateVal('f-est-arrival-date'),
+      TransitTime:                  document.getElementById('f-transit-time').value.trim() || null,
+      BijlageDone:                  document.getElementById('f-bijlage-done').checked,
+      DateArrivalInvoice:           dateVal('f-date-arrival-invoice'),
+      InvoiceNumber:                document.getElementById('f-invoice-number').value.trim() || null,
+      DateArrivalBol:               dateVal('f-date-arrival-bol'),
+      Remarks:                      document.getElementById('f-remarks').value.trim() || null,
+      DateArrivalNoteReceived:      dateVal('f-date-arrival-note-received'),
+      DateManifestReceived:         dateVal('f-date-manifest-received'),
+      DateCopiesToDeclarant:        dateVal('f-date-copies-declarant'),
+      DateCustomsPapersReady:       dateVal('f-date-customs-papers-ready'),
+      DateCustomsPapersAsycuda:     dateVal('f-date-customs-papers-asycuda'),
+      DateContainerAtCps:           dateVal('f-date-container-at-cps'),
+      ExpirationDateCps:            dateVal('f-expiration-date-cps'),
+      DateCustomsPapersToCps:       dateVal('f-date-customs-papers-to-cps'),
+      DateContainerArrivedLicores:  dateVal('f-date-container-arrived-licores'),
+      DateContainerOpenedCustoms:   dateVal('f-date-container-opened-customs'),
+      DateContainerUnloadReady:     dateVal('f-date-container-unload-ready'),
+      ReturnDateContainer:          dateVal('f-return-date-container'),
+      ActualDeliveryDate:           dateVal('f-actual-delivery-date'),
+      DateUnloadPapersAdmin:        dateVal('f-date-unload-papers-admin'),
+      SadNumber:                    document.getElementById('f-sad-number').value.trim() || null,
+      BcNumberOrders:               document.getElementById('f-bc-number-orders').value.trim() || null,
+      ExitNoteNumber:               document.getElementById('f-exit-note-number').value.trim() || null,
+      IssuesComments:               document.getElementById('f-issues-comments').value.trim() || null,
+      ReceiptStatus:                document.getElementById('f-receipt-status').value.trim() || null,
+      QtyShortage:                  numVal('f-qty-shortage'),
+      QtyDamages:                   numVal('f-qty-damages'),
+      ReceiptComments:              document.getElementById('f-receipt-comments').value.trim() || null,
+    };
+
+    const btn = document.getElementById('btn-save');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Saving...';
+
+    try {
+      const res = await API.tracking.updateOrder(trackingId, dto);
+      orderData = res?.Data || res;
+      // Re-populate form so field locks are re-applied on newly saved values
+      populateForm(orderData); // markClean() is called inside populateForm
+      await loadHistory();
+      showToast('Tracking order saved successfully.', 'success');
+      // If save was triggered by "Save & leave" modal, navigate after saving
+      if (_pendingNavUrl) { const url = _pendingNavUrl; _pendingNavUrl = null; _doNavigate(url); }
+    } catch(err) {
+      showToast(err.message, 'danger');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-save me-1"></i>Save Changes';
+    }
+  }
+
+  async function syncVip() {
+    const btn = document.getElementById('btn-sync-vip');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Syncing...';
+    try {
+      const res = await API.tracking.syncVip(trackingId);
+      const dto = res?.Data || res;
+      const o   = dto?.Order || dto || {};
+      // Update header display
+      document.getElementById('hdr-warehouse').textContent     = o.TrWarehouse || '–';
+      document.getElementById('hdr-supplier').textContent      = o.TrSupplier || '–';
+      document.getElementById('hdr-supplier-code').textContent = o.TrSupplierCode || '–';
+      document.getElementById('hdr-borw').textContent          = o.TrBorw === 'B' ? 'Beer' : o.TrBorw === 'W' ? 'Wine' : o.TrBorw || '–';
+      document.getElementById('hdr-vip-status').textContent    = o.TrVipStatus || '–';
+      document.getElementById('hdr-orderdate').textContent     = fmtDate(o.TrOrderDate) || '–';
+      document.getElementById('hdr-shipdate').textContent      = fmtDate(o.TrVipShipDate) || '–';
+      document.getElementById('hdr-arrivaldate').textContent   = fmtDate(o.TrVipArrivalDate) || '–';
+      document.getElementById('hdr-cases').textContent         = o.TrTotalCases != null ? Number(o.TrTotalCases).toLocaleString() : '–';
+      document.getElementById('hdr-lines').textContent         = o.TrVipTotalLines != null ? o.TrVipTotalLines : '–';
+      document.getElementById('hdr-weight').textContent        = o.TrVipWeight != null ? Number(o.TrVipWeight).toLocaleString() : '–';
+      document.getElementById('hdr-liters').textContent        = o.TrVipLiters != null ? Number(o.TrVipLiters).toLocaleString() : '–';
+      document.getElementById('hdr-total-amount').textContent  = o.TrVipTotalAmount != null ? '$' + Number(o.TrVipTotalAmount).toLocaleString('en-US', {minimumFractionDigits:2}) : '–';
+      showToast('VIP data synced successfully.', 'success');
+    } catch(err) {
+      showToast(err.message, 'danger');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-sync-alt me-1"></i>Sync VIP';
+    }
+  }
+
+  async function closeTracking() {
+    if (!confirm('Close this tracking order? It will become read-only. Continue?')) return;
+    const btn = document.getElementById('btn-close-tracking');
+    btn.disabled = true;
+    try {
+      const res = await API.tracking.closeOrder(trackingId);
+      const dto = res?.Data || res;
+      orderData = dto;
+      applyLockedState((dto?.Order || dto || {}));
+      await loadHistory();
+      showToast('Tracking order closed successfully.', 'success');
+    } catch(err) {
+      showToast(err.message, 'danger');
+      btn.disabled = false;
+    }
+  }
+
+  async function reopenTracking() {
+    if (!confirm('Reopen this tracking order? It will become editable again.')) return;
+    const btn = document.getElementById('btn-reopen');
+    btn.disabled = true;
+    try {
+      const res = await API.tracking.reopenOrder(trackingId);
+      orderData = res?.Data || res;
+      populateForm(orderData);
+      await loadHistory();
+      showToast('Tracking order reopened.', 'success');
+    } catch(err) {
+      showToast(err.message, 'danger');
+      btn.disabled = false;
+    }
+  }
+
+  async function updateStatus() {
+    const newStatus = document.getElementById('ms-status').value;
+    const comment   = document.getElementById('ms-comment').value.trim() || null;
+    if (!newStatus) { showToast('Please select a status.', 'danger'); return; }
+
+    const btn = document.getElementById('btn-save-status');
+    btn.disabled = true;
+
+    try {
+      await API.tracking.updateOrder(trackingId, { StatusCode: newStatus, StatusComment: comment });
+      setStatusBadge(newStatus);
+      setSelectVal('f-status', newStatus);
+      bootstrap.Modal.getInstance(document.getElementById('modal-status')).hide();
+      document.getElementById('ms-comment').value = '';
+      await loadHistory();
+      showToast(`Status updated to ${newStatus}.`, 'success');
+    } catch(err) {
+      showToast(err.message, 'danger');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  function setStatusBadge(code) {
+    const el = document.getElementById('status-badge');
+    if (!code) { el.textContent = '–'; el.className = 'badge bg-secondary fs-6'; return; }
+    const colors = { NEW:'bg-info text-dark', CONF:'bg-primary', SHIP:'bg-warning text-dark', ARR:'bg-success', CLRD:'bg-success', CMPLT:'bg-success', HOLD:'bg-danger', CANC:'bg-secondary' };
+    el.textContent = code;
+    el.className = `badge ${colors[code]||'bg-secondary'} fs-6`;
+  }
+
+  function setInputVal(id, val, type) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.value = val || '';
+  }
+
+  function setSelectVal(id, val) {
+    const el = document.getElementById(id);
+    if (!el || !val) return;
+    for (let i = 0; i < el.options.length; i++) {
+      if (el.options[i].value === val) { el.selectedIndex = i; return; }
+    }
+  }
+
+  function dateVal(id) {
+    const v = document.getElementById(id)?.value;
+    return v ? new Date(v).toISOString() : null;
+  }
+
+  function numVal(id) {
+    const v = parseFloat(document.getElementById(id)?.value);
+    return isNaN(v) ? null : v;
+  }
+
+  function showToast(msg, type='success') {
+    const el = document.getElementById('toast');
+    const bg = type === 'success' ? 'success' : type === 'info' ? 'info' : 'danger';
+    el.className = `toast align-items-center text-white border-0 bg-${bg}`;
+    document.getElementById('toast-msg').textContent = msg;
+    new bootstrap.Toast(el, { delay: type === 'info' ? 2500 : 3500 }).show();
+  }
+
+  async function loadProducts() {
+    const tbody   = document.getElementById('products-tbody');
+    const summary = document.getElementById('products-summary');
+    tbody.innerHTML = '<tr><td colspan="12" class="text-center py-3 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading from VIP...</td></tr>';
+    summary.textContent = '';
+    try {
+      const res   = await API.tracking.getProducts(trackingId);
+      const lines = res?.Data || res || [];
+      if (!lines.length) {
+        tbody.innerHTML = '<tr><td colspan="12" class="text-center py-3 text-muted">No product lines found in VIP for this PO.</td></tr>';
+        return;
+      }
+
+      let totalOrdered = 0, totalReceived = 0;
+      tbody.innerHTML = lines.map(l => {
+        totalOrdered  += l.QtyOrdered  ?? 0;
+        totalReceived += l.QtyReceived ?? 0;
+        const rcvDate = l.ReceiveDate ? String(l.ReceiveDate).replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3') : '–';
+        const pctRecv = l.QtyOrdered ? Math.round((l.QtyReceived ?? 0) / l.QtyOrdered * 100) : 0;
+        const recvBadge = l.QtyOrdered
+          ? `<span class="badge ${pctRecv >= 100 ? 'bg-success' : pctRecv > 0 ? 'bg-warning text-dark' : 'bg-secondary'}">${l.QtyReceived ?? 0}</span>`
+          : `<span class="text-muted">${l.QtyReceived ?? '–'}</span>`;
+        return `<tr>
+          <td>${l.Line}</td>
+          <td><strong>${esc(l.ItemCode||'–')}</strong><br/><small class="text-muted">${esc(l.SupplierItem||'')}</small></td>
+          <td>${esc(l.ItemDesc||'–')}</td>
+          <td>${esc(l.BrandDesc||l.BrandCode||'–')}</td>
+          <td>${esc(l.SupplierName||l.SupplierCode||'–')}</td>
+          <td class="text-end">${l.QtyOrdered != null ? Number(l.QtyOrdered).toLocaleString() : '–'}</td>
+          <td class="text-end">${recvBadge}</td>
+          <td class="text-end">${l.UnitPrice != null ? Number(l.UnitPrice).toFixed(2) : '–'}</td>
+          <td class="text-center">${l.UnitsPerCase ?? '–'}</td>
+          <td>${esc(l.BeerOrWine||'–')}</td>
+          <td><span class="badge bg-secondary">${esc(l.Status||'–')}</span></td>
+          <td>${rcvDate}</td>
+        </tr>`;
+      }).join('');
+
+      summary.innerHTML = `<strong>${lines.length}</strong> lines &nbsp;|&nbsp; Total Ordered: <strong>${totalOrdered.toLocaleString()}</strong> &nbsp;|&nbsp; Total Received: <strong>${totalReceived.toLocaleString()}</strong>`;
+    } catch(err) {
+      tbody.innerHTML = `<tr><td colspan="12" class="text-center py-3 text-danger">${esc(err.message)}</td></tr>`;
+    }
+  }
+
+  function esc(s) { return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+</script>
+</body>
+</html>

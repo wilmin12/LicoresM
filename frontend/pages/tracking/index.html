@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Purchase Order Tracking - Licores Maduro</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="../../css/main.css"/>
+  <style>
+    .bg-teal   { background-color: #0d9488 !important; color: #fff !important; }
+    .bg-purple { background-color: #7c3aed !important; color: #fff !important; }
+    .bg-orange { background-color: #f97316 !important; color: #fff !important; }
+    .bg-brown  { background-color: #92400e !important; color: #fff !important; }
+    .bg-green  { background-color: #16a34a !important; color: #fff !important; }
+    .bg-invip  { background-color: #0ea5e9 !important; color: #fff !important; }
+
+    /* ── KPI Cards ─────────────────────────────────────────────────────── */
+    /* ── KPI Cards ─────────────────────────────────────────────────────── */
+    .kpi-card {
+      border: none; border-radius: 10px; padding: .8rem 1rem;
+      cursor: pointer; position: relative; overflow: hidden;
+      transition: transform .15s, box-shadow .15s;
+    }
+    .kpi-card:hover { transform: translateY(-2px); box-shadow: 0 4px 14px rgba(0,0,0,.14); }
+    .kpi-card.active { outline: 2px solid rgba(255,255,255,.7); outline-offset: -3px; }
+    .kpi-card .kpi-value { font-size: 1.75rem; font-weight: 700; line-height: 1; }
+    .kpi-card .kpi-label { font-size: .7rem; text-transform: uppercase; letter-spacing: .05em; opacity: .8; margin-top: .25rem; }
+    .kpi-card .kpi-icon  { font-size: 2rem; opacity: .18; position: absolute; right: .9rem; top: 50%; transform: translateY(-50%); }
+
+    /* ── Sortable headers ──────────────────────────────────────────────── */
+    th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+    th.sortable:hover { background: rgba(0,0,0,.04); }
+    th.sortable .si { font-size: .65rem; margin-left: .25rem; opacity: .35; vertical-align: middle; }
+    th.sortable.asc  .si { opacity: 1; }
+    th.sortable.desc .si { opacity: 1; }
+
+    /* ── Overdue row ───────────────────────────────────────────────────── */
+    tr.row-overdue td { background-color: rgba(220,53,69,.06) !important; }
+    tr.row-overdue:hover td { background-color: rgba(220,53,69,.13) !important; }
+
+    /* ── B/W button group ──────────────────────────────────────────────── */
+    .borw-group .btn { font-size: .8rem; padding: .22rem .6rem; }
+
+    /* ── Import notice banner ──────────────────────────────────────────── */
+    #import-notice { font-size: .8rem; animation: fadeIn .4s; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+  </style>
+</head>
+<body>
+<div id="sidebar-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;"></div>
+<div class="app-wrapper">
+  <nav id="sidebar" class="sidebar">
+    <div class="sidebar-header"><img src="../../img/LogoLicores.png" alt="Licores Maduro" class="sidebar-logo-img"/><span class="sidebar-logo-text">LICORES MADURO</span></div>
+    <div id="sidebar-nav" class="sidebar-nav"></div>
+    <div class="sidebar-footer"><div class="sidebar-user"><div class="sidebar-avatar" id="sidebar-user-initials">LM</div><div class="sidebar-text"><div id="sidebar-user-name" style="font-weight:600;">–</div></div></div></div>
+  </nav>
+  <div class="main-area">
+    <header class="topbar">
+      <button id="btn-sidebar-toggle" class="btn-sidebar-toggle"><i class="fas fa-bars"></i></button>
+      <span class="topbar-title"><i class="fas fa-shipping-fast me-2 text-wine"></i>Purchase Order Tracking</span>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown">
+            <span class="sidebar-avatar" id="topbar-user-initials" style="width:28px;height:28px;font-size:.75rem;">LM</span>
+            <span id="topbar-user-name" class="d-none d-md-inline">–</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+            <li><div class="dropdown-header"><strong id="topbar-user-fullname">User</strong><br/><small class="text-muted" id="topbar-user-role">Role</small></div></li>
+            <li><hr class="dropdown-divider"/></li>
+            <li><a class="dropdown-item text-danger" href="#" id="btn-logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+          </ul>
+        </div>
+      </div>
+    </header>
+    <main class="page-content">
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="../../dashboard.html"><i class="fas fa-home me-1"></i>Home</a></li>
+          <li class="breadcrumb-item active">Purchase Order Tracking</li>
+        </ol>
+      </nav>
+      <div class="page-title">Purchase Order Tracking</div>
+      <div class="page-subtitle">Track and manage the end-to-end status of purchase orders from origin to warehouse.</div>
+
+      <!-- KPI Cards -->
+      <div class="row g-2 mb-3" id="kpi-row">
+        <div class="col-6 col-sm-4 col-xl-2">
+          <div class="kpi-card text-white active" style="background:#6366f1;" data-kpi="" onclick="kpiFilter(this,'')">
+            <div class="kpi-value" id="kpi-total">–</div>
+            <div class="kpi-label" data-i18n="Total Orders">Total Orders</div>
+            <i class="fas fa-boxes kpi-icon"></i>
+          </div>
+        </div>
+        <div class="col-6 col-sm-4 col-xl-2">
+          <div class="kpi-card text-white" style="background:#0ea5e9;" data-kpi="INVIP" onclick="kpiFilter(this,'INVIP')">
+            <div class="kpi-value" id="kpi-invip">–</div>
+            <div class="kpi-label" data-i18n="In VIP">In VIP</div>
+            <i class="fas fa-clock kpi-icon"></i>
+          </div>
+        </div>
+        <div class="col-6 col-sm-4 col-xl-2">
+          <div class="kpi-card text-white" style="background:#0d6efd;" data-kpi="SHIP" onclick="kpiFilter(this,'SHIP')">
+            <div class="kpi-value" id="kpi-ship">–</div>
+            <div class="kpi-label" data-i18n="In Transit">In Transit</div>
+            <i class="fas fa-ship kpi-icon"></i>
+          </div>
+        </div>
+        <div class="col-6 col-sm-4 col-xl-2">
+          <div class="kpi-card text-white" style="background:#7c3aed;" data-kpi="PCPS|PCCS" onclick="kpiFilter(this,'PCPS|PCCS')">
+            <div class="kpi-value" id="kpi-customs">–</div>
+            <div class="kpi-label" data-i18n="At Customs">At Customs</div>
+            <i class="fas fa-file-alt kpi-icon"></i>
+          </div>
+        </div>
+        <div class="col-6 col-sm-4 col-xl-2">
+          <div class="kpi-card text-white" style="background:#ef4444;" data-kpi="__overdue__" onclick="kpiFilter(this,'__overdue__')">
+            <div class="kpi-value" id="kpi-overdue">–</div>
+            <div class="kpi-label" data-i18n="Overdue">Overdue</div>
+            <i class="fas fa-exclamation-triangle kpi-icon"></i>
+          </div>
+        </div>
+        <div class="col-6 col-sm-4 col-xl-2">
+          <div class="kpi-card text-white" style="background:#198754;" data-kpi="CLOS" onclick="kpiFilter(this,'CLOS')">
+            <div class="kpi-value" id="kpi-clos">–</div>
+            <div class="kpi-label" data-i18n="Closed">Closed</div>
+            <i class="fas fa-check-circle kpi-icon"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="card mb-3">
+        <div class="card-body d-flex flex-wrap align-items-center gap-2 py-2">
+          <div class="search-wrapper flex-grow-1"><i class="fas fa-search search-icon"></i><input type="text" id="search-input" class="form-control form-control-sm" data-i18n-placeholder="Search PO, container..." placeholder="Search PO, container..."/></div>
+          <input type="text" id="filter-supplier" class="form-control form-control-sm" style="max-width:160px;" placeholder="Supplier..." data-i18n-placeholder="Supplier..."/>
+          <select id="filter-status" class="form-select form-select-sm" style="max-width:165px;">
+            <option value="" data-i18n="All Status">All Status</option>
+          </select>
+          <select id="filter-warehouse" class="form-select form-select-sm" style="max-width:160px;">
+            <option value="" data-i18n="All Warehouses">All Warehouses</option>
+            <option value="11010" data-i18n="Duty Paid">Duty Paid</option>
+            <option value="11020" data-i18n="Store">Store</option>
+            <option value="11060" data-i18n="Duty Free">Duty Free</option>
+          </select>
+          <!-- B/W toggle buttons -->
+          <div class="btn-group borw-group" role="group" aria-label="Beer or Wine">
+            <button type="button" class="btn btn-outline-secondary active" onclick="setBorw(this,'')"><span data-i18n="All">All</span></button>
+            <button type="button" class="btn btn-outline-warning"   onclick="setBorw(this,'B')"><i class="fas fa-beer me-1"></i><span data-i18n="Beer">Beer</span></button>
+            <button type="button" class="btn btn-outline-info"      onclick="setBorw(this,'W')"><i class="fas fa-wine-glass-alt me-1"></i><span data-i18n="Wine">Wine</span></button>
+          </div>
+          <button id="btn-shared-container" class="btn btn-outline-warning btn-sm" onclick="toggleSharedContainer(this)" title="Show only POs that share a container with another order">
+            <i class="fas fa-layer-group me-1"></i>Shared Container
+            <span id="shared-container-count" class="badge bg-warning text-dark ms-1" style="display:none;"></span>
+          </button>
+          <button class="btn btn-outline-secondary btn-sm" onclick="exportExcel()" title="Export Excel"><i class="fas fa-file-excel me-1"></i><span data-i18n="Export">Export</span></button>
+          <button class="btn btn-wine btn-sm" data-bs-toggle="modal" data-bs-target="#modal-add-po"><i class="fas fa-plus me-1"></i><span data-i18n="Add PO">Add PO</span></button>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="card">
+        <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+          <span><i class="fas fa-table me-2"></i><span data-i18n="Tracking Orders">Tracking Orders</span></span>
+          <div class="d-flex align-items-center gap-2">
+            <div id="import-notice" style="display:none;"></div>
+            <span class="badge" style="background:var(--primary);color:#fff;" id="total-count">0 records</span>
+          </div>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0" style="font-size:.84rem;">
+              <thead>
+                <tr>
+                  <th class="sortable" data-col="TrPoNo"><span data-i18n="PO Number">PO Number</span><span class="si">⇅</span></th>
+                  <th class="sortable" data-col="TrWarehouse"><span data-i18n="Warehouse">Warehouse</span><span class="si">⇅</span></th>
+                  <th class="sortable" data-col="TrBorw">B/W<span class="si">⇅</span></th>
+                  <th class="sortable" data-col="TrSupplierName"><span data-i18n="Supplier">Supplier</span><span class="si">⇅</span></th>
+                  <th class="sortable" data-col="TrFreightForwarder"><span data-i18n="Freight Forwarder">Freight Forwarder</span><span class="si">⇅</span></th>
+                  <th class="sortable" data-col="TrContainerNumber"><span data-i18n="Container No.">Container No.</span><span class="si">⇅</span></th>
+                  <th class="sortable" data-col="TrStatusCode"><span data-i18n="Status">Status</span><span class="si">⇅</span></th>
+                  <th class="sortable" data-col="TrRequestedEta"><span data-i18n="Req. ETA">Req. ETA</span><span class="si">⇅</span></th>
+                  <th class="sortable" data-col="TrEstArrivalDate"><span data-i18n="Est. Arrival">Est. Arrival</span><span class="si">⇅</span></th>
+                  <th class="sortable text-center" data-col="DaysOverContainer"><span data-i18n="Days Over">Days Over</span><span class="si">⇅</span></th>
+                  <th class="sortable" data-col="TrLastUpdateDate"><span data-i18n="Last Update">Last Update</span><span class="si">⇅</span></th>
+                  <th data-i18n="Actions">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="data-tbody">
+                <tr><td colspan="12" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card-footer d-flex align-items-center justify-content-between flex-wrap gap-2">
+          <small class="text-muted" id="page-info">Page 1</small>
+          <nav><ul class="pagination pagination-sm mb-0" id="pagination"></ul></nav>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Add PO Modal -->
+<div class="modal fade" id="modal-add-po" tabindex="-1" aria-labelledby="modal-add-po-title" aria-hidden="true">
+  <div class="modal-dialog modal-md">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modal-add-po-title"><i class="fas fa-plus-circle me-2 text-wine"></i>Add PO for Tracking</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label fw-semibold"><span data-i18n="PO Number">PO Number</span> <span class="text-danger">*</span></label>
+          <div class="input-group">
+            <input type="text" id="m-pono" class="form-control" data-i18n-placeholder="Type to search VIP POs..." placeholder="Type to search VIP POs..." maxlength="50" autocomplete="off"/>
+            <span class="input-group-text" id="m-pono-spin" style="display:none;"><i class="fas fa-spinner fa-spin"></i></span>
+          </div>
+          <div id="m-pono-suggestions" class="list-group shadow-sm" style="display:none;position:absolute;z-index:9999;width:calc(100% - 2rem);max-height:200px;overflow-y:auto;"></div>
+          <div id="m-vip-preview" class="mt-2" style="display:none;"></div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold" data-i18n="Freight Forwarder">Freight Forwarder</label>
+          <input type="text" id="m-ff" class="form-control" data-i18n-placeholder="Freight forwarder name" placeholder="Freight forwarder name"/>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold" data-i18n="Initial Status">Initial Status</label>
+          <select id="m-status" class="form-select">
+            <option value="NEW">NEW</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold" data-i18n="Comments">Comments</label>
+          <textarea id="m-comments" class="form-control" rows="2" data-i18n-placeholder="Optional comments..." placeholder="Optional comments..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-wine" id="btn-save-po"><i class="fas fa-save me-1"></i><span data-i18n="Add & Track">Add &amp; Track</span></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index:9999;">
+  <div id="toast" class="toast align-items-center text-white border-0" role="alert">
+    <div class="d-flex"><div class="toast-body" id="toast-msg"></div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+<script src="../../js/i18n.js"></script><script src="../../js/api.js"></script><script src="../../js/auth.js"></script><script src="../../js/sidebar.js"></script>
+<script>
+  let allItems = [], filtered = [], currentPage = 1;
+  const PAGE_SIZE = 20;
+  const isSuperAdmin = () => Auth.getCurrentUser()?.RoleName === 'SuperAdmin';
+
+  // Sort state
+  let sortCol = null, sortDir = 1;
+
+  // B/W filter state
+  let borwFilter = '';
+
+  // Active KPI filter
+  let kpiActive = '';
+
+  // Shared container filter
+  let sharedContainerFilter = false;
+
+  // Container count map (built over allItems, reused in renderTable)
+  let containerMap = {};
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    if (!Auth.requireAuth()) return;
+    Auth.startExpiryWatcher();
+    Auth.populateUserUI();
+    Sidebar.init();
+    document.getElementById('btn-logout').addEventListener('click', e => { e.preventDefault(); Auth.logout(); });
+
+    document.getElementById('search-input').addEventListener('input', filterAndRender);
+    document.getElementById('filter-supplier').addEventListener('input', filterAndRender);
+    document.getElementById('filter-status').addEventListener('change', filterAndRender);
+    document.getElementById('filter-warehouse').addEventListener('change', filterAndRender);
+
+    // Re-render table when language changes so dynamic strings update
+    const _origSetLang = I18n.setLang.bind(I18n);
+    I18n.setLang = lang => { _origSetLang(lang); if (allItems.length) filterAndRender(); };
+    // Sortable column headers
+    document.querySelectorAll('th.sortable').forEach(th => {
+      th.addEventListener('click', () => {
+        const col = th.dataset.col;
+        if (sortCol === col) sortDir *= -1;
+        else { sortCol = col; sortDir = 1; }
+        document.querySelectorAll('th.sortable').forEach(t => t.classList.remove('asc','desc'));
+        th.classList.add(sortDir === 1 ? 'asc' : 'desc');
+        filterAndRender();
+      });
+    });
+
+    await loadStatusCodes();
+
+    document.getElementById('btn-save-po').addEventListener('click', addPoForTracking);
+
+    let _poDebounce = null;
+    document.getElementById('m-pono').addEventListener('input', () => {
+      clearTimeout(_poDebounce);
+      const val = document.getElementById('m-pono').value.trim();
+      clearVipPreview();
+      if (val.length < 2) { hideSuggestions(); return; }
+      _poDebounce = setTimeout(() => searchAndPreviewVip(val), 500);
+    });
+    document.getElementById('m-pono').addEventListener('blur', () => setTimeout(hideSuggestions, 200));
+    document.getElementById('modal-add-po').addEventListener('hidden.bs.modal', () => {
+      clearVipPreview();
+      document.getElementById('m-pono').value = '';
+      document.getElementById('m-ff').value = '';
+      document.getElementById('m-comments').value = '';
+    });
+
+    await autoImportFromVip();
+    await loadData();
+  });
+
+  const statusDescMap = {};
+
+  async function loadStatusCodes() {
+    try {
+      const res = await API.catalogs.orderStatus.getAll({ pageSize: 200 });
+      const items = res?.Data || res || [];
+      const sel  = document.getElementById('filter-status');
+      const msel = document.getElementById('m-status');
+      items.forEach(s => {
+        statusDescMap[s.OsCode] = s.OsDescription || s.OsCode;
+        sel.appendChild(new Option(`${esc(s.OsCode)} - ${esc(s.OsDescription||s.OsCode)}`, s.OsCode));
+        msel.appendChild(new Option(`${esc(s.OsCode)} - ${esc(s.OsDescription||s.OsCode)}`, s.OsCode));
+      });
+    } catch(e) { /* ignore */ }
+  }
+
+  async function autoImportFromVip() {
+    const notice = document.getElementById('import-notice');
+    try {
+      const res = await API.tracking.autoImportVip();
+      const imported = res?.Data?.Imported ?? res?.Imported ?? 0;
+      if (imported > 0) {
+        notice.innerHTML = `<span class="badge bg-info text-white"><i class="fas fa-cloud-download-alt me-1"></i>${imported} new order(s) imported from VIP</span>`;
+        notice.style.display = '';
+        setTimeout(() => { notice.style.display = 'none'; }, 8000);
+      }
+    } catch(err) {
+      notice.innerHTML = `<span class="badge bg-danger text-white" title="${esc(err.message)}"><i class="fas fa-exclamation-triangle me-1"></i>Auto-import VIP failed: ${esc(err.message)}</span>`;
+      notice.style.display = '';
+      setTimeout(() => { notice.style.display = 'none'; }, 12000);
+    }
+  }
+
+  async function loadData() {
+    const tbody = document.getElementById('data-tbody');
+    tbody.innerHTML = `<tr><td colspan="12" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>${I18n.t('Loading...')}</td></tr>`;
+    try {
+      const params = { pageSize: 5000 };
+      const res = await API.tracking.getOrders(params);
+      allItems = res?.Data || res || [];
+      renderKpis();
+      filterAndRender();
+    } catch(err) {
+      showToast(err.message, 'danger');
+      tbody.innerHTML = `<tr><td colspan="12" class="text-center py-4 text-danger">${esc(err.message)}</td></tr>`;
+    }
+  }
+
+  function renderKpis() {
+    const count = code => allItems.filter(r => (r.Order||r).TrStatusCode === code).length;
+    document.getElementById('kpi-total').textContent   = allItems.length;
+    document.getElementById('kpi-invip').textContent   = count('INVIP');
+    document.getElementById('kpi-ship').textContent    = count('SHIP');
+    document.getElementById('kpi-customs').textContent = allItems.filter(r => ['PCPS','PCCS'].includes((r.Order||r).TrStatusCode)).length;
+    document.getElementById('kpi-overdue').textContent = allItems.filter(r => (r.DaysOverContainer ?? 0) > 0).length;
+    document.getElementById('kpi-clos').textContent    = count('CLOS');
+  }
+
+  function kpiFilter(card, val) {
+    kpiActive = val;
+    document.querySelectorAll('#kpi-row .kpi-card').forEach(c => c.classList.remove('active'));
+    card.classList.add('active');
+    // Reset status dropdown if kpi handles it
+    if (val !== '' && val !== '__overdue__') {
+      document.getElementById('filter-status').value = '';
+    }
+    filterAndRender();
+  }
+
+  function setBorw(btn, val) {
+    borwFilter = val;
+    document.querySelectorAll('.borw-group .btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    filterAndRender();
+  }
+
+  function toggleSharedContainer(btn) {
+    sharedContainerFilter = !sharedContainerFilter;
+    btn.classList.toggle('active', sharedContainerFilter);
+    btn.classList.toggle('btn-warning', sharedContainerFilter);
+    btn.classList.toggle('btn-outline-warning', !sharedContainerFilter);
+    filterAndRender();
+  }
+
+  function filterAndRender() {
+    const q   = document.getElementById('search-input').value.toLowerCase();
+    const sup = document.getElementById('filter-supplier').value.toLowerCase();
+    const st  = document.getElementById('filter-status').value;
+    const wh  = document.getElementById('filter-warehouse').value;
+
+    // Build container map over ALL items (not just filtered page)
+    containerMap = {};
+    allItems.forEach(r => {
+      const cn = (r.Order || r).TrContainerNumber;
+      if (cn) containerMap[cn] = (containerMap[cn] || 0) + 1;
+    });
+
+    // Update shared-container count badge
+    const sharedCount = allItems.filter(r => {
+      const cn = (r.Order || r).TrContainerNumber;
+      return cn && containerMap[cn] > 1;
+    }).length;
+    const badge = document.getElementById('shared-container-count');
+    badge.textContent = sharedCount;
+    badge.style.display = sharedCount > 0 ? '' : 'none';
+
+    filtered = allItems.filter(r => {
+      const o   = r.Order || r;
+      const doc = r.DaysOverContainer;
+      const cn  = o.TrContainerNumber;
+
+      const matchQ  = !q  || (o.TrPoNo||'').toLowerCase().includes(q)
+                           || (cn||'').toLowerCase().includes(q)
+                           || (o.TrFreightForwarder||'').toLowerCase().includes(q);
+      const matchSup = !sup || (o.TrSupplierName||'').toLowerCase().includes(sup)
+                             || (o.TrSupplier||'').toLowerCase().includes(sup);
+      const matchSt = !st || o.TrStatusCode === st;
+      const matchWh = !wh || o.TrWarehouse === wh;
+      const matchBw = !borwFilter || o.TrBorw === borwFilter;
+
+      // Shared container filter
+      const matchShared = !sharedContainerFilter || (cn && containerMap[cn] > 1);
+
+      // KPI filter
+      let matchKpi = true;
+      if (kpiActive === '__overdue__')  matchKpi = (doc ?? 0) > 0;
+      else if (kpiActive.includes('|')) matchKpi = kpiActive.split('|').includes(o.TrStatusCode);
+      else if (kpiActive !== '')        matchKpi = o.TrStatusCode === kpiActive;
+
+      return matchQ && matchSup && matchSt && matchWh && matchBw && matchShared && matchKpi;
+    });
+
+    // Sort
+    if (sortCol) {
+      filtered.sort((a, b) => {
+        let va, vb;
+        if (sortCol === 'DaysOverContainer') {
+          va = a.DaysOverContainer ?? -Infinity;
+          vb = b.DaysOverContainer ?? -Infinity;
+        } else {
+          va = (a.Order || a)[sortCol] ?? '';
+          vb = (b.Order || b)[sortCol] ?? '';
+        }
+        if (va < vb) return -sortDir;
+        if (va > vb) return  sortDir;
+        return 0;
+      });
+    }
+
+    currentPage = 1;
+    renderTable();
+    renderPagination();
+  }
+
+  function warehouseBadge(code) {
+    if (!code) return '<span class="badge bg-secondary">–</span>';
+    const map = {
+      '11010': { cls: 'bg-primary', label: 'Duty Paid' },
+      '11020': { cls: 'bg-orange',  label: 'Store'     },
+      '11060': { cls: 'bg-success', label: 'Duty Free' },
+    };
+    const w = map[code.trim()];
+    return w
+      ? `<span class="badge ${w.cls}">${esc(code.trim())}</span>`
+      : `<span class="badge bg-secondary">${esc(code)}</span>`;
+  }
+
+  function statusBadge(code) {
+    if (!code) return '<span class="badge bg-secondary">–</span>';
+    const colors = {
+      INVIP: 'bg-invip',
+      PEND:  'bg-warning text-dark',
+      SHIP:  'bg-primary',
+      ARR:   'bg-info text-dark',
+      PCPS:  'bg-purple',
+      PCCS:  'bg-teal',
+      DOCK:  'bg-orange',
+      CLOS:  'bg-success',
+      PDLV:  'bg-brown',
+      READY: 'bg-green',
+      CANC:  'bg-dark',
+    };
+    const cls  = colors[code] || 'bg-secondary';
+    const desc = statusDescMap[code] || code;
+    return `<span class="badge ${cls}" title="${esc(code)}">${esc(desc)}</span>`;
+  }
+
+  function renderTable() {
+    const tbody = document.getElementById('data-tbody');
+    const start = (currentPage - 1) * PAGE_SIZE;
+    const page  = filtered.slice(start, start + PAGE_SIZE);
+    document.getElementById('total-count').textContent = filtered.length + ' ' + I18n.t('records');
+
+    if (!page.length) {
+      tbody.innerHTML = `<tr><td colspan="12" class="text-center py-4 text-muted">${I18n.t('No records found.')}</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = page.map(r => {
+      const o   = r.Order || r;
+      const doc = r.DaysOverContainer;
+      const isOverdue = (doc ?? 0) > 0;
+
+      const docHtml = doc != null
+        ? `<span class="badge ${doc > 0 ? 'bg-danger' : 'bg-success'}">${doc}</span>`
+        : '<span class="text-muted">–</span>';
+
+      const eta    = o.TrRequestedEta    ? o.TrRequestedEta.split('T')[0]    : '–';
+      const estArr = o.TrEstArrivalDate  ? o.TrEstArrivalDate.split('T')[0]  : '–';
+      const lastUpd= o.TrLastUpdateDate  ? o.TrLastUpdateDate.split('T')[0]  : '–';
+
+      // Container: show multi-PO badge if > 1 order shares this container
+      const cn    = o.TrContainerNumber;
+      const cnCnt = cn ? (containerMap[cn] || 0) : 0;
+      const cnHtml = cn
+        ? `${esc(cn)}${cnCnt > 1 ? ` <span class="badge bg-warning text-dark ms-1" title="${cnCnt} POs in this container"><i class="fas fa-layer-group"></i> ${cnCnt}</span>` : ''}`
+        : '–';
+
+      // Closed lock indicator
+      const closedHtml = o.TrIsClosed
+        ? `<span class="badge bg-secondary ms-1" title="Closed/Locked"><i class="fas fa-lock"></i></span>`
+        : '';
+
+      return `<tr class="${isOverdue ? 'row-overdue' : ''}">
+        <td><strong>${esc(o.TrPoNo||'')}</strong>${closedHtml}</td>
+        <td>${warehouseBadge(o.TrWarehouse)}</td>
+        <td>${esc(o.TrBorw||'–')}</td>
+        <td>${esc(o.TrSupplierName||o.TrSupplier||'–')}</td>
+        <td class="text-muted" style="font-size:.8rem;">${esc(o.TrFreightForwarder||'–')}</td>
+        <td>${cnHtml}</td>
+        <td>${statusBadge(o.TrStatusCode)}</td>
+        <td>${eta}</td>
+        <td>${estArr}</td>
+        <td class="text-center">${docHtml}</td>
+        <td>${lastUpd}</td>
+        <td>
+          <a href="order-detail.html?id=${o.TrId}" class="btn-action edit me-1" title="Edit"><i class="fas fa-edit"></i></a>
+          <button class="btn-action edit me-1" onclick="syncVip(${o.TrId})" title="Sync VIP Data"><i class="fas fa-sync-alt"></i></button>
+          ${isSuperAdmin() ? `<button class="btn-action delete" onclick="deleteOrder(${o.TrId}, '${esc(o.TrPoNo||'')}')" title="Delete"><i class="fas fa-trash"></i></button>` : ''}
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  function getPageNumbers(current, total) {
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+    const pages = new Set([1, total, current,
+      current - 1, current - 2, current + 1, current + 2
+    ]);
+    const sorted = [...pages].filter(p => p >= 1 && p <= total).sort((a, b) => a - b);
+    const result = [];
+    let prev = 0;
+    for (const p of sorted) {
+      if (p - prev > 1) result.push('...');
+      result.push(p);
+      prev = p;
+    }
+    return result;
+  }
+
+  function renderPagination() {
+    const total = Math.ceil(filtered.length / PAGE_SIZE) || 1;
+    document.getElementById('page-info').textContent = `${I18n.t('Page')} ${currentPage} ${I18n.t('of')} ${total} (${filtered.length} ${I18n.t('records')})`;
+
+    const pages = getPageNumbers(currentPage, total);
+    let html = `<li class="page-item ${currentPage===1?'disabled':''}">
+      <a class="page-link" href="#" onclick="event.preventDefault();gotoPage(${currentPage-1})">&#8249;</a></li>`;
+    pages.forEach(p => {
+      if (p === '...') {
+        html += `<li class="page-item disabled"><span class="page-link">…</span></li>`;
+      } else {
+        html += `<li class="page-item ${p===currentPage?'active':''}">
+          <a class="page-link" href="#" onclick="event.preventDefault();gotoPage(${p})">${p}</a></li>`;
+      }
+    });
+    html += `<li class="page-item ${currentPage>=total?'disabled':''}">
+      <a class="page-link" href="#" onclick="event.preventDefault();gotoPage(${currentPage+1})">&#8250;</a></li>`;
+    document.getElementById('pagination').innerHTML = html;
+  }
+
+  function gotoPage(p) {
+    const t = Math.ceil(filtered.length / PAGE_SIZE) || 1;
+    if (p < 1 || p > t) return;
+    currentPage = p;
+    renderTable();
+    renderPagination();
+  }
+
+  async function addPoForTracking() {
+    const poNo = document.getElementById('m-pono').value.trim();
+    if (!poNo) { showToast('PO Number is required.', 'danger'); return; }
+    const dto = {
+      PoNo:             poNo,
+      FreightForwarder: document.getElementById('m-ff').value.trim() || null,
+      StatusCode:       document.getElementById('m-status').value || 'NEW',
+      Comments:         document.getElementById('m-comments').value.trim() || null
+    };
+    const btn = document.getElementById('btn-save-po');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Adding...';
+    try {
+      await API.tracking.createOrder(dto);
+      showToast(`PO ${poNo} added for tracking.`, 'success');
+      bootstrap.Modal.getInstance(document.getElementById('modal-add-po')).hide();
+      clearVipPreview();
+      await loadData();
+    } catch(err) {
+      showToast(err.message, 'danger');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-save me-1"></i>Add &amp; Track';
+    }
+  }
+
+  async function syncVip(id) {
+    try {
+      await API.tracking.syncVip(id);
+      showToast('VIP data synced successfully.', 'success');
+      await loadData();
+    } catch(err) {
+      showToast(err.message, 'danger');
+    }
+  }
+
+  async function deleteOrder(id, poNo) {
+    if (!confirm(`Delete tracking record for PO ${poNo}? This cannot be undone.`)) return;
+    try {
+      await API.tracking.deleteOrder(id);
+      showToast('Tracking order deleted.', 'success');
+      await loadData();
+    } catch(err) {
+      showToast(err.message, 'danger');
+    }
+  }
+
+  function exportExcel() {
+    const HEADER_COLOR = 'A52535'; // vino del logo
+    const headers = [
+      'PO Number', 'Warehouse', 'B/W', 'Supplier', 'Freight Forwarder',
+      'Container No.', 'Status', 'Req. ETA', 'Est. Arrival',
+      'Days Over Container', 'Last Update'
+    ];
+
+    const rows = filtered.map(r => {
+      const o = r.Order || r;
+      return [
+        o.TrPoNo                || '',
+        o.TrWarehouse           || '',
+        o.TrBorw                || '',
+        o.TrSupplierName || o.TrSupplier || '',
+        o.TrFreightForwarder    || '',
+        o.TrContainerNumber     || '',
+        statusDescMap[o.TrStatusCode] || o.TrStatusCode || '',
+        o.TrRequestedEta    ? o.TrRequestedEta.split('T')[0]    : '',
+        o.TrEstArrivalDate  ? o.TrEstArrivalDate.split('T')[0]  : '',
+        r.DaysOverContainer != null ? r.DaysOverContainer : '',
+        o.TrLastUpdateDate  ? o.TrLastUpdateDate.split('T')[0]  : ''
+      ];
+    });
+
+    // Build worksheet from data
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+
+    // Style each header cell
+    const headerStyle = {
+      font:      { bold: true, color: { rgb: 'FFFFFF' }, sz: 11 },
+      fill:      { patternType: 'solid', fgColor: { rgb: HEADER_COLOR } },
+      alignment: { horizontal: 'center', vertical: 'center' },
+      border: {
+        bottom: { style: 'medium', color: { rgb: 'FFFFFF' } }
+      }
+    };
+    headers.forEach((_, c) => {
+      const ref = XLSX.utils.encode_cell({ r: 0, c });
+      if (ws[ref]) ws[ref].s = headerStyle;
+    });
+
+    // Style data rows — alternating background
+    rows.forEach((row, ri) => {
+      const fill = ri % 2 === 0
+        ? { patternType: 'solid', fgColor: { rgb: 'FFFFFF' } }
+        : { patternType: 'solid', fgColor: { rgb: 'FDF2F3' } };
+      row.forEach((_, c) => {
+        const ref = XLSX.utils.encode_cell({ r: ri + 1, c });
+        if (ws[ref]) ws[ref].s = {
+          fill,
+          alignment: { vertical: 'center' },
+          font: { sz: 10 }
+        };
+      });
+      // "Days Over Container" column (index 9) — red if > 0
+      const docRef = XLSX.utils.encode_cell({ r: ri + 1, c: 9 });
+      const docVal = row[9];
+      if (ws[docRef] && typeof docVal === 'number' && docVal > 0) {
+        ws[docRef].s = {
+          fill:      { patternType: 'solid', fgColor: { rgb: 'FDECEA' } },
+          font:      { sz: 10, bold: true, color: { rgb: 'C62828' } },
+          alignment: { horizontal: 'center', vertical: 'center' }
+        };
+      }
+    });
+
+    // Column widths
+    ws['!cols'] = [
+      { wch: 16 }, // PO Number
+      { wch: 12 }, // Warehouse
+      { wch:  6 }, // B/W
+      { wch: 28 }, // Supplier
+      { wch: 22 }, // Freight Forwarder
+      { wch: 18 }, // Container No.
+      { wch: 18 }, // Status
+      { wch: 13 }, // Req. ETA
+      { wch: 13 }, // Est. Arrival
+      { wch: 10 }, // Days Over
+      { wch: 13 }, // Last Update
+    ];
+
+    // Freeze header row
+    ws['!freeze'] = { xSplit: 0, ySplit: 1 };
+
+    // Auto-filter on all header columns
+    ws['!autofilter'] = { ref: `A1:K1` };
+
+    // Row height for header
+    ws['!rows'] = [{ hpt: 22 }];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Tracking Orders');
+    XLSX.writeFile(wb, `tracking_export_${new Date().toISOString().split('T')[0]}.xlsx`);
+  }
+
+  async function searchAndPreviewVip(val) {
+    const spin = document.getElementById('m-pono-spin');
+    spin.style.display = '';
+    try {
+      const res     = await API.tracking.searchVip(val);
+      const results = res?.Data || res || [];
+      if (!results.length) { hideSuggestions(); showVipNotFound(val); return; }
+      const exact = results.find(r => r.PhPoNo?.trim() === val);
+      if (exact) { hideSuggestions(); await previewVipPo(exact.PhPoNo.trim()); return; }
+      showSuggestions(results);
+    } catch(e) {
+      hideSuggestions();
+    } finally {
+      spin.style.display = 'none';
+    }
+  }
+
+  function showSuggestions(results) {
+    const box = document.getElementById('m-pono-suggestions');
+    const fmtDate = n => n ? String(n).replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3') : '';
+    box.innerHTML = results.map(r => `
+      <button type="button" class="list-group-item list-group-item-action py-1 px-2" style="font-size:.82rem;"
+        onclick="selectPo('${esc(r.PhPoNo?.trim()||'')}')">
+        <strong>${esc(r.PhPoNo?.trim()||'')}</strong>
+        <span class="text-muted ms-2">${esc(r.PhWhse||'')} | ${esc(r.PhOvrNo||'')} | ${esc(r.PhBorw||'')} | ${fmtDate(r.PhOrdt)}</span>
+      </button>`).join('');
+    box.style.display = '';
+  }
+
+  function hideSuggestions() { document.getElementById('m-pono-suggestions').style.display = 'none'; }
+
+  async function selectPo(poNo) {
+    document.getElementById('m-pono').value = poNo;
+    hideSuggestions();
+    await previewVipPo(poNo);
+  }
+
+  async function previewVipPo(poNo) {
+    const spin    = document.getElementById('m-pono-spin');
+    const preview = document.getElementById('m-vip-preview');
+    const saveBtn = document.getElementById('btn-save-po');
+    spin.style.display = '';
+    preview.style.display = 'none';
+    try {
+      const res  = await API.tracking.previewVip(poNo);
+      const data = res?.Data || res;
+      const fmtDate = n => n ? String(n).replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3') : '–';
+      const alreadyHtml = data.AlreadyTracked
+        ? `<div class="alert alert-warning py-1 px-2 mt-1 mb-0" style="font-size:.8rem;"><i class="fas fa-exclamation-triangle me-1"></i>This PO is already being tracked.</div>`
+        : '';
+      preview.innerHTML = `
+        <div class="card border-success">
+          <div class="card-header py-1 px-2 bg-success text-white" style="font-size:.8rem;">
+            <i class="fas fa-check-circle me-1"></i>PO found in VIP
+          </div>
+          <div class="card-body py-2 px-3" style="font-size:.82rem;">
+            <div class="row g-1">
+              <div class="col-4"><span class="text-muted">Warehouse:</span> <strong>${esc(data.Warehouse||'–')}</strong></div>
+              <div class="col-4"><span class="text-muted">Supplier:</span> <strong>${esc(data.Supplier||'–')}</strong></div>
+              <div class="col-4"><span class="text-muted">B/W:</span> <strong>${esc(data.BorW||'–')}</strong></div>
+              <div class="col-4"><span class="text-muted">Order Date:</span> <strong>${fmtDate(data.OrderDate)}</strong></div>
+              <div class="col-4"><span class="text-muted">Total Cases:</span> <strong>${data.TotalCases != null ? Number(data.TotalCases).toLocaleString() : '–'}</strong></div>
+              <div class="col-4"><span class="text-muted">VIP Status:</span> <strong>${esc(data.Status||'–')}</strong></div>
+              ${data.SupplierName ? `<div class="col-6"><span class="text-muted">Vendor/Brand:</span> <strong>${esc(data.SupplierName)}</strong></div>` : ''}
+              ${data.FreightForwarder
+                ? `<div class="col-6"><span class="text-muted">Freight Forwarder:</span> <strong class="text-success">${esc(data.FreightForwarder)}</strong></div>`
+                : '<div class="col-6"><span class="text-muted">Freight Forwarder:</span> <span class="text-warning">Not found in Cost Calc</span></div>'}
+              ${data.ContainerNo  ? `<div class="col-6"><span class="text-muted">Container:</span> <strong>${esc(data.ContainerNo)}</strong></div>` : ''}
+              ${data.ArrivalDate  ? `<div class="col-6"><span class="text-muted">Arrival Date:</span> <strong>${fmtDate(data.ArrivalDate)}</strong></div>` : ''}
+            </div>
+          </div>
+        </div>${alreadyHtml}`;
+      preview.style.display = '';
+      saveBtn.disabled = data.AlreadyTracked;
+      if (data.FreightForwarder) document.getElementById('m-ff').value = data.FreightForwarder;
+    } catch(err) {
+      showVipNotFound(poNo);
+    } finally {
+      spin.style.display = 'none';
+    }
+  }
+
+  function showVipNotFound(poNo) {
+    const preview = document.getElementById('m-vip-preview');
+    preview.innerHTML = `<div class="alert alert-danger py-1 px-2 mb-0" style="font-size:.8rem;"><i class="fas fa-times-circle me-1"></i>PO <strong>${esc(poNo)}</strong> not found in VIP.</div>`;
+    preview.style.display = '';
+    document.getElementById('btn-save-po').disabled = true;
+  }
+
+  function clearVipPreview() {
+    const preview = document.getElementById('m-vip-preview');
+    preview.style.display = 'none';
+    preview.innerHTML = '';
+    hideSuggestions();
+    document.getElementById('btn-save-po').disabled = false;
+    document.getElementById('m-ff').value = '';
+  }
+
+  function showToast(msg, type = 'success') {
+    const el = document.getElementById('toast');
+    el.className = `toast align-items-center text-white border-0 bg-${type === 'success' ? 'success' : 'danger'}`;
+    document.getElementById('toast-msg').textContent = msg;
+    new bootstrap.Toast(el, { delay: 4000 }).show();
+  }
+
+  function esc(s) { return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+</script>
+</body>
+</html>

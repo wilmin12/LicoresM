@@ -1,0 +1,282 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aankoopbon Catalogs - Licores Maduro</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../../css/main.css" />
+  <style>.nav-tabs .nav-link{color:var(--primary);font-weight:500;font-size:.82rem;padding:.4rem .65rem;}.nav-tabs .nav-link.active{color:#fff;background:var(--primary);border-color:var(--primary);}.nav-tabs{flex-wrap:wrap;}</style>
+</head>
+<body>
+<div id="sidebar-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;"></div>
+<div class="app-wrapper">
+  <nav id="sidebar" class="sidebar">
+    <div class="sidebar-header"><img src="../../img/LogoLicores.png" alt="Licores Maduro" class="sidebar-logo-img"/><span class="sidebar-logo-text">LICORES MADURO</span></div>
+    <div id="sidebar-nav" class="sidebar-nav"></div>
+    <div class="sidebar-footer"><div class="sidebar-user"><div class="sidebar-avatar" id="sidebar-user-initials">LM</div><div class="sidebar-text"><div id="sidebar-user-name" style="font-weight:600;">–</div></div></div></div>
+  </nav>
+  <div class="main-area">
+    <header class="topbar">
+      <button id="btn-sidebar-toggle" class="btn-sidebar-toggle"><i class="fas fa-bars"></i></button>
+      <span class="topbar-title"><i class="fas fa-list me-2 text-wine"></i>Aankoopbon Catalogs</span>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown">
+            <span class="sidebar-avatar" id="topbar-user-initials" style="width:28px;height:28px;font-size:.75rem;">LM</span>
+            <span id="topbar-user-name" class="d-none d-md-inline">–</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+            <li><div class="dropdown-header"><strong id="topbar-user-fullname">User</strong><br/><small class="text-muted" id="topbar-user-role">Role</small></div></li>
+            <li><hr class="dropdown-divider"/></li>
+            <li><a class="dropdown-item text-danger" href="#" id="btn-logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+          </ul>
+        </div>
+      </div>
+    </header>
+    <main class="page-content">
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="../../dashboard.html"><i class="fas fa-home me-1"></i>Home</a></li>
+          <li class="breadcrumb-item"><a href="index.html">Aankoopbon</a></li>
+          <li class="breadcrumb-item active">Catalogs</li>
+        </ol>
+      </nav>
+      <div class="page-title">Aankoopbon Catalogs</div>
+      <div class="page-subtitle">Manage departments, units, receivers, requestors, cost types, vehicles and requestor-vendor assignments.</div>
+
+      <ul class="nav nav-tabs mb-3" id="abTabs">
+        <li class="nav-item"><a class="nav-link active" href="#" onclick="switchTab('departments',this)">Departments</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="switchTab('eenheden',this)">Eenheden (Units)</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="switchTab('receivers',this)">Receivers</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="switchTab('requestors',this)">Requestors</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="switchTab('costTypes',this)">Cost Types</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="switchTab('vehicleTypes',this)">Vehicle Types</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="switchTab('vehicles',this)">Vehicles</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="switchTab('requestorsVendor',this)">Requestors-Vendor</a></li>
+      </ul>
+
+      <div class="card mb-3">
+        <div class="card-body d-flex flex-wrap align-items-center gap-2 py-2">
+          <div class="search-wrapper flex-grow-1"><i class="fas fa-search search-icon"></i><input type="text" id="search-input" class="form-control form-control-sm" placeholder="Search..."/></div>
+          <button class="btn btn-wine btn-sm ms-auto" id="btn-new"><i class="fas fa-plus me-1"></i>New</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <span><i class="fas fa-table me-2"></i><span id="tab-title">Departments</span></span>
+          <span class="badge" style="background:var(--primary);color:#fff;" id="total-count">0 records</span>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead id="data-thead"><tr><th>#</th><th>Name</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody id="data-tbody"><tr><td colspan="4" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card-footer d-flex align-items-center justify-content-between flex-wrap gap-2">
+          <small class="text-muted" id="page-info">Page 1</small>
+          <nav><ul class="pagination pagination-sm mb-0" id="pagination"></ul></nav>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="itemModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title" id="modalTitle"><i class="fas fa-plus me-2"></i>Item</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body"><form id="item-form" novalidate><input type="hidden" id="edit-id"/>
+      <!-- Name field (Departments, CostTypes, VehicleTypes) -->
+      <div class="mb-3" id="name-group"><label class="form-label">Name <span class="text-danger">*</span></label><input type="text" id="f-name" class="form-control" required maxlength="15"/><div class="invalid-feedback">Name is required.</div></div>
+      <!-- ID Document (Receivers) -->
+      <div class="mb-3" id="iddoc-group" style="display:none;"><label class="form-label">ID Document</label><input type="text" id="f-iddoc" class="form-control" maxlength="30"/></div>
+      <!-- Email (Requestors) -->
+      <div class="mb-3" id="email-group" style="display:none;"><label class="form-label">Email</label><input type="email" id="f-email" class="form-control" maxlength="100"/></div>
+      <!-- Eenheden specific -->
+      <div id="eenheden-group" style="display:none;">
+        <div class="mb-3"><label class="form-label">Unit Code <span class="text-danger">*</span></label><input type="text" id="f-unitcode" class="form-control text-uppercase" required maxlength="10"/><div class="invalid-feedback">Unit code required.</div></div>
+        <div class="mb-3"><label class="form-label">Description <span class="text-danger">*</span></label><input type="text" id="f-desc" class="form-control" required maxlength="50"/><div class="invalid-feedback">Description required.</div></div>
+        <div class="mb-3"><label class="form-label">Omreken Faktor</label><input type="number" id="f-faktor" class="form-control" step="0.0001" min="0" placeholder="1.0000"/></div>
+      </div>
+      <!-- Vehicle specific -->
+      <div id="vehicle-group" style="display:none;">
+        <div class="mb-3"><label class="form-label">License Plate <span class="text-danger">*</span></label><input type="text" id="f-license" class="form-control text-uppercase" required maxlength="10"/><div class="invalid-feedback">License is required.</div></div>
+        <div class="mb-3"><label class="form-label">Vehicle Type</label><select id="f-vtype" class="form-select"><option value="">-- Select --</option></select></div>
+        <div class="mb-3"><label class="form-label">Model</label><input type="text" id="f-model" class="form-control" maxlength="15"/></div>
+      </div>
+      <!-- RequestorsVendor specific -->
+      <div id="rv-group" style="display:none;">
+        <div class="mb-3"><label class="form-label">Requestor <span class="text-danger">*</span></label><select id="f-req" class="form-select" required><option value="">-- Select --</option></select><div class="invalid-feedback">Requestor required.</div></div>
+        <div class="mb-3"><label class="form-label">Vendor <span class="text-danger">*</span></label><select id="f-vnd" class="form-select" required><option value="">-- Select --</option></select><div class="invalid-feedback">Vendor required.</div></div>
+      </div>
+    </form></div>
+    <div class="modal-footer"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-wine btn-sm" id="btn-save"><i class="fas fa-save me-1"></i>Save</button></div>
+  </div></div>
+</div>
+<!-- Action confirm modal (delete / toggle) -->
+<div class="modal fade" id="modal-confirm-action" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-sm"><div class="modal-content">
+    <div class="modal-header" id="confirm-modal-header"><h6 class="modal-title" id="confirm-modal-title"></h6><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body"><p class="mb-0" id="confirm-modal-body"></p></div>
+    <div class="modal-footer"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-sm" id="btn-confirm-action"></button></div>
+  </div></div>
+</div>
+<div class="toast-container"><div id="toast" class="toast align-items-center text-white border-0" role="alert"><div class="d-flex"><div class="toast-body" id="toast-msg"></div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div></div></div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../../js/i18n.js"></script><script src="../../js/api.js"></script><script src="../../js/auth.js"></script><script src="../../js/sidebar.js"></script>
+<script>
+  // Tab definitions
+  const TABS={
+    departments:    {label:'Departments',       api:API.catalogs.departments,       endpoint:'/api/aankoopbon/departments',        type:'name',      nameField:'DpName', idField:'DpId'},
+    eenheden:       {label:'Eenheden (Units)',   api:API.catalogs.eenheden,          endpoint:'/api/aankoopbon/eenheden',           type:'eenheden',                      idField:'EeId'},
+    receivers:      {label:'Receivers',         api:API.catalogs.receivers,         endpoint:'/api/aankoopbon/receivers',          type:'receiver',                      idField:'RecId'},
+    requestors:     {label:'Requestors',        api:API.catalogs.requestors,        endpoint:'/api/aankoopbon/requestors',         type:'requestor',                     idField:'ReqId'},
+    costTypes:      {label:'Cost Types',        api:API.catalogs.costTypes,         endpoint:'/api/aankoopbon/cost-types',         type:'name',      nameField:'TcName', idField:'CtId'},
+    vehicleTypes:   {label:'Vehicle Types',     api:API.catalogs.vehicleTypes,      endpoint:'/api/aankoopbon/vehicle-types',      type:'name',      nameField:'VtName', idField:'VtId'},
+    vehicles:       {label:'Vehicles',          api:API.catalogs.vehicles,          endpoint:'/api/aankoopbon/vehicles',           type:'vehicle',                       idField:'VhId'},
+    requestorsVendor:{label:'Requestors-Vendor',api:API.catalogs.requestorsVendor,  endpoint:'/api/aankoopbon/requestors-vendor',  type:'rv',                            idField:'RvId'},
+  };
+  let currentTab=TABS.departments,allItems=[],filtered=[],currentPage=1;const PAGE_SIZE=15;
+  let vehicleTypes=[],requestors=[],vendors=[];
+
+  document.addEventListener('DOMContentLoaded',async()=>{
+    if(!Auth.requireAuth())return;Auth.startExpiryWatcher();Auth.populateUserUI();Sidebar.init();
+    document.getElementById('btn-logout').addEventListener('click',e=>{e.preventDefault();Auth.logout();});
+    document.getElementById('btn-new').addEventListener('click',openCreate);
+    document.getElementById('btn-save').addEventListener('click',saveItem);
+    document.getElementById('search-input').addEventListener('input',filterAndRender);
+    // Check hash
+    const hash=location.hash.replace('#','');
+    if(hash&&TABS[hash]){currentTab=TABS[hash];document.querySelectorAll('#abTabs .nav-link').forEach(a=>a.classList.remove('active'));const found=[...document.querySelectorAll('#abTabs .nav-link')].find(a=>a.getAttribute('onclick')?.includes(hash));if(found)found.classList.add('active');document.getElementById('tab-title').textContent=TABS[hash].label;}
+    await loadLookups();await loadData();
+  });
+
+  async function loadLookups(){
+    try{const v=await API.catalogs.vehicleTypes.getAll();vehicleTypes=v?.Data||v||[];document.getElementById('f-vtype').innerHTML='<option value="">-- Select --</option>'+vehicleTypes.map(x=>`<option value="${esc(x.VtName)}">${esc(x.VtName||'')}</option>`).join('');}catch(e){}
+    try{const r=await API.catalogs.requestors.getAll();requestors=r?.Data||r||[];document.getElementById('f-req').innerHTML='<option value="">-- Select --</option>'+requestors.map(x=>`<option value="${esc(x.ReqName)}">${esc(x.ReqName||'')}</option>`).join('');}catch(e){}
+    try{const v=await API.catalogs.vendors.getAll();vendors=v?.Data||v||[];document.getElementById('f-vnd').innerHTML='<option value="">-- Select --</option>'+vendors.map(x=>`<option value="${esc(x.VndCode)}">${esc(x.VndCode||'')} - ${esc(x.VndName||'')}</option>`).join('');}catch(e){}
+  }
+
+  async function switchTab(key,el){event.preventDefault();document.querySelectorAll('#abTabs .nav-link').forEach(a=>a.classList.remove('active'));el.classList.add('active');currentTab=TABS[key];document.getElementById('tab-title').textContent=currentTab.label;document.getElementById('search-input').value='';updateHead();await loadData();}
+
+  function updateHead(){
+    const t=currentTab.type;let h='<tr><th>#</th>';
+    if(t==='eenheden')h+='<th>Unit Code</th><th>Description</th><th>Omreken Faktor</th>';
+    else if(t==='receiver')h+='<th>Name</th><th>ID Document</th>';
+    else if(t==='requestor')h+='<th>Name</th><th>Email</th>';
+    else if(t==='vehicle')h+='<th>License</th><th>Type</th><th>Model</th>';
+    else if(t==='rv')h+='<th>Requestor</th><th>Vendor</th>';
+    else h+='<th>Name</th>';
+    h+='<th>Status</th><th>Actions</th></tr>';
+    document.getElementById('data-thead').innerHTML=h;
+  }
+
+  async function loadData(){const tbody=document.getElementById('data-tbody');tbody.innerHTML='<tr><td colspan="7" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading...</td></tr>';try{const res=await currentTab.api.getAll();allItems=res?.Data||res||[];filterAndRender();}catch(err){showToast(err.message,'danger');}}
+  function filterAndRender(){const q=document.getElementById('search-input').value.toLowerCase();filtered=allItems.filter(r=>JSON.stringify(r).toLowerCase().includes(q));currentPage=1;renderTable();renderPagination();}
+
+  function renderTable(){
+    const tbody=document.getElementById('data-tbody');const start=(currentPage-1)*PAGE_SIZE,page=filtered.slice(start,start+PAGE_SIZE);
+    document.getElementById('total-count').textContent=filtered.length+' '+I18n.t(filtered.length!==1?'records':'record');
+    if(!page.length){tbody.innerHTML=`<tr><td colspan="7" class="text-center py-4 text-muted">${I18n.t('No records found.')}</td></tr>`;return;}
+    const t=currentTab.type;
+    tbody.innerHTML=page.map((r,i)=>{
+      const id=r[currentTab.idField];
+      let cols=`<td>${start+i+1}</td>`;
+      if(t==='eenheden')cols+=`<td><strong>${esc(r.UnitCode||'')}</strong></td><td>${esc(r.Omschrijving||'')}</td><td>${r.OmrekenFaktor??'–'}</td>`;
+      else if(t==='receiver')cols+=`<td>${esc(r.RecName||'')}</td><td>${esc(r.RecIdDoc||'')}</td>`;
+      else if(t==='requestor')cols+=`<td>${esc(r.ReqName||'')}</td><td>${esc(r.ReqEmail||'')}</td>`;
+      else if(t==='vehicle')cols+=`<td><strong>${esc(r.VhLicense||'')}</strong></td><td>${esc(r.VhType||'–')}</td><td>${esc(r.VhModel||'')}</td>`;
+      else if(t==='rv')cols+=`<td>${esc(r.RsRequestor||'–')}</td><td>${esc(r.RsVendor||'–')}</td>`;
+      else cols+=`<td>${esc(r[currentTab.nameField]||'')}</td>`;
+      cols+=`<td><span class="${r.IsActive!==false?'badge-active':'badge-inactive'}">${I18n.t(r.IsActive!==false?'Active':'Inactive')}</span></td>`;
+      cols+=`<td><button class="btn-action edit me-1" onclick="openEdit(${id})" title="Edit"><i class="fas fa-edit"></i></button><button class="btn-action ${r.IsActive!==false?'delete':'edit'} me-1" onclick="toggleItem(${id})" title="Toggle"><i class="fas fa-${r.IsActive!==false?'ban':'check'}"></i></button><button class="btn-action delete" onclick="confirmDelete(${id})" title="Delete"><i class="fas fa-trash"></i></button></td>`;
+      return`<tr>${cols}</tr>`;
+    }).join('');
+  }
+
+  function renderPagination(){const total=Math.ceil(filtered.length/PAGE_SIZE)||1;document.getElementById('page-info').textContent=`${I18n.t('Page')} ${currentPage} ${I18n.t('of')} ${total}`;let html=`<li class="page-item ${currentPage===1?'disabled':''}"><a class="page-link" href="#" onclick="event.preventDefault();gotoPage(${currentPage-1})">&#8249;</a></li>`;for(let p=1;p<=total;p++)html+=`<li class="page-item ${p===currentPage?'active':''}"><a class="page-link" href="#" onclick="event.preventDefault();gotoPage(${p})">${p}</a></li>`;html+=`<li class="page-item ${currentPage>=total?'disabled':''}"><a class="page-link" href="#" onclick="event.preventDefault();gotoPage(${currentPage+1})">&#8250;</a></li>`;document.getElementById('pagination').innerHTML=html;}
+  function gotoPage(p){const t=Math.ceil(filtered.length/PAGE_SIZE)||1;if(p<1||p>t)return;currentPage=p;renderTable();renderPagination();}
+
+  function showFields(){
+    const t=currentTab.type;
+    document.getElementById('name-group').style.display=(t==='name'||t==='receiver'||t==='requestor')?'':'none';
+    document.getElementById('iddoc-group').style.display=t==='receiver'?'':'none';
+    document.getElementById('email-group').style.display=t==='requestor'?'':'none';
+    document.getElementById('eenheden-group').style.display=t==='eenheden'?'':'none';
+    document.getElementById('vehicle-group').style.display=t==='vehicle'?'':'none';
+    document.getElementById('rv-group').style.display=t==='rv'?'':'none';
+    // maxlength correcto según la columna BD
+    const nameInput=document.getElementById('f-name');
+    if(t==='receiver') nameInput.maxLength=30;
+    else nameInput.maxLength=15;
+  }
+
+  async function openCreate(){document.getElementById('edit-id').value='';document.getElementById('item-form').reset();showFields();if(currentTab.type==='vehicle')await refreshVehicleTypes();document.getElementById('modalTitle').innerHTML=`<i class="fas fa-plus me-2"></i>New ${currentTab.label}`;new bootstrap.Modal('#itemModal').show();}
+
+  async function openEdit(id){
+    const r=allItems.find(x=>x[currentTab.idField]===id);if(!r)return;
+    document.getElementById('edit-id').value=id;showFields();
+    const t=currentTab.type;
+    if(t==='vehicle')await refreshVehicleTypes();
+    if(t==='eenheden'){document.getElementById('f-unitcode').value=r.UnitCode||'';document.getElementById('f-desc').value=r.Omschrijving||'';document.getElementById('f-faktor').value=r.OmrekenFaktor||'';}
+    else if(t==='vehicle'){document.getElementById('f-license').value=r.VhLicense||'';document.getElementById('f-vtype').value=r.VhType||'';document.getElementById('f-model').value=r.VhModel||'';}
+    else if(t==='rv'){document.getElementById('f-req').value=r.RsRequestor||'';document.getElementById('f-vnd').value=r.RsVendor||'';}
+    else{document.getElementById('f-name').value=r[currentTab.nameField]||'';if(t==='receiver')document.getElementById('f-iddoc').value=r.RecIdDoc||'';if(t==='requestor')document.getElementById('f-email').value=r.ReqEmail||'';}
+    document.getElementById('modalTitle').innerHTML=`<i class="fas fa-edit me-2"></i>Edit ${currentTab.label}`;
+    new bootstrap.Modal('#itemModal').show();
+  }
+
+  async function refreshVehicleTypes(){
+    try{
+      const v=await API.catalogs.vehicleTypes.getAll();
+      vehicleTypes=v?.Data||v||[];
+      const sel=document.getElementById('f-vtype');
+      const prev=sel.value;
+      sel.innerHTML='<option value="">-- Select --</option>'+vehicleTypes.map(x=>`<option value="${esc(x.VtName)}">${esc(x.VtName||'')}</option>`).join('');
+      if(prev)sel.value=prev;
+    }catch(e){}
+  }
+
+  async function saveItem(){
+    const id=document.getElementById('edit-id').value;const t=currentTab.type;let dto={},valid=true;
+    if(t==='eenheden'){const uc=document.getElementById('f-unitcode').value.trim().toUpperCase();const desc=document.getElementById('f-desc').value.trim();if(!uc){document.getElementById('f-unitcode').classList.add('is-invalid');valid=false;}else document.getElementById('f-unitcode').classList.remove('is-invalid');if(!desc){document.getElementById('f-desc').classList.add('is-invalid');valid=false;}else document.getElementById('f-desc').classList.remove('is-invalid');if(!valid)return;dto={UnitCode:uc,Omschrijving:desc,OmrekenFaktor:parseFloat(document.getElementById('f-faktor').value)||1};}
+    else if(t==='vehicle'){const lic=document.getElementById('f-license').value.trim().toUpperCase();if(!lic){document.getElementById('f-license').classList.add('is-invalid');valid=false;}else document.getElementById('f-license').classList.remove('is-invalid');if(!valid)return;dto={VhLicense:lic,VhType:document.getElementById('f-vtype').value||null,VhModel:document.getElementById('f-model').value.trim()||null};}
+    else if(t==='rv'){const req=document.getElementById('f-req').value;const vnd=document.getElementById('f-vnd').value;if(!req){document.getElementById('f-req').classList.add('is-invalid');valid=false;}else document.getElementById('f-req').classList.remove('is-invalid');if(!vnd){document.getElementById('f-vnd').classList.add('is-invalid');valid=false;}else document.getElementById('f-vnd').classList.remove('is-invalid');if(!valid)return;dto={RsRequestor:req,RsVendor:vnd};}
+    else{const name=document.getElementById('f-name').value.trim();if(!name){document.getElementById('f-name').classList.add('is-invalid');return;}document.getElementById('f-name').classList.remove('is-invalid');if(t==='receiver')dto={RecName:name,RecIdDoc:document.getElementById('f-iddoc').value.trim()||null};else if(t==='requestor')dto={ReqName:name,ReqEmail:document.getElementById('f-email').value.trim()||null};else dto={[currentTab.nameField]:name};}
+    try{if(id){await currentTab.api.update(id,dto);showToast(I18n.t('Updated.'),'success');}else{await currentTab.api.create(dto);showToast(I18n.t('Created.'),'success');}bootstrap.Modal.getInstance(document.getElementById('itemModal'))?.hide();await loadData();}catch(err){showToast(err.message,'danger');}
+  }
+
+  let _pendingAction=null;
+  function showConfirm({headerClass,titleHtml,bodyText,btnClass,btnHtml}){
+    document.getElementById('confirm-modal-header').className=`modal-header ${headerClass}`;
+    document.getElementById('confirm-modal-title').innerHTML=titleHtml;
+    document.getElementById('confirm-modal-body').textContent=bodyText;
+    const btn=document.getElementById('btn-confirm-action');btn.className=`btn btn-sm ${btnClass}`;btn.innerHTML=btnHtml;
+    new bootstrap.Modal('#modal-confirm-action').show();
+  }
+  document.addEventListener('DOMContentLoaded',()=>{
+    document.getElementById('btn-confirm-action').addEventListener('click',async()=>{
+      if(!_pendingAction)return;
+      bootstrap.Modal.getInstance(document.getElementById('modal-confirm-action'))?.hide();
+      await _pendingAction();_pendingAction=null;
+    });
+  });
+  function toggleItem(id){
+    const item=allItems.find(x=>x[currentTab.idField]===id);const isActive=item?.IsActive!==false;
+    _pendingAction=async()=>{try{await API.patch(`${currentTab.endpoint}/${id}/toggle`,{});showToast(I18n.t('Status updated.'),'success');await loadData();}catch(err){showToast(err.message,'danger');}};
+    showConfirm(isActive
+      ?{headerClass:'bg-warning text-dark',titleHtml:'<i class="fas fa-ban me-2"></i>Deactivate',bodyText:'This record will be marked as inactive.',btnClass:'btn-warning',btnHtml:'<i class="fas fa-ban me-1"></i>Deactivate'}
+      :{headerClass:'bg-success text-white',titleHtml:'<i class="fas fa-check me-2"></i>Activate',bodyText:'This record will be marked as active.',btnClass:'btn-success',btnHtml:'<i class="fas fa-check me-1"></i>Activate'});
+  }
+  function confirmDelete(id){
+    _pendingAction=async()=>{try{await currentTab.api.delete(id);showToast(I18n.t('Deleted.'),'success');await loadData();}catch(err){showToast(err.message,'danger');}};
+    showConfirm({headerClass:'bg-danger text-white',titleHtml:'<i class="fas fa-trash me-2"></i>Confirm Delete',bodyText:'Are you sure you want to delete this record? This action cannot be undone.',btnClass:'btn-danger',btnHtml:'<i class="fas fa-trash me-1"></i>Delete'});
+  }
+  function showToast(msg,type='success'){const el=document.getElementById('toast');el.className=`toast align-items-center text-white border-0 bg-${type==='success'?'success':'danger'}`;document.getElementById('toast-msg').textContent=msg;new bootstrap.Toast(el,{delay:3500}).show();}
+  function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+</script>
+</body>
+</html>

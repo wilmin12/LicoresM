@@ -1,0 +1,1129 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Catalog - Licores Maduro</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../css/main.css" />
+</head>
+<body>
+
+<div id="sidebar-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;"></div>
+
+<div class="app-wrapper">
+
+  <!-- Sidebar -->
+  <nav id="sidebar" class="sidebar">
+    <div class="sidebar-header">
+      <img src="../img/LogoLicores.png" alt="Licores Maduro" class="sidebar-logo-img"/>
+      <span class="sidebar-logo-text">LICORES MADURO</span>
+    </div>
+    <div id="sidebar-nav" class="sidebar-nav"></div>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="sidebar-avatar" id="sidebar-user-initials">LM</div>
+        <div class="sidebar-text"><div id="sidebar-user-name" style="font-weight:600;">–</div></div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main -->
+  <div class="main-area">
+    <header class="topbar">
+      <button id="btn-sidebar-toggle" class="btn-sidebar-toggle"><i class="fas fa-bars"></i></button>
+      <span class="topbar-title">
+        <i class="fas fa-table me-2 text-wine"></i>
+        <span id="page-title">Catalog</span>
+      </span>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <span id="topbar-user-name" class="text-muted small d-none d-md-inline">–</span>
+        <button class="btn btn-sm btn-outline-secondary" id="btn-logout">
+          <i class="fas fa-sign-out-alt me-1"></i>Logout
+        </button>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <!-- Breadcrumb -->
+      <nav aria-label="breadcrumb" class="mb-2">
+        <ol class="breadcrumb small">
+          <li class="breadcrumb-item"><a href="../dashboard.html">Dashboard</a></li>
+          <li class="breadcrumb-item" id="bc-module"><a href="#">Module</a></li>
+          <li class="breadcrumb-item active" id="bc-table">Table</li>
+        </ol>
+      </nav>
+
+      <div class="page-title" id="h-title">–</div>
+      <div class="page-subtitle" id="h-subtitle">–</div>
+
+      <!-- Toolbar -->
+      <div class="card mb-3">
+        <div class="card-body d-flex flex-wrap align-items-center gap-2 py-2">
+          <div class="search-wrapper flex-grow-1">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" id="search-input" class="form-control form-control-sm"
+                   placeholder="Search..." />
+          </div>
+          <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-outline-wine" id="btn-export-csv">
+              <i class="fas fa-file-csv me-1"></i>Export CSV
+            </button>
+            <button class="btn btn-sm btn-wine" id="btn-create" style="display:none;">
+              <i class="fas fa-plus me-1"></i>New Record
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Data Table Card -->
+      <div class="card">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <span><i class="fas fa-database me-2"></i><span id="table-label">Records</span></span>
+          <span class="badge" style="background:var(--primary);color:#fff;" id="total-count">0</span>
+        </div>
+        <div class="card-body p-0">
+          <div id="table-container" class="table-responsive">
+            <div class="text-center py-5 text-muted">
+              <i class="fas fa-spinner fa-spin fa-2x mb-3"></i><br>Loading data...
+            </div>
+          </div>
+        </div>
+        <!-- Pagination -->
+        <div class="card-footer d-flex align-items-center justify-content-between flex-wrap gap-2">
+          <div class="text-muted small" id="pagination-info">–</div>
+          <nav>
+            <ul class="pagination pagination-sm mb-0" id="pagination"></ul>
+          </nav>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ── Create / Edit Modal ────────────────────────────────────────────────────── -->
+<div class="modal fade" id="recordModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="recordModalLabel"><i class="fas fa-edit me-2"></i>Record</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="modal-form-body">
+        <!-- dynamically generated form -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-wine btn-sm" id="btn-save-record">
+          <i class="fas fa-save me-1"></i>Save
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast-container">
+  <div id="toast" class="toast align-items-center text-white border-0" role="alert">
+    <div class="d-flex">
+      <div class="toast-body" id="toast-msg"></div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/sidebar.js"></script>
+<script>
+  // ── State ──────────────────────────────────────────────────────────────────
+  let state = {
+    tableName:   '',
+    moduleCode:  '',
+    records:     [],
+    columns:     [],
+    page:        1,
+    pageSize:    25,
+    totalCount:  0,
+    totalPages:  0,
+    editId:      null,
+    canWrite:    false,
+    canEdit:     false,
+    canDelete:   false
+  };
+
+  // ── Table schema definitions ───────────────────────────────────────────────
+  // Each entry maps tableName -> { label, columns[], apiPath }
+  const TABLE_SCHEMAS = {
+
+    // ── MODULE 1: TRACKING ──────────────────────────────────────────────────────
+    ORDER_STATUS: {
+      label: 'Order Status', apiPath: '/api/tracking/order-status',
+      columns: [
+        { key: 'OsId',          label: '#',           readonly: true },
+        { key: 'OsDescription', label: 'Description', type: 'text', maxlen: 15, required: true },
+        { key: 'IsActive',      label: 'Active',       type: 'bool' },
+        { key: 'CreatedAt',     label: 'Created',      type: 'datetime', readonly: true }
+      ]
+    },
+
+    // ── MODULE 2: FREIGHT FORWARDER ─────────────────────────────────────────────
+    CURRENCIES: {
+      label: 'Currencies', apiPath: '/api/freight/currencies',
+      columns: [
+        { key: 'CurId',              label: '#',                  readonly: true },
+        { key: 'CurCode',            label: 'Code',               type: 'text',   maxlen: 3,  required: true },
+        { key: 'CurDescription',     label: 'Description',        type: 'text',   maxlen: 30, required: true },
+        { key: 'CurBnkPurchaseRate', label: 'Bank Purchase Rate', type: 'number' },
+        { key: 'CurCustomsRate',     label: 'Customs Rate',       type: 'number' },
+        { key: 'IsActive',           label: 'Active',             type: 'bool' }
+      ]
+    },
+    LOADTYPES: {
+      label: 'Load Types', apiPath: '/api/freight/load-types',
+      columns: [
+        { key: 'LtId',          label: '#',           readonly: true },
+        { key: 'LtCode',        label: 'Code',        type: 'text', maxlen: 6,  required: true },
+        { key: 'LtDescription', label: 'Description', type: 'text', maxlen: 25, required: true },
+        { key: 'IsActive',      label: 'Active',      type: 'bool' },
+        { key: 'CreatedAt',     label: 'Created',     type: 'datetime', readonly: true }
+      ]
+    },
+    PORT_OF_LOADING: {
+      label: 'Ports of Loading', apiPath: '/api/freight/ports-of-loading',
+      columns: [
+        { key: 'PlId',      label: '#',       readonly: true },
+        { key: 'PlCode',    label: 'Code',    type: 'text', maxlen: 10, required: true },
+        { key: 'PlName',    label: 'Name',    type: 'text', maxlen: 30, required: true },
+        { key: 'PlCountry', label: 'Country', type: 'text', maxlen: 3,  required: true },
+        { key: 'IsActive',  label: 'Active',  type: 'bool' },
+        { key: 'CreatedAt', label: 'Created', type: 'datetime', readonly: true }
+      ]
+    },
+    SHIPPING_LINES: {
+      label: 'Shipping Lines', apiPath: '/api/freight/shipping-lines',
+      columns: [
+        { key: 'SlId',      label: '#',       readonly: true },
+        { key: 'SlCode',    label: 'Code',    type: 'text', maxlen: 10, required: true },
+        { key: 'SlName',    label: 'Name',    type: 'text', maxlen: 30, required: true },
+        { key: 'IsActive',  label: 'Active',  type: 'bool' },
+        { key: 'CreatedAt', label: 'Created', type: 'datetime', readonly: true }
+      ]
+    },
+    SHIPPING_AGENT: {
+      label: 'Shipping Agents', apiPath: '/api/freight/shipping-agents',
+      columns: [
+        { key: 'SaId',      label: '#',       readonly: true },
+        { key: 'SaCode',    label: 'Code',    type: 'text', maxlen: 10, required: true },
+        { key: 'SaName',    label: 'Name',    type: 'text', maxlen: 30, required: true },
+        { key: 'IsActive',  label: 'Active',  type: 'bool' },
+        { key: 'CreatedAt', label: 'Created', type: 'datetime', readonly: true }
+      ]
+    },
+    ROUTES: {
+      label: 'Routes', apiPath: '/api/freight/routes',
+      columns: [
+        { key: 'RouId',          label: '#',           readonly: true },
+        { key: 'RouCode',        label: 'Code',        type: 'text', maxlen: 15, required: true },
+        { key: 'RouDescription', label: 'Description', type: 'text', maxlen: 30, required: true },
+        { key: 'IsActive',       label: 'Active',      type: 'bool' },
+        { key: 'CreatedAt',      label: 'Created',     type: 'datetime', readonly: true }
+      ]
+    },
+    CONTAINER_SPECS: {
+      label: 'Container Specs', apiPath: '/api/freight/container-specs',
+      columns: [
+        { key: 'CsId',          label: '#',           readonly: true },
+        { key: 'CsCode',        label: 'Code',        type: 'text', maxlen: 6,  required: true },
+        { key: 'CsDescription', label: 'Description', type: 'text', maxlen: 25, required: true },
+        { key: 'IsActive',      label: 'Active',      type: 'bool' },
+        { key: 'CreatedAt',     label: 'Created',     type: 'datetime', readonly: true }
+      ]
+    },
+    CONTAINER_TYPES: {
+      label: 'Container Types', apiPath: '/api/freight/container-types',
+      columns: [
+        { key: 'CtId',             label: '#',              readonly: true },
+        { key: 'CtCode',           label: 'Code',           type: 'text',   maxlen: 6,  required: true },
+        { key: 'CtDescription',    label: 'Description',    type: 'text',   maxlen: 50, required: true },
+        { key: 'CtContainerSpecs', label: 'Container Spec', type: 'text',   maxlen: 6 },
+        { key: 'CtCases',          label: 'Cases',          type: 'number' },
+        { key: 'CtWghtKilogram',   label: 'Weight (Kg)',    type: 'number' },
+        { key: 'IsActive',         label: 'Active',         type: 'bool' },
+        { key: 'CreatedAt',        label: 'Created',        type: 'datetime', readonly: true }
+      ]
+    },
+    ROUTES_BY_SHIPPING_AGENTS: {
+      label: 'Routes by Shipping Agent', apiPath: '/api/freight/routes-by-shipping-agents',
+      columns: [
+        { key: 'RsaId',            label: '#',             readonly: true },
+        { key: 'RsaPort',          label: 'Port',          type: 'text', maxlen: 10, required: true },
+        { key: 'RsaShippingAgent', label: 'Shipping Agent',type: 'text', maxlen: 25, required: true },
+        { key: 'RsaRoute',         label: 'Route',         type: 'text', maxlen: 10, required: true },
+        { key: 'RsaDays',          label: 'Days',          type: 'number' },
+        { key: 'IsActive',         label: 'Active',        type: 'bool' },
+        { key: 'CreatedAt',        label: 'Created',       type: 'datetime', readonly: true }
+      ]
+    },
+    OCEAN_FREIGHT_CHARGE_TYPES: {
+      label: 'Ocean Freight Charges', apiPath: '/api/freight/ocean-freight-charge-types',
+      columns: [
+        { key: 'OfctId',          label: '#',           readonly: true },
+        { key: 'OfctCode',        label: 'Code',        type: 'text', maxlen: 6,  required: true },
+        { key: 'OfctDescription', label: 'Description', type: 'text', maxlen: 25, required: true },
+        { key: 'IsActive',        label: 'Active',      type: 'bool' },
+        { key: 'CreatedAt',       label: 'Created',     type: 'datetime', readonly: true }
+      ]
+    },
+    INLAND_FREIGHT_CHARGE_TYPES: {
+      label: 'Inland Freight Charges', apiPath: '/api/freight/inland-freight-charge-types',
+      columns: [
+        { key: 'IfctId',          label: '#',           readonly: true },
+        { key: 'IfctCode',        label: 'Code',        type: 'text', maxlen: 6,  required: true },
+        { key: 'IfctDescription', label: 'Description', type: 'text', maxlen: 25, required: true },
+        { key: 'IsActive',        label: 'Active',      type: 'bool' },
+        { key: 'CreatedAt',       label: 'Created',     type: 'datetime', readonly: true }
+      ]
+    },
+    LCL_CHARGE_TYPES: {
+      label: 'LCL Charge Types', apiPath: '/api/freight/lcl-charge-types',
+      columns: [
+        { key: 'LctId',          label: '#',           readonly: true },
+        { key: 'LctCode',        label: 'Code',        type: 'text', maxlen: 6,  required: true },
+        { key: 'LctDescription', label: 'Description', type: 'text', maxlen: 25, required: true },
+        { key: 'IsActive',       label: 'Active',      type: 'bool' },
+        { key: 'CreatedAt',      label: 'Created',     type: 'datetime', readonly: true }
+      ]
+    },
+    PRICE_TYPE: {
+      label: 'Price Types', apiPath: '/api/freight/price-types',
+      columns: [
+        { key: 'PtId',          label: '#',           readonly: true },
+        { key: 'PtCode',        label: 'Code',        type: 'text', maxlen: 6,  required: true },
+        { key: 'PtDescription', label: 'Description', type: 'text', maxlen: 25, required: true },
+        { key: 'IsActive',      label: 'Active',      type: 'bool' },
+        { key: 'CreatedAt',     label: 'Created',     type: 'datetime', readonly: true }
+      ]
+    },
+    AMOUNT_TYPE: {
+      label: 'Amount Types', apiPath: '/api/freight/amount-types',
+      columns: [
+        { key: 'AtId',          label: '#',           readonly: true },
+        { key: 'AtCode',        label: 'Code',        type: 'text', maxlen: 1,  required: true },
+        { key: 'AtDescription', label: 'Description', type: 'text', maxlen: 25, required: true },
+        { key: 'IsActive',      label: 'Active',      type: 'bool' },
+        { key: 'CreatedAt',     label: 'Created',     type: 'datetime', readonly: true }
+      ]
+    },
+    CHARGE_ACTION: {
+      label: 'Charge Actions', apiPath: '/api/freight/charge-actions',
+      columns: [
+        { key: 'CaId',          label: '#',           readonly: true },
+        { key: 'CaCode',        label: 'Code',        type: 'text', maxlen: 6,  required: true },
+        { key: 'CaDescription', label: 'Description', type: 'text', maxlen: 25, required: true },
+        { key: 'IsActive',      label: 'Active',      type: 'bool' },
+        { key: 'CreatedAt',     label: 'Created',     type: 'datetime', readonly: true }
+      ]
+    },
+    CHARGE_OVER: {
+      label: 'Charge Over', apiPath: '/api/freight/charge-overs',
+      columns: [
+        { key: 'CoId',          label: '#',           readonly: true },
+        { key: 'CoCode',        label: 'Code',        type: 'text', maxlen: 6,  required: true },
+        { key: 'CoDescription', label: 'Description', type: 'text', maxlen: 25, required: true },
+        { key: 'IsActive',      label: 'Active',      type: 'bool' },
+        { key: 'CreatedAt',     label: 'Created',     type: 'datetime', readonly: true }
+      ]
+    },
+    CHARGE_PER: {
+      label: 'Charge Per', apiPath: '/api/freight/charge-pers',
+      columns: [
+        { key: 'CpId',          label: '#',           readonly: true },
+        { key: 'CpCode',        label: 'Code',        type: 'text', maxlen: 6,  required: true },
+        { key: 'CpDescription', label: 'Description', type: 'text', maxlen: 25, required: true },
+        { key: 'IsActive',      label: 'Active',      type: 'bool' },
+        { key: 'CreatedAt',     label: 'Created',     type: 'datetime', readonly: true }
+      ]
+    },
+
+    // ── MODULE 6: ACTIVITY REQUEST ──────────────────────────────────────────────
+    ACTIVITY_TYPE: {
+      label: 'Activity Types', apiPath: '/api/activity/activity-types',
+      columns: [
+        { key: 'AtId',             label: '#',               readonly: true },
+        { key: 'Code',             label: 'Code',            type: 'text', maxlen: 6,  required: true },
+        { key: 'Description',      label: 'Description',     type: 'text', maxlen: 30, required: true },
+        { key: 'ActivityRelated',  label: 'Activity Related',type: 'bool' },
+        { key: 'IsActive',         label: 'Active',          type: 'bool' },
+        { key: 'CreatedAt',        label: 'Created',         type: 'datetime', readonly: true }
+      ]
+    },
+    BUDGET_ACTIVITIES: {
+      label: 'Budget Activities', apiPath: '/api/activity/budget-activities',
+      columns: [
+        { key: 'BaId',         label: '#',              readonly: true },
+        { key: 'Code',         label: 'Code',           type: 'text',   maxlen: 6,  required: true },
+        { key: 'Description',  label: 'Description',    type: 'text',   maxlen: 50, required: true },
+        { key: 'BillingDescr', label: 'Billing Descr',  type: 'text',   maxlen: 30 },
+        { key: 'DisplaySeq',   label: 'Display Seq',    type: 'number' },
+        { key: 'IsActive',     label: 'Active',         type: 'bool' },
+        { key: 'CreatedAt',    label: 'Created',        type: 'datetime', readonly: true }
+      ]
+    },
+    DENIAL_REASONS: {
+      label: 'Denial Reasons', apiPath: '/api/activity/denial-reasons',
+      columns: [
+        { key: 'DrId',        label: '#',           readonly: true },
+        { key: 'Code',        label: 'Code',        type: 'text', maxlen: 6,   required: true },
+        { key: 'Description', label: 'Description', type: 'text', maxlen: 100, required: true },
+        { key: 'IsActive',    label: 'Active',      type: 'bool' },
+        { key: 'CreatedAt',   label: 'Created',     type: 'datetime', readonly: true }
+      ]
+    },
+    ENTERTAINMENT_TYPE: {
+      label: 'Entertainment Types', apiPath: '/api/activity/entertainment-types',
+      columns: [
+        { key: 'EtId',        label: '#',           readonly: true },
+        { key: 'Code',        label: 'Code',        type: 'text', maxlen: 6,  required: true },
+        { key: 'Description', label: 'Description', type: 'text', maxlen: 50, required: true },
+        { key: 'IsActive',    label: 'Active',      type: 'bool' },
+        { key: 'CreatedAt',   label: 'Created',     type: 'datetime', readonly: true }
+      ]
+    },
+    FISCAL_YEARS: {
+      label: 'Fiscal Years', apiPath: '/api/activity/fiscal-years',
+      columns: [
+        { key: 'FyId',        label: '#',          readonly: true },
+        { key: 'FyYear',      label: 'Year',       type: 'number', required: true },
+        { key: 'FyStartDate', label: 'Start Date', type: 'date',   required: true },
+        { key: 'FyEndDate',   label: 'End Date',   type: 'date',   required: true },
+        { key: 'IsActive',    label: 'Active',     type: 'bool' },
+        { key: 'CreatedAt',   label: 'Created',    type: 'datetime', readonly: true }
+      ]
+    },
+    LICORES_GROUP: {
+      label: 'Licores Group', apiPath: '/api/activity/licores-group',
+      columns: [
+        { key: 'LgId',        label: '#',           readonly: true },
+        { key: 'Code',        label: 'Code',        type: 'text', maxlen: 10,  required: true },
+        { key: 'Description', label: 'Description', type: 'text', maxlen: 100, required: true },
+        { key: 'IsActive',    label: 'Active',      type: 'bool' },
+        { key: 'CreatedAt',   label: 'Created',     type: 'datetime', readonly: true }
+      ]
+    },
+    LOCATION_INFO: {
+      label: 'Location Info', apiPath: '/api/activity/location-info',
+      columns: [
+        { key: 'LiId',        label: '#',           readonly: true },
+        { key: 'Code',        label: 'Code',        type: 'text', maxlen: 20,  required: true },
+        { key: 'Description', label: 'Description', type: 'text', maxlen: 100, required: true },
+        { key: 'Address',     label: 'Address',     type: 'text', maxlen: 200 },
+        { key: 'IsActive',    label: 'Active',      type: 'bool' },
+        { key: 'CreatedAt',   label: 'Created',     type: 'datetime', readonly: true }
+      ]
+    },
+    FACILITATORS_INFO: {
+      label: 'Facilitators', apiPath: '/api/activity/facilitators-info',
+      columns: [
+        { key: 'FiId',      label: '#',       readonly: true },
+        { key: 'Code',      label: 'Code',    type: 'text',  maxlen: 20,  required: true },
+        { key: 'Name',      label: 'Name',    type: 'text',  maxlen: 100, required: true },
+        { key: 'Email',     label: 'Email',   type: 'email', maxlen: 100 },
+        { key: 'IsActive',  label: 'Active',  type: 'bool' },
+        { key: 'CreatedAt', label: 'Created', type: 'datetime', readonly: true }
+      ]
+    },
+    STATUS_CODES: {
+      label: 'Status Codes', apiPath: '/api/activity/status-codes',
+      columns: [
+        { key: 'ScId',        label: '#',           readonly: true },
+        { key: 'Code',        label: 'Code',        type: 'text', maxlen: 6,  required: true },
+        { key: 'Description', label: 'Description', type: 'text', maxlen: 50, required: true },
+        { key: 'IsActive',    label: 'Active',      type: 'bool' },
+        { key: 'CreatedAt',   label: 'Created',     type: 'datetime', readonly: true }
+      ]
+    },
+    SPONSORING_TYPE: {
+      label: 'Sponsoring Types', apiPath: '/api/activity/sponsoring-type',
+      columns: [
+        { key: 'StId',        label: '#',           readonly: true },
+        { key: 'Code',        label: 'Code',        type: 'text', maxlen: 6,  required: true },
+        { key: 'Description', label: 'Description', type: 'text', maxlen: 50, required: true },
+        { key: 'IsActive',    label: 'Active',      type: 'bool' },
+        { key: 'CreatedAt',   label: 'Created',     type: 'datetime', readonly: true }
+      ]
+    },
+    POS_CATEGORY: {
+      label: 'POS Category', apiPath: '/api/activity/pos-category',
+      columns: [
+        { key: 'PcId',        label: '#',           readonly: true },
+        { key: 'Code',        label: 'Code',        type: 'text', maxlen: 10, required: true },
+        { key: 'Description', label: 'Description', type: 'text', maxlen: 50, required: true },
+        { key: 'IsActive',    label: 'Active',      type: 'bool' },
+        { key: 'CreatedAt',   label: 'Created',     type: 'datetime', readonly: true }
+      ]
+    },
+    POS_LEND_GIVE: {
+      label: 'POS Lend/Give', apiPath: '/api/activity/pos-lend-give',
+      columns: [
+        { key: 'PlgId',       label: '#',           readonly: true },
+        { key: 'Code',        label: 'Code',        type: 'text', maxlen: 6,  required: true },
+        { key: 'Description', label: 'Description', type: 'text', maxlen: 50, required: true },
+        { key: 'IsActive',    label: 'Active',      type: 'bool' },
+        { key: 'CreatedAt',   label: 'Created',     type: 'datetime', readonly: true }
+      ]
+    },
+    POS_MATERIALS_STATUS: {
+      label: 'POS Materials Status', apiPath: '/api/activity/pos-materials-status',
+      columns: [
+        { key: 'PmsId',       label: '#',           readonly: true },
+        { key: 'Code',        label: 'Code',        type: 'text', maxlen: 6,  required: true },
+        { key: 'Description', label: 'Description', type: 'text', maxlen: 50, required: true },
+        { key: 'IsActive',    label: 'Active',      type: 'bool' },
+        { key: 'CreatedAt',   label: 'Created',     type: 'datetime', readonly: true }
+      ]
+    },
+    CUSTOMER_NON_CLIENT: {
+      label: 'Customer Non-Client', apiPath: '/api/activity/customer-non-client',
+      columns: [
+        { key: 'CncId',     label: '#',       readonly: true },
+        { key: 'Code',      label: 'Code',    type: 'text', maxlen: 20,  required: true },
+        { key: 'Name',      label: 'Name',    type: 'text', maxlen: 100, required: true },
+        { key: 'IsActive',  label: 'Active',  type: 'bool' },
+        { key: 'CreatedAt', label: 'Created', type: 'datetime', readonly: true }
+      ]
+    },
+    CUSTOMER_SALES_GROUP: {
+      label: 'Customer Sales Groups', apiPath: '/api/activity/customer-sales-group',
+      columns: [
+        { key: 'CsgId',     label: '#',       readonly: true },
+        { key: 'Code',      label: 'Code',    type: 'text', maxlen: 20,  required: true },
+        { key: 'Name',      label: 'Name',    type: 'text', maxlen: 100, required: true },
+        { key: 'IsActive',  label: 'Active',  type: 'bool' },
+        { key: 'CreatedAt', label: 'Created', type: 'datetime', readonly: true }
+      ]
+    },
+    CUSTOMER_SEGMENT_INFO: {
+      label: 'Customer Segments', apiPath: '/api/activity/customer-segment-info',
+      columns: [
+        { key: 'CsiId',       label: '#',           readonly: true },
+        { key: 'Code',        label: 'Code',        type: 'text', maxlen: 20,  required: true },
+        { key: 'Description', label: 'Description', type: 'text', maxlen: 100, required: true },
+        { key: 'IsActive',    label: 'Active',      type: 'bool' },
+        { key: 'CreatedAt',   label: 'Created',     type: 'datetime', readonly: true }
+      ]
+    },
+    CUSTOMER_TARGET_GROUP: {
+      label: 'Customer Target Groups', apiPath: '/api/activity/customer-target-group',
+      columns: [
+        { key: 'CtgId',       label: '#',           readonly: true },
+        { key: 'Code',        label: 'Code',        type: 'text', maxlen: 20,  required: true },
+        { key: 'Description', label: 'Description', type: 'text', maxlen: 100, required: true },
+        { key: 'IsActive',    label: 'Active',      type: 'bool' },
+        { key: 'CreatedAt',   label: 'Created',     type: 'datetime', readonly: true }
+      ]
+    },
+    // Activity CAT_ catalogues (product attribute selectors)
+    CAT_ADD_SPECS: {
+      label: 'Cat Additional Specs', apiPath: '/api/activity/cat-add-specs',
+      columns: [
+        { key: 'CasId',     label: '#',         readonly: true },
+        { key: 'CatSel',    label: 'Selection', type: 'text', maxlen: 25, required: true },
+        { key: 'IsActive',  label: 'Active',    type: 'bool' },
+        { key: 'CreatedAt', label: 'Created',   type: 'datetime', readonly: true }
+      ]
+    },
+    CAT_APPAREL_TYPE: {
+      label: 'Cat Apparel Types', apiPath: '/api/activity/cat-apparel-type',
+      columns: [
+        { key: 'CatId',     label: '#',         readonly: true },
+        { key: 'CatSel',    label: 'Selection', type: 'text', maxlen: 25, required: true },
+        { key: 'IsActive',  label: 'Active',    type: 'bool' },
+        { key: 'CreatedAt', label: 'Created',   type: 'datetime', readonly: true }
+      ]
+    },
+    CAT_BAG_SPECS: {
+      label: 'Cat Bag Specs', apiPath: '/api/activity/cat-bag-specs',
+      columns: [
+        { key: 'CbsId',     label: '#',         readonly: true },
+        { key: 'CatSel',    label: 'Selection', type: 'text', maxlen: 25, required: true },
+        { key: 'IsActive',  label: 'Active',    type: 'bool' },
+        { key: 'CreatedAt', label: 'Created',   type: 'datetime', readonly: true }
+      ]
+    },
+    CAT_BOTTLES: {
+      label: 'Cat Bottles', apiPath: '/api/activity/cat-bottles',
+      columns: [
+        { key: 'CbId',      label: '#',         readonly: true },
+        { key: 'CatSel',    label: 'Selection', type: 'text', maxlen: 25, required: true },
+        { key: 'IsActive',  label: 'Active',    type: 'bool' },
+        { key: 'CreatedAt', label: 'Created',   type: 'datetime', readonly: true }
+      ]
+    },
+    CAT_BRAND_SPECIFIC: {
+      label: 'Cat Brand Specific', apiPath: '/api/activity/cat-brand-specific',
+      columns: [
+        { key: 'CbrId',     label: '#',         readonly: true },
+        { key: 'CatSel',    label: 'Selection', type: 'text', maxlen: 25, required: true },
+        { key: 'IsActive',  label: 'Active',    type: 'bool' },
+        { key: 'CreatedAt', label: 'Created',   type: 'datetime', readonly: true }
+      ]
+    },
+    CAT_CLOTHING_TYPE: {
+      label: 'Cat Clothing Types', apiPath: '/api/activity/cat-clothing-type',
+      columns: [
+        { key: 'CctId',     label: '#',         readonly: true },
+        { key: 'CatSel',    label: 'Selection', type: 'text', maxlen: 25, required: true },
+        { key: 'IsActive',  label: 'Active',    type: 'bool' },
+        { key: 'CreatedAt', label: 'Created',   type: 'datetime', readonly: true }
+      ]
+    },
+    CAT_COLORS: {
+      label: 'Cat Colors', apiPath: '/api/activity/cat-colors',
+      columns: [
+        { key: 'CcId',      label: '#',         readonly: true },
+        { key: 'CatSel',    label: 'Selection', type: 'text', maxlen: 25, required: true },
+        { key: 'IsActive',  label: 'Active',    type: 'bool' },
+        { key: 'CreatedAt', label: 'Created',   type: 'datetime', readonly: true }
+      ]
+    },
+    CAT_CONTENT: {
+      label: 'Cat Content', apiPath: '/api/activity/cat-content',
+      columns: [
+        { key: 'CcoId',     label: '#',         readonly: true },
+        { key: 'CatSel',    label: 'Selection', type: 'text', maxlen: 25, required: true },
+        { key: 'IsActive',  label: 'Active',    type: 'bool' },
+        { key: 'CreatedAt', label: 'Created',   type: 'datetime', readonly: true }
+      ]
+    },
+    CAT_COOLER_CAPACITY: {
+      label: 'Cat Cooler Capacity', apiPath: '/api/activity/cat-cooler-capacity',
+      columns: [
+        { key: 'CccId',     label: '#',         readonly: true },
+        { key: 'CatSel',    label: 'Selection', type: 'text', maxlen: 25, required: true },
+        { key: 'IsActive',  label: 'Active',    type: 'bool' },
+        { key: 'CreatedAt', label: 'Created',   type: 'datetime', readonly: true }
+      ]
+    },
+    CAT_COOLER_MODEL: {
+      label: 'Cat Cooler Model', apiPath: '/api/activity/cat-cooler-model',
+      columns: [
+        { key: 'CcmId',     label: '#',         readonly: true },
+        { key: 'CatSel',    label: 'Selection', type: 'text', maxlen: 25, required: true },
+        { key: 'IsActive',  label: 'Active',    type: 'bool' },
+        { key: 'CreatedAt', label: 'Created',   type: 'datetime', readonly: true }
+      ]
+    },
+    CAT_COOLER_TYPE: {
+      label: 'Cat Cooler Types', apiPath: '/api/activity/cat-cooler-type',
+      columns: [
+        { key: 'CctyId',    label: '#',         readonly: true },
+        { key: 'CatPrefix', label: 'Prefix',    type: 'text', maxlen: 1 },
+        { key: 'CatSel',    label: 'Selection', type: 'text', maxlen: 25, required: true },
+        { key: 'IsActive',  label: 'Active',    type: 'bool' },
+        { key: 'CreatedAt', label: 'Created',   type: 'datetime', readonly: true }
+      ]
+    },
+    CAT_FILE_NAMES: {
+      label: 'Cat File Names', apiPath: '/api/activity/cat-file-names',
+      columns: [
+        { key: 'CfnId',       label: '#',            readonly: true },
+        { key: 'FileNames',   label: 'File Name',    type: 'text', maxlen: 100, required: true },
+        { key: 'DisplayText', label: 'Display Text', type: 'text', maxlen: 100 },
+        { key: 'IsActive',    label: 'Active',       type: 'bool' },
+        { key: 'CreatedAt',   label: 'Created',      type: 'datetime', readonly: true }
+      ]
+    },
+    CAT_GENDER: {
+      label: 'Cat Gender', apiPath: '/api/activity/cat-gender',
+      columns: [
+        { key: 'CgId',      label: '#',         readonly: true },
+        { key: 'CatSel',    label: 'Selection', type: 'text', maxlen: 25, required: true },
+        { key: 'IsActive',  label: 'Active',    type: 'bool' },
+        { key: 'CreatedAt', label: 'Created',   type: 'datetime', readonly: true }
+      ]
+    },
+    CAT_GLASS_SERVING: {
+      label: 'Cat Glass Serving', apiPath: '/api/activity/cat-glass-serving',
+      columns: [
+        { key: 'CgsId',     label: '#',         readonly: true },
+        { key: 'CatSel',    label: 'Selection', type: 'text', maxlen: 25, required: true },
+        { key: 'IsActive',  label: 'Active',    type: 'bool' },
+        { key: 'CreatedAt', label: 'Created',   type: 'datetime', readonly: true }
+      ]
+    },
+    CAT_INSURRANCE: {
+      label: 'Cat Insurance', apiPath: '/api/activity/cat-insurrance',
+      columns: [
+        { key: 'CiId',      label: '#',         readonly: true },
+        { key: 'CatSel',    label: 'Selection', type: 'text', maxlen: 25, required: true },
+        { key: 'IsActive',  label: 'Active',    type: 'bool' },
+        { key: 'CreatedAt', label: 'Created',   type: 'datetime', readonly: true }
+      ]
+    },
+    CAT_LED: {
+      label: 'Cat LED', apiPath: '/api/activity/cat-led',
+      columns: [
+        { key: 'ClId',      label: '#',         readonly: true },
+        { key: 'CatSel',    label: 'Selection', type: 'text', maxlen: 25, required: true },
+        { key: 'IsActive',  label: 'Active',    type: 'bool' },
+        { key: 'CreatedAt', label: 'Created',   type: 'datetime', readonly: true }
+      ]
+    },
+    CAT_MAINT_MONTHS: {
+      label: 'Cat Maintenance Months', apiPath: '/api/activity/cat-maint-months',
+      columns: [
+        { key: 'CmmId',     label: '#',         readonly: true },
+        { key: 'CatSel',    label: 'Selection', type: 'text', maxlen: 25, required: true },
+        { key: 'IsActive',  label: 'Active',    type: 'bool' },
+        { key: 'CreatedAt', label: 'Created',   type: 'datetime', readonly: true }
+      ]
+    },
+    CAT_MATERIALS: {
+      label: 'Cat Materials', apiPath: '/api/activity/cat-materials',
+      columns: [
+        { key: 'CmId',      label: '#',         readonly: true },
+        { key: 'CatSel',    label: 'Selection', type: 'text', maxlen: 25, required: true },
+        { key: 'IsActive',  label: 'Active',    type: 'bool' },
+        { key: 'CreatedAt', label: 'Created',   type: 'datetime', readonly: true }
+      ]
+    },
+    CAT_SHAPES: {
+      label: 'Cat Shapes', apiPath: '/api/activity/cat-shapes',
+      columns: [
+        { key: 'Cs2Id',     label: '#',         readonly: true },
+        { key: 'CatSel',    label: 'Selection', type: 'text', maxlen: 25, required: true },
+        { key: 'IsActive',  label: 'Active',    type: 'bool' },
+        { key: 'CreatedAt', label: 'Created',   type: 'datetime', readonly: true }
+      ]
+    },
+    CAT_SIZES: {
+      label: 'Cat Sizes', apiPath: '/api/activity/cat-sizes',
+      columns: [
+        { key: 'CszId',     label: '#',         readonly: true },
+        { key: 'CatSel',    label: 'Selection', type: 'text', maxlen: 25, required: true },
+        { key: 'IsActive',  label: 'Active',    type: 'bool' },
+        { key: 'CreatedAt', label: 'Created',   type: 'datetime', readonly: true }
+      ]
+    },
+    CAT_VAP_TYPE: {
+      label: 'Cat VAP Types', apiPath: '/api/activity/cat-vap-type',
+      columns: [
+        { key: 'CvtId',     label: '#',         readonly: true },
+        { key: 'CatSel',    label: 'Selection', type: 'text', maxlen: 25, required: true },
+        { key: 'IsActive',  label: 'Active',    type: 'bool' },
+        { key: 'CreatedAt', label: 'Created',   type: 'datetime', readonly: true }
+      ]
+    },
+
+    // ── MODULE 7: AANKOOPBON ────────────────────────────────────────────────────
+    VENDORS: {
+      label: 'Vendors', apiPath: '/api/aankoopbon/vendors',
+      columns: [
+        { key: 'VndId',       label: '#',        readonly: true },
+        { key: 'VndCode',     label: 'Code',     type: 'text',  maxlen: 6,   required: true },
+        { key: 'VndName',     label: 'Name',     type: 'text',  maxlen: 100, required: true },
+        { key: 'VndAddress1', label: 'Address',  type: 'text',  maxlen: 100 },
+        { key: 'VndPhone1',   label: 'Phone',    type: 'text',  maxlen: 25 },
+        { key: 'VndEmail',    label: 'Email',    type: 'email', maxlen: 50 },
+        { key: 'VndContact',  label: 'Contact',  type: 'text',  maxlen: 100 },
+        { key: 'VndCurr',     label: 'Currency', type: 'text',  maxlen: 3 },
+        { key: 'VndCrib',     label: 'CRIB',     type: 'text',  maxlen: 15 },
+        { key: 'VndKvk',      label: 'KVK',      type: 'text',  maxlen: 15 },
+        { key: 'VndCash',     label: 'Cash Only',type: 'bool' },
+        { key: 'IsActive',    label: 'Active',   type: 'bool' }
+      ]
+    },
+    DEPARTMENTS: {
+      label: 'Departments', apiPath: '/api/aankoopbon/departments',
+      columns: [
+        { key: 'DpId',      label: '#',       readonly: true },
+        { key: 'DpName',    label: 'Name',    type: 'text', maxlen: 15, required: true },
+        { key: 'IsActive',  label: 'Active',  type: 'bool' },
+        { key: 'CreatedAt', label: 'Created', type: 'datetime', readonly: true }
+      ]
+    },
+    EENHEDEN: {
+      label: 'Eenheden (Units)', apiPath: '/api/aankoopbon/eenheden',
+      columns: [
+        { key: 'EeId',           label: '#',                 readonly: true },
+        { key: 'UnitCode',       label: 'Unit Code',         type: 'text',   maxlen: 10, required: true },
+        { key: 'Omschrijving',   label: 'Description',       type: 'text',   maxlen: 50, required: true },
+        { key: 'OmrekenFaktor',  label: 'Conversion Factor', type: 'number' },
+        { key: 'IsActive',       label: 'Active',            type: 'bool' },
+        { key: 'CreatedAt',      label: 'Created',           type: 'datetime', readonly: true }
+      ]
+    },
+    RECEIVERS: {
+      label: 'Receivers', apiPath: '/api/aankoopbon/receivers',
+      columns: [
+        { key: 'RecId',     label: '#',          readonly: true },
+        { key: 'RecName',   label: 'Name',       type: 'text', maxlen: 30, required: true },
+        { key: 'RecIdDoc',  label: 'ID Document',type: 'text', maxlen: 15 },
+        { key: 'IsActive',  label: 'Active',     type: 'bool' },
+        { key: 'CreatedAt', label: 'Created',    type: 'datetime', readonly: true }
+      ]
+    },
+    REQUESTORS: {
+      label: 'Requestors', apiPath: '/api/aankoopbon/requestors',
+      columns: [
+        { key: 'ReqId',     label: '#',       readonly: true },
+        { key: 'ReqName',   label: 'Name',    type: 'text',  maxlen: 15, required: true },
+        { key: 'ReqEmail',  label: 'Email',   type: 'email', maxlen: 50 },
+        { key: 'IsActive',  label: 'Active',  type: 'bool' },
+        { key: 'CreatedAt', label: 'Created', type: 'datetime', readonly: true }
+      ]
+    },
+    REQUESTORS_VENDOR: {
+      label: 'Requestors / Vendor', apiPath: '/api/aankoopbon/requestors-vendor',
+      columns: [
+        { key: 'RvId',        label: '#',         readonly: true },
+        { key: 'RsRequestor', label: 'Requestor', type: 'text', maxlen: 15, required: true },
+        { key: 'RsVendor',    label: 'Vendor',    type: 'text', maxlen: 6,  required: true },
+        { key: 'IsActive',    label: 'Active',    type: 'bool' },
+        { key: 'CreatedAt',   label: 'Created',   type: 'datetime', readonly: true }
+      ]
+    },
+    COST_TYPE: {
+      label: 'Cost Types', apiPath: '/api/aankoopbon/cost-types',
+      columns: [
+        { key: 'CtId',      label: '#',       readonly: true },
+        { key: 'TcName',    label: 'Name',    type: 'text', maxlen: 15, required: true },
+        { key: 'IsActive',  label: 'Active',  type: 'bool' },
+        { key: 'CreatedAt', label: 'Created', type: 'datetime', readonly: true }
+      ]
+    },
+    VEHICLE_TYPE: {
+      label: 'Vehicle Types', apiPath: '/api/aankoopbon/vehicle-types',
+      columns: [
+        { key: 'VtId',      label: '#',       readonly: true },
+        { key: 'VtName',    label: 'Name',    type: 'text', maxlen: 15, required: true },
+        { key: 'IsActive',  label: 'Active',  type: 'bool' },
+        { key: 'CreatedAt', label: 'Created', type: 'datetime', readonly: true }
+      ]
+    },
+    VEHICLES: {
+      label: 'Vehicles', apiPath: '/api/aankoopbon/vehicles',
+      columns: [
+        { key: 'VhId',      label: '#',             readonly: true },
+        { key: 'VhLicense', label: 'License Plate', type: 'text', maxlen: 10, required: true },
+        { key: 'VhType',    label: 'Type',          type: 'text', maxlen: 15 },
+        { key: 'VhModel',   label: 'Model',         type: 'text', maxlen: 15 },
+        { key: 'IsActive',  label: 'Active',        type: 'bool' },
+        { key: 'CreatedAt', label: 'Created',       type: 'datetime', readonly: true }
+      ]
+    },
+    AB_PRODUCTS: {
+      label: 'AB Products', apiPath: '/api/aankoopbon/ab-products',
+      columns: [
+        { key: 'AbpId',        label: '#',            readonly: true },
+        { key: 'ItemKode',     label: 'Item Code',    type: 'text',   maxlen: 20,  required: true },
+        { key: 'Omschrijving', label: 'Description',  type: 'text',   maxlen: 100, required: true },
+        { key: 'VendorCode',   label: 'Vendor Code',  type: 'text',   maxlen: 6 },
+        { key: 'CostType',     label: 'Cost Type',    type: 'text',   maxlen: 15 },
+        { key: 'Eenheid',      label: 'Unit',         type: 'text',   maxlen: 10 },
+        { key: 'UnitQuantity', label: 'Unit Qty',     type: 'number' },
+        { key: 'IsActive',     label: 'Active',       type: 'bool' }
+      ]
+    }
+  };
+
+  // Generic fallback schema for unlisted tables
+  function genericSchema(tableName) {
+    return {
+      label: tableName.replace(/_/g, ' '),
+      apiPath: `/api/catalog/${tableName.toLowerCase()}`,
+      columns: [
+        { key: 'Id',          label: '#',           readonly: true },
+        { key: 'Code',        label: 'Code',         type: 'text', maxlen: 20 },
+        { key: 'Description', label: 'Description',  type: 'text', maxlen: 100 },
+        { key: 'IsActive',    label: 'Active',        type: 'bool' },
+        { key: 'CreatedAt',   label: 'Created',       type: 'datetime', readonly: true }
+      ]
+    };
+  }
+
+  // ── Init ───────────────────────────────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', async () => {
+    if (!Auth.requireAuth()) return;
+    Auth.startExpiryWatcher();
+    Auth.populateUserUI();
+    Sidebar.init();
+
+    document.getElementById('btn-logout').addEventListener('click', e => { e.preventDefault(); Auth.logout(); });
+
+    const params = new URLSearchParams(window.location.search);
+    state.tableName  = params.get('table')  || 'ORDER_STATUS';
+    state.moduleCode = params.get('module') || '';
+
+    const schema = TABLE_SCHEMAS[state.tableName] || genericSchema(state.tableName);
+    state.columns = schema.columns;
+    state.apiPath  = schema.apiPath;
+
+    // Check permissions
+    const user = Auth.getCurrentUser();
+    const isSuperAdmin = user?.RoleName === 'SuperAdmin';
+    const perm = (user?.Permissions || []).find(p =>
+      p.SubmoduleCode.includes(state.moduleCode) ||
+      p.SubmoduleCode.includes(state.tableName)
+    );
+
+    state.canWrite  = isSuperAdmin || !!perm?.CanWrite;
+    state.canEdit   = isSuperAdmin || !!perm?.CanEdit;
+    state.canDelete = isSuperAdmin || !!perm?.CanDelete;
+
+    // Update page titles
+    document.title = `${schema.label} - Licores Maduro`;
+    document.getElementById('page-title').textContent = schema.label;
+    document.getElementById('h-title').textContent    = schema.label;
+    document.getElementById('h-subtitle').textContent = `Table: ${state.tableName} | Module: ${state.moduleCode}`;
+    document.getElementById('table-label').textContent = schema.label;
+    document.getElementById('bc-module').querySelector('a').textContent = state.moduleCode;
+    document.getElementById('bc-table').textContent   = schema.label;
+
+    if (state.canWrite) {
+      document.getElementById('btn-create').style.display = '';
+    }
+
+    // Toolbar actions
+    document.getElementById('btn-create').addEventListener('click', openCreateModal);
+    document.getElementById('btn-save-record').addEventListener('click', saveRecord);
+    document.getElementById('btn-export-csv').addEventListener('click', exportCsv);
+    document.getElementById('search-input').addEventListener('input', debounce(loadData, 400));
+
+    await loadData();
+  });
+
+  // ── Load data ──────────────────────────────────────────────────────────────
+  async function loadData() {
+    const search = document.getElementById('search-input').value;
+    try {
+      const qs = new URLSearchParams({ page: state.page, pageSize: state.pageSize });
+      if (search) qs.set('search', search);
+
+      const res = await API.get(`${state.apiPath}?${qs}`);
+
+      if (res?.Data !== undefined) {
+        // PagedResponse
+        state.records    = res.Data;
+        state.totalCount = res.TotalCount;
+        state.totalPages = res.TotalPages;
+      } else if (Array.isArray(res)) {
+        state.records    = res;
+        state.totalCount = res.length;
+        state.totalPages = 1;
+      } else {
+        state.records = [];
+      }
+
+      document.getElementById('total-count').textContent = state.totalCount + ' records';
+      renderTable();
+      renderPagination();
+    } catch (err) {
+      showToast(err.message, 'danger');
+      document.getElementById('table-container').innerHTML =
+        `<div class="text-center py-5 text-danger"><i class="fas fa-exclamation-triangle fa-2x mb-2"></i><br>${err.message}</div>`;
+    }
+  }
+
+  // ── Render table ────────────────────────────────────────────────────────────
+  function renderTable() {
+    const cols    = state.columns;
+    const records = state.records;
+    const idKey   = cols[0]?.key || 'Id';
+
+    let html = `<table class="table table-hover mb-0"><thead><tr>`;
+    cols.forEach(c => { html += `<th>${c.label}</th>`; });
+    if (state.canEdit || state.canDelete) html += `<th>Actions</th>`;
+    html += `</tr></thead><tbody>`;
+
+    if (records.length === 0) {
+      html += `<tr><td colspan="${cols.length + 1}" class="text-center py-4 text-muted">No records found.</td></tr>`;
+    } else {
+      records.forEach(row => {
+        html += '<tr>';
+        cols.forEach(c => {
+          let val = row[c.key];
+          if (c.type === 'bool')     val = val ? '<span class="badge-active">Yes</span>' : '<span class="badge-inactive">No</span>';
+          else if (c.type === 'datetime' && val) val = new Date(val).toLocaleDateString();
+          else val = esc(val ?? '–');
+          html += `<td>${val}</td>`;
+        });
+        if (state.canEdit || state.canDelete) {
+          html += `<td>`;
+          if (state.canEdit)   html += `<button class="btn-action edit me-1" onclick="openEditModal(${row[idKey]})" title="Edit"><i class="fas fa-edit"></i></button>`;
+          if (state.canDelete) html += `<button class="btn-action delete" onclick="deleteRecord(${row[idKey]})" title="Delete"><i class="fas fa-trash"></i></button>`;
+          html += `</td>`;
+        }
+        html += '</tr>';
+      });
+    }
+
+    html += '</tbody></table>';
+    document.getElementById('table-container').innerHTML = html;
+    document.getElementById('pagination-info').textContent =
+      `Page ${state.page} of ${state.totalPages} | ${state.totalCount} total records`;
+  }
+
+  // ── Pagination ─────────────────────────────────────────────────────────────
+  function renderPagination() {
+    const ul = document.getElementById('pagination');
+    const tp = state.totalPages;
+    if (tp <= 1) { ul.innerHTML = ''; return; }
+
+    let html = '';
+    const p = state.page;
+
+    html += `<li class="page-item ${p===1?'disabled':''}"><a class="page-link" href="#" data-page="${p-1}">&laquo;</a></li>`;
+
+    for (let i = Math.max(1, p-2); i <= Math.min(tp, p+2); i++) {
+      html += `<li class="page-item ${i===p?'active':''}"><a class="page-link" href="#" data-page="${i}">${i}</a></li>`;
+    }
+
+    html += `<li class="page-item ${p===tp?'disabled':''}"><a class="page-link" href="#" data-page="${p+1}">&raquo;</a></li>`;
+    ul.innerHTML = html;
+
+    ul.querySelectorAll('[data-page]').forEach(a => {
+      a.addEventListener('click', e => {
+        e.preventDefault();
+        const pg = parseInt(a.dataset.page);
+        if (pg >= 1 && pg <= tp) { state.page = pg; loadData(); }
+      });
+    });
+  }
+
+  // ── Modal helpers ──────────────────────────────────────────────────────────
+  function buildForm(record = null) {
+    const cols = state.columns;
+    let html = '<div class="row g-3">';
+
+    cols.forEach(c => {
+      if (c.readonly) return;
+
+      const val = record ? (record[c.key] ?? '') : '';
+      html += `<div class="col-md-6">
+        <label class="form-label">${c.label}${c.required ? ' <span class="text-danger">*</span>' : ''}</label>`;
+
+      if (c.type === 'bool') {
+        html += `<div class="form-check form-switch mt-1">
+          <input class="form-check-input" type="checkbox" id="f-${c.key}" ${val ? 'checked' : ''} />
+        </div>`;
+      } else if (c.type === 'number') {
+        html += `<input type="number" step="0.0001" class="form-control" id="f-${c.key}" value="${val}" ${c.required ? 'required' : ''} />`;
+      } else if (c.type === 'email') {
+        html += `<input type="email" class="form-control" id="f-${c.key}" value="${esc(val)}" maxlength="${c.maxlen||100}" ${c.required ? 'required' : ''} />`;
+      } else if (c.type === 'date') {
+        const dateVal = val ? String(val).slice(0, 10) : '';
+        html += `<input type="date" class="form-control" id="f-${c.key}" value="${dateVal}" ${c.required ? 'required' : ''} />`;
+      } else {
+        html += `<input type="text" class="form-control" id="f-${c.key}" value="${esc(val)}" maxlength="${c.maxlen||255}" ${c.required ? 'required' : ''} />`;
+      }
+
+      html += '</div>';
+    });
+
+    html += '</div>';
+    return html;
+  }
+
+  function openCreateModal() {
+    state.editId = null;
+    document.getElementById('recordModalLabel').innerHTML = '<i class="fas fa-plus me-2"></i>New Record';
+    document.getElementById('modal-form-body').innerHTML = buildForm(null);
+    new bootstrap.Modal('#recordModal').show();
+  }
+
+  function openEditModal(id) {
+    const record = state.records.find(r => Object.values(r)[0] === id);
+    if (!record) return;
+    state.editId = id;
+    document.getElementById('recordModalLabel').innerHTML = '<i class="fas fa-edit me-2"></i>Edit Record';
+    document.getElementById('modal-form-body').innerHTML = buildForm(record);
+    new bootstrap.Modal('#recordModal').show();
+  }
+
+  async function saveRecord() {
+    const cols = state.columns;
+    const dto  = {};
+
+    cols.forEach(c => {
+      if (c.readonly) return;
+      const el = document.getElementById(`f-${c.key}`);
+      if (!el) return;
+      if (c.type === 'bool')   dto[c.key] = el.checked;
+      else if (c.type === 'number') dto[c.key] = el.value !== '' ? +el.value : null;
+      else                          dto[c.key] = el.value.trim() || null;
+    });
+
+    try {
+      if (state.editId) {
+        await API.put(`${state.apiPath}/${state.editId}`, dto);
+        showToast('Record updated.', 'success');
+      } else {
+        await API.post(state.apiPath, dto);
+        showToast('Record created.', 'success');
+      }
+      bootstrap.Modal.getInstance(document.getElementById('recordModal'))?.hide();
+      await loadData();
+    } catch (err) {
+      showToast(err.message, 'danger');
+    }
+  }
+
+  async function deleteRecord(id) {
+    if (!confirm('Delete this record? This action cannot be undone.')) return;
+    try {
+      await API.del(`${state.apiPath}/${id}`);
+      showToast('Record deleted.', 'success');
+      await loadData();
+    } catch (err) {
+      showToast(err.message, 'danger');
+    }
+  }
+
+  // ── Export CSV ─────────────────────────────────────────────────────────────
+  function exportCsv() {
+    const cols = state.columns;
+    const rows = [cols.map(c => c.label)];
+    state.records.forEach(r => {
+      rows.push(cols.map(c => {
+        const v = r[c.key];
+        if (v === null || v === undefined) return '';
+        if (typeof v === 'boolean') return v ? 'Yes' : 'No';
+        return String(v).replace(/"/g, '""');
+      }));
+    });
+
+    const csv   = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+    const blob  = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link  = document.createElement('a');
+    link.href   = URL.createObjectURL(blob);
+    link.download = `${state.tableName}_${new Date().toISOString().slice(0,10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  }
+
+  // ── Utilities ──────────────────────────────────────────────────────────────
+  function showToast(msg, type = 'success') {
+    const el  = document.getElementById('toast');
+    const msgEl = document.getElementById('toast-msg');
+    el.className = `toast align-items-center text-white border-0 bg-${type === 'success' ? 'success' : 'danger'}`;
+    msgEl.textContent = msg;
+    new bootstrap.Toast(el, { delay: 3500 }).show();
+  }
+
+  function esc(str) {
+    return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function debounce(fn, ms) {
+    let t;
+    return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,633 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Role Management - Licores Maduro</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../css/main.css" />
+</head>
+<body>
+
+<div id="sidebar-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;"></div>
+
+<div class="app-wrapper">
+  <!-- Sidebar -->
+  <nav id="sidebar" class="sidebar">
+    <div class="sidebar-header">
+      <img src="../img/LogoLicores.png" alt="Licores Maduro" class="sidebar-logo-img"/>
+      <span class="sidebar-logo-text">LICORES MADURO</span>
+    </div>
+    <div id="sidebar-nav" class="sidebar-nav"></div>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="sidebar-avatar" id="sidebar-user-initials">LM</div>
+        <div class="sidebar-text"><div id="sidebar-user-name" style="font-weight:600;">–</div></div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main -->
+  <div class="main-area">
+    <header class="topbar">
+      <button id="btn-sidebar-toggle" class="btn-sidebar-toggle"><i class="fas fa-bars"></i></button>
+      <span class="topbar-title"><i class="fas fa-user-shield me-2 text-wine"></i>Role Management</span>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-2"
+                  type="button" data-bs-toggle="dropdown">
+            <span class="sidebar-avatar" id="topbar-user-initials" style="width:28px;height:28px;font-size:.75rem;">LM</span>
+            <span id="topbar-user-name" class="d-none d-md-inline">–</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+            <li><div class="dropdown-header"><strong id="topbar-user-fullname">User</strong><br/><small class="text-muted" id="topbar-user-role">Role</small></div></li>
+            <li><hr class="dropdown-divider" /></li>
+            <li><a class="dropdown-item text-danger" href="#" id="btn-logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+          </ul>
+        </div>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <!-- Breadcrumb -->
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="../dashboard.html"><i class="fas fa-home me-1"></i>Home</a></li>
+          <li class="breadcrumb-item active">Roles</li>
+        </ol>
+      </nav>
+
+      <div class="page-title">Role Management</div>
+      <div class="page-subtitle">Define roles and configure module/submodule permissions.</div>
+
+      <!-- Toolbar -->
+      <div class="card mb-3">
+        <div class="card-body d-flex flex-wrap align-items-center gap-2 py-2">
+          <div class="search-wrapper flex-grow-1">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" id="search-input" class="form-control form-control-sm" placeholder="Search roles..." />
+          </div>
+          <button class="btn btn-wine btn-sm ms-auto" id="btn-new-role">
+            <i class="fas fa-plus me-1"></i>New Role
+          </button>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="card">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <span><i class="fas fa-table me-2"></i>Roles</span>
+          <span class="badge" style="background:var(--primary);color:#fff;" id="total-count">0 records</span>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Name</th>
+                  <th>Description</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="roles-tbody">
+                <tr><td colspan="5" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <!-- Pagination -->
+        <div class="card-footer d-flex align-items-center justify-content-between flex-wrap gap-2">
+          <small class="text-muted" id="page-info">Page 1</small>
+          <nav><ul class="pagination pagination-sm mb-0" id="pagination"></ul></nav>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Create/Edit Role Modal -->
+<div class="modal fade" id="roleModal" tabindex="-1" aria-labelledby="roleModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="roleModalLabel"><i class="fas fa-user-shield me-2"></i>Role</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="role-form" novalidate>
+          <input type="hidden" id="edit-role-id" />
+          <div class="mb-3">
+            <label class="form-label">Name <span class="text-danger">*</span></label>
+            <input type="text" id="f-role-name" class="form-control" required maxlength="50" placeholder="e.g. Manager" />
+            <div class="invalid-feedback">Role name is required (max 50 chars).</div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Description</label>
+            <textarea id="f-role-desc" class="form-control" rows="3" maxlength="200" placeholder="Brief description of this role..."></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-wine btn-sm" id="btn-save-role">
+          <i class="fas fa-save me-1"></i>Save Role
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Permissions Modal -->
+<div class="modal fade" id="permModal" tabindex="-1" aria-labelledby="permModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="permModalLabel"><i class="fas fa-key me-2"></i>Permissions for: <span id="perm-role-name">–</span></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-0">
+        <div id="perm-loading" class="text-center py-5">
+          <i class="fas fa-spinner fa-spin fa-2x text-wine"></i>
+          <div class="mt-2 text-muted">Loading permissions...</div>
+        </div>
+        <div id="perm-content" class="d-none">
+          <table class="table table-bordered mb-0" style="font-size:.8rem;">
+            <thead>
+              <tr>
+                <th style="min-width:180px;">Module / Submodule</th>
+                <th class="text-center">Access</th>
+                <th class="text-center">Read</th>
+                <th class="text-center">Write</th>
+                <th class="text-center">Edit</th>
+                <th class="text-center">Delete</th>
+                <th class="text-center" style="min-width:50px;background:#f8f9fa;">All</th>
+              </tr>
+            </thead>
+            <tbody id="perm-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-wine btn-sm" id="btn-save-perms">
+          <i class="fas fa-save me-1"></i>Save Permissions
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header" style="background:#dc3545;">
+        <h5 class="modal-title text-white"><i class="fas fa-trash me-2"></i>Delete Role</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body text-center py-4">
+        <i class="fas fa-exclamation-triangle fa-2x text-danger mb-3 d-block"></i>
+        <p class="mb-1">Are you sure you want to permanently delete</p>
+        <strong id="delete-role-name" class="text-danger"></strong>?
+        <p class="text-muted mt-2 mb-0" style="font-size:.8rem;">This action cannot be undone. Roles with assigned users cannot be deleted.</p>
+      </div>
+      <div class="modal-footer justify-content-center gap-2">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger btn-sm" id="btn-confirm-delete">
+          <i class="fas fa-trash me-1"></i>Delete
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast-container">
+  <div id="toast" class="toast align-items-center text-white border-0" role="alert">
+    <div class="d-flex">
+      <div class="toast-body" id="toast-msg"></div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../js/i18n.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/sidebar.js"></script>
+<script>
+  let allRoles = [];
+  let filteredRoles = [];
+  let currentPage = 1;
+  const PAGE_SIZE = 15;
+  let currentPermRoleId = null;
+  let currentPerms = [];
+
+  const MODULES_PERMS = [
+    // ── Tracking ──────────────────────────────────────────────────────────────
+    { module: 'TRACKING', label: 'Tracking', submodules: [
+      { code: 'TRACKING_ORDERS',          label: 'Purchase Order Tracking' },
+      { code: 'TRACKING_ORDER_STATUS',    label: 'Order Status Codes' },
+      { code: 'TRACKING_CONTAINER_TYPES', label: 'Container Types' },
+    ]},
+    // ── Freight Forwarder ──────────────────────────────────────────────────────
+    { module: 'FREIGHT', label: 'Freight Forwarder', submodules: [
+      { code: 'FF_FORWARDERS',            label: 'Freight Forwarders' },
+      { code: 'FF_OCEAN_QUOTES',          label: 'Ocean Freight Quotes' },
+      { code: 'FF_INLAND_QUOTES',         label: 'Inland Freight Quotes' },
+      { code: 'FF_LCL_QUOTES',            label: 'LCL Quotes' },
+      { code: 'FF_INLAND_ADD_CHARGES',    label: 'Inland Additional Charges' },
+      { code: 'FF_CURRENCIES',            label: 'Currencies' },
+      { code: 'FF_COUNTRIES',             label: 'Countries' },
+      { code: 'FF_SUPPLIERS',             label: 'Suppliers' },
+      { code: 'FF_LOADTYPES',             label: 'Load Types' },
+      { code: 'FF_PORT_OF_LOADING',       label: 'Ports of Loading' },
+      { code: 'FF_SHIPPING_LINES',        label: 'Shipping Lines' },
+      { code: 'FF_SHIPPING_AGENT',        label: 'Shipping Agents' },
+      { code: 'FF_ROUTES',                label: 'Routes' },
+      { code: 'FF_CONTAINER_SPECS',       label: 'Container Specs' },
+      { code: 'FF_CONTAINER_TYPES',       label: 'Container Types' },
+      { code: 'FF_ROUTES_BY_SA',          label: 'Routes by Shipping Agent' },
+      { code: 'FF_OCEAN_FREIGHT_CHARGE',  label: 'Ocean Freight Charges' },
+      { code: 'FF_INLAND_FREIGHT_CHARGE', label: 'Inland Freight Charges' },
+      { code: 'FF_LCL_CHARGE',            label: 'LCL Charge Types' },
+      { code: 'FF_PRICE_TYPE',            label: 'Price Types' },
+      { code: 'FF_AMOUNT_TYPE',           label: 'Amount Types' },
+      { code: 'FF_CHARGE_ACTION',         label: 'Charge Actions' },
+      { code: 'FF_CHARGE_OVER',           label: 'Charge Over' },
+      { code: 'FF_CHARGE_PER',            label: 'Charge Per' },
+    ]},
+    // ── Cost Calculation ───────────────────────────────────────────────────────
+    { module: 'COST', label: 'Cost Calculation', submodules: [
+      { code: 'COST_CALCULATIONS',        label: 'Calculations' },
+      { code: 'COST_NEW_CALC',            label: 'New Calculation' },
+      { code: 'COST_PO_LOOKUP',           label: 'Purchase Orders' },
+    ]},
+    // ── Route Assignment ───────────────────────────────────────────────────────
+    { module: 'ROUTE', label: 'Route Assignment', submodules: [
+      { code: 'ROUTE_REPORTS',            label: 'Reports' },
+      { code: 'ROUTE_DIMENSIONS',         label: 'Dimensions Viewer' },
+      { code: 'ROUTE_CUSTOMER_EXT',       label: 'Customer Ext Dimensions' },
+      { code: 'ROUTE_PRODUCT_EXT',        label: 'Product Ext Dimensions' },
+      { code: 'ROUTE_BUDGET',             label: 'Budget' },
+    ]},
+    // ── Stock Analysis ─────────────────────────────────────────────────────────
+    { module: 'STOCK', label: 'Stock Analysis', submodules: [
+      { code: 'STOCK_ANALYSIS',           label: 'Generate Analysis' },
+      { code: 'STOCK_ANALYSIS_RESULTS',   label: 'Analysis Results' },
+      { code: 'STOCK_IDEAL_MONTHS',       label: 'Ideal Months Config' },
+      { code: 'STOCK_VENDOR_CONSTRAINTS', label: 'Vendor Constraints' },
+      { code: 'STOCK_SALES_BUDGET',       label: 'Sales Budget' },
+    ]},
+    // ── Activity Request ───────────────────────────────────────────────────────
+    { module: 'ACTIVITY', label: 'Activity Request', submodules: [
+      // Operational pages
+      { code: 'ACT_MARKETING_CALENDAR',   label: 'Marketing Calendar' },
+      { code: 'ACT_ACTIVITY_REQUESTS',    label: 'Activity Requests' },
+      { code: 'ACT_POS_MATERIALS',        label: 'POS Materials' },
+      { code: 'ACT_POS_LEND_OUT',         label: 'POS Lend Out' },
+      // Configuration catalogs
+      { code: 'ACT_ACTIVITY_TYPE',        label: 'Activity Types' },
+      { code: 'ACT_BUDGET_ACTIVITIES',    label: 'Budget Activities' },
+      { code: 'ACT_STATUS_CODES',         label: 'Status Codes' },
+      { code: 'ACT_DENIAL_REASONS',       label: 'Denial Reasons' },
+      { code: 'ACT_SPONSORING_TYPE',      label: 'Sponsoring Types' },
+      { code: 'ACT_ENTERTAINMENT_TYPE',   label: 'Entertainment Types' },
+      { code: 'ACT_FISCAL_YEARS',         label: 'Fiscal Years' },
+      { code: 'ACT_LICORES_GROUP',        label: 'Licores Group' },
+      { code: 'ACT_LOCATION_INFO',        label: 'Location Info' },
+      { code: 'ACT_POS_CATEGORY',         label: 'POS Category' },
+      { code: 'ACT_POS_LEND_GIVE',        label: 'POS Lend/Give' },
+      { code: 'ACT_POS_MATERIALS_STATUS', label: 'POS Materials Status' },
+      { code: 'ACT_CUSTOMER_NON_CLIENT',  label: 'Customer Non-Client' },
+      { code: 'ACT_CUSTOMER_SALES_GROUP', label: 'Customer Sales Groups' },
+      { code: 'ACT_CUSTOMER_SEGMENT_INFO',label: 'Customer Segments' },
+      { code: 'ACT_CUSTOMER_TARGET_GROUP',label: 'Customer Target Groups' },
+      { code: 'ACT_FACILITATORS_INFO',    label: 'Facilitators' },
+      // Product catalogs
+      { code: 'ACT_CAT_ADD_SPECS',        label: 'Cat Additional Specs' },
+      { code: 'ACT_CAT_APPAREL_TYPE',     label: 'Cat Apparel Types' },
+      { code: 'ACT_CAT_BAG_SPECS',        label: 'Cat Bag Specs' },
+      { code: 'ACT_CAT_BOTTLES',          label: 'Cat Bottles' },
+      { code: 'ACT_CAT_BRAND_SPECIFIC',   label: 'Cat Brand Specific' },
+      { code: 'ACT_CAT_CLOTHING_TYPE',    label: 'Cat Clothing Types' },
+      { code: 'ACT_CAT_COLORS',           label: 'Cat Colors' },
+      { code: 'ACT_CAT_CONTENT',          label: 'Cat Content' },
+      { code: 'ACT_CAT_COOLER_CAPACITY',  label: 'Cat Cooler Capacity' },
+      { code: 'ACT_CAT_COOLER_MODEL',     label: 'Cat Cooler Model' },
+      { code: 'ACT_CAT_COOLER_TYPE',      label: 'Cat Cooler Types' },
+      { code: 'ACT_CAT_FILE_NAMES',       label: 'Cat File Names' },
+      { code: 'ACT_CAT_GENDER',           label: 'Cat Gender' },
+      { code: 'ACT_CAT_GLASS_SERVING',    label: 'Cat Glass Serving' },
+      { code: 'ACT_CAT_INSURRANCE',       label: 'Cat Insurance' },
+      { code: 'ACT_CAT_LED',              label: 'Cat LED' },
+      { code: 'ACT_CAT_MAINT_MONTHS',     label: 'Cat Maintenance Months' },
+      { code: 'ACT_CAT_MATERIALS',        label: 'Cat Materials' },
+      { code: 'ACT_CAT_SHAPES',           label: 'Cat Shapes' },
+      { code: 'ACT_CAT_SIZES',            label: 'Cat Sizes' },
+      { code: 'ACT_CAT_VAP_TYPE',         label: 'Cat VAP Types' },
+    ]},
+    // ── Aankoopbon ─────────────────────────────────────────────────────────────
+    { module: 'PURCHASE', label: 'Aankoopbon', submodules: [
+      { code: 'AB_AANKOOPBON',            label: 'Aankoopbonnen (Orders)' },
+      { code: 'AB_VENDORS',               label: 'Vendors' },
+      { code: 'AB_PRODUCTS_MGT',          label: 'AB Products' },
+      { code: 'AB_DEPARTMENTS',           label: 'Departments' },
+      { code: 'AB_EENHEDEN',              label: 'Eenheden (Units)' },
+      { code: 'AB_RECEIVERS',             label: 'Receivers' },
+      { code: 'AB_REQUESTORS',            label: 'Requestors' },
+      { code: 'AB_REQUESTORS_VENDOR',     label: 'Requestors / Vendor' },
+      { code: 'AB_COST_TYPE',             label: 'Cost Types' },
+      { code: 'AB_VEHICLE_TYPE',          label: 'Vehicle Types' },
+      { code: 'AB_VEHICLES',              label: 'Vehicles' },
+    ]},
+  ];
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    if (!Auth.requireAuth()) return;
+    Auth.startExpiryWatcher();
+    Auth.populateUserUI();
+    Sidebar.init();
+
+    document.getElementById('btn-logout').addEventListener('click', e => { e.preventDefault(); Auth.logout(); });
+    document.getElementById('btn-new-role').addEventListener('click', openCreate);
+    document.getElementById('btn-save-role').addEventListener('click', saveRole);
+    document.getElementById('btn-save-perms').addEventListener('click', savePerms);
+    document.getElementById('btn-confirm-delete').addEventListener('click', deleteRole);
+    document.getElementById('search-input').addEventListener('input', filterAndRender);
+
+    await loadRoles();
+  });
+
+  async function loadRoles() {
+    try {
+      const res = await API.roles.getAll();
+      allRoles = res?.Data || res || [];
+      filterAndRender();
+    } catch (err) { showToast(err.message, 'danger'); }
+  }
+
+  function filterAndRender() {
+    const q = document.getElementById('search-input').value.toLowerCase();
+    filteredRoles = allRoles.filter(r =>
+      (r.RoleName||'').toLowerCase().includes(q) ||
+      (r.Description||'').toLowerCase().includes(q)
+    );
+    currentPage = 1;
+    renderTable();
+    renderPagination();
+  }
+
+  function renderTable() {
+    const tbody = document.getElementById('roles-tbody');
+    const start = (currentPage - 1) * PAGE_SIZE;
+    const page = filteredRoles.slice(start, start + PAGE_SIZE);
+    document.getElementById('total-count').textContent = filteredRoles.length + ' ' + I18n.t(filteredRoles.length !== 1 ? 'records' : 'record');
+
+    if (page.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted">${I18n.t('No records found.')}</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = page.map((r, i) => `
+      <tr>
+        <td>${start + i + 1}</td>
+        <td><strong>${esc(r.RoleName)}</strong></td>
+        <td>${esc(r.Description || '–')}</td>
+        <td><span class="${r.IsActive !== false ? 'badge-active' : 'badge-inactive'}">${I18n.t(r.IsActive !== false ? 'Active' : 'Inactive')}</span></td>
+        <td>
+          <button class="btn-action edit me-1" onclick="openEdit(${r.RoleId})" title="Edit"><i class="fas fa-edit"></i></button>
+          <button class="btn-action view me-1" onclick="openPerms(${r.RoleId},'${esc(r.RoleName)}')" title="Permissions"><i class="fas fa-key"></i></button>
+          <button class="btn-action ${r.IsActive !== false ? 'delete' : 'edit'} me-1" onclick="toggleRole(${r.RoleId})" title="${r.IsActive !== false ? 'Deactivate' : 'Activate'}">
+            <i class="fas fa-${r.IsActive !== false ? 'ban' : 'check-circle'}"></i>
+          </button>
+          <button class="btn-action delete" onclick="confirmDelete(${r.RoleId},'${esc(r.RoleName)}')" title="Delete permanently"><i class="fas fa-trash"></i></button>
+        </td>
+      </tr>`).join('');
+  }
+
+  function renderPagination() {
+    const total = Math.ceil(filteredRoles.length / PAGE_SIZE);
+    const ul = document.getElementById('pagination');
+    document.getElementById('page-info').textContent = `${I18n.t('Page')} ${currentPage} ${I18n.t('of')} ${total || 1}`;
+    let html = '';
+    html += `<li class="page-item ${currentPage===1?'disabled':''}"><a class="page-link" href="#" onclick="gotoPage(${currentPage-1})">&#8249;</a></li>`;
+    for (let p = 1; p <= total; p++) {
+      if (total > 7 && Math.abs(p - currentPage) > 2 && p !== 1 && p !== total) { if (p === 2 || p === total-1) html += `<li class="page-item disabled"><a class="page-link">…</a></li>`; continue; }
+      html += `<li class="page-item ${p===currentPage?'active':''}"><a class="page-link" href="#" onclick="gotoPage(${p})">${p}</a></li>`;
+    }
+    html += `<li class="page-item ${currentPage===total||total===0?'disabled':''}"><a class="page-link" href="#" onclick="gotoPage(${currentPage+1})">&#8250;</a></li>`;
+    ul.innerHTML = html;
+  }
+
+  function gotoPage(p) {
+    event.preventDefault();
+    const total = Math.ceil(filteredRoles.length / PAGE_SIZE);
+    if (p < 1 || p > total) return;
+    currentPage = p;
+    renderTable();
+    renderPagination();
+  }
+
+  function openCreate() {
+    document.getElementById('edit-role-id').value = '';
+    document.getElementById('role-form').reset();
+    document.getElementById('roleModalLabel').innerHTML = '<i class="fas fa-plus me-2"></i>New Role';
+    new bootstrap.Modal('#roleModal').show();
+  }
+
+  function openEdit(id) {
+    const r = allRoles.find(x => x.RoleId === id);
+    if (!r) return;
+    document.getElementById('edit-role-id').value = id;
+    document.getElementById('f-role-name').value = r.RoleName;
+    document.getElementById('f-role-desc').value = r.Description || '';
+    document.getElementById('roleModalLabel').innerHTML = '<i class="fas fa-edit me-2"></i>Edit Role';
+    new bootstrap.Modal('#roleModal').show();
+  }
+
+  async function saveRole() {
+    const id = document.getElementById('edit-role-id').value;
+    const name = document.getElementById('f-role-name').value.trim();
+    if (!name) { document.getElementById('f-role-name').classList.add('is-invalid'); return; }
+    document.getElementById('f-role-name').classList.remove('is-invalid');
+    const dto = { RoleName: name, Description: document.getElementById('f-role-desc').value.trim() };
+    try {
+      if (id) { await API.roles.update(id, dto); showToast(I18n.t('Updated.'), 'success'); }
+      else { await API.roles.create(dto); showToast(I18n.t('Created.'), 'success'); }
+      bootstrap.Modal.getInstance(document.getElementById('roleModal'))?.hide();
+      await loadRoles();
+    } catch (err) { showToast(err.message, 'danger'); }
+  }
+
+  async function toggleRole(id) {
+    const role = allRoles.find(r => r.RoleId === id);
+    const action = role?.IsActive !== false ? 'Deactivate' : 'Activate';
+    if (!confirm(`${action} role "${role?.RoleName}"?`)) return;
+    try {
+      const res = await API.roles.toggleStatus(id);
+      showToast(res?.Message || 'Status updated.', 'success');
+      await loadRoles();
+    } catch (err) { showToast(err.message, 'danger'); }
+  }
+
+  let _pendingDeleteId = null;
+
+  function confirmDelete(id, name) {
+    _pendingDeleteId = id;
+    document.getElementById('delete-role-name').textContent = name;
+    new bootstrap.Modal('#deleteModal').show();
+  }
+
+  async function deleteRole() {
+    if (!_pendingDeleteId) return;
+    const id = _pendingDeleteId;
+    _pendingDeleteId = null;
+    bootstrap.Modal.getInstance(document.getElementById('deleteModal'))?.hide();
+    try {
+      const res = await API.roles.delete(id);
+      showToast(res?.Message || 'Role deleted.', 'success');
+      await loadRoles();
+    } catch (err) { showToast(err.message, 'danger'); }
+  }
+
+  async function openPerms(id, name) {
+    currentPermRoleId = id;
+    document.getElementById('perm-role-name').textContent = name;
+    document.getElementById('perm-loading').classList.remove('d-none');
+    document.getElementById('perm-content').classList.add('d-none');
+    new bootstrap.Modal('#permModal').show();
+    try {
+      const res = await API.roles.getPermissions(id);
+      currentPerms = res?.Data || res || [];
+      renderPermsTable();
+      document.getElementById('perm-loading').classList.add('d-none');
+      document.getElementById('perm-content').classList.remove('d-none');
+    } catch (err) {
+      document.getElementById('perm-loading').innerHTML = `<div class="text-danger p-3">${esc(err.message)}</div>`;
+    }
+  }
+
+  function getPerm(subCode) {
+    return currentPerms.find(p => p.SubmoduleCode === subCode) || {};
+  }
+
+  const PERM_FIELDS = ['CanAccess','CanRead','CanWrite','CanEdit','CanDelete'];
+
+  function renderPermsTable() {
+    let html = '';
+    MODULES_PERMS.forEach(mod => {
+      const allCodes = mod.submodules.map(s => s.code).join(',');
+      html += `<tr style="background:var(--primary-pale);">
+        <td style="font-weight:700;color:var(--primary-dark);padding:.5rem 1rem;">
+          <i class="fas fa-folder me-2"></i>${mod.label}
+        </td>
+        <td colspan="5" style="color:var(--primary-dark);padding:.5rem .75rem;font-size:.75rem;">
+          <span class="text-muted">${mod.submodules.length} submodule(s)</span>
+        </td>
+        <td class="text-center" style="background:#f8f9fa;">
+          <input type="checkbox" class="form-check-input all-mod-cb" title="Check all in ${mod.label}"
+            data-codes="${allCodes}" />
+        </td>
+      </tr>`;
+      mod.submodules.forEach(sub => {
+        const p = getPerm(sub.code);
+        const allChecked = PERM_FIELDS.every(f => p[f]);
+        html += `<tr>
+          <td style="padding-left:2rem;">${sub.label}</td>
+          ${PERM_FIELDS.map(f => `
+          <td class="text-center">
+            <input type="checkbox" class="form-check-input perm-cb" data-sub="${sub.code}" data-field="${f}"
+              ${p[f] ? 'checked' : ''} />
+          </td>`).join('')}
+          <td class="text-center" style="background:#f8f9fa;">
+            <input type="checkbox" class="form-check-input all-row-cb" title="Check all"
+              data-sub="${sub.code}" ${allChecked ? 'checked' : ''} />
+          </td>
+        </tr>`;
+      });
+    });
+    document.getElementById('perm-tbody').innerHTML = html;
+
+    // ── all-row-cb: check/uncheck all 5 fields for this submodule ─────────────
+    document.querySelectorAll('.all-row-cb').forEach(cb => {
+      cb.addEventListener('change', function() {
+        const sub = this.dataset.sub;
+        PERM_FIELDS.forEach(f => setPermCb(sub, f, this.checked));
+      });
+    });
+
+    // ── all-mod-cb: check/uncheck all submodules in the module ────────────────
+    document.querySelectorAll('.all-mod-cb').forEach(cb => {
+      cb.addEventListener('change', function() {
+        const codes = this.dataset.codes.split(',');
+        codes.forEach(sub => {
+          PERM_FIELDS.forEach(f => setPermCb(sub, f, this.checked));
+          setRowAllCb(sub);
+        });
+      });
+    });
+
+    // ── perm-cb: dependency rules + sync row all-cb ──────────────────────────
+    document.querySelectorAll('.perm-cb').forEach(cb => {
+      cb.addEventListener('change', function() {
+        const sub   = this.dataset.sub;
+        const field = this.dataset.field;
+        if (this.checked && (field === 'CanWrite' || field === 'CanEdit' || field === 'CanDelete')) {
+          setPermCb(sub, 'CanAccess', true);
+          setPermCb(sub, 'CanRead',   true);
+        }
+        if (!this.checked && field === 'CanAccess') {
+          PERM_FIELDS.slice(1).forEach(f => setPermCb(sub, f, false));
+        }
+        setRowAllCb(sub);
+      });
+    });
+  }
+
+  function setPermCb(sub, field, val) {
+    const cb = document.querySelector(`.perm-cb[data-sub="${sub}"][data-field="${field}"]`);
+    if (cb) cb.checked = val;
+  }
+
+  // Sync the all-row-cb state: checked only when ALL 5 are checked
+  function setRowAllCb(sub) {
+    const allCb = document.querySelector(`.all-row-cb[data-sub="${sub}"]`);
+    if (!allCb) return;
+    allCb.checked = PERM_FIELDS.every(f => {
+      const cb = document.querySelector(`.perm-cb[data-sub="${sub}"][data-field="${f}"]`);
+      return cb && cb.checked;
+    });
+  }
+
+  async function savePerms() {
+    const cbs = document.querySelectorAll('.perm-cb');
+    const map = {};
+    cbs.forEach(cb => {
+      if (!map[cb.dataset.sub]) map[cb.dataset.sub] = { SubmoduleCode: cb.dataset.sub };
+      map[cb.dataset.sub][cb.dataset.field] = cb.checked;
+    });
+    const perms = Object.values(map);
+    try {
+      await API.roles.setPermissions(currentPermRoleId, perms);
+      showToast(I18n.t('Updated.'), 'success');
+      bootstrap.Modal.getInstance(document.getElementById('permModal'))?.hide();
+    } catch (err) { showToast(err.message, 'danger'); }
+  }
+
+  function showToast(msg, type = 'success') {
+    const el = document.getElementById('toast');
+    el.className = `toast align-items-center text-white border-0 bg-${type === 'success' ? 'success' : 'danger'}`;
+    document.getElementById('toast-msg').textContent = msg;
+    new bootstrap.Toast(el, { delay: 3500 }).show();
+  }
+
+  function esc(str) {
+    return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+</script>
+</body>
+</html>

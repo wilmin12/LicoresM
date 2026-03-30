@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Calculation Detail - Licores Maduro</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="../../css/main.css"/>
+  <style>
+    .detail-table th { font-size:.75rem; white-space:nowrap; }
+    .detail-table td { font-size:.8rem; white-space:nowrap; }
+    .subtotal-row td { font-weight:700; background:var(--sidebar-bg,#f8f9fa); }
+    .pending-formula { color:#999; font-style:italic; }
+  </style>
+</head>
+<body>
+<div id="sidebar-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;"></div>
+<div class="app-wrapper">
+  <nav id="sidebar" class="sidebar">
+    <div class="sidebar-header"><img src="../../img/LogoLicores.png" alt="Licores Maduro" class="sidebar-logo-img"/><span class="sidebar-logo-text">LICORES MADURO</span></div>
+    <div id="sidebar-nav" class="sidebar-nav"></div>
+    <div class="sidebar-footer"><div class="sidebar-user"><div class="sidebar-avatar" id="sidebar-user-initials">LM</div><div class="sidebar-text"><div id="sidebar-user-name" style="font-weight:600;">–</div></div></div></div>
+  </nav>
+  <div class="main-area">
+    <header class="topbar">
+      <button id="btn-sidebar-toggle" class="btn-sidebar-toggle"><i class="fas fa-bars"></i></button>
+      <span class="topbar-title"><i class="fas fa-calculator me-2 text-wine"></i>Calculation Detail</span>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown">
+            <span class="sidebar-avatar" id="topbar-user-initials" style="width:28px;height:28px;font-size:.75rem;">LM</span>
+            <span id="topbar-user-name" class="d-none d-md-inline">–</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+            <li><div class="dropdown-header"><strong id="topbar-user-fullname">User</strong><br/><small class="text-muted" id="topbar-user-role">Role</small></div></li>
+            <li><hr class="dropdown-divider"/></li>
+            <li><a class="dropdown-item text-danger" href="#" id="btn-logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+          </ul>
+        </div>
+      </div>
+    </header>
+    <main class="page-content">
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="../../dashboard.html"><i class="fas fa-home me-1"></i>Home</a></li>
+          <li class="breadcrumb-item"><a href="index.html">Cost Calculations</a></li>
+          <li class="breadcrumb-item active" id="breadcrumb-title">Detail</li>
+        </ol>
+      </nav>
+
+      <!-- Header card -->
+      <div class="card mb-4" id="header-card">
+        <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+          <span><i class="fas fa-info-circle me-2"></i>Calculation Header</span>
+          <div class="d-flex gap-2 flex-wrap" id="action-buttons"></div>
+        </div>
+        <div class="card-body" id="header-body">
+          <div class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading...</div>
+        </div>
+      </div>
+
+      <!-- Ship Charges card -->
+      <div class="card mb-4" id="ship-charges-card">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <span><i class="fas fa-ship me-2"></i>Ship Charges <small class="text-muted ms-2">(THC, doc fees, etc. — distributed across all PO lines)</small></span>
+          <button class="btn btn-wine btn-sm" id="btn-add-charge" style="display:none;"><i class="fas fa-plus me-1"></i>Add Charge</button>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-sm mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Code</th><th>Description</th>
+                  <th class="text-end">Amount</th><th>Currency</th>
+                  <th class="text-end">Rate</th><th class="text-center" id="sc-actions-col" style="display:none;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="sc-tbody"><tr><td colspan="6" class="text-center py-3 text-muted"><i class="fas fa-spinner fa-spin me-1"></i>Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- PO Accordion -->
+      <div id="po-accordion" class="accordion mb-4"></div>
+
+      <!-- Summary card -->
+      <div class="card mb-4" id="summary-card" style="display:none;">
+        <div class="card-header"><i class="fas fa-sigma me-2"></i>Grand Summary</div>
+        <div class="card-body" id="summary-body"></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Ship Charge Modal -->
+<div class="modal fade" id="scModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="sc-modal-title">Add Ship Charge</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="sc-id"/>
+        <div class="mb-3">
+          <label class="form-label">Charge Code <span class="text-danger">*</span></label>
+          <input type="text" id="sc-code" class="form-control form-control-sm" maxlength="20" placeholder="e.g. THC"/>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Description</label>
+          <input type="text" id="sc-desc" class="form-control form-control-sm" maxlength="200"/>
+        </div>
+        <div class="row g-3">
+          <div class="col-6">
+            <label class="form-label">Amount <span class="text-danger">*</span></label>
+            <input type="number" id="sc-amount" class="form-control form-control-sm" step="0.01" min="0"/>
+          </div>
+          <div class="col-3">
+            <label class="form-label">Currency</label>
+            <input type="text" id="sc-currency" class="form-control form-control-sm" maxlength="5" placeholder="USD"/>
+          </div>
+          <div class="col-3">
+            <label class="form-label">Rate</label>
+            <input type="number" id="sc-rate" class="form-control form-control-sm" step="0.0001" min="0" placeholder="optional"/>
+            <div class="form-text">Exchange rate</div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-wine" id="btn-sc-save"><i class="fas fa-save me-1"></i>Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Run Calculation Modal -->
+<div class="modal fade" id="calcModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-calculator me-2"></i>Run / Re-run Calculation</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted small mb-3">Update charges and margin, then click Calculate. Leave blank to keep current values.</p>
+        <div class="row g-3">
+          <div class="col-6"><label class="form-label">Ocean Freight</label><input type="number" id="m-ocean" class="form-control form-control-sm" step="0.01"/></div>
+          <div class="col-6"><label class="form-label">Inland Freight</label><input type="number" id="m-inland" class="form-control form-control-sm" step="0.01"/></div>
+          <div class="col-6"><label class="form-label">Transport</label><input type="number" id="m-transport" class="form-control form-control-sm" step="0.01"/></div>
+          <div class="col-6"><label class="form-label">Unloading</label><input type="number" id="m-unloading" class="form-control form-control-sm" step="0.01"/></div>
+          <div class="col-6"><label class="form-label">Local Handling</label><input type="number" id="m-local-handling" class="form-control form-control-sm" step="0.01"/></div>
+          <div class="col-6"><label class="form-label">Currency Rate</label><input type="number" id="m-curr-rate" class="form-control form-control-sm" step="0.0001"/></div>
+          <div class="col-6"><label class="form-label">Margin %</label><input type="number" id="m-margin" class="form-control form-control-sm" step="0.01" min="0" max="99.99"/></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-wine" id="btn-run-calc"><i class="fas fa-calculator me-1"></i>Calculate</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index:9999;">
+  <div id="toast" class="toast align-items-center text-white border-0" role="alert">
+    <div class="d-flex"><div class="toast-body" id="toast-msg"></div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../../js/i18n.js"></script><script src="../../js/api.js"></script><script src="../../js/auth.js"></script><script src="../../js/sidebar.js"></script>
+<script>
+  const STATUS_LABELS = { DR:'Draft', CF:'Confirmed', AP:'Approved' };
+  const STATUS_CLASS  = { DR:'badge-inactive', CF:'badge bg-warning text-dark', AP:'badge-active' };
+  let calcId=null, calcData=null, scModal=null, shipCharges=[];
+
+  document.addEventListener('DOMContentLoaded',async()=>{
+    if(!Auth.requireAuth())return;Auth.startExpiryWatcher();Auth.populateUserUI();Sidebar.init();
+    document.getElementById('btn-logout').addEventListener('click',e=>{e.preventDefault();Auth.logout();});
+    document.getElementById('btn-run-calc').addEventListener('click',runCalc);
+    scModal=new bootstrap.Modal(document.getElementById('scModal'));
+    document.getElementById('btn-add-charge').addEventListener('click',openAddCharge);
+    document.getElementById('btn-sc-save').addEventListener('click',saveCharge);
+
+    const params=new URLSearchParams(window.location.search);
+    calcId=parseInt(params.get('id'),10);
+    if(!calcId||isNaN(calcId)){
+      document.getElementById('header-body').innerHTML='<div class="alert alert-danger">No calculation ID specified.</div>';
+      return;
+    }
+    document.getElementById('breadcrumb-title').textContent='Calculation #'+calcId;
+    document.title=`Calculation #${calcId} - Licores Maduro`;
+    await Promise.all([loadCalc(), loadShipCharges()]);
+  });
+
+  // ── Ship Charges ────────────────────────────────────────────────────────────
+  async function loadShipCharges(){
+    try{
+      const res=await API.costCalc.getShipCharges(calcId);
+      shipCharges=res?.Data||res||[];
+      renderShipCharges();
+    }catch(err){
+      document.getElementById('sc-tbody').innerHTML=`<tr><td colspan="6" class="text-center text-danger py-2">${esc(err.message)}</td></tr>`;
+    }
+  }
+
+  function renderShipCharges(){
+    const tbody=document.getElementById('sc-tbody');
+    const user=Auth.getCurrentUser();
+    const isDraft=calcData?.CcStatus==='DR'||false;
+    const isAdmin=user?.RoleName==='SuperAdmin'||user?.RoleName==='Admin';
+    const showActions=isDraft&&isAdmin&&calcData!=null;
+    document.getElementById('btn-add-charge').style.display=showActions?'':'none';
+    document.getElementById('sc-actions-col').style.display=showActions?'':'none';
+
+    if(!shipCharges.length){
+      tbody.innerHTML=`<tr><td colspan="6" class="text-center py-3 text-muted">No ship charges added yet.</td></tr>`;
+      return;
+    }
+    const colV=showActions?'':'display:none;';
+    tbody.innerHTML=shipCharges.map(sc=>`<tr>
+      <td><strong>${esc(sc.ScChargeCode)}</strong></td>
+      <td>${esc(sc.ScDescription||'')}</td>
+      <td class="text-end">${fmt(sc.ScAmount)}</td>
+      <td>${esc(sc.ScCurrency||'')}</td>
+      <td class="text-end">${sc.ScRate!=null?Number(sc.ScRate).toFixed(4):'–'}</td>
+      <td class="text-center" style="${colV}">
+        <button class="btn-action edit me-1" onclick="openEditCharge(${sc.ScId})" title="Edit"><i class="fas fa-edit"></i></button>
+        <button class="btn-action delete" onclick="deleteCharge(${sc.ScId})" title="Delete"><i class="fas fa-trash"></i></button>
+      </td>
+    </tr>`).join('');
+  }
+
+  function openAddCharge(){
+    document.getElementById('sc-modal-title').textContent='Add Ship Charge';
+    document.getElementById('sc-id').value='';
+    document.getElementById('sc-code').value='';
+    document.getElementById('sc-desc').value='';
+    document.getElementById('sc-amount').value='';
+    document.getElementById('sc-currency').value='USD';
+    document.getElementById('sc-rate').value='';
+    scModal.show();
+  }
+
+  function openEditCharge(id){
+    const sc=shipCharges.find(x=>x.ScId===id);
+    if(!sc)return;
+    document.getElementById('sc-modal-title').textContent='Edit Ship Charge';
+    document.getElementById('sc-id').value=sc.ScId;
+    document.getElementById('sc-code').value=sc.ScChargeCode;
+    document.getElementById('sc-desc').value=sc.ScDescription||'';
+    document.getElementById('sc-amount').value=sc.ScAmount!=null?Number(sc.ScAmount).toFixed(2):'';
+    document.getElementById('sc-currency').value=sc.ScCurrency||'USD';
+    document.getElementById('sc-rate').value=sc.ScRate!=null?Number(sc.ScRate).toFixed(4):'';
+    scModal.show();
+  }
+
+  async function saveCharge(){
+    const id=document.getElementById('sc-id').value;
+    const code=document.getElementById('sc-code').value.trim();
+    const amt=parseFloat(document.getElementById('sc-amount').value);
+    if(!code){showToast('Charge Code is required.','danger');return;}
+    if(isNaN(amt)||amt<0){showToast('Amount must be a valid non-negative number.','danger');return;}
+    const rateVal=document.getElementById('sc-rate').value.trim();
+    const dto={
+      ChargeCode:  code,
+      Description: document.getElementById('sc-desc').value.trim()||null,
+      Amount:      amt,
+      Currency:    document.getElementById('sc-currency').value.trim()||null,
+      Rate:        rateVal!==''?parseFloat(rateVal):null
+    };
+    const btn=document.getElementById('btn-sc-save');
+    btn.disabled=true;
+    try{
+      if(id) await API.costCalc.updateShipCharge(calcId,parseInt(id),dto);
+      else   await API.costCalc.createShipCharge(calcId,dto);
+      scModal.hide();
+      showToast('Saved successfully.','success');
+      await loadShipCharges();
+    }catch(err){showToast(err.message,'danger');}
+    finally{btn.disabled=false;}
+  }
+
+  async function deleteCharge(id){
+    const sc=shipCharges.find(x=>x.ScId===id);
+    if(!confirm(`Delete charge "${sc?.ScChargeCode}"?`))return;
+    try{
+      await API.costCalc.deleteShipCharge(calcId,id);
+      showToast('Deleted.','success');
+      await loadShipCharges();
+    }catch(err){showToast(err.message,'danger');}
+  }
+
+  async function loadCalc(){
+    try{
+      const res=await API.costCalc.getCalculation(calcId);
+      calcData=res?.Data||res;
+      renderHeader(calcData);
+      renderAccordion(calcData);
+      renderSummary(calcData);
+      renderShipCharges(); // re-render to reflect correct Draft/Admin visibility
+    }catch(err){
+      document.getElementById('header-body').innerHTML=`<div class="alert alert-danger">${esc(err.message)}</div>`;
+      showToast(err.message,'danger');
+    }
+  }
+
+  function renderHeader(c){
+    const stClass=STATUS_CLASS[c.CcStatus]||'badge bg-secondary';
+    const stLabel=STATUS_LABELS[c.CcStatus]||c.CcStatus;
+    const dt=c.CcCalcDate?c.CcCalcDate.split('T')[0]:'';
+    const user=Auth.getCurrentUser();
+    const isAdmin=user?.RoleName==='SuperAdmin'||user?.RoleName==='Admin';
+
+    document.getElementById('header-body').innerHTML=`
+      <div class="row g-3">
+        <div class="col-md-2"><small class="text-muted d-block">Calc No.</small><strong>#${c.CcCalcNumber}</strong></div>
+        <div class="col-md-2"><small class="text-muted d-block">Date</small>${dt}</div>
+        <div class="col-md-2"><small class="text-muted d-block">Status</small><span class="${stClass}">${stLabel}</span></div>
+        <div class="col-md-2"><small class="text-muted d-block">Warehouse</small>${esc(c.CcWarehouse||'–')}</div>
+        <div class="col-md-2"><small class="text-muted d-block">Forwarder</small>${esc(c.CcForwarderName||c.CcForwarderCode||'–')}</div>
+        <div class="col-md-2"><small class="text-muted d-block">Currency</small>${esc(c.CcCurrCode||'–')} ${c.CcCurrRate?'('+Number(c.CcCurrRate).toFixed(4)+')':''}</div>
+        <div class="col-md-2"><small class="text-muted d-block">Ocean Freight</small>${fmt(c.CcFreight)}</div>
+        <div class="col-md-2"><small class="text-muted d-block">Transport</small>${fmt(c.CcTransport)}</div>
+        <div class="col-md-2"><small class="text-muted d-block">Unloading</small>${fmt(c.CcUnloading)}</div>
+        <div class="col-md-2"><small class="text-muted d-block">Local Handling</small>${fmt(c.CcLocalHandling)}</div>
+        <div class="col-md-2"><small class="text-muted d-block">Total POs</small>${c.CcTotOrd??0}</div>
+        <div class="col-md-2"><small class="text-muted d-block">Created By</small>${esc(c.CcCreatedBy||'–')}</div>
+      </div>`;
+
+    // Action buttons
+    let btns='<a href="index.html" class="btn btn-outline-secondary btn-sm"><i class="fas fa-arrow-left me-1"></i>Back to List</a>';
+    if(c.CcStatus==='DR'){
+      btns+=` <button class="btn btn-wine btn-sm" data-bs-toggle="modal" data-bs-target="#calcModal" onclick="prefillModal()"><i class="fas fa-calculator me-1"></i>Run Calculation</button>`;
+      btns+=` <button class="btn btn-outline-success btn-sm" onclick="confirmCalc()"><i class="fas fa-check me-1"></i>Confirm</button>`;
+    }
+    if(c.CcStatus==='CF'&&isAdmin){
+      btns+=` <button class="btn btn-success btn-sm" onclick="approveCalc()"><i class="fas fa-thumbs-up me-1"></i>Approve</button>`;
+    }
+    document.getElementById('action-buttons').innerHTML=btns;
+  }
+
+  function renderAccordion(c){
+    const container=document.getElementById('po-accordion');
+    if(!c.PoHeads||!c.PoHeads.length){container.innerHTML='<div class="alert alert-info">No purchase orders attached.</div>';return;}
+    container.innerHTML=c.PoHeads.map((po,idx)=>{
+      const stClass=STATUS_CLASS[po.CcphStatus]||'badge bg-secondary';
+      const stLabel=STATUS_LABELS[po.CcphStatus]||po.CcphStatus;
+      const details=po.Details||[];
+      // Calculate subtotals
+      const totFob=details.reduce((s,d)=>s+(d.CcpdFobPriceTot??0),0);
+      const totFinal=details.reduce((s,d)=>s+(d.CcpdFinalCost??0),0);
+      const totSelling=details.reduce((s,d)=>s+(d.CcpdSellingPrice??0),0);
+
+      const rows=details.map(d=>{
+        const marginPct=d.CcpdMarginPerc!=null?Number(d.CcpdMarginPerc):null;
+        const minMargin=d.CcpdAllowedMin!=null?Number(d.CcpdAllowedMin):null;
+        const marginBelowMin=marginPct!=null&&minMargin!=null&&marginPct<minMargin;
+        const marginCell=marginPct!=null
+          ? `<span${marginBelowMin?' title="Below allowed minimum ('+fmt(minMargin*100,2)+'%)" style="color:#dc3545;font-weight:700;"':''}>
+              ${marginPct.toFixed(2)}%${marginBelowMin?' <i class="fas fa-exclamation-triangle" style="font-size:.7rem;"></i>':''}
+            </span>`
+          : '';
+        return`<tr>
+        <td>${esc(d.CcpdItemNo||'')}</td>
+        <td class="text-end">${fmt(d.CcpdOrdQty,0)}</td>
+        <td class="text-end">${fmt(d.CcpdFobPrice,4)}</td>
+        <td class="text-end">${fmt(d.CcpdFobPriceTot)}</td>
+        <td class="text-end">${fmt(d.CcpdInlandFreight)}</td>
+        <td class="text-end">${fmt(d.CcpdFreight)}</td>
+        <td class="text-end">${fmt(d.CcpdLocalHandl)}</td>
+        <td class="text-end">${fmt(d.CcpdDuties)}</td>
+        <td class="text-end">${fmt(d.CcpdEconSurch)}</td>
+        <td class="text-end">${fmt(d.CcpdOb)}</td>
+        <td class="text-end">${fmt(d.CcpdInlandTariff)}</td>
+        <td class="text-end">${fmt(d.CcpdShipCharges)}</td>
+        <td class="text-end">${fmt(d.CcpdInsurance)}</td>
+        <td class="text-end">${fmt(d.CcpdTransport)}</td>
+        <td class="text-end">${fmt(d.CcpdUnloading)}</td>
+        <td class="text-end fw-bold" style="color:var(--primary);">${fmt(d.CcpdFinalCost)}</td>
+        <td class="text-end">${marginCell}</td>
+        <td class="text-end fw-bold" style="color:var(--primary-dark);">${fmt(d.CcpdSellingPrice)}</td>
+      </tr>`;}).join('');
+
+      const subtotalRow=`<tr class="subtotal-row">
+        <td colspan="3">Subtotals</td>
+        <td class="text-end">${fmt(totFob)}</td>
+        <td colspan="11"></td>
+        <td class="text-end">${fmt(totFinal)}</td>
+        <td></td>
+        <td class="text-end">${fmt(totSelling)}</td>
+      </tr>`;
+
+      return`
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button ${idx>0?'collapsed':''}" type="button" data-bs-toggle="collapse" data-bs-target="#po-collapse-${idx}">
+              <div class="d-flex align-items-center gap-3 w-100 me-3">
+                <strong>PO: ${esc(po.CcphLmPoNo)}</strong>
+                <span class="text-muted small">Vendor: ${esc(po.CcphVendNo||po.CcphVendName||'–')}</span>
+                <span class="text-muted small">WH: ${esc(po.CcphWhse||'–')}</span>
+                <span class="text-muted small">Qty: ${fmt(po.CcphTotQty,0)}</span>
+                <span class="text-muted small">Amount: ${fmt(po.CcphTotAmount)}</span>
+                <span class="${stClass} ms-auto">${stLabel}</span>
+              </div>
+            </button>
+          </h2>
+          <div id="po-collapse-${idx}" class="accordion-collapse collapse ${idx===0?'show':''}">
+            <div class="accordion-body p-2">
+              <div class="table-responsive">
+                <table class="table detail-table table-bordered table-sm mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Item No</th><th class="text-end">Qty</th><th class="text-end">FOB Price</th>
+                      <th class="text-end">FOB Total</th><th class="text-end">Inland Frt</th>
+                      <th class="text-end">Ocean Frt</th><th class="text-end">Local Hdl</th>
+                      <th class="text-end">Duties</th>
+                      <th class="text-end">Eco Surch</th>
+                      <th class="text-end">OB Tax</th>
+                      <th class="text-end">Inland Tariff</th>
+                      <th class="text-end">Ship Chgs</th>
+                      <th class="text-end">Insurance</th><th class="text-end">Transport</th>
+                      <th class="text-end">Unloading</th><th class="text-end">Final Cost</th>
+                      <th class="text-end">Margin %</th><th class="text-end">Selling Price</th>
+                    </tr>
+                  </thead>
+                  <tbody>${rows||'<tr><td colspan="18" class="text-center text-muted">No details – run calculation first.</td></tr>'}</tbody>
+                  ${details.length?'<tfoot>'+subtotalRow+'</tfoot>':''}
+                </table>
+              </div>
+              <small class="text-muted">Duties, Eco Surcharge and OB are calculated from HS code tariff rates. Items without a goods classification will show 0.00.</small>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function renderSummary(c){
+    const summaryCard=document.getElementById('summary-card');
+    const summaryBody=document.getElementById('summary-body');
+    const allDetails=(c.PoHeads||[]).flatMap(p=>p.Details||[]);
+    if(!allDetails.length){summaryCard.style.display='none';return;}
+    summaryCard.style.display='';
+    const totFob=allDetails.reduce((s,d)=>s+(d.CcpdFobPriceTot??0),0);
+    const totFreight=allDetails.reduce((s,d)=>s+(d.CcpdFreight??0),0);
+    const totInland=allDetails.reduce((s,d)=>s+(d.CcpdInlandFreight??0),0);
+    const totInsurance=allDetails.reduce((s,d)=>s+(d.CcpdInsurance??0),0);
+    const totTransport=allDetails.reduce((s,d)=>s+(d.CcpdTransport??0),0);
+    const totUnloading=allDetails.reduce((s,d)=>s+(d.CcpdUnloading??0),0);
+    const totLH=allDetails.reduce((s,d)=>s+(d.CcpdLocalHandl??0),0);
+    const totFinal=allDetails.reduce((s,d)=>s+(d.CcpdFinalCost??0),0);
+    const totSelling=allDetails.reduce((s,d)=>s+(d.CcpdSellingPrice??0),0);
+    const totQty=allDetails.reduce((s,d)=>s+(d.CcpdOrdQty??0),0);
+
+    summaryBody.innerHTML=`
+      <div class="row g-3">
+        <div class="col-6 col-md-3"><div class="card border-0 bg-light text-center p-2"><div class="small text-muted">Total Qty</div><div class="fw-bold">${fmt(totQty,0)}</div></div></div>
+        <div class="col-6 col-md-3"><div class="card border-0 bg-light text-center p-2"><div class="small text-muted">Total FOB</div><div class="fw-bold">${fmt(totFob)}</div></div></div>
+        <div class="col-6 col-md-3"><div class="card border-0 bg-light text-center p-2"><div class="small text-muted">Total Ocean Freight</div><div class="fw-bold">${fmt(totFreight)}</div></div></div>
+        <div class="col-6 col-md-3"><div class="card border-0 bg-light text-center p-2"><div class="small text-muted">Total Inland Freight</div><div class="fw-bold">${fmt(totInland)}</div></div></div>
+        <div class="col-6 col-md-3"><div class="card border-0 bg-light text-center p-2"><div class="small text-muted">Total Insurance</div><div class="fw-bold">${fmt(totInsurance)}</div></div></div>
+        <div class="col-6 col-md-3"><div class="card border-0 bg-light text-center p-2"><div class="small text-muted">Total Transport</div><div class="fw-bold">${fmt(totTransport)}</div></div></div>
+        <div class="col-6 col-md-3"><div class="card border-0 bg-light text-center p-2"><div class="small text-muted">Total Unloading</div><div class="fw-bold">${fmt(totUnloading)}</div></div></div>
+        <div class="col-6 col-md-3"><div class="card border-0 bg-light text-center p-2"><div class="small text-muted">Total Local Handling</div><div class="fw-bold">${fmt(totLH)}</div></div></div>
+        <div class="col-6 col-md-3"><div class="card border-0" style="background:var(--primary,#6b2929);color:#fff;text-align:center;padding:.5rem;border-radius:.375rem;"><div class="small opacity-75">Grand Final Cost</div><div class="fw-bold fs-5">${fmt(totFinal)}</div></div></div>
+        <div class="col-6 col-md-3"><div class="card border-0" style="background:#1a472a;color:#fff;text-align:center;padding:.5rem;border-radius:.375rem;"><div class="small opacity-75">Grand Selling Price</div><div class="fw-bold fs-5">${fmt(totSelling)}</div></div></div>
+      </div>`;
+  }
+
+  function prefillModal(){
+    if(!calcData)return;
+    setVal('m-ocean',calcData.CcFreight);
+    setVal('m-transport',calcData.CcTransport);
+    setVal('m-unloading',calcData.CcUnloading);
+    setVal('m-local-handling',calcData.CcLocalHandling);
+    setVal('m-curr-rate',calcData.CcCurrRate);
+  }
+  function setVal(id,v){const el=document.getElementById(id);if(el&&v!=null)el.value=v;}
+
+  async function runCalc(){
+    const btn=document.getElementById('btn-run-calc');
+    const dto={
+      OceanFreight:pfn('m-ocean'),
+      InlandFreight:pfn('m-inland'),
+      Transport:pfn('m-transport'),
+      Unloading:pfn('m-unloading'),
+      LocalHandling:pfn('m-local-handling'),
+      CurrRate:pfn('m-curr-rate'),
+      MarginPerc:pfn('m-margin')
+    };
+    btn.disabled=true;btn.innerHTML='<i class="fas fa-spinner fa-spin me-1"></i>Calculating...';
+    try{
+      await API.costCalc.runCalculation(calcId,dto);
+      bootstrap.Modal.getInstance(document.getElementById('calcModal'))?.hide();
+      showToast('Calculation complete!','success');
+      await loadCalc();
+    }catch(err){showToast(err.message,'danger');}
+    finally{btn.disabled=false;btn.innerHTML='<i class="fas fa-calculator me-1"></i>Calculate';}
+  }
+  function pfn(id){const v=document.getElementById(id).value;const n=parseFloat(v);return isNaN(n)?null:n;}
+
+  async function confirmCalc(){
+    if(!confirm('Confirm this calculation?'))return;
+    try{await API.costCalc.confirmCalculation(calcId);showToast('Calculation confirmed.','success');await loadCalc();}
+    catch(err){showToast(err.message,'danger');}
+  }
+  async function approveCalc(){
+    if(!confirm('Approve this calculation?'))return;
+    try{await API.costCalc.approveCalculation(calcId);showToast('Calculation approved.','success');await loadCalc();}
+    catch(err){showToast(err.message,'danger');}
+  }
+
+  function fmt(n,d=2){return n!=null?Number(n).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}):'–';}
+  function showToast(msg,type='success'){
+    const el=document.getElementById('toast');
+    el.className=`toast align-items-center text-white border-0 bg-${type==='success'?'success':'danger'}`;
+    document.getElementById('toast-msg').textContent=msg;
+    new bootstrap.Toast(el,{delay:4000}).show();
+  }
+  function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+</script>
+</body>
+</html>

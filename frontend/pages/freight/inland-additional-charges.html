@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inland Additional Charges - Licores Maduro</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../../css/main.css" />
+</head>
+<body>
+<div id="sidebar-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;"></div>
+<div class="app-wrapper">
+  <nav id="sidebar" class="sidebar">
+    <div class="sidebar-header"><img src="../../img/LogoLicores.png" alt="Licores Maduro" class="sidebar-logo-img"/><span class="sidebar-logo-text">LICORES MADURO</span></div>
+    <div id="sidebar-nav" class="sidebar-nav"></div>
+    <div class="sidebar-footer"><div class="sidebar-user"><div class="sidebar-avatar" id="sidebar-user-initials">LM</div><div class="sidebar-text"><div id="sidebar-user-name" style="font-weight:600;">–</div></div></div></div>
+  </nav>
+  <div class="main-area">
+    <header class="topbar">
+      <button id="btn-sidebar-toggle" class="btn-sidebar-toggle"><i class="fas fa-bars"></i></button>
+      <span class="topbar-title"><i class="fas fa-plus-circle me-2 text-wine"></i>Inland Additional Charges</span>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown">
+            <span class="sidebar-avatar" id="topbar-user-initials" style="width:28px;height:28px;font-size:.75rem;">LM</span>
+            <span id="topbar-user-name" class="d-none d-md-inline">–</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+            <li><div class="dropdown-header"><strong id="topbar-user-fullname">User</strong><br/><small class="text-muted" id="topbar-user-role">Role</small></div></li>
+            <li><hr class="dropdown-divider"/></li>
+            <li><a class="dropdown-item text-danger" href="#" id="btn-logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+          </ul>
+        </div>
+      </div>
+    </header>
+    <main class="page-content">
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="../../dashboard.html"><i class="fas fa-home me-1"></i>Home</a></li>
+          <li class="breadcrumb-item"><a href="index.html">Freight Forwarder</a></li>
+          <li class="breadcrumb-item active">Inland Additional Charges</li>
+        </ol>
+      </nav>
+      <div class="page-title">Inland Additional Charges</div>
+      <div class="page-subtitle">Flat per-forwarder charges applied on top of inland freight rates.</div>
+
+      <div class="card mb-3">
+        <div class="card-body d-flex flex-wrap align-items-center gap-2 py-2">
+          <select id="filter-forwarder" class="form-select form-select-sm" style="max-width:220px;"><option value="">All Forwarders</option></select>
+          <button class="btn btn-wine btn-sm ms-auto" id="btn-new"><i class="fas fa-plus me-1"></i>New Charge</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <span><i class="fas fa-list me-2"></i>Inland Additional Charges</span>
+          <span class="badge" style="background:var(--primary);color:#fff;" id="total-count">0 records</span>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead><tr><th>#</th><th>Forwarder</th><th>Charge Type</th><th>Load Type</th><th class="text-end">Amount</th><th>Currency</th><th>Action</th><th>Over</th><th>Per</th><th>From</th><th>To</th><th>Min</th><th>Max</th><th></th></tr></thead>
+              <tbody id="data-tbody"><tr><td colspan="14" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card-footer d-flex align-items-center justify-content-between flex-wrap gap-2">
+          <small class="text-muted" id="page-info">Page 1</small>
+          <nav><ul class="pagination pagination-sm mb-0" id="pagination"></ul></nav>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="itemModal" tabindex="-1">
+  <div class="modal-dialog modal-lg"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title" id="modalTitle">Inland Additional Charge</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body"><form id="item-form" novalidate>
+      <input type="hidden" id="edit-id"/>
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label">Forwarder <span class="text-danger">*</span></label>
+          <select id="f-forwarder" class="form-select" required><option value="">Select...</option></select>
+          <div class="invalid-feedback">Required.</div>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Charge Type <span class="text-danger">*</span></label>
+          <select id="f-chargetype" class="form-select" required><option value="">Select...</option></select>
+          <div class="invalid-feedback">Required.</div>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Load Type</label>
+          <select id="f-loadtype" class="form-select"><option value="">All / N/A</option></select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Amount</label>
+          <input type="number" id="f-amount" class="form-control" step="0.01"/>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Currency</label>
+          <select id="f-currency" class="form-select"><option value="">–</option></select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Action</label>
+          <select id="f-action" class="form-select"><option value="">–</option></select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Charge Over</label>
+          <select id="f-over" class="form-select"><option value="">–</option></select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Charge Per</label>
+          <select id="f-per" class="form-select"><option value="">–</option></select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">From</label>
+          <input type="number" id="f-from" class="form-control" step="0.01"/>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">To</label>
+          <input type="number" id="f-to" class="form-control" step="0.01"/>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Amount Min</label>
+          <input type="number" id="f-min" class="form-control" step="0.01"/>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Amount Max</label>
+          <input type="number" id="f-max" class="form-control" step="0.01"/>
+        </div>
+      </div>
+    </form></div>
+    <div class="modal-footer"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-wine btn-sm" id="btn-save"><i class="fas fa-save me-1"></i>Save</button></div>
+  </div></div>
+</div>
+
+<div class="toast-container"><div id="toast" class="toast align-items-center text-white border-0" role="alert"><div class="d-flex"><div class="toast-body" id="toast-msg"></div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div></div></div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../../js/i18n.js"></script><script src="../../js/api.js"></script><script src="../../js/auth.js"></script><script src="../../js/sidebar.js"></script>
+<script>
+const fq=API.freightQuotes;
+let allItems=[],filtered=[],currentPage=1;
+const PAGE_SIZE=20;
+
+document.addEventListener('DOMContentLoaded',async()=>{
+  if(!Auth.requireAuth())return;
+  Auth.startExpiryWatcher();Auth.populateUserUI();Sidebar.init();
+  document.getElementById('btn-logout').addEventListener('click',e=>{e.preventDefault();Auth.logout();});
+  document.getElementById('btn-new').addEventListener('click',()=>openModal());
+  document.getElementById('btn-save').addEventListener('click',saveItem);
+  document.getElementById('filter-forwarder').addEventListener('change',filterAndRender);
+  await loadCatalogs();
+  await loadData();
+});
+
+async function loadCatalogs(){
+  try{
+    const [fw,ct,lt,cu,ca,co,cp]=await Promise.all([
+      API.catalogs.freightForwarders.getAll(),
+      API.catalogs.inlandFreight.getAll(),
+      API.catalogs.loadTypes.getAll(),
+      API.catalogs.currencies.getAll(),
+      API.catalogs.chargeActions.getAll(),
+      API.catalogs.chargeOvers.getAll(),
+      API.catalogs.chargePers.getAll()
+    ]);
+    const ffSel=document.getElementById('filter-forwarder');
+    (fw?.Data||fw||[]).forEach(f=>{
+      const o=document.createElement('option');o.value=f.FfCode;o.textContent=`${f.FfCode} - ${f.FfName}`;ffSel.appendChild(o);
+    });
+    populateSelect('f-forwarder',fw?.Data||fw||[],f=>({value:f.FfCode,text:`${f.FfCode} - ${f.FfName}`}));
+    populateSelect('f-chargetype',ct?.Data||ct||[],c=>({value:c.IfctCode,text:`${c.IfctCode} - ${c.IfctDescription}`}));
+    populateSelect('f-loadtype',lt?.Data||lt||[],l=>({value:l.LtCode,text:`${l.LtCode} - ${l.LtDescription}`}));
+    populateSelect('f-currency',cu?.Data||cu||[],c=>({value:c.CurCode,text:c.CurCode}));
+    populateSelect('f-action',ca?.Data||ca||[],c=>({value:c.CaCode,text:`${c.CaCode} - ${c.CaDescription}`}));
+    populateSelect('f-over',co?.Data||co||[],c=>({value:c.CoCode,text:`${c.CoCode} - ${c.CoDescription}`}));
+    populateSelect('f-per',cp?.Data||cp||[],c=>({value:c.CpCode,text:`${c.CpCode} - ${c.CpDescription}`}));
+  }catch(err){showToast(err.message,'danger');}
+}
+
+function populateSelect(id,items,fn){const el=document.getElementById(id);if(!el)return;items.forEach(item=>{const{value,text}=fn(item);const o=document.createElement('option');o.value=value;o.textContent=text;el.appendChild(o);});}
+
+async function loadData(){
+  try{const res=await fq.getInlandAdditional();allItems=res?.Data||res||[];filterAndRender();}catch(err){showToast(err.message,'danger');}
+}
+
+function filterAndRender(){
+  const fw=document.getElementById('filter-forwarder').value;
+  filtered=allItems.filter(r=>!fw||(r.FqiaForwarder===fw));
+  currentPage=1;renderTable();renderPagination();
+}
+
+function renderTable(){
+  const tbody=document.getElementById('data-tbody');
+  const start=(currentPage-1)*PAGE_SIZE,page=filtered.slice(start,start+PAGE_SIZE);
+  document.getElementById('total-count').textContent=filtered.length+' records';
+  if(!page.length){tbody.innerHTML='<tr><td colspan="14" class="text-center py-4 text-muted">No records found.</td></tr>';return;}
+  tbody.innerHTML=page.map((r,i)=>`<tr>
+    <td>${start+i+1}</td>
+    <td><strong>${esc(r.FqiaForwarder)}</strong></td>
+    <td>${esc(r.FqiaChargeType)}</td>
+    <td>${esc(r.FqiaLoadType||'–')}</td>
+    <td class="text-end">${r.FqiaAmount!=null?Number(r.FqiaAmount).toFixed(2):'–'}</td>
+    <td>${esc(r.FqiaCurrency||'–')}</td>
+    <td>${esc(r.FqiaAction||'–')}</td>
+    <td>${esc(r.FqiaChargeOver||'–')}</td>
+    <td>${esc(r.FqiaChargePer||'–')}</td>
+    <td>${r.FqiaFrom??'–'}</td>
+    <td>${r.FqiaTo??'–'}</td>
+    <td>${r.FqiaAmountMin??'–'}</td>
+    <td>${r.FqiaAmountMax??'–'}</td>
+    <td>
+      <button class="btn-action edit me-1" onclick="openModal(${r.FqiaId})" title="Edit"><i class="fas fa-edit"></i></button>
+      <button class="btn-action delete" onclick="deleteItem(${r.FqiaId})" title="Delete"><i class="fas fa-trash"></i></button>
+    </td>
+  </tr>`).join('');
+}
+
+function renderPagination(){const total=Math.ceil(filtered.length/PAGE_SIZE)||1;document.getElementById('page-info').textContent=`Page ${currentPage} of ${total}`;let html=`<li class="page-item ${currentPage===1?'disabled':''}"><a class="page-link" href="#" onclick="event.preventDefault();gotoPage(${currentPage-1})">&#8249;</a></li>`;for(let p=1;p<=total;p++)html+=`<li class="page-item ${p===currentPage?'active':''}"><a class="page-link" href="#" onclick="event.preventDefault();gotoPage(${p})">${p}</a></li>`;html+=`<li class="page-item ${currentPage>=total?'disabled':''}"><a class="page-link" href="#" onclick="event.preventDefault();gotoPage(${currentPage+1})">&#8250;</a></li>`;document.getElementById('pagination').innerHTML=html;}
+function gotoPage(p){const t=Math.ceil(filtered.length/PAGE_SIZE)||1;if(p<1||p>t)return;currentPage=p;renderTable();renderPagination();}
+
+function openModal(id=null){
+  document.getElementById('edit-id').value=id||'';
+  document.getElementById('item-form').reset();
+  ['f-forwarder','f-chargetype'].forEach(x=>document.getElementById(x).classList.remove('is-invalid'));
+  document.getElementById('modalTitle').textContent=id?'Edit Charge':'New Inland Additional Charge';
+  if(id){
+    const r=allItems.find(x=>x.FqiaId===id);
+    if(r){
+      document.getElementById('f-forwarder').value=r.FqiaForwarder;
+      document.getElementById('f-chargetype').value=r.FqiaChargeType;
+      document.getElementById('f-loadtype').value=r.FqiaLoadType||'';
+      document.getElementById('f-amount').value=r.FqiaAmount||'';
+      document.getElementById('f-currency').value=r.FqiaCurrency||'';
+      document.getElementById('f-action').value=r.FqiaAction||'';
+      document.getElementById('f-over').value=r.FqiaChargeOver||'';
+      document.getElementById('f-per').value=r.FqiaChargePer||'';
+      document.getElementById('f-from').value=r.FqiaFrom||'';
+      document.getElementById('f-to').value=r.FqiaTo||'';
+      document.getElementById('f-min').value=r.FqiaAmountMin||'';
+      document.getElementById('f-max').value=r.FqiaAmountMax||'';
+    }
+  }
+  new bootstrap.Modal('#itemModal').show();
+}
+
+async function saveItem(){
+  const id=document.getElementById('edit-id').value;
+  const fw=document.getElementById('f-forwarder').value;
+  const ct=document.getElementById('f-chargetype').value;
+  let ok=true;
+  if(!fw){document.getElementById('f-forwarder').classList.add('is-invalid');ok=false;}else document.getElementById('f-forwarder').classList.remove('is-invalid');
+  if(!ct){document.getElementById('f-chargetype').classList.add('is-invalid');ok=false;}else document.getElementById('f-chargetype').classList.remove('is-invalid');
+  if(!ok)return;
+  const num=x=>document.getElementById(x).value?parseFloat(document.getElementById(x).value):null;
+  const str=x=>document.getElementById(x).value||null;
+  const dto={Forwarder:fw,ChargeType:ct,LoadType:str('f-loadtype'),Amount:num('f-amount'),Currency:str('f-currency'),Action:str('f-action'),ChargeOver:str('f-over'),ChargePer:str('f-per'),From:num('f-from'),To:num('f-to'),AmountMin:num('f-min'),AmountMax:num('f-max')};
+  try{
+    id?await fq.updateInlandAdditional(id,dto):await fq.createInlandAdditional(dto);
+    showToast(id?'Updated.':'Created.','success');
+    bootstrap.Modal.getInstance(document.getElementById('itemModal'))?.hide();
+    await loadData();
+  }catch(err){showToast(err.message,'danger');}
+}
+
+async function deleteItem(id){
+  if(!confirm('Delete this charge?'))return;
+  try{await fq.deleteInlandAdditional(id);showToast('Deleted.','success');await loadData();}catch(err){showToast(err.message,'danger');}
+}
+
+function showToast(msg,type='success'){const el=document.getElementById('toast');el.className=`toast align-items-center text-white border-0 bg-${type==='success'?'success':'danger'}`;document.getElementById('toast-msg').textContent=msg;new bootstrap.Toast(el,{delay:3500}).show();}
+function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+</script>
+</body>
+</html>

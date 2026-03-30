@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>New Calculation - Licores Maduro</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="../../css/main.css"/>
+</head>
+<body>
+<div id="sidebar-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;"></div>
+<div class="app-wrapper">
+  <nav id="sidebar" class="sidebar">
+    <div class="sidebar-header"><img src="../../img/LogoLicores.png" alt="Licores Maduro" class="sidebar-logo-img"/><span class="sidebar-logo-text">LICORES MADURO</span></div>
+    <div id="sidebar-nav" class="sidebar-nav"></div>
+    <div class="sidebar-footer"><div class="sidebar-user"><div class="sidebar-avatar" id="sidebar-user-initials">LM</div><div class="sidebar-text"><div id="sidebar-user-name" style="font-weight:600;">–</div></div></div></div>
+  </nav>
+  <div class="main-area">
+    <header class="topbar">
+      <button id="btn-sidebar-toggle" class="btn-sidebar-toggle"><i class="fas fa-bars"></i></button>
+      <span class="topbar-title"><i class="fas fa-plus-circle me-2 text-wine"></i>New Cost Calculation</span>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown">
+            <span class="sidebar-avatar" id="topbar-user-initials" style="width:28px;height:28px;font-size:.75rem;">LM</span>
+            <span id="topbar-user-name" class="d-none d-md-inline">–</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+            <li><div class="dropdown-header"><strong id="topbar-user-fullname">User</strong><br/><small class="text-muted" id="topbar-user-role">Role</small></div></li>
+            <li><hr class="dropdown-divider"/></li>
+            <li><a class="dropdown-item text-danger" href="#" id="btn-logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+          </ul>
+        </div>
+      </div>
+    </header>
+    <main class="page-content">
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="../../dashboard.html"><i class="fas fa-home me-1"></i>Home</a></li>
+          <li class="breadcrumb-item"><a href="index.html">Cost Calculations</a></li>
+          <li class="breadcrumb-item active">New Calculation</li>
+        </ol>
+      </nav>
+      <div class="page-title">New Cost Calculation</div>
+      <div class="page-subtitle">Set up container charges and select purchase orders, then calculate costs and selling prices.</div>
+
+      <!-- SECTION 1: Container / Header Info -->
+      <div class="card mb-4">
+        <div class="card-header"><i class="fas fa-ship me-2"></i>Section 1: Container &amp; Charges</div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-3">
+              <label class="form-label">Forwarder Code</label>
+              <input type="text" id="f-fwd-code" class="form-control form-control-sm" placeholder="e.g. FW01"/>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Forwarder Name</label>
+              <input type="text" id="f-fwd-name" class="form-control form-control-sm" placeholder="Forwarder company name"/>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">Currency Code</label>
+              <input type="text" id="f-curr-code" class="form-control form-control-sm" placeholder="USD"/>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">Currency Rate</label>
+              <input type="number" id="f-curr-rate" class="form-control form-control-sm" step="0.0001" placeholder="1.0000"/>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">Warehouse</label>
+              <select id="f-warehouse" class="form-select form-select-sm">
+                <option value="">-- Select --</option>
+                <option value="DP">DP - Duty Paid</option>
+                <option value="DF">DF - Duty Free</option>
+                <option value="ST">ST - Store</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Ocean Freight <small class="text-muted">(foreign currency)</small></label>
+              <input type="number" id="f-ocean-freight" class="form-control form-control-sm" step="0.01" placeholder="0.00"/>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Inland Freight <small class="text-muted">(foreign currency)</small></label>
+              <input type="number" id="f-inland-freight" class="form-control form-control-sm" step="0.01" placeholder="0.00"/>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">Transport <small class="text-muted text-info" title="Auto-filled from system config"><i class="fas fa-info-circle"></i></small></label>
+              <input type="number" id="f-transport" class="form-control form-control-sm" step="0.01" placeholder="0.00"/>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">Unloading</label>
+              <input type="number" id="f-unloading" class="form-control form-control-sm" step="0.01" placeholder="0.00"/>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">Local Handling</label>
+              <input type="number" id="f-local-handling" class="form-control form-control-sm" step="0.01" placeholder="0.00"/>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">Default Margin %</label>
+              <input type="number" id="f-margin" class="form-control form-control-sm" step="0.01" min="0" max="99.99" placeholder="0.00"/>
+            </div>
+          </div>
+          <div id="sys-config-badge" class="mt-2"></div>
+        </div>
+      </div>
+
+      <!-- SECTION 2: Select Purchase Orders -->
+      <div class="card mb-4">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <span><i class="fas fa-file-alt me-2"></i>Section 2: Select Purchase Orders</span>
+          <span class="badge" style="background:var(--primary);color:#fff;" id="selected-count">0 selected</span>
+        </div>
+        <div class="card-body">
+          <div class="d-flex gap-2 mb-3 flex-wrap">
+            <div class="search-wrapper flex-grow-1"><i class="fas fa-search search-icon"></i><input type="text" id="po-search" class="form-control form-control-sm" placeholder="Search PO number, container, supplier..."/></div>
+            <button id="btn-search-po" class="btn btn-wine btn-sm"><i class="fas fa-search me-1"></i>Search</button>
+            <button id="btn-clear-po-search" class="btn btn-outline-secondary btn-sm"><i class="fas fa-times me-1"></i>Clear</button>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover mb-0" style="font-size:.85rem;">
+              <thead>
+                <tr>
+                  <th style="width:40px;"><input type="checkbox" id="chk-all" title="Select/Deselect all visible"/></th>
+                  <th>Warehouse</th><th>PO Number</th><th>Supplier</th>
+                  <th>Order Date</th><th>Ship Date</th><th>Container</th>
+                  <th class="text-end">Qty</th><th class="text-end">Weight</th><th class="text-end">Amount</th><th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="po-tbody"><tr><td colspan="11" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading purchase orders...</td></tr></tbody>
+            </table>
+          </div>
+          <div class="d-flex justify-content-between align-items-center mt-2 flex-wrap gap-2">
+            <small class="text-muted" id="po-page-info">–</small>
+            <div class="d-flex gap-2">
+              <button id="po-btn-prev" class="btn btn-outline-secondary btn-sm" disabled><i class="fas fa-chevron-left"></i></button>
+              <span id="po-page-label" class="small align-self-center">Page 1</span>
+              <button id="po-btn-next" class="btn btn-outline-secondary btn-sm" disabled><i class="fas fa-chevron-right"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Selected POs summary -->
+      <div id="selected-pos-card" class="card mb-4 d-none">
+        <div class="card-header"><i class="fas fa-check-square me-2"></i>Selected Purchase Orders</div>
+        <div class="card-body p-2" id="selected-pos-list"></div>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="d-flex gap-2 justify-content-end mb-4">
+        <a href="index.html" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i>Cancel</a>
+        <button id="btn-create-calc" class="btn btn-wine"><i class="fas fa-calculator me-1"></i>Create &amp; Calculate</button>
+      </div>
+    </main>
+  </div>
+</div>
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index:9999;">
+  <div id="toast" class="toast align-items-center text-white border-0" role="alert">
+    <div class="d-flex"><div class="toast-body" id="toast-msg"></div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../../js/i18n.js"></script><script src="../../js/api.js"></script><script src="../../js/auth.js"></script><script src="../../js/sidebar.js"></script>
+<script>
+  let poPage=1, poTotal=0, selectedPos=new Map(); // map: poNo -> row data
+  const PO_PAGE_SIZE=20;
+
+  document.addEventListener('DOMContentLoaded',async()=>{
+    if(!Auth.requireAuth())return;Auth.startExpiryWatcher();Auth.populateUserUI();Sidebar.init();
+    document.getElementById('btn-logout').addEventListener('click',e=>{e.preventDefault();Auth.logout();});
+
+    // Auto-fill system config
+    try{
+      const cfgRes=await API.costCalc.getSystemConfig();
+      const cfg=cfgRes?.Data||cfgRes;
+      if(cfg){
+        setIfEmpty('f-transport',cfg.CompTransport);
+        setIfEmpty('f-unloading',cfg.CompUnloading);
+        setIfEmpty('f-local-handling',cfg.CompLocalHandling);
+        setIfEmpty('f-curr-code',cfg.CompCurrUsd);
+        setIfEmpty('f-fwd-code',cfg.CompFwCode);
+        setIfEmpty('f-fwd-name',cfg.CompFwName);
+        document.getElementById('sys-config-badge').innerHTML=
+          `<span class="badge bg-info text-dark"><i class="fas fa-info-circle me-1"></i>Transport, Unloading &amp; Local Handling pre-filled from system config. Insurance rate: ${cfg.CompInsurance??0}</span>`;
+      }
+    }catch(e){ /* system config optional */ }
+
+    // Check for pre-selected PO from URL
+    const params=new URLSearchParams(window.location.search);
+    const prePo=params.get('po'), preWhse=params.get('whse');
+
+    // Load POs
+    await loadPos();
+
+    // If pre-selected PO, mark it
+    if(prePo){
+      document.getElementById('po-search').value=prePo;
+      await loadPos();
+    }
+
+    // Events
+    document.getElementById('btn-search-po').addEventListener('click',()=>{poPage=1;loadPos();});
+    document.getElementById('po-search').addEventListener('keydown',e=>{if(e.key==='Enter'){poPage=1;loadPos();}});
+    document.getElementById('btn-clear-po-search').addEventListener('click',()=>{document.getElementById('po-search').value='';poPage=1;loadPos();});
+    document.getElementById('po-btn-prev').addEventListener('click',()=>{if(poPage>1){poPage--;loadPos();}});
+    document.getElementById('po-btn-next').addEventListener('click',()=>{const t=Math.ceil(poTotal/PO_PAGE_SIZE);if(poPage<t){poPage++;loadPos();}});
+    document.getElementById('chk-all').addEventListener('change',toggleAll);
+    document.getElementById('btn-create-calc').addEventListener('click',createAndCalculate);
+  });
+
+  function setIfEmpty(id,val){if(val!=null){const el=document.getElementById(id);if(el&&!el.value)el.value=val;}}
+
+  async function loadPos(){
+    const search=document.getElementById('po-search').value.trim();
+    const tbody=document.getElementById('po-tbody');
+    tbody.innerHTML='<tr><td colspan="11" class="text-center py-3 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading...</td></tr>';
+    try{
+      const p={page:poPage,pageSize:PO_PAGE_SIZE};
+      if(search)p.search=search;
+      const res=await API.costCalc.getPurchaseOrders(p);
+      poTotal=res?.TotalCount??0;
+      const data=res?.Data||[];
+      renderPoTable(data);
+      document.getElementById('po-page-info').textContent=poTotal+' total records';
+      document.getElementById('po-page-label').textContent=`Page ${poPage} of ${Math.ceil(poTotal/PO_PAGE_SIZE)||1}`;
+      document.getElementById('po-btn-prev').disabled=poPage<=1;
+      document.getElementById('po-btn-next').disabled=poPage>=Math.ceil(poTotal/PO_PAGE_SIZE);
+    }catch(err){
+      tbody.innerHTML=`<tr><td colspan="11" class="text-center py-3 text-danger">${esc(err.message)}</td></tr>`;
+    }
+  }
+
+  function fmtDate(n){if(!n)return'';const s=String(n);if(s.length===8)return s.substring(0,4)+'-'+s.substring(4,6)+'-'+s.substring(6,8);return s;}
+  function fmtNum(n,d=2){return n!=null?Number(n).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}):'';}
+
+  function renderPoTable(data){
+    const tbody=document.getElementById('po-tbody');
+    if(!data.length){tbody.innerHTML='<tr><td colspan="11" class="text-center py-3 text-muted">No purchase orders found.</td></tr>';return;}
+    tbody.innerHTML=data.map(r=>{
+      const checked=selectedPos.has(r.PhPoNo)?'checked':'';
+      return`<tr>
+        <td><input type="checkbox" class="po-chk" data-pono="${esc(r.PhPoNo)}" data-whse="${esc(r.PhWhse)}" ${checked} onchange="togglePo(this,${JSON.stringify(r)})"/></td>
+        <td><span class="badge bg-secondary">${esc(r.PhWhse||'')}</span></td>
+        <td><strong>${esc(r.PhPoNo||'')}</strong></td>
+        <td>${esc(r.PhOvrNo||'')}</td>
+        <td>${fmtDate(r.PhOrdt)}</td>
+        <td>${fmtDate(r.PhShdt)}</td>
+        <td>${esc(r.PhConNo||'')}</td>
+        <td class="text-end">${fmtNum(r.PhOqt,0)}</td>
+        <td class="text-end">${fmtNum(r.PhWeig,2)}</td>
+        <td class="text-end">${fmtNum(r.PhTotAmt,2)}</td>
+        <td><span class="badge ${r.PhStat==='CL'?'badge-inactive':'badge-active'}">${esc(r.PhStat||'')}</span></td>
+      </tr>`;
+    }).join('');
+  }
+
+  function togglePo(chk,row){
+    if(chk.checked)selectedPos.set(row.PhPoNo,row);
+    else selectedPos.delete(row.PhPoNo);
+    updateSelectedBadge();
+  }
+
+  function toggleAll(){
+    const checked=document.getElementById('chk-all').checked;
+    document.querySelectorAll('.po-chk').forEach(chk=>{
+      const poNo=chk.dataset.pono;
+      chk.checked=checked;
+      if(checked){/* need row data – just store the po number */selectedPos.set(poNo,{PhPoNo:poNo,PhWhse:chk.dataset.whse});}
+      else selectedPos.delete(poNo);
+    });
+    updateSelectedBadge();
+  }
+
+  function updateSelectedBadge(){
+    const count=selectedPos.size;
+    document.getElementById('selected-count').textContent=count+' selected';
+    const card=document.getElementById('selected-pos-card');
+    const list=document.getElementById('selected-pos-list');
+    if(count===0){card.classList.add('d-none');return;}
+    card.classList.remove('d-none');
+    list.innerHTML=[...selectedPos.values()].map(r=>
+      `<span class="badge bg-secondary me-1 mb-1"><i class="fas fa-times ms-1" style="cursor:pointer;" onclick="removePo('${esc(r.PhPoNo)}')"></i> ${esc(r.PhPoNo)}</span>`
+    ).join('');
+  }
+
+  function removePo(poNo){
+    selectedPos.delete(poNo);
+    document.querySelectorAll(`.po-chk[data-pono="${poNo}"]`).forEach(c=>c.checked=false);
+    updateSelectedBadge();
+  }
+
+  async function createAndCalculate(){
+    if(selectedPos.size===0){showToast('Please select at least one purchase order.','danger');return;}
+    const poNumbers=[...selectedPos.keys()];
+    const dto={
+      ForwarderCode:document.getElementById('f-fwd-code').value.trim()||null,
+      ForwarderName:document.getElementById('f-fwd-name').value.trim()||null,
+      CurrCode:document.getElementById('f-curr-code').value.trim()||null,
+      CurrRate:parseFloatOrNull('f-curr-rate'),
+      OceanFreight:parseFloatOrNull('f-ocean-freight'),
+      InlandFreight:parseFloatOrNull('f-inland-freight'),
+      Transport:parseFloatOrNull('f-transport'),
+      Unloading:parseFloatOrNull('f-unloading'),
+      LocalHandling:parseFloatOrNull('f-local-handling'),
+      Warehouse:document.getElementById('f-warehouse').value||null,
+      PoNumbers:poNumbers
+    };
+    const chargesDto={
+      OceanFreight:dto.OceanFreight,
+      InlandFreight:dto.InlandFreight,
+      Transport:dto.Transport,
+      Unloading:dto.Unloading,
+      LocalHandling:dto.LocalHandling,
+      CurrRate:dto.CurrRate,
+      MarginPerc:parseFloatOrNull('f-margin')
+    };
+    const btn=document.getElementById('btn-create-calc');
+    btn.disabled=true;btn.innerHTML='<i class="fas fa-spinner fa-spin me-1"></i>Processing...';
+    try{
+      // Step 1: Create
+      const createRes=await API.costCalc.createCalculation(dto);
+      const calcId=createRes?.Data?.CcCalcNumber;
+      if(!calcId)throw new Error('Failed to create calculation – no ID returned.');
+      showToast(`Calculation #${calcId} created. Running calculation...`,'success');
+      // Step 2: Calculate
+      await API.costCalc.runCalculation(calcId,chargesDto);
+      showToast(`Calculation #${calcId} complete! Redirecting...`,'success');
+      setTimeout(()=>window.location.href=`calculation.html?id=${calcId}`,1000);
+    }catch(err){
+      showToast(err.message,'danger');
+      btn.disabled=false;btn.innerHTML='<i class="fas fa-calculator me-1"></i>Create &amp; Calculate';
+    }
+  }
+
+  function parseFloatOrNull(id){const v=document.getElementById(id).value;const n=parseFloat(v);return isNaN(n)?null:n;}
+
+  function showToast(msg,type='success'){
+    const el=document.getElementById('toast');
+    el.className=`toast align-items-center text-white border-0 bg-${type==='success'?'success':'danger'}`;
+    document.getElementById('toast-msg').textContent=msg;
+    new bootstrap.Toast(el,{delay:4000}).show();
+  }
+  function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+</script>
+</body>
+</html>

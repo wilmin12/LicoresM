@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Email Configuration - Licores Maduro</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="../css/main.css"/>
+  <style>
+    .section-title { font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--primary); margin-bottom: .75rem; }
+    .password-toggle { cursor: pointer; }
+    .config-status-badge { font-size: .85rem; padding: .4em .9em; }
+  </style>
+</head>
+<body>
+<div id="sidebar-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;"></div>
+<div class="app-wrapper">
+  <nav id="sidebar" class="sidebar">
+    <div class="sidebar-header"><img src="../img/LogoLicores.png" alt="Licores Maduro" class="sidebar-logo-img"/><span class="sidebar-logo-text">LICORES MADURO</span></div>
+    <div id="sidebar-nav" class="sidebar-nav"></div>
+    <div class="sidebar-footer"><div class="sidebar-user"><div class="sidebar-avatar" id="sidebar-user-initials">LM</div><div class="sidebar-text"><div id="sidebar-user-name" style="font-weight:600;">–</div></div></div></div>
+  </nav>
+  <div class="main-area">
+    <header class="topbar">
+      <button id="btn-sidebar-toggle" class="btn-sidebar-toggle"><i class="fas fa-bars"></i></button>
+      <span class="topbar-title"><i class="fas fa-envelope-open-text me-2 text-wine"></i>Email Configuration</span>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown">
+            <span class="sidebar-avatar" id="topbar-user-initials" style="width:28px;height:28px;font-size:.75rem;">LM</span>
+            <span id="topbar-user-name" class="d-none d-md-inline">–</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+            <li><div class="dropdown-header"><strong id="topbar-user-fullname">User</strong><br/><small class="text-muted" id="topbar-user-role">Role</small></div></li>
+            <li><hr class="dropdown-divider"/></li>
+            <li><a class="dropdown-item text-danger" href="#" id="btn-logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+          </ul>
+        </div>
+      </div>
+    </header>
+    <main class="page-content">
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="../dashboard.html"><i class="fas fa-home me-1"></i>Home</a></li>
+          <li class="breadcrumb-item active">Email Configuration</li>
+        </ol>
+      </nav>
+
+      <div class="page-title">Email Configuration</div>
+      <div class="page-subtitle">Configure the SMTP server used for automatic notifications.</div>
+
+      <!-- Status bar -->
+      <div id="status-bar" class="alert d-none mb-3"></div>
+
+      <div class="row g-3">
+        <!-- Left column: SMTP Settings -->
+        <div class="col-lg-7">
+          <div class="card h-100">
+            <div class="card-header d-flex align-items-center justify-content-between">
+              <span><i class="fas fa-server me-2"></i>SMTP Settings</span>
+              <span id="enabled-badge" class="badge config-status-badge bg-secondary">Disabled</span>
+            </div>
+            <div class="card-body">
+
+              <!-- Enable toggle -->
+              <div class="d-flex align-items-center gap-3 mb-4 p-3 rounded" style="background:#f8f9fa;">
+                <div class="form-check form-switch mb-0">
+                  <input class="form-check-input" type="checkbox" id="f-enabled" role="switch" style="width:2.5em;height:1.3em;">
+                  <label class="form-check-label fw-semibold ms-2" for="f-enabled">Enable email notifications</label>
+                </div>
+              </div>
+
+              <!-- SMTP Host & Port -->
+              <div class="section-title">Server</div>
+              <div class="row g-3 mb-3">
+                <div class="col-8">
+                  <label class="form-label">SMTP Host <span class="text-danger">*</span></label>
+                  <input type="text" id="f-smtp-host" class="form-control" placeholder="smtp.gmail.com"/>
+                </div>
+                <div class="col-4">
+                  <label class="form-label">Port <span class="text-danger">*</span></label>
+                  <input type="number" id="f-smtp-port" class="form-control" placeholder="587" min="1" max="65535"/>
+                </div>
+              </div>
+              <div class="mb-4">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="f-use-ssl" checked/>
+                  <label class="form-check-label" for="f-use-ssl">Use SSL/TLS (recommended)</label>
+                </div>
+              </div>
+
+              <!-- Sender -->
+              <div class="section-title">Sender</div>
+              <div class="row g-3 mb-3">
+                <div class="col-6">
+                  <label class="form-label">Display Name</label>
+                  <input type="text" id="f-sender-name" class="form-control" placeholder="Licores Maduro Sistema"/>
+                </div>
+                <div class="col-6">
+                  <label class="form-label">Email Address <span class="text-danger">*</span></label>
+                  <input type="email" id="f-sender-email" class="form-control" placeholder="sistema@licoresmaduro.com"/>
+                </div>
+              </div>
+              <div class="mb-4">
+                <label class="form-label">
+                  App Password
+                  <span id="password-status" class="badge bg-secondary ms-2" style="font-size:.7rem;">Not set</span>
+                </label>
+                <div class="input-group">
+                  <input type="password" id="f-sender-password" class="form-control" placeholder="Leave blank to keep existing password"/>
+                  <button class="btn btn-outline-secondary password-toggle" type="button" onclick="togglePassword()">
+                    <i class="fas fa-eye" id="pwd-eye-icon"></i>
+                  </button>
+                </div>
+                <div class="form-text">
+                  For Gmail, use an <strong>App Password</strong> (not your regular password).
+                  <a href="#" onclick="return false;" title="Google Account → Security → 2-Step Verification → App passwords">How?</a>
+                </div>
+              </div>
+
+              <!-- Notification settings -->
+              <div class="section-title">Notification Rules</div>
+              <div class="mb-3">
+                <label class="form-label">Alert after N days without progress</label>
+                <div class="input-group" style="max-width:180px;">
+                  <input type="number" id="f-stale-days" class="form-control" value="4" min="1" max="30"/>
+                  <span class="input-group-text">days</span>
+                </div>
+                <div class="form-text">Orders with no status update for this many days will trigger an alert email.</div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- Right column: Recipients & Test -->
+        <div class="col-lg-5">
+          <!-- Recipients card -->
+          <div class="card mb-3">
+            <div class="card-header"><i class="fas fa-users me-2"></i>Recipients</div>
+            <div class="card-body">
+              <label class="form-label">Email addresses <span class="text-danger">*</span></label>
+              <textarea id="f-recipients" class="form-control font-monospace" rows="6"
+                placeholder="one@email.com&#10;two@email.com&#10;three@email.com"
+                style="font-size:.85rem;"></textarea>
+              <div class="form-text">One email address per line. All listed addresses will receive alert notifications.</div>
+            </div>
+          </div>
+
+          <!-- Test email card -->
+          <div class="card">
+            <div class="card-header"><i class="fas fa-paper-plane me-2"></i>Send Test Email</div>
+            <div class="card-body">
+              <div class="form-text mb-3">Sends a test message to verify the configuration is working. <strong>Save first before testing.</strong></div>
+              <label class="form-label">Send test to</label>
+              <div class="input-group">
+                <input type="email" id="f-test-to" class="form-control" placeholder="your@email.com"/>
+                <button class="btn btn-outline-primary" id="btn-test-email" onclick="sendTestEmail()">
+                  <i class="fas fa-paper-plane me-1"></i>Send
+                </button>
+              </div>
+              <div id="test-result" class="mt-2 small d-none"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="d-flex gap-2 mt-4">
+        <button class="btn btn-wine" id="btn-save" onclick="saveConfig()">
+          <i class="fas fa-save me-2"></i>Save Configuration
+        </button>
+        <button class="btn btn-outline-secondary" onclick="loadConfig()">
+          <i class="fas fa-undo me-1"></i>Reset
+        </button>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index:9999">
+  <div id="toast" class="toast align-items-center text-white border-0 bg-success" role="alert" aria-live="assertive">
+    <div class="d-flex">
+      <div class="toast-body" id="toast-msg">Done.</div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/sidebar.js"></script>
+<script>
+  // ── Auth guard ───────────────────────────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', async () => {
+    if (!Auth.requireAuth()) return;
+
+    const user = Auth.getCurrentUser();
+    if (user?.RoleName !== 'SuperAdmin') {
+      window.location.href = '../dashboard.html';
+      return;
+    }
+
+    Auth.startExpiryWatcher();
+    Auth.populateUserUI();
+    Sidebar.init();
+
+    document.getElementById('btn-logout').addEventListener('click', e => { e.preventDefault(); Auth.logout(); });
+
+    await loadConfig();
+  });
+
+  // ── Load config ───────────────────────────────────────────────────────────────
+  async function loadConfig() {
+    try {
+      const res = await API.emailConfig.get();
+      const c   = res.Data;
+
+      document.getElementById('f-smtp-host').value      = c.SmtpHost       || '';
+      document.getElementById('f-smtp-port').value      = c.SmtpPort       || 587;
+      document.getElementById('f-use-ssl').checked      = c.UseSsl         !== false;
+      document.getElementById('f-sender-name').value    = c.SenderName     || '';
+      document.getElementById('f-sender-email').value   = c.SenderEmail    || '';
+      document.getElementById('f-sender-password').value = ''; // never pre-fill
+      document.getElementById('f-stale-days').value     = c.StaleOrderDays || 4;
+      document.getElementById('f-enabled').checked      = !!c.IsEnabled;
+
+      // Recipients: stored semicolon-separated → show one per line
+      const recips = (c.Recipients || '').split(';').map(s => s.trim()).filter(Boolean).join('\n');
+      document.getElementById('f-recipients').value = recips;
+
+      // Password status badge
+      const pwdBadge = document.getElementById('password-status');
+      pwdBadge.textContent  = c.HasPassword ? 'Set ✓' : 'Not set';
+      pwdBadge.className    = `badge ms-2 ${c.HasPassword ? 'bg-success' : 'bg-secondary'}`;
+      pwdBadge.style.fontSize = '.7rem';
+
+      updateEnabledBadge(!!c.IsEnabled);
+    } catch (err) {
+      showStatus('danger', `Error loading configuration: ${err.message}`);
+    }
+  }
+
+  // ── Save config ───────────────────────────────────────────────────────────────
+  async function saveConfig() {
+    const host = document.getElementById('f-smtp-host').value.trim();
+    const port = parseInt(document.getElementById('f-smtp-port').value, 10);
+    const senderEmail = document.getElementById('f-sender-email').value.trim();
+
+    if (!host || !port || !senderEmail) {
+      showStatus('warning', 'SMTP Host, Port, and Sender Email are required.');
+      return;
+    }
+
+    // Recipients: one per line → semicolon-separated
+    const recipsRaw = document.getElementById('f-recipients').value;
+    const recipients = recipsRaw.split('\n').map(s => s.trim()).filter(Boolean).join(';');
+
+    const dto = {
+      SmtpHost:       host,
+      SmtpPort:       port,
+      UseSsl:         document.getElementById('f-use-ssl').checked,
+      SenderName:     document.getElementById('f-sender-name').value.trim(),
+      SenderEmail:    senderEmail,
+      SenderPassword: document.getElementById('f-sender-password').value, // blank = keep existing
+      Recipients:     recipients,
+      StaleOrderDays: parseInt(document.getElementById('f-stale-days').value, 10) || 4,
+      IsEnabled:      document.getElementById('f-enabled').checked
+    };
+
+    const btn = document.getElementById('btn-save');
+    btn.disabled = true;
+    try {
+      await API.emailConfig.save(dto);
+      showToast('Configuration saved.', 'success');
+      document.getElementById('f-sender-password').value = '';
+      await loadConfig(); // refresh password status badge
+    } catch (err) {
+      showToast(`Error: ${err.message}`, 'danger');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  // ── Test email ────────────────────────────────────────────────────────────────
+  async function sendTestEmail() {
+    const to = document.getElementById('f-test-to').value.trim();
+    if (!to) { showTestResult('Please enter a recipient email.', false); return; }
+
+    const btn = document.getElementById('btn-test-email');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Sending...';
+    try {
+      const res = await API.emailConfig.test(to);
+      showTestResult(res.Message || 'Email sent successfully.', true);
+    } catch (err) {
+      showTestResult(err.message, false);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-paper-plane me-1"></i>Send';
+    }
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────────────────────
+  function togglePassword() {
+    const input = document.getElementById('f-sender-password');
+    const icon  = document.getElementById('pwd-eye-icon');
+    if (input.type === 'password') {
+      input.type = 'text';
+      icon.className = 'fas fa-eye-slash';
+    } else {
+      input.type = 'password';
+      icon.className = 'fas fa-eye';
+    }
+  }
+
+  function updateEnabledBadge(enabled) {
+    const badge = document.getElementById('enabled-badge');
+    badge.textContent = enabled ? 'Enabled' : 'Disabled';
+    badge.className   = `badge config-status-badge ${enabled ? 'bg-success' : 'bg-secondary'}`;
+  }
+
+  document.getElementById('f-enabled')?.addEventListener('change', e => updateEnabledBadge(e.target.checked));
+
+  function showStatus(type, msg) {
+    const el = document.getElementById('status-bar');
+    el.className = `alert alert-${type}`;
+    el.textContent = msg;
+    el.classList.remove('d-none');
+    if (type === 'success') setTimeout(() => el.classList.add('d-none'), 4000);
+  }
+
+  function showTestResult(msg, ok) {
+    const el = document.getElementById('test-result');
+    el.className = `mt-2 small alert alert-${ok ? 'success' : 'danger'} py-1 px-2`;
+    el.textContent = msg;
+    el.classList.remove('d-none');
+  }
+
+  function showToast(msg, type = 'success') {
+    const el = document.getElementById('toast');
+    const bg = type === 'success' ? 'success' : type === 'info' ? 'info' : 'danger';
+    el.className = `toast align-items-center text-white border-0 bg-${bg}`;
+    document.getElementById('toast-msg').textContent = msg;
+    new bootstrap.Toast(el, { delay: 3500 }).show();
+  }
+</script>
+</body>
+</html>
