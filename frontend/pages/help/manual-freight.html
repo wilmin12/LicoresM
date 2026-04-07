@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Manual de Usuario — Freight Forwarder | Licores Maduro</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="../../css/main.css"/>
+  <style>
+    :root { --primary:#198754; --primary-light:#e8f5ee; }
+    body  { font-family: 'Segoe UI', sans-serif; background:#f8f9fa; color:#212529; }
+    .hero { background: linear-gradient(135deg,#198754,#0f5132); color:#fff; padding:3rem 2rem 2.5rem; }
+    .hero h1 { font-size:2rem; font-weight:800; }
+    .hero p  { opacity:.85; font-size:1.05rem; }
+    .toc-card { position:sticky; top:1.5rem; }
+    .toc-card a { color:#198754; text-decoration:none; display:block; padding:.25rem 0; font-size:.9rem; }
+    .toc-card a:hover { text-decoration:underline; }
+    .section-title { color:#198754; font-weight:700; font-size:1.2rem; border-left:4px solid #198754; padding-left:.75rem; margin-bottom:1.25rem; }
+    .step-box { background:#fff; border:1px solid #dee2e6; border-radius:.5rem; padding:1.25rem 1.5rem; margin-bottom:1rem; }
+    .step-num { background:#198754; color:#fff; border-radius:50%; width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; font-weight:700; font-size:.85rem; margin-right:.6rem; flex-shrink:0; }
+    .note-box  { background:#fff8e1; border-left:4px solid #ffc107; padding:1rem 1.25rem; border-radius:0 .5rem .5rem 0; font-size:.9rem; }
+    .info-box  { background:#e8f4fd; border-left:4px solid #0dcaf0; padding:1rem 1.25rem; border-radius:0 .5rem .5rem 0; font-size:.9rem; }
+    .warn-box  { background:#f8d7da; border-left:4px solid #dc3545; padding:1rem 1.25rem; border-radius:0 .5rem .5rem 0; font-size:.9rem; }
+    .field-table th { background:#f8f9fa; font-size:.83rem; }
+    .field-table td { font-size:.88rem; vertical-align:top; }
+    .charge-type-card { border:1px solid #dee2e6; border-radius:.5rem; padding:1rem; margin-bottom:.75rem; background:#fff; }
+    .charge-type-card h6 { color:#198754; font-weight:700; margin-bottom:.5rem; }
+    @media print { .toc-card { display:none; } }
+  </style>
+</head>
+<body>
+<div id="sidebar-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;"></div>
+<div class="app-wrapper">
+  <nav id="sidebar" class="sidebar">
+    <div class="sidebar-header"><img src="../../img/LogoLicores.png" alt="Licores Maduro" class="sidebar-logo-img" id="sidebar-logo-img"/><span class="sidebar-logo-text" id="sidebar-company-name">LICORES MADURO</span></div>
+    <div id="sidebar-nav" class="sidebar-nav"></div>
+    <div class="sidebar-footer"><div class="sidebar-user"><div class="sidebar-avatar" id="sidebar-user-initials">LM</div><div class="sidebar-text"><div id="sidebar-user-name" style="font-weight:600;">–</div></div></div></div>
+  </nav>
+  <div class="main-area">
+    <header class="topbar">
+      <button id="btn-sidebar-toggle" class="btn-sidebar-toggle"><i class="fas fa-bars"></i></button>
+      <span class="topbar-title"><i class="fas fa-book-open me-2 text-wine"></i>Manual — Freight Forwarder</span>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown">
+            <span class="sidebar-avatar" id="topbar-user-initials" style="width:28px;height:28px;font-size:.75rem;">LM</span>
+            <span id="topbar-user-name" class="d-none d-md-inline">–</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+            <li><div class="dropdown-header"><strong id="topbar-user-fullname">User</strong><br/><small class="text-muted" id="topbar-user-role">Role</small></div></li>
+            <li><hr class="dropdown-divider"/></li>
+            <li><a class="dropdown-item text-danger" href="#" id="btn-logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+          </ul>
+        </div>
+      </div>
+    </header>
+    <main class="page-content" style="padding:0;">
+
+<!-- HERO -->
+<div class="hero">
+  <div class="container">
+    <div class="d-flex align-items-center gap-3 mb-3">
+      <img src="../../img/LogoLicores.png" alt="Licores Maduro" style="height:48px; filter:brightness(0) invert(1); opacity:.9;"/>
+      <span style="opacity:.6; font-size:.95rem;">Manual de Usuario</span>
+    </div>
+    <h1><i class="fas fa-ship me-2"></i>Freight Forwarder</h1>
+    <p>Módulo de Cotizaciones de Flete — Guía completa para gestionar tarifas y cotizaciones de agentes navieros.</p>
+    <div class="mt-3 d-flex gap-2 flex-wrap">
+      <span class="badge bg-white text-dark">Versión 1.0</span>
+      <span class="badge bg-white text-dark">Fase 1</span>
+      <span class="badge bg-white text-dark">Licores Maduro © 2026</span>
+    </div>
+  </div>
+</div>
+
+<div class="container py-4">
+  <div class="row g-4">
+
+    <!-- TOC -->
+    <div class="col-lg-3">
+      <div class="card toc-card shadow-sm">
+        <div class="card-header fw-bold" style="background:#e8f5ee;color:#198754;"><i class="fas fa-list me-2"></i>Contenido</div>
+        <div class="card-body p-3">
+          <a href="#sec1">1. ¿Qué es Freight Forwarder?</a>
+          <a href="#sec2">2. Roles y Permisos</a>
+          <a href="#sec3">3. Estructura del Módulo</a>
+          <a href="#sec4">4. Catálogos Base</a>
+          <a href="#sec5">5. Gestionar Forwarders</a>
+          <a href="#sec6">6. Cotizaciones Ocean Freight</a>
+          <a href="#sec7">7. Cotizaciones LCL</a>
+          <a href="#sec8">8. Cotizaciones Inland</a>
+          <a href="#sec9">9. Cargos Adicionales Inland</a>
+          <a href="#sec10">10. Applied Quotes</a>
+          <a href="#sec11">11. Tipos de Cargos</a>
+          <a href="#sec12">12. Preguntas Frecuentes</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="col-lg-9">
+
+      <!-- 1 -->
+      <div id="sec1" class="card shadow-sm mb-4">
+        <div class="card-body p-4">
+          <div class="section-title"><span data-i18n="What is Freight Forwarder?">¿Qué es Freight Forwarder?</span></div>
+          <p>El módulo <strong>Freight Forwarder</strong> centraliza todas las tarifas y cotizaciones de los agentes navieros (freight forwarders) que utiliza Licores Maduro para sus importaciones.</p>
+          <p>Permite registrar y comparar cotizaciones de <strong>flete marítimo completo (Ocean/FCL)</strong>, <strong>carga suelta (LCL)</strong> y <strong>flete terrestre (Inland)</strong>, sirviendo como base de datos de referencia para el módulo de Cost Calculation.</p>
+          <div class="info-box mt-3">
+            <strong><i class="fas fa-lightbulb me-1"></i>Flujo típico:</strong> Un agente naviero envía una nueva tarifa → se registra en el sistema → se usa como referencia al crear una calculación de costo.
+          </div>
+        </div>
+      </div>
+
+      <!-- 2 -->
+      <div id="sec2" class="card shadow-sm mb-4">
+        <div class="card-body p-4">
+          <div class="section-title"><span data-i18n="Roles and Permissions">Roles y Permisos</span></div>
+          <table class="table table-bordered field-table">
+            <thead><tr><th>Rol</th><th>Ver cotizaciones</th><th>Crear / Editar</th><th>Eliminar</th><th>Catálogos</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Usuario</strong></td><td class="text-success">✔</td><td class="text-danger">✖</td><td class="text-danger">✖</td><td class="text-danger">Solo lectura</td></tr>
+              <tr><td><strong>Admin</strong></td><td class="text-success">✔</td><td class="text-success">✔</td><td class="text-success">✔</td><td class="text-success">✔ Editar</td></tr>
+              <tr><td><strong>SuperAdmin</strong></td><td class="text-success">✔</td><td class="text-success">✔</td><td class="text-success">✔</td><td class="text-success">✔ Editar</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 3 -->
+      <div id="sec3" class="card shadow-sm mb-4">
+        <div class="card-body p-4">
+          <div class="section-title"><span data-i18n="Module Structure">Estructura del Módulo</span></div>
+          <p>El módulo se divide en:</p>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="charge-type-card">
+                <h6><i class="fas fa-ship me-2"></i>Ocean Freight Quotes</h6>
+                <p class="mb-0 text-muted" style="font-size:.88rem;">Tarifas de contenedor completo (FCL) para rutas específicas. Incluye fletes por tipo de contenedor y cargos adicionales.</p>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="charge-type-card">
+                <h6><i class="fas fa-boxes me-2"></i>LCL Quotes</h6>
+                <p class="mb-0 text-muted" style="font-size:.88rem;">Tarifas para carga suelta (Less Container Load), calculadas por CBM o tonelada.</p>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="charge-type-card">
+                <h6><i class="fas fa-truck me-2"></i>Inland Freight Quotes</h6>
+                <p class="mb-0 text-muted" style="font-size:.88rem;">Tarifas de transporte terrestre desde el punto de origen hasta el puerto de embarque.</p>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="charge-type-card">
+                <h6><i class="fas fa-file-contract me-2"></i>Applied Quotes</h6>
+                <p class="mb-0 text-muted" style="font-size:.88rem;">Cotizaciones aplicadas a embarques reales, combinando los tres tipos de flete con sus cargos adicionales.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4 -->
+      <div id="sec4" class="card shadow-sm mb-4">
+        <div class="card-body p-4">
+          <div class="section-title"><span data-i18n="Base Catalogs">Catálogos Base</span></div>
+          <p>Antes de registrar cotizaciones, asegúrate de que los catálogos base estén configurados:</p>
+          <table class="table table-bordered field-table">
+            <thead><tr><th>Catálogo</th><th>Descripción</th><th>Ejemplo</th></tr></thead>
+            <tbody>
+              <tr><td>Currencies</td><td>Monedas con tasas de cambio bancario y aduanal.</td><td>USD, EUR</td></tr>
+              <tr><td>Ports of Loading</td><td>Puertos de origen de los embarques.</td><td>Rotterdam, Miami</td></tr>
+              <tr><td>Shipping Lines</td><td>Líneas navieras (carriers).</td><td>Maersk, MSC</td></tr>
+              <tr><td>Shipping Agents</td><td>Agentes locales que gestionan el flete.</td><td>Maduro & Curiel's</td></tr>
+              <tr><td>Routes</td><td>Rutas de transporte configuradas.</td><td>EUR-CUR, USA-CUR</td></tr>
+              <tr><td>Container Types</td><td>Tipos y capacidades de contenedores.</td><td>20GP, 40HC</td></tr>
+              <tr><td>Regions</td><td>Regiones de origen/destino.</td><td>Europe, North America</td></tr>
+              <tr><td>Freight Forwarders</td><td>Empresas agentes de carga registradas.</td><td>DHL Freight, Panalpina</td></tr>
+            </tbody>
+          </table>
+          <div class="note-box">Estos catálogos son la base de todas las cotizaciones. Mantenlos actualizados con la información vigente de tus proveedores de flete.</div>
+        </div>
+      </div>
+
+      <!-- 5 -->
+      <div id="sec5" class="card shadow-sm mb-4">
+        <div class="card-body p-4">
+          <div class="section-title"><span data-i18n="Manage Freight Forwarders">Gestionar Freight Forwarders</span></div>
+          <p>Los <strong>Freight Forwarders</strong> son los agentes navieros con los que Licores Maduro trabaja.</p>
+          <ol class="ps-3">
+            <li class="mb-2">Ir a <strong>Freight Forwarder → Freight Forwarders</strong>.</li>
+            <li class="mb-2">Clic en <span class="badge bg-success">+ Nuevo</span> para agregar un forwarder.</li>
+            <li class="mb-2">Completar: código, nombre, país, contacto.</li>
+            <li class="mb-2">Guardar. El forwarder ya está disponible al crear cotizaciones.</li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- 6 -->
+      <div id="sec6" class="card shadow-sm mb-4">
+        <div class="card-body p-4">
+          <div class="section-title"><span data-i18n="Ocean Freight Quotes (FCL)">Cotizaciones Ocean Freight (FCL)</span></div>
+          <p>Registra las tarifas de contenedor completo recibidas de los forwarders:</p>
+          <ol class="ps-3">
+            <li class="mb-2">Ir a <strong>Freight Forwarder → Ocean Freight Quotes</strong>.</li>
+            <li class="mb-2">Clic en <span class="badge bg-success">+ Nueva Cotización</span>.</li>
+            <li class="mb-2">Completar los datos:
+              <ul class="mt-1">
+                <li><strong>Forwarder</strong>: agente que ofrece la tarifa</li>
+                <li><strong>Puerto de Origen</strong> y <strong>Shipping Line</strong></li>
+                <li><strong>Ruta</strong> y <strong>Tipo de Contenedor</strong></li>
+                <li><strong>Moneda</strong> y <strong>Tarifa Base</strong> por contenedor</li>
+                <li><strong>Validez</strong>: fecha desde/hasta de vigencia</li>
+              </ul>
+            </li>
+            <li class="mb-2">Agregar cargos adicionales (THC, B/L fee, etc.) si aplican.</li>
+            <li class="mb-2">Guardar la cotización.</li>
+          </ol>
+          <div class="info-box">Una cotización puede tener múltiples tipos de contenedor con tarifas distintas (20GP, 40GP, 40HC).</div>
+        </div>
+      </div>
+
+      <!-- 7 -->
+      <div id="sec7" class="card shadow-sm mb-4">
+        <div class="card-body p-4">
+          <div class="section-title"><span data-i18n="LCL Quotes">Cotizaciones LCL</span></div>
+          <p>Para embarques de carga suelta (compartida):</p>
+          <ol class="ps-3">
+            <li class="mb-2">Ir a <strong>Freight Forwarder → LCL Quotes</strong>.</li>
+            <li class="mb-2">Registrar: forwarder, ruta, tarifa por CBM y/o tonelada, mínimo de cobro, validez.</li>
+            <li class="mb-2">Agregar cargos LCL adicionales si aplican.</li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- 8 -->
+      <div id="sec8" class="card shadow-sm mb-4">
+        <div class="card-body p-4">
+          <div class="section-title"><span data-i18n="Inland Freight Quotes">Cotizaciones Inland Freight</span></div>
+          <p>Tarifas de transporte terrestre (origen → puerto):</p>
+          <ol class="ps-3">
+            <li class="mb-2">Ir a <strong>Freight Forwarder → Inland Freight Quotes</strong>.</li>
+            <li class="mb-2">Registrar: forwarder, región de origen, tarifa, moneda, validez.</li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- 9 -->
+      <div id="sec9" class="card shadow-sm mb-4">
+        <div class="card-body p-4">
+          <div class="section-title"><span data-i18n="Inland Additional Charges">Cargos Adicionales Inland</span></div>
+          <p>Algunos forwarders cobran cargos adicionales en origen (documentación, inspecciones, etc.):</p>
+          <ol class="ps-3">
+            <li class="mb-2">Ir a <strong>Freight Forwarder → Inland Additional Charges</strong>.</li>
+            <li class="mb-2">Registrar: descripción, monto, moneda y si aplica por contenedor o por embarque.</li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- 10 -->
+      <div id="sec10" class="card shadow-sm mb-4">
+        <div class="card-body p-4">
+          <div class="section-title"><span data-i18n="Applied Quotes">Applied Quotes (Cotizaciones Aplicadas)</span></div>
+          <p>Un <strong>Applied Quote</strong> es la combinación de cotizaciones y cargos que se aplicaron a un embarque real específico:</p>
+          <ol class="ps-3">
+            <li class="mb-2">Ir a <strong>Freight Forwarder → Applied Quotes</strong>.</li>
+            <li class="mb-2">Clic en <span class="badge bg-success">+ Nueva</span>.</li>
+            <li class="mb-2">Completar la información del forwarder y del embarque.</li>
+            <li class="mb-2">En la tarjeta <strong>"Based on Quote"</strong>: seleccionar la cotización base (Ocean, LCL o Inland) de la que parte este applied quote.</li>
+            <li class="mb-2">Agregar o ajustar los cargos de Ocean y Inland que aplicaron para este embarque específico.</li>
+            <li class="mb-2">Guardar.</li>
+          </ol>
+          <div class="note-box">El Applied Quote sirve como el documento de referencia para los costos reales de un embarque y es el que se usa en Cost Calculation.</div>
+        </div>
+      </div>
+
+      <!-- 11 -->
+      <div id="sec11" class="card shadow-sm mb-4">
+        <div class="card-body p-4">
+          <div class="section-title"><span data-i18n="Charge Types">Tipos de Cargos</span></div>
+          <p>El módulo usa varios catálogos de tipos de cargo que definen el comportamiento de cada cobro:</p>
+          <table class="table table-bordered field-table">
+            <thead><tr><th>Catálogo</th><th>Descripción</th></tr></thead>
+            <tbody>
+              <tr><td>Ocean Freight Charge Types</td><td>Tipos de cargos marítimos (THC, B/L, seal fee, etc.).</td></tr>
+              <tr><td>Inland Freight Charge Types</td><td>Tipos de cargos terrestres (pick-up, documentation, etc.).</td></tr>
+              <tr><td>LCL Charge Types</td><td>Tipos de cargos para carga suelta.</td></tr>
+              <tr><td>Price Types</td><td>Cómo se calcula el precio: por unidad, por caja, por contenedor, etc.</td></tr>
+              <tr><td>Amount Types</td><td>Tipo de monto: fijo, porcentaje, por peso, etc.</td></tr>
+              <tr><td>Charge Actions</td><td>Acción del cargo: incluir en costo, separar, etc.</td></tr>
+              <tr><td>Charge Over</td><td>Base sobre la que aplica el cargo: FOB, CIF, etc.</td></tr>
+              <tr><td>Charge Per</td><td>Unidad de cobro: per CBM, per TEU, per shipment.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 12 -->
+      <div id="sec12" class="card shadow-sm mb-4">
+        <div class="card-body p-4">
+          <div class="section-title"><span data-i18n="Frequently Asked Questions">Preguntas Frecuentes</span></div>
+
+          <p><strong>¿Las cotizaciones tienen fecha de vencimiento?</strong><br/>
+          Sí, cada cotización tiene campos de vigencia (válido desde / hasta). Se recomienda actualizar las tarifas cada vez que el forwarder envíe nuevas.</p>
+
+          <p><strong>¿Puedo tener múltiples cotizaciones del mismo forwarder?</strong><br/>
+          Sí, puedes registrar varias versiones de cotizaciones del mismo agente (por ejemplo, diferentes rutas o diferentes períodos de vigencia).</p>
+
+          <p><strong>¿Cómo se usa una cotización en Cost Calculation?</strong><br/>
+          Al crear una nueva calculación, el usuario puede seleccionar un forwarder. Los valores de flete del Applied Quote sirven como referencia para llenar los campos de costo.</p>
+
+          <p><strong>¿Quién puede agregar nuevos forwarders o tarifas?</strong><br/>
+          Solo Admin y SuperAdmin pueden crear, editar o eliminar registros en este módulo.</p>
+
+          <p><strong>¿Qué son las "Routes by Shipping Agent"?</strong><br/>
+          Es un catálogo que mapea qué rutas ofrece cada agente naviero y el tiempo de tránsito estimado (en días) para cada una.</p>
+        </div>
+      </div>
+
+      <div class="text-center text-muted mt-3 mb-5" style="font-size:.82rem;">
+        Licores Maduro — Sistema de Gestión Interna &nbsp;|&nbsp; Manual Freight Forwarder v1.0 &nbsp;|&nbsp; 2026
+      </div>
+    </div>
+  </div>
+</div>
+
+    </main>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../../js/i18n.js"></script>
+<script src="../../js/api.js"></script>
+<script src="../../js/auth.js"></script>
+<script src="../../js/sidebar.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    if (!Auth.requireAuth()) return;
+    Auth.startExpiryWatcher();
+    Auth.populateUserUI();
+    Sidebar.init();
+    document.getElementById('btn-logout').addEventListener('click', e => { e.preventDefault(); Auth.logout(); });
+  });
+</script>
+</body>
+</html>

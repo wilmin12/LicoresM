@@ -165,8 +165,9 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<RouteProductExt>  RouteProductExts  => Set<RouteProductExt>();
     public DbSet<RouteBudget>      RouteBudgets      => Set<RouteBudget>();
 
-    // ── SYSTEM: Company Settings ───────────────────────────────────────────────
-    public DbSet<CompanySettings> CompanySettings => Set<CompanySettings>();
+    // ── SYSTEM: Company Settings & Module Approvers ───────────────────────────
+    public DbSet<CompanySettings>      CompanySettings      => Set<CompanySettings>();
+    public DbSet<ModuleApproverEmail>  ModuleApproverEmails => Set<ModuleApproverEmail>();
 
     // ── MODULE 5: Stock Analysis ───────────────────────────────────────────────
     public DbSet<StockIdealMonths>      StockIdealMonths      => Set<StockIdealMonths>();
@@ -1511,6 +1512,19 @@ public sealed class ApplicationDbContext : DbContext
             e.Property(x => x.RbQty12).HasColumnName("RbQty12").HasColumnType("decimal(18,4)");
         });
 
+        // ── Module Approver Emails ─────────────────────────────────────────────
+        modelBuilder.Entity<ModuleApproverEmail>(e =>
+        {
+            e.ToTable("MODULE_APPROVER_EMAILS");
+            e.HasKey(x => x.MaeId);
+            e.Property(x => x.MaeId).HasColumnName("Mae_Id");
+            e.Property(x => x.MaeModuleKey).HasColumnName("Mae_ModuleKey").HasMaxLength(50).IsRequired();
+            e.Property(x => x.MaeModuleName).HasColumnName("Mae_ModuleName").HasMaxLength(100).IsRequired();
+            e.Property(x => x.MaeEmails).HasColumnName("Mae_Emails");
+            e.Property(x => x.MaeUpdatedAt).HasColumnName("Mae_UpdatedAt");
+            e.Property(x => x.MaeUpdatedBy).HasColumnName("Mae_UpdatedBy").HasMaxLength(100);
+        });
+
         // ── Company Settings ───────────────────────────────────────────────────
         modelBuilder.Entity<CompanySettings>(e =>
         {
@@ -1540,6 +1554,16 @@ public sealed class ApplicationDbContext : DbContext
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // ── System ─────────────────────────────────────────────────────────────────────
+public class ModuleApproverEmail
+{
+    public int      MaeId         { get; set; }
+    public string   MaeModuleKey  { get; set; } = string.Empty;
+    public string   MaeModuleName { get; set; } = string.Empty;
+    public string   MaeEmails     { get; set; } = string.Empty;
+    public DateTime? MaeUpdatedAt { get; set; }
+    public string?  MaeUpdatedBy  { get; set; }
+}
+
 public class CompanySettings
 {
     public int      CsId          { get; set; } = 1;

@@ -143,6 +143,9 @@ public sealed class AankoopbonController : ControllerBase
         var userId = CurrentUserId();
         if (userId is null) return Unauthorized();
 
+        if (dto.Details is null or { Count: 0 })
+            return BadRequest(ApiResponse.Fail("At least one detail line is required."));
+
         var header = new AbOrderHeader
         {
             AohBonNr        = await NextBonNrAsync(ct),
@@ -209,6 +212,8 @@ public sealed class AankoopbonController : ControllerBase
             return Forbid();
         if (header.AohStatus != "DRAFT")
             return BadRequest(ApiResponse.Fail("Only DRAFT aankoopbonnen can be edited."));
+        if (dto.Details is null or { Count: 0 })
+            return BadRequest(ApiResponse.Fail("At least one detail line is required."));
 
         header.AohRequestor    = dto.AohRequestor;
         header.AohVendorId     = dto.AohVendorId;
@@ -249,7 +254,6 @@ public sealed class AankoopbonController : ControllerBase
     public async Task<IActionResult> Close(int id, [FromBody] CloseDto dto, CancellationToken ct)
     {
         var header = await _db.AbOrderHeaders
-            .Include(h => h.Details)
             .FirstOrDefaultAsync(h => h.AohId == id && h.IsActive, ct);
 
         if (header is null) return NotFound(ApiResponse.Fail($"Aankoopbon {id} not found."));
@@ -337,11 +341,35 @@ public sealed class AankoopbonController : ControllerBase
         return Ok(ApiResponse.Ok("Aankoopbon rejected."));
     }
 
+    // ── PATCH /api/aankoopbon/orders/{id}/resubmit ── REJECTED → DRAFT ──────────
+    [HttpPatch("{id:int}/resubmit")]
+    public async Task<IActionResult> Resubmit(int id, CancellationToken ct)
+    {
+        var header = await _db.AbOrderHeaders
+            .FirstOrDefaultAsync(h => h.AohId == id && h.IsActive, ct);
+
+        if (header is null) return NotFound(ApiResponse.Fail($"Aankoopbon {id} not found."));
+        if (!IsAdminOrSuperAdmin() && header.AohCreatedBy != CurrentUserId())
+            return Forbid();
+        if (header.AohStatus != "REJECTED")
+            return BadRequest(ApiResponse.Fail("Only REJECTED aankoopbonnen can be resubmitted."));
+
+        header.AohStatus          = "DRAFT";
+        header.AohRejectedBy      = null;
+        header.AohRejectedByName  = null;
+        header.AohRejectedAt      = null;
+        header.AohRejectionReason = null;
+
+        await _db.SaveChangesAsync(ct);
+        _log.LogInformation("Aankoopbon {BonNr} resubmitted to DRAFT by {User}", header.AohBonNr, CurrentUserName());
+        return Ok(ApiResponse.Ok("Aankoopbon returned to DRAFT for editing."));
+    }
+
     // ── DELETE /api/aankoopbon/orders/{id} ── soft delete (only DRAFT) ────────
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
-        var header = await _db.AbOrderHeaders.FindAsync([id], ct);
+        var header = await _db.AbOrderHeaders.FirstOrDefaultAsync(h => h.AohId == id && h.IsActive, ct);
         if (header is null) return NotFound(ApiResponse.Fail($"Aankoopbon {id} not found."));
         if (!IsAdminOrSuperAdmin() && header.AohCreatedBy != CurrentUserId())
             return Forbid();
@@ -453,7 +481,7 @@ public sealed class AankoopbonController : ControllerBase
             // Find all active Admin and SuperAdmin users (role name is in LM_Roles)
             var approverRoles = new[] { "Admin", "SuperAdmin" };
             var approvers = await _db.LmUsers.AsNoTracking()
-                .Where(u => u.IsActive && approverRoles.Contains(u.Role!.RoleName))
+                .Where(u => u.IsActive && u.Role != null && approverRoles.Contains(u.Role.RoleName))
                 .Select(u => u.UserId)
                 .ToListAsync(ct);
 
@@ -539,9 +567,14 @@ public sealed class AankoopbonController : ControllerBase
 
             if (type == "pending")
             {
-                var mgr = cfg.Recipients?.Split(';', StringSplitOptions.RemoveEmptyEntries)
-                                          .FirstOrDefault()?.Trim();
-                if (!string.IsNullOrEmpty(mgr)) recipients.Add(mgr);
+                var approverCfg = await _db.ModuleApproverEmails.AsNoTracking()
+                    .FirstOrDefaultAsync(m => m.MaeModuleKey == "AANKOOPBON", ct);
+                var managers = approverCfg?.MaeEmails
+                    ?.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(r => r.Trim())
+                    .Where(r => !string.IsNullOrEmpty(r))
+                    .ToList() ?? [];
+                recipients.AddRange(managers);
 
                 subject       = $"[Aankoopbon] {header.AohBonNr} — Pending Approval";
                 body          = $"<p>A new aankoopbon requires your approval.</p>{orderTable}<p>Please log in to approve or reject.</p>";

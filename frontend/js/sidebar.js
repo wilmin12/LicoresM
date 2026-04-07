@@ -165,9 +165,23 @@ const Sidebar = (() => {
     }
   ];
 
+  // ── Phase 1 visibility filter ──────────────────────────────────────────────
+  // Temporary: only show these 3 modules to the client during Phase 1 evaluation.
+  // To re-enable all modules, remove the .filter() line in build() below.
+  const PHASE1_MODULES = ['PURCHASE', 'FREIGHT', 'COST'];
+
+  // ── Help / Manuals (visible to all authenticated users) ──────────────────────
+  const HELP_ITEMS = [
+    { label: 'Manual Aankoopbon',       href: 'pages/help/manual-aankoopbon.html',      icon: 'fa-book-open' },
+    { label: 'Manual Cost Calculation', href: 'pages/help/manual-costcalculation.html', icon: 'fa-book-open' },
+    { label: 'Manual Freight',          href: 'pages/help/manual-freight.html',         icon: 'fa-book-open' },
+    { label: 'Manual Plataforma',       href: 'pages/help/manual-platform.html',        icon: 'fa-book-open' },
+  ];
+
   // ── Admin menu items (always shown to SuperAdmin/Admin) ─────────────────────
   const ADMIN_ITEMS = [
-    { code: 'SETTINGS_COMPANY', label: 'Company Settings', href: 'pages/settings/company.html', icon: 'fa-building' },
+    { code: 'SETTINGS_COMPANY',    label: 'Company Settings', href: 'pages/settings/company.html',   icon: 'fa-building' },
+    { code: 'SETTINGS_APPROVERS', label: 'Module Approvers', href: 'pages/settings/approvers.html', icon: 'fa-envelope-circle-check' },
     { label: 'Users',           href: 'pages/users.html',  icon: 'fa-users' },
     { label: 'Roles',           href: 'pages/roles.html',  icon: 'fa-user-shield' },
     { label: 'Email Config',    href: 'pages/email-config.html', icon: 'fa-envelope-open-text', superAdminOnly: true },
@@ -209,7 +223,7 @@ const Sidebar = (() => {
     const _t = window.I18n ? window.I18n.t.bind(window.I18n) : (k => k);
     html += `<div class="nav-section-label">${_t('Modules')}</div>`;
 
-    MENU_STRUCTURE.forEach((mod, idx) => {
+    MENU_STRUCTURE.filter(m => PHASE1_MODULES.includes(m.moduleCode)).forEach((mod, idx) => {
       // Check module access
       const hasAccess = isSuperAdmin || perms.some(p =>
         p.ModuleCode === mod.moduleCode && p.CanAccess
@@ -268,6 +282,22 @@ const Sidebar = (() => {
       });
 
       html += `</div></div>`;
+    });
+
+    // ── Help / Manuals section (all users) ────────────────────────────────────
+    html += `<div class="nav-section-label mt-2">${_t('Ayuda')}</div>`;
+    HELP_ITEMS.forEach(item => {
+      const fullHref = _base + item.href;
+      const pageFile = item.href.split('/').pop();
+      html += `
+        <div class="sidebar-item">
+          <a class="sidebar-link ${currentHref.includes(pageFile) ? 'active' : ''}"
+             data-label="${_t(item.label)}"
+             href="${fullHref}">
+            <i class="fas ${item.icon}"></i>
+            <span class="sidebar-text">${_t(item.label)}</span>
+          </a>
+        </div>`;
     });
 
     // ── Administration section ─────────────────────────────────────────────────

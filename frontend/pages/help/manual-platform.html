@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Manual de Usuario — Plataforma | Licores Maduro</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="../../css/main.css"/>
+  <style>
+    :root { --primary:#6f42c1; --primary-light:#f3eeff; }
+    body  { font-family: 'Segoe UI', sans-serif; background:#f8f9fa; color:#212529; }
+    .hero { background: linear-gradient(135deg,#6f42c1,#4a2d8a); color:#fff; padding:3rem 2rem 2.5rem; }
+    .hero h1 { font-size:2rem; font-weight:800; }
+    .hero p  { opacity:.85; font-size:1.05rem; }
+    .toc-card { position:sticky; top:1.5rem; }
+    .toc-card a { color:#6f42c1; text-decoration:none; display:block; padding:.25rem 0; font-size:.9rem; }
+    .toc-card a:hover { text-decoration:underline; }
+    .section-title { color:#6f42c1; font-weight:700; font-size:1.2rem; border-left:4px solid #6f42c1; padding-left:.75rem; margin-bottom:1.25rem; }
+    .step-box { background:#fff; border:1px solid #dee2e6; border-radius:.5rem; padding:1.25rem 1.5rem; margin-bottom:1rem; }
+    .step-num { background:#6f42c1; color:#fff; border-radius:50%; width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; font-weight:700; font-size:.85rem; margin-right:.6rem; flex-shrink:0; }
+    .note-box  { background:#fff8e1; border-left:4px solid #ffc107; padding:1rem 1.25rem; border-radius:0 .5rem .5rem 0; font-size:.9rem; }
+    .warn-box  { background:#f8d7da; border-left:4px solid #dc3545; padding:1rem 1.25rem; border-radius:0 .5rem .5rem 0; font-size:.9rem; }
+    .info-box  { background:#e8f4fd; border-left:4px solid #0dcaf0; padding:1rem 1.25rem; border-radius:0 .5rem .5rem 0; font-size:.9rem; }
+    .field-table th { background:#f8f9fa; font-size:.83rem; }
+    .field-table td { font-size:.88rem; vertical-align:top; }
+    .feature-card { border:1px solid #dee2e6; border-radius:.5rem; padding:1rem 1.25rem; background:#fff; margin-bottom:.75rem; }
+    .feature-card h6 { color:#6f42c1; font-weight:700; margin-bottom:.4rem; }
+    .theme-swatch-demo { width:22px; height:22px; border-radius:50%; display:inline-block; vertical-align:middle; margin-right:6px; border:2px solid #dee2e6; }
+    @media print { .toc-card { display:none; } }
+  </style>
+</head>
+<body>
+<div id="sidebar-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;"></div>
+<div class="app-wrapper">
+  <nav id="sidebar" class="sidebar">
+    <div class="sidebar-header"><img src="../../img/LogoLicores.png" alt="Licores Maduro" class="sidebar-logo-img" id="sidebar-logo-img"/><span class="sidebar-logo-text" id="sidebar-company-name">LICORES MADURO</span></div>
+    <div id="sidebar-nav" class="sidebar-nav"></div>
+    <div class="sidebar-footer"><div class="sidebar-user"><div class="sidebar-avatar" id="sidebar-user-initials">LM</div><div class="sidebar-text"><div id="sidebar-user-name" style="font-weight:600;">–</div></div></div></div>
+  </nav>
+  <div class="main-area">
+    <header class="topbar">
+      <button id="btn-sidebar-toggle" class="btn-sidebar-toggle"><i class="fas fa-bars"></i></button>
+      <span class="topbar-title"><i class="fas fa-book-open me-2 text-wine"></i>Manual — Plataforma &amp; Administración</span>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown">
+            <span class="sidebar-avatar" id="topbar-user-initials" style="width:28px;height:28px;font-size:.75rem;">LM</span>
+            <span id="topbar-user-name" class="d-none d-md-inline">–</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+            <li><div class="dropdown-header"><strong id="topbar-user-fullname">User</strong><br/><small class="text-muted" id="topbar-user-role">Role</small></div></li>
+            <li><hr class="dropdown-divider"/></li>
+            <li><a class="dropdown-item text-danger" href="#" id="btn-logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+          </ul>
+        </div>
+      </div>
+    </header>
+    <main class="page-content" style="padding:0;">
+
+<!-- HERO -->
+<div class="hero">
+  <div class="container">
+    <div class="d-flex align-items-center gap-3 mb-3">
+      <img src="../../img/LogoLicores.png" alt="Licores Maduro" style="height:48px; filter:brightness(0) invert(1); opacity:.9;"/>
+      <span style="opacity:.6; font-size:.95rem;">Manual de Usuario</span>
+    </div>
+    <h1><i class="fas fa-cogs me-2"></i>Plataforma &amp; Administración</h1>
+    <p>Módulo M00 — Guía completa para configurar y administrar la plataforma: empresa, usuarios, roles, correo y personalización.</p>
+    <div class="mt-3 d-flex gap-2 flex-wrap">
+      <span class="badge bg-white text-dark">Versión 1.0</span>
+      <span class="badge bg-white text-dark">M00 — Completado</span>
+      <span class="badge bg-white text-dark">Licores Maduro © 2026</span>
+    </div>
+  </div>
+</div>
+
+<div class="container py-4">
+  <div class="row g-4">
+
+    <!-- TOC -->
+    <div class="col-lg-3">
+      <div class="card toc-card shadow-sm">
+        <div class="card-header fw-bold" style="background:#f3eeff;color:#6f42c1;"><i class="fas fa-list me-2"></i>Contenido</div>
+        <div class="card-body p-3">
+          <a href="#sec1">1. Visión General</a>
+          <a href="#sec2">2. Roles y Acceso Admin</a>
+          <a href="#sec3">3. Company Settings</a>
+          <a href="#sec4">4. Email Configuration</a>
+          <a href="#sec5">5. Module Approvers</a>
+          <a href="#sec6">6. Gestión de Usuarios</a>
+          <a href="#sec7">7. Gestión de Roles</a>
+          <a href="#sec8">8. Sesiones Activas</a>
+          <a href="#sec9">9. Temas de Color</a>
+          <a href="#sec10">10. Idioma (EN / ES)</a>
+          <a href="#sec11">11. Login y Sesión</a>
+          <a href="#sec12">12. Preguntas Frecuentes</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="col-lg-9">
+
+      <!-- 1 -->
+      <div id="sec1" class="card shadow-sm mb-4">
+        <div class="card-body p-4">
+          <div class="section-title"><span data-i18n="Platform Overview">Visión General de la Plataforma</span></div>
+          <p>El módulo <strong>M00 — Plataforma &amp; Administración</strong> es la base de todo el sistema de Licores Maduro. Aquí se configura la identidad de la empresa, los usuarios que tienen acceso, sus permisos, los parámetros de correo electrónico y la apariencia de la herramienta.</p>
+          <p>Este módulo está disponible en la sección <strong>Administration</strong> del menú lateral y es de acceso exclusivo para los roles <strong>Admin</strong> y <strong>SuperAdmin</strong>.</p>
+          <div class="row g-3 mt-1">
+            <div class="col-md-6">
+              <div class="feature-card">
+                <h6><i class="fas fa-building me-2"></i>Company Settings</h6>
+                <p class="mb-0 text-muted" style="font-size:.88rem;">Nombre, logo, contacto y datos legales de la empresa que aparecen en toda la plataforma.</p>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="feature-card">
+                <h6><i class="fas fa-envelope-open-text me-2"></i>Email Configuration</h6>
+                <p class="mb-0 text-muted" style="font-size:.88rem;">Servidor SMTP para el envío automático de notificaciones y aprobaciones.</p>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="feature-card">
+                <h6><i class="fas fa-envelope-circle-check me-2"></i>Module Approvers</h6>
+                <p class="mb-0 text-muted" style="font-size:.88rem;">Correos de los aprobadores de cada módulo (Aankoopbon, Cost Calc, Activity Request).</p>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="feature-card">
+                <h6><i class="fas fa-users me-2"></i>Usuarios y Roles</h6>
+                <p class="mb-0 text-muted" style="font-size:.88rem;">Crear usuarios, asignar roles y configurar permisos por módulo y sub-módulo.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2 -->
+      <div id="sec2" class="card shadow-sm mb-4">
+        <div class="card-body p-4">
+          <div class="section-title"><span data-i18n="Roles and Admin Access">Roles y Acceso de Administración</span></div>
+          <table class="table table-bordered field-table">
+            <thead><tr><th>Rol</th><th>Acceso Administration</th><th>Puede crear usuarios</th><th>Puede cambiar permisos</th><th>Email Config</th><th>Sesiones activas</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Usuario</strong></td><td class="text-danger">✖ No ve el menú</td><td class="text-danger">✖</td><td class="text-danger">✖</td><td class="text-danger">✖</td><td class="text-danger">✖</td></tr>
+              <tr><td><strong>Admin</strong></td><td class="text-success">✔</td><td class="text-success">✔</td><td class="text-success">✔</td><td class="text-danger">✖</td><td class="text-danger">✖</td></tr>
+              <tr><td><strong>SuperAdmin</strong></td><td class="text-success">✔ Acceso total</td><td class="text-success">✔</td><td class="text-success">✔</td><td class="text-success">✔</td><td class="text-success">✔</td></tr>
+            </tbody>
+          </table>
+          <div class="note-box">Email Config y Sesiones Activas son visibles <strong>solo para SuperAdmin</strong>.</div>
+        </div>
+      </div>
+
+      <!-- 3 -->
+      <div id="sec3" class="card shadow-sm mb-4">
+        <div class="card-body p-4">
+          <div class="section-title"><span data-i18n="Company Settings">Company Settings</span></div>
+          <p>Configura la información corporativa de Licores Maduro que aparece en el sistema (cabecera, PDFs, correos, etc.).</p>
+          <ol class="ps-3">
+            <li class="mb-2">Ir a <strong>Administration → Company Settings</strong>.</li>
+            <li class="mb-2">Completar los campos del formulario.</li>
+            <li class="mb-2">Para cargar el logo: hacer clic en el área de logo (o arrastrarlo) → seleccionar imagen (PNG, JPG, SVG — máx. 2 MB).</li>
+            <li class="mb-2">Hacer clic en <span class="badge bg-primary">Save</span>.</li>
+          </ol>
+          <table class="table table-bordered field-table mt-3">
+            <thead><tr><th>Campo</th><th>Descripción</th></tr></thead>
+            <tbody>
+              <tr><td>Company Name</td><td>Nombre principal que aparece en el sidebar y encabezado de PDFs.</td></tr>
+              <tr><td>Legal Name</td><td>Nombre legal completo de la empresa.</td></tr>
+              <tr><td>Tagline</td><td>Lema o eslogan (opcional).</td></tr>
+              <tr><td>RNC / CRIB</td><td>Número de registro fiscal.</td></tr>
+              <tr><td>Address / City / Country</td><td>Datos de ubicación.</td></tr>
+              <tr><td>Phone / Phone 2</td><td>Teléfonos de contacto.</td></tr>
+              <tr><td>Email</td><td>Correo de contacto general.</td></tr>
+              <tr><td>Website</td><td>Sitio web (opcional).</td></tr>
+              <tr><td>Logo</td><td>Imagen del logo. Se muestra en sidebar, login y documentos.</td></tr>
+            </tbody>
+          </table>
+          <div class="info-box mt-2">El nombre de la empresa se actualiza en tiempo real en el sidebar de todos los usuarios conectados (se guarda en sessionStorage).</div>
+        </div>
+      </div>
+
+      <!-- 4 -->
+      <div id="sec4" class="card shadow-sm mb-4">
+        <div class="card-body p-4">
+          <div class="section-title"><span data-i18n="Email Configuration">Email Configuration</span></div>
+          <p>Configura el servidor de correo saliente (SMTP) para que el sistema pueda enviar notificaciones automáticas.</p>
+          <div class="warn-box mb-3"><strong>Solo SuperAdmin</strong> puede ver y modificar esta configuración.</div>
+          <ol class="ps-3">
+            <li class="mb-2">Ir a <strong>Administration → Email Config</strong>.</li>
+            <li class="mb-2">Completar los datos SMTP.</li>
+            <li class="mb-2">Activar el interruptor <strong>"Email Enabled"</strong> para habilitar el envío.</li>
+            <li class="mb-2">Usar el botón <span class="badge bg-secondary">Test Email</span> para verificar la conexión antes de guardar.</li>
+            <li class="mb-2">Hacer clic en <span class="badge bg-primary">Save</span>.</li>
+          </ol>
+          <table class="table table-bordered field-table mt-3">
+            <thead><tr><th>Campo</th><th>Descripción</th><th>Ejemplo</th></tr></thead>
+            <tbody>
+              <tr><td>SMTP Host</td><td>Servidor de correo saliente.</td><td>smtp.gmail.com</td></tr>
+              <tr><td>Port</td><td>Puerto SMTP.</td><td>587 (TLS) / 465 (SSL)</td></tr>
+              <tr><td>Use SSL</td><td>Activar conexión segura.</td><td>✔ Recomendado</td></tr>
+              <tr><td>Sender Name</td><td>Nombre que verá el destinatario.</td><td>Licores Maduro Sistema</td></tr>
+              <tr><td>Sender Email</td><td>Correo desde el que se envía.</td><td>sistema@liceoresmaduro.com</td></tr>
+              <tr><td>Password</td><td>Contraseña de la cuenta SMTP (se oculta al mostrar).</td><td>—</td></tr>
+              <tr><td>Stale Order Days</td><td>Días sin actividad para marcar órdenes como "vencidas" en Aankoopbon.</td><td>4</td></tr>
+              <tr><td>Email Enabled</td><td>Activa o desactiva el envío de correos en todo el sistema.</td><td>✔ / ✖</td></tr>
+            </tbody>
+          </table>
+          <div class="note-box mt-2">
+            <strong>Gmail:</strong> Si usas Gmail, debes habilitar "App Passwords" en tu cuenta Google y usar esa contraseña de aplicación (no la contraseña normal de Gmail).
+          </div>
+        </div>
+      </div>
+
+      <!-- 5 -->
+      <div id="sec5" class="card shadow-sm mb-4">
+        <div class="card-body p-4">
+          <div class="section-title"><span data-i18n="Module Approvers">Module Approvers</span></div>
+          <p>Define los correos electrónicos de las personas que reciben las notificaciones de aprobación para cada módulo del sistema.</p>
+          <ol class="ps-3">
+            <li class="mb-2">Ir a <strong>Administration → Module Approvers</strong>.</li>
+            <li class="mb-2">Para cada módulo, ingresar los correos separados por <strong>coma (,)</strong>.</li>
+            <li class="mb-2">Hacer clic en <span class="badge bg-primary">Save</span> en la card de cada módulo.</li>
+          </ol>
+          <table class="table table-bordered field-table mt-3">
+            <thead><tr><th>Módulo</th><th>Cuándo se notifica</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Aankoopbonnen</strong></td><td>Cuando una orden de compra es enviada a aprobación (estado PENDING).</td></tr>
+              <tr><td><strong>Cost Calculation</strong></td><td>Cuando una calculación es confirmada (estado CF) y requiere aprobación.</td></tr>
+              <tr><td><strong>Activity Request</strong></td><td>Cuando una solicitud de actividad es enviada para revisión.</td></tr>
+            </tbody>
+          </table>
+          <div class="info-box mt-2">
+            Puedes ingresar múltiples correos: <code>gerencia@empresa.com, finanzas@empresa.com</code><br/>
+            El sistema validará el formato de cada dirección antes de guardar.
+          </div>
+        </div>
+      </div>
+
+      <!-- 6 -->
+      <div id="sec6" class="card shadow-sm mb-4">
+        <div class="card-body p-4">
+          <div class="section-title"><span data-i18n="User Management">Gestión de Usuarios</span></div>
+          <p>Administra las cuentas de acceso al sistema.</p>
+
+          <div class="step-box">
+            <div class="d-flex align-items-center mb-2"><span class="step-num">1</span><strong>Crear un usuario nuevo</strong></div>
+            <ol class="ps-4 mb-0">
+              <li>Ir a <strong>Administration → Users</strong>.</li>
+              <li>Clic en <span class="badge bg-success">+ New User</span>.</li>
+              <li>Completar: username, nombre completo, correo, rol y contraseña inicial.</li>
+              <li>Guardar. El usuario puede ingresar de inmediato.</li>
+            </ol>
+          </div>
+
+          <div class="step-box">
+            <div class="d-flex align-items-center mb-2"><span class="step-num">2</span><strong>Editar usuario</strong></div>
+            <ol class="ps-4 mb-0">
+              <li>En la lista, clic en <i class="fas fa-edit text-primary"></i> del usuario.</li>
+              <li>Modificar los campos necesarios. Para cambiar contraseña, ingresar la nueva en el campo correspondiente.</li>
+              <li>Guardar.</li>
+            </ol>
+          </div>
+
+          <div class="step-box">
+            <div class="d-flex align-items-center mb-2"><span class="step-num">3</span><strong>Activar / Desactivar usuario</strong></div>
+            <ol class="ps-4 mb-0">
+              <li>Clic en el interruptor <i class="fas fa-toggle-on text-success"></i> en la fila del usuario.</li>
+              <li>Un usuario desactivado no puede iniciar sesión pero su historial se conserva.</li>
+            </ol>
+          </div>
+
+          <table class="table table-bordered field-table mt-3">
+            <thead><tr><th>Campo</th><th>Descripción</th></tr></thead>
+            <tbody>
+              <tr><td>Username</td><td>Nombre de usuario para el login. Debe ser único.</td></tr>
+              <tr><td>Full Name</td><td>Nombre completo que aparece en el sistema y en los documentos.</td></tr>
+              <tr><td>Email</td><td>Correo del usuario. Recibe notificaciones cuando sus solicitudes son aprobadas/rechazadas.</td></tr>
+              <tr><td>Role</td><td>Rol asignado que determina sus permisos.</td></tr>
+              <tr><td>Password</td><td>Contraseña encriptada. Solo se modifica al ingresar una nueva.</td></tr>
+            </tbody>
+          </table>
+          <div class="note-box">El correo del usuario es importante — es el que recibe notificaciones cuando sus órdenes de Aankoopbon son aprobadas o rechazadas.</div>
+        </div>
+      </div>
+
+      <!-- 7 -->
+      <div id="sec7" class="card shadow-sm mb-4">
+        <div class="card-body p-4">
+          <div class="section-title"><span data-i18n="Role Management">Gestión de Roles y Permisos</span></div>
+          <p>Los roles definen qué módulos y acciones puede realizar cada usuario.</p>
+
+          <p><strong>Roles predefinidos del sistema:</strong></p>
+          <table class="table table-bordered field-table">
+            <thead><tr><th>Rol</th><th>Descripción</th></tr></thead>
+            <tbody>
+              <tr><td><strong>SuperAdmin</strong></td><td>Acceso total a todo el sistema incluyendo configuración de email y sesiones. No puede ser eliminado.</td></tr>
+              <tr><td><strong>Admin</strong></td><td>Acceso a administración (usuarios, roles, company settings, module approvers). Puede aprobar en todos los módulos.</td></tr>
+              <tr><td><strong>Usuario</strong></td><td>Acceso operativo a los módulos según permisos asignados.</td></tr>
+            </tbody>
+          </table>
+
+          <div class="step-box mt-3">
+            <div class="d-flex align-items-center mb-2"><span class="step-num">P</span><strong>Configurar permisos de un rol</strong></div>
+            <ol class="ps-4 mb-0">
+              <li>Ir a <strong>Administration → Roles</strong>.</li>
+              <li>Clic en <i class="fas fa-shield-alt text-primary"></i> (Permissions) del rol.</li>
+              <li>Para cada módulo y sub-módulo marcar: <strong>Can Access</strong> (ver), <strong>Can Create</strong>, <strong>Can Edit</strong>, <strong>Can Delete</strong>.</li>
+              <li>Guardar. Los cambios aplican en el próximo login del usuario.</li>
+            </ol>
+          </div>
+          <div class="warn-box mt-2">Los permisos de SuperAdmin no pueden modificarse. Siempre tienen acceso total.</div>
+        </div>
+      </div>
+
+      <!-- 8 -->
+      <div id="sec8" class="card shadow-sm mb-4">
+        <div class="card-body p-4">
+          <div class="section-title"><span data-i18n="Active Sessions">Sesiones Activas</span></div>
+          <p>Permite ver en tiempo real qué usuarios están conectados al sistema.</p>
+          <div class="warn-box mb-3"><strong>Solo SuperAdmin</strong> puede ver esta sección.</div>
+          <ol class="ps-3">
+            <li class="mb-2">Ir a <strong>Administration → Active Users</strong>.</li>
+            <li class="mb-2">Se muestra la lista de sesiones activas: usuario, rol, IP, fecha/hora de login.</li>
+            <li class="mb-2">Para cerrar una sesión remota: clic en <i class="fas fa-sign-out-alt text-danger"></i>. El usuario será desconectado en su próxima acción.</li>
+          </ol>
+          <div class="info-box">Las sesiones inactivas se limpian automáticamente. Este panel muestra las sesiones con token JWT aún válido.</div>
+        </div>
+      </div>
+
+      <!-- 9 -->
+      <div id="sec9" class="card shadow-sm mb-4">
+        <div class="card-body p-4">
+          <div class="section-title"><span data-i18n="Color Themes">Temas de Color</span></div>
+          <p>Cada usuario puede personalizar el color principal de la interfaz. La preferencia se guarda localmente en el navegador.</p>
+          <p>Los temas disponibles son:</p>
+          <ul class="list-unstyled ps-2">
+            <li class="mb-2"><span class="theme-swatch-demo" style="background:#A52535;"></span><strong>Wine</strong> — Rojo vino (predeterminado de Licores Maduro)</li>
+            <li class="mb-2"><span class="theme-swatch-demo" style="background:#1E40AF;"></span><strong>Navy</strong> — Azul marino</li>
+            <li class="mb-2"><span class="theme-swatch-demo" style="background:#15803D;"></span><strong>Forest</strong> — Verde bosque</li>
+            <li class="mb-2"><span class="theme-swatch-demo" style="background:#0E7490;"></span><strong>Ocean</strong> — Azul océano</li>
+          </ul>
+          <div class="step-box mt-3">
+            <strong>¿Cómo cambiar el tema?</strong><br/>
+            En la parte inferior del sidebar hay cuatro círculos de color. Haz clic en el color deseado. El cambio es inmediato y se recuerda al reabrir el navegador.
+          </div>
+        </div>
+      </div>
+
+      <!-- 10 -->
+      <div id="sec10" class="card shadow-sm mb-4">
+        <div class="card-body p-4">
+          <div class="section-title"><span data-i18n="Language EN/ES">Idioma (EN / ES)</span></div>
+          <p>El sistema soporta dos idiomas: <strong>English (EN)</strong> y <strong>Español (ES)</strong>.</p>
+          <p>Para cambiar el idioma:</p>
+          <ol class="ps-3">
+            <li class="mb-2">En la barra superior (topbar) busca los botones <span class="badge bg-secondary">EN</span> <span class="badge bg-wine" style="background:#A52535;">ES</span>.</li>
+            <li class="mb-2">Clic en el idioma deseado. La interfaz se traduce inmediatamente.</li>
+            <li class="mb-2">La preferencia se guarda en el navegador y se mantiene en próximas visitas.</li>
+          </ol>
+          <div class="info-box">
+            El idioma afecta: menú del sidebar, títulos de página, etiquetas de formulario, botones, encabezados de tabla y los títulos de los manuales de usuario.
+          </div>
+          <div class="note-box mt-2">El contenido de los manuales de usuario está escrito en español. Cambiar a EN traduce la estructura (títulos de sección, navegación) pero el texto descriptivo permanece en español.</div>
+        </div>
+      </div>
+
+      <!-- 11 -->
+      <div id="sec11" class="card shadow-sm mb-4">
+        <div class="card-body p-4">
+          <div class="section-title"><span data-i18n="Login and Session">Login y Sesión</span></div>
+
+          <div class="step-box">
+            <div class="d-flex align-items-center mb-2"><span class="step-num">I</span><strong>Iniciar sesión</strong></div>
+            <ol class="ps-4 mb-0">
+              <li>Ir a la URL de la aplicación.</li>
+              <li>Ingresar <strong>Username</strong> y <strong>Password</strong>.</li>
+              <li>Clic en <span class="badge bg-wine" style="background:#A52535;">Sign In</span>.</li>
+              <li>Si las credenciales son correctas, se carga el dashboard.</li>
+            </ol>
+          </div>
+
+          <div class="step-box">
+            <div class="d-flex align-items-center mb-2"><span class="step-num">C</span><strong>Cerrar sesión</strong></div>
+            <ol class="ps-4 mb-0">
+              <li>Clic en el avatar/nombre en la esquina superior derecha del topbar.</li>
+              <li>Seleccionar <strong>Logout</strong>.</li>
+              <li>La sesión se cierra y se redirige al login.</li>
+            </ol>
+          </div>
+
+          <div class="step-box">
+            <div class="d-flex align-items-center mb-2"><span class="step-num">E</span><strong>Expiración de sesión</strong></div>
+            <p class="mb-0">El token de sesión expira automáticamente por inactividad. Cuando esto ocurra, el sistema mostrará un aviso y redirigirá al login. No se perderán datos — solo deberás volver a autenticarte.</p>
+          </div>
+
+          <div class="warn-box mt-2">Si ves el error <strong>"401 Unauthorized"</strong> al usar la aplicación, tu sesión expiró. Cierra el navegador e inicia sesión nuevamente.</div>
+        </div>
+      </div>
+
+      <!-- 12 -->
+      <div id="sec12" class="card shadow-sm mb-4">
+        <div class="card-body p-4">
+          <div class="section-title"><span data-i18n="Frequently Asked Questions">Preguntas Frecuentes</span></div>
+
+          <p><strong>¿Puedo cambiar mi propia contraseña?</strong><br/>
+          Por ahora, el cambio de contraseña lo realiza un Admin desde la sección Users. Introduce la nueva contraseña en el campo correspondiente al editar el usuario.</p>
+
+          <p><strong>¿Qué pasa si olvido la contraseña?</strong><br/>
+          Contacta a un Admin o SuperAdmin para que restablezca tu contraseña desde la sección Users.</p>
+
+          <p><strong>¿Por qué no veo el menú de Administration?</strong><br/>
+          El menú de administración solo es visible para roles <strong>Admin</strong> y <strong>SuperAdmin</strong>. Si no lo ves, tu usuario tiene rol "Usuario".</p>
+
+          <p><strong>¿Los cambios de tema afectan a todos los usuarios?</strong><br/>
+          No. El tema de color se guarda en el navegador de cada usuario individualmente. Cada uno puede tener su propio tema.</p>
+
+          <p><strong>¿Puedo tener múltiples SuperAdmin?</strong><br/>
+          Sí. Puedes asignar el rol SuperAdmin a más de un usuario. Se recomienda tener al menos dos para no quedar sin acceso de administración.</p>
+
+          <p><strong>¿Qué es "Stale Order Days" en Email Config?</strong><br/>
+          Es el número de días que puede estar una orden de Aankoopbon en estado PENDING sin movimiento antes de considerarse "vencida". Sirve para alertas internas. El valor predeterminado es 4 días.</p>
+
+          <p><strong>¿El logo se actualiza automáticamente para todos?</strong><br/>
+          Sí. Al guardar un nuevo logo en Company Settings, todos los usuarios lo verán actualizado en el sidebar en su próxima carga o al limpiar la caché del navegador (<kbd>Ctrl+Shift+R</kbd>).</p>
+        </div>
+      </div>
+
+      <div class="text-center text-muted mt-3 mb-5" style="font-size:.82rem;">
+        Licores Maduro — Sistema de Gestión Interna &nbsp;|&nbsp; Manual Plataforma &amp; Administración v1.0 &nbsp;|&nbsp; 2026
+      </div>
+    </div>
+  </div>
+</div>
+
+    </main>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../../js/i18n.js"></script>
+<script src="../../js/api.js"></script>
+<script src="../../js/auth.js"></script>
+<script src="../../js/sidebar.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    if (!Auth.requireAuth()) return;
+    Auth.startExpiryWatcher();
+    Auth.populateUserUI();
+    Sidebar.init();
+    document.getElementById('btn-logout').addEventListener('click', e => { e.preventDefault(); Auth.logout(); });
+  });
+</script>
+</body>
+</html>

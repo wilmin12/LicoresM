@@ -5,7 +5,7 @@
 
 const API = (() => {
   // ── Configuration ──────────────────────────────────────────────────────────
-  const BASE_URL ='https://localhost:54928'; // update for production
+  const BASE_URL = ''; // API serves the frontend — same origin, no absolute URL needed
 
   // ── Token management ───────────────────────────────────────────────────────
   function getToken()          { return sessionStorage.getItem('lm_token'); }
@@ -473,6 +473,8 @@ const API = (() => {
   const system = {
     getCompanySettings:    ()        => get('/api/system/company-settings'),
     updateCompanySettings: (dto)     => put('/api/system/company-settings', dto),
+    getModuleApprovers:    ()        => get('/api/system/module-approvers'),
+    updateModuleApprover:  (key, dto) => put(`/api/system/module-approvers/${key}`, dto),
     uploadLogo:            (file)    => {
       const token = getToken();
       const form  = new FormData();

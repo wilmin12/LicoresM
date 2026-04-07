@@ -17,11 +17,12 @@
     <None Remove="obj\**" />
   </ItemGroup>
 
-  <!-- Company logo — copied to Assets/ in the output directory -->
+  <!-- Frontend static files — copied to frontend/ in the publish output -->
   <ItemGroup>
-    <Content Include="..\..\frontend\img\LogoLicores.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Link>Assets\LogoLicores.png</Link>
+    <Content Include="..\..\frontend\**\*"
+             Exclude="..\..\frontend\**\*.map">
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <Link>frontend\%(RecursiveDir)%(Filename)%(Extension)</Link>
     </Content>
   </ItemGroup>
 

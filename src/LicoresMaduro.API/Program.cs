@@ -226,8 +226,13 @@ try
     app.Map("/error", () => Results.Problem());
 
     // ── Serve Frontend Static Files ───────────────────────────────────────────
+    // In production (published): frontend is copied into the publish output as a subfolder.
+    // In development: frontend lives two levels up from the API project folder.
     var frontendPath = Path.GetFullPath(
-        Path.Combine(builder.Environment.ContentRootPath, "..", "..", "frontend"));
+        Path.Combine(builder.Environment.ContentRootPath, "frontend"));
+    if (!Directory.Exists(frontendPath))
+        frontendPath = Path.GetFullPath(
+            Path.Combine(builder.Environment.ContentRootPath, "..", "..", "frontend"));
     if (Directory.Exists(frontendPath))
     {
         var fp = new PhysicalFileProvider(frontendPath);

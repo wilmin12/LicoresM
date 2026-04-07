@@ -115,18 +115,8 @@
 
       <!-- Module Stats Cards -->
       <div class="row g-3 mb-4" id="module-stats">
-        <!-- Tracking -->
-        <div class="col-12 col-sm-6 col-xl-3 fade-in-up">
-          <div class="stat-card">
-            <div class="stat-icon wine"><i class="fas fa-shipping-fast"></i></div>
-            <div class="stat-body">
-              <div class="stat-value" id="stat-tracking">–</div>
-              <div class="stat-label">Tracking Orders</div>
-            </div>
-          </div>
-        </div>
         <!-- Freight -->
-        <div class="col-12 col-sm-6 col-xl-3 fade-in-up">
+        <div class="col-12 col-sm-6 col-xl-4 fade-in-up">
           <div class="stat-card">
             <div class="stat-icon gold"><i class="fas fa-ship"></i></div>
             <div class="stat-body">
@@ -135,18 +125,18 @@
             </div>
           </div>
         </div>
-        <!-- Activity -->
-        <div class="col-12 col-sm-6 col-xl-3 fade-in-up">
+        <!-- Cost Calculation -->
+        <div class="col-12 col-sm-6 col-xl-4 fade-in-up">
           <div class="stat-card">
-            <div class="stat-icon blue"><i class="fas fa-tasks"></i></div>
+            <div class="stat-icon blue"><i class="fas fa-calculator"></i></div>
             <div class="stat-body">
-              <div class="stat-value" id="stat-activity">38</div>
-              <div class="stat-label">Activity Catalogs</div>
+              <div class="stat-value" id="stat-costcalc">–</div>
+              <div class="stat-label">Cost Calculations</div>
             </div>
           </div>
         </div>
         <!-- Purchase -->
-        <div class="col-12 col-sm-6 col-xl-3 fade-in-up">
+        <div class="col-12 col-sm-6 col-xl-4 fade-in-up">
           <div class="stat-card">
             <div class="stat-icon green"><i class="fas fa-file-invoice"></i></div>
             <div class="stat-body">
@@ -219,12 +209,15 @@
     { code:'PURCHASE',  label:'Aankoopbon',         icon:'fa-file-invoice',  color:'blue',  href:'pages/catalog.html?table=VENDORS&module=PURCHASE',         tables:10 },
   ];
 
+  // Temporary Phase 1 filter — same as sidebar.js PHASE1_MODULES
+  const PHASE1_MODULES = ['PURCHASE', 'FREIGHT', 'COST'];
+
   function renderModuleCards(user) {
     const container = document.getElementById('module-cards');
     if (!container) return;
 
     let html = '';
-    MODULE_CARDS.forEach(mod => {
+    MODULE_CARDS.filter(m => PHASE1_MODULES.includes(m.code)).forEach(mod => {
       const hasAccess = user?.RoleName === 'SuperAdmin'
         || (user?.Permissions || []).some(p => p.ModuleCode === mod.code && p.CanAccess);
 
@@ -256,17 +249,17 @@
 
   // ── Load live stats ─────────────────────────────────────────────────────────
   async function loadStats() {
-    // Order status count
-    try {
-      const r = await API.catalogs.orderStatus.getAll({ page: 1, pageSize: 1 });
-      const el = document.getElementById('stat-tracking');
-      if (el) el.textContent = r?.TotalCount ?? '–';
-    } catch { /* ignore */ }
-
     // Vendor count
     try {
       const r = await API.catalogs.vendors.getAll({ page: 1, pageSize: 1 });
       const el = document.getElementById('stat-vendors');
+      if (el) el.textContent = r?.TotalCount ?? '–';
+    } catch { /* ignore */ }
+
+    // Cost Calculations count
+    try {
+      const r = await API.costCalc.headers.getAll({ page: 1, pageSize: 1 });
+      const el = document.getElementById('stat-costcalc');
       if (el) el.textContent = r?.TotalCount ?? '–';
     } catch { /* ignore */ }
   }

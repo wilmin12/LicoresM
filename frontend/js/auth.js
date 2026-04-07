@@ -210,6 +210,26 @@ const Auth = (() => {
     }
   }
 
+  // ── Inactivity timeout (15 minutes) ─────────────────────────────────────────
+  const INACTIVITY_MS = 15 * 60 * 1000;
+  let _inactivityTimer = null;
+
+  function _resetInactivityTimer() {
+    clearTimeout(_inactivityTimer);
+    _inactivityTimer = setTimeout(() => {
+      console.warn('[Auth] Session expired due to inactivity.');
+      clearSession();
+      window.location.href = '/index.html?reason=inactivity';
+    }, INACTIVITY_MS);
+  }
+
+  function _startInactivityWatcher() {
+    ['mousemove', 'keydown', 'mousedown', 'touchstart', 'scroll', 'click'].forEach(evt =>
+      document.addEventListener(evt, _resetInactivityTimer, { passive: true })
+    );
+    _resetInactivityTimer();
+  }
+
   // ── Token refresh timer + heartbeat ─────────────────────────────────────────
   function startExpiryWatcher() {
     // Check token expiry every minute
@@ -224,6 +244,9 @@ const Auth = (() => {
 
     // Send heartbeat every 2 minutes to keep session alive
     setInterval(() => { sendHeartbeat(); }, 120_000);
+
+    // Start inactivity watcher
+    _startInactivityWatcher();
   }
 
   // ── Public ──────────────────────────────────────────────────────────────────

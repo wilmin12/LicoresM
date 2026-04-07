@@ -305,6 +305,67 @@ const I18n = (() => {
     'Duty Free':                      'Libre de Impuestos',
     'Comments':                       'Comentarios',
 
+    // ── Help / User Manuals ───────────────────────────────────────────────────
+    'Ayuda':                              'Ayuda',
+    'Manual Aankoopbon':                  'Manual Aankoopbon',
+    'Manual Cost Calculation':            'Manual Cálculo de Costos',
+    'Manual Freight':                     'Manual Agente de Carga',
+    'Manual — Aankoopbonnen':             'Manual — Aankoopbonnen',
+    'Manual — Cost Calculation':          'Manual — Cálculo de Costos',
+    'Manual — Freight Forwarder':         'Manual — Agente de Carga',
+
+    // Aankoopbon manual sections
+    'What is Aankoopbonnen?':             '¿Qué es Aankoopbonnen?',
+    'Roles and Permissions':              'Roles y Permisos',
+    'Process Flow':                       'Flujo del Proceso',
+    'Create an Order':                    'Crear una Orden',
+    'Send for Approval':                  'Enviar a Aprobación',
+    'Approve or Reject':                  'Aprobar o Rechazar',
+    'Register Invoice':                   'Registrar Factura',
+    'Close the Order':                    'Cerrar la Orden',
+    'Resubmit after Rejection':           'Reenviar tras un Rechazo',
+    'Generate PDF':                       'Generar PDF',
+    'Support Catalogs':                   'Catálogos de Soporte',
+    'Form Fields':                        'Campos del Formulario',
+    'Frequently Asked Questions':         'Preguntas Frecuentes',
+
+    // Cost Calculation manual sections
+    'What is Cost Calculation?':          '¿Qué es Cost Calculation?',
+    'Create a New Calculation':           'Crear una Calculación Nueva',
+    'Run or Re-run the Calculation':      'Ejecutar o Re-ejecutar el Cálculo',
+    'Additional Charges (Ship Charges)':  'Cargos Adicionales (Ship Charges)',
+    'Confirm the Calculation':            'Confirmar la Calculación',
+    'Approve':                            'Aprobar',
+    'Landed Cost Formula':                'Fórmula del Costo Landed',
+    'Support Catalogs':                   'Catálogos de Soporte',
+
+    // Freight manual sections
+    'What is Freight Forwarder?':         '¿Qué es Freight Forwarder?',
+    'Module Structure':                   'Estructura del Módulo',
+    'Base Catalogs':                      'Catálogos Base',
+    'Manage Freight Forwarders':          'Gestionar Freight Forwarders',
+    'Ocean Freight Quotes (FCL)':         'Cotizaciones Ocean Freight (FCL)',
+    'LCL Quotes':                         'Cotizaciones LCL',
+    'Inland Freight Quotes':              'Cotizaciones Inland Freight',
+    'Inland Additional Charges':          'Cargos Adicionales Inland',
+    'Applied Quotes':                     'Cotizaciones Aplicadas',
+    'Charge Types':                       'Tipos de Cargos',
+
+    // Platform & Administration manual
+    'Manual Plataforma':                       'Manual Plataforma',
+    'Manual — Plataforma & Administración':    'Manual — Plataforma & Administración',
+    'Platform Overview':                       'Visión General de la Plataforma',
+    'Roles and Admin Access':                  'Roles y Acceso de Administración',
+    'Company Settings':                        'Configuración de la Empresa',
+    'Email Configuration':                     'Configuración de Correo',
+    'Module Approvers':                        'Aprobadores por Módulo',
+    'User Management':                         'Gestión de Usuarios',
+    'Role Management':                         'Gestión de Roles y Permisos',
+    'Active Sessions':                         'Sesiones Activas',
+    'Color Themes':                            'Temas de Color',
+    'Language EN/ES':                          'Idioma (EN / ES)',
+    'Login and Session':                       'Login y Sesión',
+
     // ── Dynamic JS text ────────────────────────────────────────────────────────
     'Toggle this record?':        '¿Cambiar estado de este registro?',
     'Toggle status?':             '¿Cambiar estado?',

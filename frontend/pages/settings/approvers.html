@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Module Approvers - Licores Maduro</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="../../css/main.css"/>
+  <style>
+    .module-card { border-left: 3px solid var(--primary); }
+    .module-card .card-header { background: transparent; font-weight: 700; color: var(--primary); font-size: .85rem; text-transform: uppercase; letter-spacing: .05em; }
+    .email-hint { font-size: .78rem; color: #6c757d; margin-top: .35rem; }
+    .last-saved { font-size: .75rem; color: #aaa; margin-top: .4rem; }
+  </style>
+</head>
+<body>
+<div id="sidebar-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;"></div>
+<div class="app-wrapper">
+  <nav id="sidebar" class="sidebar">
+    <div class="sidebar-header"><img src="../../img/LogoLicores.png" alt="Licores Maduro" class="sidebar-logo-img" id="sidebar-logo-img"/><span class="sidebar-logo-text" id="sidebar-company-name">LICORES MADURO</span></div>
+    <div id="sidebar-nav" class="sidebar-nav"></div>
+    <div class="sidebar-footer"><div class="sidebar-user"><div class="sidebar-avatar" id="sidebar-user-initials">LM</div><div class="sidebar-text"><div id="sidebar-user-name" style="font-weight:600;">–</div></div></div></div>
+  </nav>
+  <div class="main-area">
+    <header class="topbar">
+      <button id="btn-sidebar-toggle" class="btn-sidebar-toggle"><i class="fas fa-bars"></i></button>
+      <span class="topbar-title"><i class="fas fa-envelope-circle-check me-2 text-wine"></i>Module Approvers</span>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown">
+            <span class="sidebar-avatar" id="topbar-user-initials" style="width:28px;height:28px;font-size:.75rem;">LM</span>
+            <span id="topbar-user-name" class="d-none d-md-inline">–</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+            <li><div class="dropdown-header"><strong id="topbar-user-fullname">User</strong><br/><small class="text-muted" id="topbar-user-role">Role</small></div></li>
+            <li><hr class="dropdown-divider"/></li>
+            <li><a class="dropdown-item text-danger" href="#" id="btn-logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+          </ul>
+        </div>
+      </div>
+    </header>
+    <main class="page-content">
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="../../dashboard.html"><i class="fas fa-home me-1"></i>Home</a></li>
+          <li class="breadcrumb-item active">Module Approvers</li>
+        </ol>
+      </nav>
+      <div class="page-title">Module Approvers</div>
+      <div class="page-subtitle">Configure the email addresses that receive approval notifications for each module. Separate multiple addresses with a comma.</div>
+
+      <!-- Access warning for non-admins -->
+      <div id="readonly-alert" class="alert alert-warning d-none">
+        <i class="fas fa-lock me-2"></i>Read-only — Admin or SuperAdmin access required to edit.
+      </div>
+
+      <!-- Module cards -->
+      <div class="row g-4 mt-1" id="modules-container">
+        <!-- Cards are rendered dynamically -->
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index:9999">
+  <div id="toast" class="toast align-items-center text-white border-0" role="alert">
+    <div class="d-flex">
+      <div class="toast-body" id="toast-msg"></div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../../js/api.js"></script>
+<script src="../../js/auth.js"></script>
+<script src="../../js/sidebar.js"></script>
+<script>
+  // Module display names and icons
+  const MODULE_META = {
+    AANKOOPBON:      { icon: 'fa-file-invoice',      color: '#6f42c1', label: 'Aankoopbonnen' },
+    COSTCALCULATION: { icon: 'fa-calculator',        color: '#0d6efd', label: 'Cost Calculation' },
+    ACTIVITYREQUEST: { icon: 'fa-calendar-check',    color: '#198754', label: 'Activity Request' },
+  };
+
+  let _isAdmin = false;
+  let _rows = [];
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    if (!Auth.requireAuth()) return;
+    Auth.startExpiryWatcher();
+    Auth.populateUserUI();
+    Sidebar.init();
+    document.getElementById('btn-logout').addEventListener('click', e => { e.preventDefault(); Auth.logout(); });
+
+    const user = Auth.getCurrentUser();
+    _isAdmin = user?.RoleName === 'SuperAdmin' || user?.RoleName === 'Admin';
+
+    if (!_isAdmin) {
+      document.getElementById('readonly-alert').classList.remove('d-none');
+    }
+
+    await load();
+  });
+
+  async function load() {
+    try {
+      const res = await API.system.getModuleApprovers();
+      _rows = res?.Data || res || [];
+      renderCards();
+    } catch (err) {
+      showToast(err.message || 'Error loading approver config.', 'danger');
+    }
+  }
+
+  function renderCards() {
+    const container = document.getElementById('modules-container');
+    container.innerHTML = '';
+
+    _rows.forEach(row => {
+      const meta   = MODULE_META[row.MaeModuleKey] || { icon: 'fa-envelope', color: '#6c757d', label: row.MaeModuleName };
+      const savedAt = row.MaeUpdatedAt
+        ? `Last saved: ${new Date(row.MaeUpdatedAt).toLocaleDateString()} ${new Date(row.MaeUpdatedAt).toLocaleTimeString()}${row.MaeUpdatedBy ? ' by ' + row.MaeUpdatedBy : ''}`
+        : 'Not yet configured';
+
+      const card = document.createElement('div');
+      card.className = 'col-md-6 col-xl-4';
+      card.innerHTML = `
+        <div class="card module-card h-100">
+          <div class="card-header d-flex align-items-center gap-2">
+            <i class="fas ${meta.icon}" style="color:${meta.color}"></i>
+            ${meta.label}
+          </div>
+          <div class="card-body">
+            <label class="form-label fw-semibold" for="emails-${row.MaeModuleKey}">
+              Approver Emails
+            </label>
+            <textarea
+              id="emails-${row.MaeModuleKey}"
+              class="form-control"
+              rows="3"
+              placeholder="correo1@empresa.com, correo2@empresa.com"
+              ${_isAdmin ? '' : 'disabled'}
+            >${row.MaeEmails ?? ''}</textarea>
+            <div class="email-hint"><i class="fas fa-info-circle me-1"></i>Separate multiple emails with a comma ( , )</div>
+            <div class="last-saved" id="saved-lbl-${row.MaeModuleKey}">${savedAt}</div>
+          </div>
+          ${_isAdmin ? `
+          <div class="card-footer bg-transparent d-flex justify-content-end">
+            <button class="btn btn-sm btn-primary" onclick="saveModule('${row.MaeModuleKey}')">
+              <i class="fas fa-save me-1"></i>Save
+            </button>
+          </div>` : ''}
+        </div>`;
+      container.appendChild(card);
+    });
+  }
+
+  async function saveModule(moduleKey) {
+    const emails = document.getElementById(`emails-${moduleKey}`)?.value?.trim() ?? '';
+
+    // Basic email format validation for each entry
+    if (emails) {
+      const parts = emails.split(',').map(e => e.trim()).filter(Boolean);
+      const emailRx = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const invalid = parts.filter(e => !emailRx.test(e));
+      if (invalid.length > 0) {
+        showToast(`Invalid email(s): ${invalid.join(', ')}`, 'danger');
+        return;
+      }
+    }
+
+    try {
+      const res = await API.system.updateModuleApprover(moduleKey, { Emails: emails });
+      const updated = res?.Data || res;
+
+      // Update label
+      const lbl = document.getElementById(`saved-lbl-${moduleKey}`);
+      if (lbl && updated?.MaeUpdatedAt) {
+        const dt = new Date(updated.MaeUpdatedAt);
+        lbl.textContent = `Last saved: ${dt.toLocaleDateString()} ${dt.toLocaleTimeString()}${updated.MaeUpdatedBy ? ' by ' + updated.MaeUpdatedBy : ''}`;
+      }
+
+      // Update local data
+      const row = _rows.find(r => r.MaeModuleKey === moduleKey);
+      if (row) { row.MaeEmails = emails; row.MaeUpdatedAt = updated?.MaeUpdatedAt; row.MaeUpdatedBy = updated?.MaeUpdatedBy; }
+
+      showToast('Approver emails saved.', 'success');
+    } catch (err) {
+      showToast(err.message || 'Error saving.', 'danger');
+    }
+  }
+
+  function showToast(msg, type = 'success') {
+    const el = document.getElementById('toast');
+    const map = { success: 'bg-success', danger: 'bg-danger', warning: 'bg-warning text-dark' };
+    el.className = `toast align-items-center text-white border-0 ${map[type] || 'bg-secondary'}`;
+    document.getElementById('toast-msg').textContent = msg;
+    new bootstrap.Toast(el, { delay: 3500 }).show();
+  }
+</script>
+</body>
+</html>

@@ -152,6 +152,16 @@
     document.addEventListener('DOMContentLoaded', () => {
       Auth.redirectIfLoggedIn();
 
+      // Show inactivity message if redirected due to timeout
+      if (new URLSearchParams(window.location.search).get('reason') === 'inactivity') {
+        const banner = document.getElementById('error-banner');
+        const msg    = document.getElementById('error-message');
+        if (banner && msg) {
+          msg.textContent = 'Your session was closed due to inactivity (15 min).';
+          banner.classList.remove('d-none');
+        }
+      }
+
       const form        = document.getElementById('login-form');
       const errorBanner = document.getElementById('error-banner');
       const errorMsg    = document.getElementById('error-message');

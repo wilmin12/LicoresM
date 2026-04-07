@@ -132,7 +132,8 @@ public static class AankoopbonPdfBuilder
             var delivery = h.AohMeegeven  ? "Wilt u meegeven"
                          : h.AohOntvangen ? "Hierbij ontvangt u"
                          : h.AohZenden    ? "Wilt u zenden"
-                         :                  "Andere";
+                         : h.AohAndere    ? "Andere"
+                         :                  "–";
             col.Item().Text(t =>
             {
                 t.Span("Entrega: ").Bold();

@@ -500,6 +500,10 @@ function _buildActions(r) {
     html += ` <button class="btn btn-xs btn-outline-dark" onclick="printBon(${r.AohId})" title="Print"><i class="fas fa-print"></i></button>`;
   }
 
+  if (r.AohStatus === 'REJECTED' && (isOwner || _isAdmin)) {
+    html += ` <button class="btn btn-xs btn-outline-warning" onclick="resubmitBon(${r.AohId})" title="Return to Draft"><i class="fas fa-undo"></i></button>`;
+  }
+
   if (r.AohStatus === 'CLOSED') {
     html += ` <button class="btn btn-xs btn-outline-dark" onclick="printBon(${r.AohId})" title="Print"><i class="fas fa-print"></i></button>`;
   }
@@ -892,6 +896,14 @@ async function confirmReject() {
     showToast('Aankoopbon rejected.','warning');
     load();
   } else showToast(res?.Message||'Error.','danger');
+}
+
+// ── Resubmit (REJECTED → DRAFT) ──────────────────────────────────────────
+async function resubmitBon(id) {
+  if (!confirm('Return this aankoopbon to DRAFT for editing?')) return;
+  const res = await API.patch(`/api/aankoopbon/orders/${id}/resubmit`, {});
+  if (res?.Success) { showToast('Returned to Draft.', 'warning'); load(); }
+  else showToast(res?.Message || 'Error.', 'danger');
 }
 
 // ── Delete ────────────────────────────────────────────────────────────────
