@@ -116,6 +116,9 @@ const API = (() => {
     changePassword:(id, dto)    => put(`/api/users/${id}/password`, dto),
     toggleStatus:  (id)         => put(`/api/users/${id}/toggle-status`, {}),
     delete:        (id)         => del(`/api/users/${id}`),
+    getPermissions:  (id)        => get(`/api/users/${id}/permissions`),
+    setPermissions:  (id, perms) => put(`/api/users/${id}/permissions`, perms),
+    clearPermissions:(id)        => del(`/api/users/${id}/permissions`),
     uploadAvatar:  (id, formData) => {
       const token = getToken();
       return fetch(`${BASE_URL}/api/users/${id}/avatar`, {

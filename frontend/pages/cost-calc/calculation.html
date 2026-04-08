@@ -209,7 +209,8 @@
     const tbody=document.getElementById('sc-tbody');
     const user=Auth.getCurrentUser();
     const isDraft=calcData?.CcStatus==='DR'||false;
-    const isAdmin=user?.RoleName==='SuperAdmin'||user?.RoleName==='Admin';
+    const isAdmin=user?.RoleName==='SuperAdmin'||user?.RoleName==='Admin'||
+                  Auth.hasPermission('COST_CALCULATIONS','CanApprove');
     const showActions=isDraft&&isAdmin&&calcData!=null;
     document.getElementById('btn-add-charge').style.display=showActions?'':'none';
     document.getElementById('sc-actions-col').style.display=showActions?'':'none';
@@ -311,7 +312,8 @@
     const stLabel=STATUS_LABELS[c.CcStatus]||c.CcStatus;
     const dt=c.CcCalcDate?c.CcCalcDate.split('T')[0]:'';
     const user=Auth.getCurrentUser();
-    const isAdmin=user?.RoleName==='SuperAdmin'||user?.RoleName==='Admin';
+    const isAdmin=user?.RoleName==='SuperAdmin'||user?.RoleName==='Admin'||
+                  Auth.hasPermission('COST_CALCULATIONS','CanApprove');
 
     document.getElementById('header-body').innerHTML=`
       <div class="row g-3">

@@ -19,6 +19,7 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<LmModule>         LmModules         => Set<LmModule>();
     public DbSet<LmSubmodule>      LmSubmodules      => Set<LmSubmodule>();
     public DbSet<LmRolePermission> LmRolePermissions => Set<LmRolePermission>();
+    public DbSet<LmUserPermission> LmUserPermissions => Set<LmUserPermission>();
     public DbSet<LmAuditLog>       LmAuditLogs       => Set<LmAuditLog>();
     public DbSet<LmEmailConfig>    LmEmailConfig     => Set<LmEmailConfig>();
     public DbSet<LmSession>        LmSessions        => Set<LmSession>();
@@ -225,6 +226,29 @@ public sealed class ApplicationDbContext : DbContext
             e.HasOne(x => x.Submodule)
              .WithMany(s => s.Permissions)
              .HasForeignKey(x => x.SubmoduleId);
+        });
+
+        modelBuilder.Entity<LmUserPermission>(e =>
+        {
+            e.ToTable("LM_UserPermissions");
+            e.HasKey(x => x.PermissionId);
+            e.Property(x => x.PermissionId).HasColumnName("UP_Id");
+            e.Property(x => x.UserId).HasColumnName("UP_UserId");
+            e.Property(x => x.SubmoduleId).HasColumnName("UP_SubmoduleId");
+            e.Property(x => x.CanAccess).HasColumnName("UP_CanAccess");
+            e.Property(x => x.CanRead).HasColumnName("UP_CanRead");
+            e.Property(x => x.CanWrite).HasColumnName("UP_CanWrite");
+            e.Property(x => x.CanEdit).HasColumnName("UP_CanEdit");
+            e.Property(x => x.CanDelete).HasColumnName("UP_CanDelete");
+            e.Property(x => x.CanApprove).HasColumnName("UP_CanApprove");
+            e.HasOne(x => x.User)
+             .WithMany()
+             .HasForeignKey(x => x.UserId)
+             .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.Submodule)
+             .WithMany()
+             .HasForeignKey(x => x.SubmoduleId)
+             .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<LmAuditLog>(e =>

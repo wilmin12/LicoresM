@@ -90,8 +90,8 @@ public sealed class AuthService : IAuthService
         user.LastLogin = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);
 
-        // Build permissions
-        var permissions = await GetPermissionsAsync(user.RoleId, ct);
+        // Build permissions (role base + user overrides)
+        var permissions = await GetPermissionsAsync(user.RoleId, user.UserId, ct);
 
         // Generate JWT
         var (token, expiresAt) = GenerateToken(user);
@@ -212,22 +212,60 @@ public sealed class AuthService : IAuthService
         var user = await _db.LmUsers.FindAsync([userId], ct)
             ?? throw new KeyNotFoundException($"User {userId} not found.");
 
-        // Soft delete
-        user.IsActive = false;
+        if (user.IsActive)
+            throw new InvalidOperationException("Cannot delete an active user. Deactivate the user first.");
+
+        // Clean up all related records before removing the user
+        var sessions = await _db.LmSessions
+            .Where(s => s.UserId == userId).ToListAsync(ct);
+        _db.LmSessions.RemoveRange(sessions);
+
+        var notifications = await _db.LmNotifications
+            .Where(n => n.NtfUserId == userId).ToListAsync(ct);
+        _db.LmNotifications.RemoveRange(notifications);
+
+        var chatMessages = await _db.LmChatMessages
+            .Where(m => m.FromUserId == userId || m.ToUserId == userId).ToListAsync(ct);
+        _db.LmChatMessages.RemoveRange(chatMessages);
+
+        _db.LmUsers.Remove(user);
         await _db.SaveChangesAsync(ct);
     }
 
     // ── Helpers ────────────────────────────────────────────────────────────────
 
-    private async Task<IReadOnlyList<PermissionDto>> GetPermissionsAsync(int roleId, CancellationToken ct)
+    private async Task<IReadOnlyList<PermissionDto>> GetPermissionsAsync(int roleId, int userId, CancellationToken ct)
     {
-        var raw = await _db.LmRolePermissions
+        // Load role-level permissions (base)
+        var rolePerms = await _db.LmRolePermissions
             .Include(p => p.Submodule)
                 .ThenInclude(s => s!.Module)
             .Where(p => p.RoleId == roleId && p.Submodule!.IsActive)
             .ToListAsync(ct);
 
-        return raw.Select(p => new PermissionDto(
+        // Load user-level overrides
+        var userOverrides = await _db.LmUserPermissions
+            .Where(p => p.UserId == userId)
+            .ToDictionaryAsync(p => p.SubmoduleId, ct);
+
+        return rolePerms.Select(p =>
+        {
+            // If a user-level override exists for this submodule, use it
+            if (userOverrides.TryGetValue(p.SubmoduleId, out var ov))
+                return new PermissionDto(
+                    p.SubmoduleId,
+                    p.Submodule!.SubmoduleName,
+                    p.Submodule.SubmoduleCode,
+                    p.Submodule.Module!.ModuleCode,
+                    ov.CanAccess,
+                    ov.CanRead,
+                    ov.CanWrite,
+                    ov.CanEdit,
+                    ov.CanDelete,
+                    ov.CanApprove
+                );
+
+            return new PermissionDto(
                 p.SubmoduleId,
                 p.Submodule!.SubmoduleName,
                 p.Submodule.SubmoduleCode,
@@ -236,9 +274,10 @@ public sealed class AuthService : IAuthService
                 p.CanRead,
                 p.CanWrite,
                 p.CanEdit,
-                p.CanDelete
-            ))
-            .ToList();
+                p.CanDelete,
+                p.CanApprove
+            );
+        }).ToList();
     }
 
     private (string token, DateTime expiresAt) GenerateToken(LmUser user)

@@ -41,5 +41,6 @@ public sealed record PermissionDto(
     bool   CanRead,
     bool   CanWrite,
     bool   CanEdit,
-    bool   CanDelete
+    bool   CanDelete,
+    bool   CanApprove
 );

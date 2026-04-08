@@ -19,7 +19,8 @@ public sealed record PermissionResult(
     bool CanRead,
     bool CanWrite,
     bool CanEdit,
-    bool CanDelete
+    bool CanDelete,
+    bool CanApprove
 );
 
 // ── Implementation ─────────────────────────────────────────────────────────────
@@ -47,27 +48,50 @@ public sealed class PermissionService : IPermissionService
 
         return permissionType.ToUpperInvariant() switch
         {
-            "ACCESS" => perm.CanAccess,
-            "READ"   => perm.CanRead,
-            "WRITE"  => perm.CanWrite,
-            "EDIT"   => perm.CanEdit,
-            "DELETE" => perm.CanDelete,
-            _        => false
+            "ACCESS"  => perm.CanAccess,
+            "READ"    => perm.CanRead,
+            "WRITE"   => perm.CanWrite,
+            "EDIT"    => perm.CanEdit,
+            "DELETE"  => perm.CanDelete,
+            "APPROVE" => perm.CanApprove,
+            _         => false
         };
     }
 
     /// <inheritdoc/>
     public async Task<bool> HasPermissionAsync(
-        ClaimsPrincipal user,
-        string          submoduleCode,
-        string          permissionType,
+        ClaimsPrincipal   user,
+        string            submoduleCode,
+        string            permissionType,
         CancellationToken ct = default)
     {
         // SuperAdmin bypasses all permission checks
         if (user.IsInRole("SuperAdmin")) return true;
 
-        var roleIdClaim = user.FindFirstValue("roleId");
+        var roleIdClaim  = user.FindFirstValue("roleId");
+        var userIdClaim  = user.FindFirstValue(ClaimTypes.NameIdentifier)
+                        ?? user.FindFirstValue("sub");
+
         if (!int.TryParse(roleIdClaim, out var roleId)) return false;
+
+        // Check user-level override first
+        if (int.TryParse(userIdClaim, out var userId))
+        {
+            var userOverride = await GetUserPermissionAsync(userId, submoduleCode, ct);
+            if (userOverride is not null)
+            {
+                return permissionType.ToUpperInvariant() switch
+                {
+                    "ACCESS"  => userOverride.CanAccess,
+                    "READ"    => userOverride.CanRead,
+                    "WRITE"   => userOverride.CanWrite,
+                    "EDIT"    => userOverride.CanEdit,
+                    "DELETE"  => userOverride.CanDelete,
+                    "APPROVE" => userOverride.CanApprove,
+                    _         => false
+                };
+            }
+        }
 
         return await HasPermissionAsync(roleId, submoduleCode, permissionType, ct);
     }
@@ -93,11 +117,39 @@ public sealed class PermissionService : IPermissionService
         }
 
         return new PermissionResult(
-            CanAccess: perm.CanAccess,
-            CanRead:   perm.CanRead,
-            CanWrite:  perm.CanWrite,
-            CanEdit:   perm.CanEdit,
-            CanDelete: perm.CanDelete
+            CanAccess:  perm.CanAccess,
+            CanRead:    perm.CanRead,
+            CanWrite:   perm.CanWrite,
+            CanEdit:    perm.CanEdit,
+            CanDelete:  perm.CanDelete,
+            CanApprove: perm.CanApprove
+        );
+    }
+
+    // ── Private helpers ────────────────────────────────────────────────────────
+
+    private async Task<PermissionResult?> GetUserPermissionAsync(
+        int    userId,
+        string submoduleCode,
+        CancellationToken ct)
+    {
+        var perm = await _db.LmUserPermissions
+            .Include(p => p.Submodule)
+            .FirstOrDefaultAsync(
+                p => p.UserId == userId
+                  && p.Submodule!.SubmoduleCode == submoduleCode
+                  && p.Submodule.IsActive,
+                ct);
+
+        if (perm is null) return null;
+
+        return new PermissionResult(
+            CanAccess:  perm.CanAccess,
+            CanRead:    perm.CanRead,
+            CanWrite:   perm.CanWrite,
+            CanEdit:    perm.CanEdit,
+            CanDelete:  perm.CanDelete,
+            CanApprove: perm.CanApprove
         );
     }
 }

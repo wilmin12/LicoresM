@@ -1,5 +1,6 @@
 using LicoresMaduro.API.Data;
 using LicoresMaduro.API.Helpers;
+using LicoresMaduro.API.Services;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.AspNetCore.Authorization;
@@ -19,9 +20,10 @@ public sealed class AankoopbonController : ControllerBase
     private readonly ApplicationDbContext          _db;
     private readonly ILogger<AankoopbonController> _log;
     private readonly IWebHostEnvironment           _env;
+    private readonly IPermissionService            _permissions;
 
-    public AankoopbonController(ApplicationDbContext db, ILogger<AankoopbonController> log, IWebHostEnvironment env)
-    { _db = db; _log = log; _env = env; }
+    public AankoopbonController(ApplicationDbContext db, ILogger<AankoopbonController> log, IWebHostEnvironment env, IPermissionService permissions)
+    { _db = db; _log = log; _env = env; _permissions = permissions; }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
     private int? CurrentUserId()
@@ -287,9 +289,11 @@ public sealed class AankoopbonController : ControllerBase
 
     // ── PATCH /api/aankoopbon/orders/{id}/approve ──────────────────────────────
     [HttpPatch("{id:int}/approve")]
-    [Authorize(Roles = "SuperAdmin,Admin")]
     public async Task<IActionResult> Approve(int id, CancellationToken ct)
     {
+        if (!await _permissions.HasPermissionAsync(User, "AB_AANKOOPBON", "APPROVE", ct))
+            return Forbid();
+
         var header = await _db.AbOrderHeaders
             .Include(h => h.Details)
             .FirstOrDefaultAsync(h => h.AohId == id && h.IsActive, ct);
@@ -313,9 +317,11 @@ public sealed class AankoopbonController : ControllerBase
 
     // ── PATCH /api/aankoopbon/orders/{id}/reject ───────────────────────────────
     [HttpPatch("{id:int}/reject")]
-    [Authorize(Roles = "SuperAdmin,Admin")]
     public async Task<IActionResult> Reject(int id, [FromBody] RejectDto dto, CancellationToken ct)
     {
+        if (!await _permissions.HasPermissionAsync(User, "AB_AANKOOPBON", "APPROVE", ct))
+            return Forbid();
+
         if (string.IsNullOrWhiteSpace(dto.Reason))
             return BadRequest(ApiResponse.Fail("Rejection reason is required."));
 
@@ -537,7 +543,7 @@ public sealed class AankoopbonController : ControllerBase
     /// <summary>
     /// type = "pending"  → manager receives approval request + quotation PDF
     /// type = "approved" → creator AND requestor receive confirmation + aankoopbon PDF
-    /// type = "rejected" → creator receives rejection reason
+    /// type = "rejected" → creator AND requestor receive rejection reason
     /// </summary>
     private async Task _sendEmailAsync(AbOrderHeader header, string type,
         CancellationToken ct, string? rejectionReason = null)
@@ -618,8 +624,15 @@ public sealed class AankoopbonController : ControllerBase
             }
             else // rejected
             {
-                var creatorEmail = await GetCreatorEmailAsync(header, ct);
-                if (!string.IsNullOrEmpty(creatorEmail)) recipients.Add(creatorEmail);
+                var creatorEmail   = await GetCreatorEmailAsync(header, ct);
+                var requestorEmail = await GetRequestorEmailAsync(header.AohRequestor, ct);
+
+                if (!string.IsNullOrEmpty(creatorEmail))
+                    recipients.Add(creatorEmail);
+
+                if (!string.IsNullOrEmpty(requestorEmail) &&
+                    !string.Equals(requestorEmail, creatorEmail, StringComparison.OrdinalIgnoreCase))
+                    recipients.Add(requestorEmail);
 
                 subject = $"[Aankoopbon] {header.AohBonNr} — Rejected ✖";
                 body    = $@"<p>Your aankoopbon has been <b style='color:red;'>rejected</b> by {header.AohRejectedByName}.</p>

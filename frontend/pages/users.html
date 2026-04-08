@@ -63,7 +63,10 @@
             <input type="text" id="search-input" class="form-control form-control-sm"
                    placeholder="Search users..." />
           </div>
-          <button class="btn btn-wine btn-sm ms-auto" id="btn-create-user">
+          <button class="btn btn-outline-secondary btn-sm" id="btn-toggle-inactive" title="Show/hide inactive users">
+            <i class="fas fa-eye-slash me-1"></i>Show Inactive
+          </button>
+          <button class="btn btn-wine btn-sm" id="btn-create-user">
             <i class="fas fa-plus me-1"></i>New User
           </button>
         </div>
@@ -192,6 +195,81 @@
   </div>
 </div>
 
+<!-- ── Confirm Delete Modal ──────────────────────────────────────────────────── -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title"><i class="fas fa-trash me-2"></i>Delete User</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body text-center py-4">
+        <i class="fas fa-exclamation-triangle text-danger fa-2x mb-3 d-block"></i>
+        <p>Permanently delete user<br><strong id="delete-user-name"></strong>?</p>
+        <small class="text-muted">This action cannot be undone.</small>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-danger btn-sm" id="btn-confirm-delete">
+          <i class="fas fa-trash me-1"></i>Delete
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── User Permissions Modal ─────────────────────────────────────────────────── -->
+<div class="modal fade" id="userPermModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-shield-alt me-2"></i>Permissions —
+          <span id="up-user-name" class="fw-bold"></span>
+          <span class="badge ms-2" style="background:var(--primary);color:#fff;font-size:.75rem;" id="up-role-badge"></span>
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-0">
+        <div id="up-loading" class="text-center py-4"><i class="fas fa-spinner fa-spin me-2"></i>Loading…</div>
+        <div id="up-content" class="d-none">
+          <div class="alert alert-info mx-3 mt-3 mb-0 py-2" style="font-size:.82rem;">
+            <i class="fas fa-info-circle me-1"></i>
+            Overrides here take precedence over the role permissions.
+            Leave all unchecked to remove the override for that submodule (reverts to role).
+            <button class="btn btn-sm btn-outline-danger float-end" id="btn-clear-user-perms">
+              <i class="fas fa-eraser me-1"></i>Clear all overrides
+            </button>
+          </div>
+          <div class="table-responsive mt-2">
+            <table class="table table-bordered mb-0" style="font-size:.8rem;">
+              <thead>
+                <tr>
+                  <th style="min-width:200px;">Module / Submodule</th>
+                  <th class="text-center">Access</th>
+                  <th class="text-center">Read</th>
+                  <th class="text-center">Write</th>
+                  <th class="text-center">Edit</th>
+                  <th class="text-center">Delete</th>
+                  <th class="text-center" style="background:#fff3cd;color:#856404;">Approve</th>
+                  <th class="text-center" style="background:#f8f9fa;min-width:50px;">Override</th>
+                </tr>
+              </thead>
+              <tbody id="up-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-wine btn-sm" id="btn-save-user-perms">
+          <i class="fas fa-save me-1"></i>Save Overrides
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Toast -->
 <div class="toast-container">
   <div id="toast" class="toast align-items-center text-white border-0" role="alert">
@@ -208,10 +286,12 @@
 <script src="../js/auth.js"></script>
 <script src="../js/sidebar.js"></script>
 <script>
-  let allUsers = [];
-  let roles    = [];
-  const userModal = () => new bootstrap.Modal('#userModal');
-  const pwdModal  = () => new bootstrap.Modal('#pwdModal');
+  let allUsers       = [];
+  let roles          = [];
+  let _showInactive  = false;
+  let _deleteUserId  = null;
+  const userModal   = () => new bootstrap.Modal('#userModal');
+  const pwdModal    = () => new bootstrap.Modal('#pwdModal');
 
   document.addEventListener('DOMContentLoaded', async () => {
     if (!Auth.requireAuth()) return;
@@ -224,6 +304,8 @@
     document.getElementById('btn-save-user').addEventListener('click', saveUser);
     document.getElementById('btn-save-password').addEventListener('click', savePassword);
     document.getElementById('search-input').addEventListener('input', filterTable);
+    document.getElementById('btn-toggle-inactive').addEventListener('click', toggleInactiveFilter);
+    document.getElementById('btn-confirm-delete').addEventListener('click', confirmDelete);
 
     await loadRoles();
     await loadUsers();
@@ -233,7 +315,7 @@
     try {
       const res = await API.users.getAll();
       allUsers = res?.Data || [];
-      renderTable(allUsers);
+      filterTable();
     } catch (err) {
       showToast(err.message, 'danger');
     }
@@ -274,21 +356,61 @@
           <button class="btn-action view me-1" onclick="openPwdModal(${u.UserId})" title="Change password">
             <i class="fas fa-key"></i>
           </button>
+          <button class="btn-action view me-1" onclick="openUserPermModal(${u.UserId})" title="Permission overrides">
+            <i class="fas fa-shield-alt"></i>
+          </button>
           <button class="btn-action ${u.IsActive ? 'delete' : 'edit'}" onclick="toggleStatus(${u.UserId})" title="${u.IsActive ? 'Disable' : 'Enable'}">
             <i class="fas fa-${u.IsActive ? 'ban' : 'check'}"></i>
           </button>
+          ${!u.IsActive ? `<button class="btn-action delete ms-1" onclick="openDeleteModal(${u.UserId},'${esc(u.Username)}')" title="Delete permanently"><i class="fas fa-trash"></i></button>` : ''}
         </td>
       </tr>`).join('');
   }
 
   function filterTable() {
     const q = document.getElementById('search-input').value.toLowerCase();
-    renderTable(allUsers.filter(u =>
-      u.Username.toLowerCase().includes(q) ||
-      u.FullName.toLowerCase().includes(q) ||
-      u.Email.toLowerCase().includes(q) ||
-      u.RoleName.toLowerCase().includes(q)
-    ));
+    renderTable(allUsers.filter(u => {
+      if (!_showInactive && !u.IsActive) return false;
+      return !q || u.Username.toLowerCase().includes(q) ||
+             u.FullName.toLowerCase().includes(q) ||
+             u.Email.toLowerCase().includes(q) ||
+             u.RoleName.toLowerCase().includes(q);
+    }));
+  }
+
+  function toggleInactiveFilter() {
+    _showInactive = !_showInactive;
+    const btn = document.getElementById('btn-toggle-inactive');
+    if (_showInactive) {
+      btn.innerHTML = '<i class="fas fa-eye me-1"></i>Hide Inactive';
+      btn.classList.replace('btn-outline-secondary', 'btn-secondary');
+    } else {
+      btn.innerHTML = '<i class="fas fa-eye-slash me-1"></i>Show Inactive';
+      btn.classList.replace('btn-secondary', 'btn-outline-secondary');
+    }
+    filterTable();
+  }
+
+  function openDeleteModal(id, username) {
+    _deleteUserId = id;
+    document.getElementById('delete-user-name').textContent = username;
+    new bootstrap.Modal('#deleteModal').show();
+  }
+
+  async function confirmDelete() {
+    if (!_deleteUserId) return;
+    bootstrap.Modal.getInstance(document.getElementById('deleteModal'))?.hide();
+    try {
+      await API.users.delete(_deleteUserId);
+      showToast('User deleted permanently.', 'success');
+      setTimeout(() => window.location.reload(), 1500);
+    } catch (err) {
+      // Persistent error — doesn't auto-dismiss so the message is readable
+      const el = document.getElementById('toast');
+      el.className = 'toast align-items-center text-white border-0 bg-danger';
+      document.getElementById('toast-msg').textContent = 'DELETE ERROR: ' + err.message;
+      new bootstrap.Toast(el, { autohide: false }).show();
+    }
   }
 
   function openCreateModal() {
@@ -386,6 +508,187 @@
       showToast(err.message, 'danger');
     }
   }
+
+  // ── User Permission Overrides ─────────────────────────────────────────────
+
+  const UP_FIELDS          = ['CanAccess','CanRead','CanWrite','CanEdit','CanDelete'];
+  const UP_APPROVE_SUBS    = ['AB_AANKOOPBON','COST_CALCULATIONS'];
+  let   _upUserId          = null;
+  let   _upRolePerms       = [];   // role base (from roles API)
+  let   _upUserOverrides   = [];   // existing user overrides
+
+  // MODULES_PERMS: same structure used in roles.html — defined inline here
+  const UP_MODULES = [
+    { label:'Aankoopbon',  submodules:[
+        { code:'AB_AANKOOPBON',      label:'Purchase Orders' },
+        { code:'AB_VENDORS',         label:'Vendors' },
+        { code:'AB_PRODUCTS',        label:'Products' },
+        { code:'AB_CATALOGS',        label:'Catalogs' },
+    ]},
+    { label:'Freight',     submodules:[
+        { code:'FREIGHT_CURRENCIES', label:'Currencies' },
+        { code:'FREIGHT_PORTS',      label:'Ports of Loading' },
+        { code:'FREIGHT_SLINES',     label:'Shipping Lines' },
+        { code:'FREIGHT_AGENTS',     label:'Shipping Agents' },
+        { code:'FREIGHT_ROUTES',     label:'Routes' },
+        { code:'FREIGHT_CONTAINERS', label:'Container Specs' },
+        { code:'FREIGHT_FORWARDERS', label:'Forwarders' },
+        { code:'FREIGHT_QUOTES',     label:'Quotes' },
+        { code:'FREIGHT_REGIONS',    label:'Regions' },
+        { code:'FREIGHT_LOADTYPES',  label:'Load Types' },
+        { code:'FREIGHT_CHARGETYPES',label:'Charge Types' },
+        { code:'FREIGHT_COUNTRIES',  label:'Countries' },
+        { code:'FREIGHT_SUPPLIERS',  label:'Suppliers' },
+    ]},
+    { label:'Cost Calc',   submodules:[
+        { code:'COST_CALCULATIONS',  label:'Calculations' },
+        { code:'COST_TARIFF',        label:'Tariff Items' },
+        { code:'COST_GOODS_CLASS',   label:'Goods Classification' },
+        { code:'COST_WEIGHTS',       label:'Item Weights' },
+        { code:'COST_MARGINS',       label:'Allowed Margins' },
+        { code:'COST_INLAND',        label:'Inland Tariffs' },
+    ]},
+    { label:'Platform',    submodules:[
+        { code:'PLATFORM_USERS',     label:'Users' },
+        { code:'PLATFORM_ROLES',     label:'Roles' },
+        { code:'PLATFORM_EMAIL',     label:'Email Config' },
+        { code:'PLATFORM_COMPANY',   label:'Company Settings' },
+        { code:'PLATFORM_SESSIONS',  label:'Sessions' },
+        { code:'PLATFORM_APPROVERS', label:'Module Approvers' },
+    ]},
+  ];
+
+  async function openUserPermModal(userId) {
+    _upUserId = userId;
+    const u = allUsers.find(x => x.UserId === userId);
+    if (!u) return;
+
+    document.getElementById('up-user-name').textContent  = u.FullName || u.Username;
+    document.getElementById('up-role-badge').textContent = u.RoleName;
+    document.getElementById('up-loading').classList.remove('d-none');
+    document.getElementById('up-content').classList.add('d-none');
+
+    const modal = new bootstrap.Modal('#userPermModal');
+    modal.show();
+
+    try {
+      const [roleRes, userRes] = await Promise.all([
+        API.roles.getPermissions(u.RoleId),
+        API.users.getPermissions(userId)
+      ]);
+      _upRolePerms     = roleRes?.Data || roleRes || [];
+      _upUserOverrides = userRes?.Data || userRes || [];
+      renderUserPermTable();
+      document.getElementById('up-loading').classList.add('d-none');
+      document.getElementById('up-content').classList.remove('d-none');
+    } catch (err) {
+      document.getElementById('up-loading').innerHTML =
+        `<div class="text-danger py-4 text-center"><i class="fas fa-exclamation-circle me-2"></i>${err.message}</div>`;
+    }
+  }
+
+  function getRolePerm(code) {
+    return _upRolePerms.find(p => p.SubmoduleCode === code) || {};
+  }
+
+  function getUserOverride(code) {
+    return _upUserOverrides.find(p => p.SubmoduleCode === code) || null;
+  }
+
+  function renderUserPermTable() {
+    let html = '';
+    UP_MODULES.forEach(mod => {
+      html += `<tr style="background:#f0f4f8;">
+        <td colspan="8" style="font-weight:700;color:var(--primary-dark);padding:.4rem 1rem;">
+          <i class="fas fa-folder me-2"></i>${mod.label}
+        </td>
+      </tr>`;
+      mod.submodules.forEach(sub => {
+        const rp          = getRolePerm(sub.code);
+        const ov          = getUserOverride(sub.code);
+        const hasOverride = ov !== null;
+        const showApprove = UP_APPROVE_SUBS.includes(sub.code);
+        const src         = hasOverride ? ov : rp;
+
+        const rowStyle = hasOverride ? 'background:#fffde7;' : '';
+
+        html += `<tr style="${rowStyle}">
+          <td style="padding-left:2rem;">${sub.label}
+            ${hasOverride ? '<span class="badge bg-warning text-dark ms-1" style="font-size:.65rem;">override</span>' : ''}
+          </td>
+          ${UP_FIELDS.map(f => `
+          <td class="text-center">
+            <input type="checkbox" class="form-check-input up-perm-cb" data-sub="${sub.code}" data-field="${f}"
+              ${src[f] ? 'checked' : ''} />
+          </td>`).join('')}
+          <td class="text-center" style="background:#fff8e1;">
+            ${showApprove
+              ? `<input type="checkbox" class="form-check-input up-perm-cb" data-sub="${sub.code}" data-field="CanApprove"
+                  ${src['CanApprove'] ? 'checked' : ''} />`
+              : ''}
+          </td>
+          <td class="text-center" style="background:#f8f9fa;">
+            <input type="checkbox" class="form-check-input up-override-cb" title="Enable override for this submodule"
+              data-sub="${sub.code}" ${hasOverride ? 'checked' : ''} />
+          </td>
+        </tr>`;
+      });
+    });
+    document.getElementById('up-tbody').innerHTML = html;
+
+    // Toggle row highlight when override checkbox changes
+    document.querySelectorAll('.up-override-cb').forEach(cb => {
+      cb.addEventListener('change', function() {
+        const row = this.closest('tr');
+        row.style.background = this.checked ? '#fffde7' : '';
+        const badge = row.querySelector('.badge');
+        if (this.checked && !badge) {
+          row.querySelector('td:first-child').insertAdjacentHTML('beforeend',
+            '<span class="badge bg-warning text-dark ms-1" style="font-size:.65rem;">override</span>');
+        } else if (!this.checked && badge) {
+          badge.remove();
+        }
+      });
+    });
+
+    document.getElementById('btn-save-user-perms').onclick   = saveUserPerms;
+    document.getElementById('btn-clear-user-perms').onclick  = clearUserPerms;
+  }
+
+  async function saveUserPerms() {
+    const overrideCbs = document.querySelectorAll('.up-override-cb:checked');
+    const payload = [];
+
+    overrideCbs.forEach(ocb => {
+      const sub = ocb.dataset.sub;
+      const entry = { SubmoduleCode: sub };
+      UP_FIELDS.forEach(f => {
+        const cb = document.querySelector(`.up-perm-cb[data-sub="${sub}"][data-field="${f}"]`);
+        entry[f] = cb ? cb.checked : false;
+      });
+      // CanApprove
+      const approveCb = document.querySelector(`.up-perm-cb[data-sub="${sub}"][data-field="CanApprove"]`);
+      entry['CanApprove'] = approveCb ? approveCb.checked : false;
+      payload.push(entry);
+    });
+
+    try {
+      await API.users.setPermissions(_upUserId, payload);
+      showToast('Overrides saved.', 'success');
+      bootstrap.Modal.getInstance(document.getElementById('userPermModal'))?.hide();
+    } catch (err) { showToast(err.message, 'danger'); }
+  }
+
+  async function clearUserPerms() {
+    if (!confirm('Remove all overrides? The user will revert to role permissions.')) return;
+    try {
+      await API.users.clearPermissions(_upUserId);
+      showToast('Overrides cleared.', 'success');
+      bootstrap.Modal.getInstance(document.getElementById('userPermModal'))?.hide();
+    } catch (err) { showToast(err.message, 'danger'); }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
 
   function showToast(msg, type = 'success') {
     const el = document.getElementById('toast');

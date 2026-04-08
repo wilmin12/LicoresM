@@ -26,7 +26,8 @@ public sealed record PermissionAssignmentDto(
     bool   CanRead,
     bool   CanWrite,
     bool   CanEdit,
-    bool   CanDelete
+    bool   CanDelete,
+    bool   CanApprove
 );
 
 // ── Controller ─────────────────────────────────────────────────────────────────
@@ -157,7 +158,8 @@ public sealed class RolesController : ControllerBase
                 p.CanRead,
                 p.CanWrite,
                 p.CanEdit,
-                p.CanDelete
+                p.CanDelete,
+                p.CanApprove
             })
             .ToListAsync(ct);
         return Ok(ApiResponse<object>.Ok(perms));
@@ -198,11 +200,12 @@ public sealed class RolesController : ControllerBase
 
             if (existingMap.TryGetValue(subId, out var existing))
             {
-                existing.CanAccess = dto.CanAccess;
-                existing.CanRead   = dto.CanRead;
-                existing.CanWrite  = dto.CanWrite;
-                existing.CanEdit   = dto.CanEdit;
-                existing.CanDelete = dto.CanDelete;
+                existing.CanAccess  = dto.CanAccess;
+                existing.CanRead    = dto.CanRead;
+                existing.CanWrite   = dto.CanWrite;
+                existing.CanEdit    = dto.CanEdit;
+                existing.CanDelete  = dto.CanDelete;
+                existing.CanApprove = dto.CanApprove;
             }
             else
             {
@@ -214,7 +217,8 @@ public sealed class RolesController : ControllerBase
                     CanRead     = dto.CanRead,
                     CanWrite    = dto.CanWrite,
                     CanEdit     = dto.CanEdit,
-                    CanDelete   = dto.CanDelete
+                    CanDelete   = dto.CanDelete,
+                    CanApprove  = dto.CanApprove
                 });
             }
         }

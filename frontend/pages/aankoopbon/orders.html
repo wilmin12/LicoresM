@@ -411,7 +411,8 @@ let _isAdmin     = false;
 document.addEventListener('DOMContentLoaded', async () => {
   if (!Auth.requireAuth()) return;
   _currentUser = Auth.getCurrentUser();
-  _isAdmin = ['SuperAdmin','Admin'].includes(_currentUser?.RoleName);
+  _isAdmin = ['SuperAdmin','Admin'].includes(_currentUser?.RoleName) ||
+             Auth.hasPermission('AB_AANKOOPBON', 'CanApprove');
   Auth.startExpiryWatcher();
   Auth.populateUserUI();
   Sidebar.init();

@@ -242,7 +242,21 @@
       <div id="sec6" class="card shadow-sm mb-4">
         <div class="card-body p-4">
           <div class="section-title"><span data-i18n="User Management">Gestión de Usuarios</span></div>
-          <p>Administra las cuentas de acceso al sistema.</p>
+          <p>Administra las cuentas de acceso al sistema. La tabla muestra por defecto solo los usuarios <strong>activos</strong>.</p>
+
+          <!-- Acciones disponibles -->
+          <p class="fw-bold mb-2">Acciones disponibles por usuario:</p>
+          <table class="table table-bordered field-table mb-3">
+            <thead><tr><th style="width:40px;">Icono</th><th>Acción</th><th>Descripción</th></tr></thead>
+            <tbody>
+              <tr><td class="text-center"><i class="fas fa-edit text-primary"></i></td><td><strong>Editar</strong></td><td>Modifica datos del usuario: nombre, correo, rol, estado activo/inactivo.</td></tr>
+              <tr><td class="text-center"><i class="fas fa-key text-warning"></i></td><td><strong>Cambiar contraseña</strong></td><td>Establece una nueva contraseña para el usuario.</td></tr>
+              <tr><td class="text-center"><i class="fas fa-shield-alt text-info"></i></td><td><strong>Permisos individuales</strong></td><td>Configura permisos específicos para este usuario que sobrescriben los del rol. Ver sección más abajo.</td></tr>
+              <tr><td class="text-center"><i class="fas fa-ban text-danger"></i></td><td><strong>Desactivar</strong></td><td>El usuario no puede iniciar sesión pero su historial se conserva.</td></tr>
+              <tr><td class="text-center"><i class="fas fa-check text-success"></i></td><td><strong>Activar</strong></td><td>Rehabilita el acceso de un usuario desactivado.</td></tr>
+              <tr><td class="text-center"><i class="fas fa-trash text-danger"></i></td><td><strong>Eliminar</strong></td><td>Elimina permanentemente el usuario. Solo aparece para usuarios <strong>inactivos</strong> y solo lo puede ejecutar <strong>SuperAdmin</strong>.</td></tr>
+            </tbody>
+          </table>
 
           <div class="step-box">
             <div class="d-flex align-items-center mb-2"><span class="step-num">1</span><strong>Crear un usuario nuevo</strong></div>
@@ -255,20 +269,37 @@
           </div>
 
           <div class="step-box">
-            <div class="d-flex align-items-center mb-2"><span class="step-num">2</span><strong>Editar usuario</strong></div>
+            <div class="d-flex align-items-center mb-2"><span class="step-num">2</span><strong>Ver y filtrar usuarios inactivos</strong></div>
             <ol class="ps-4 mb-0">
-              <li>En la lista, clic en <i class="fas fa-edit text-primary"></i> del usuario.</li>
-              <li>Modificar los campos necesarios. Para cambiar contraseña, ingresar la nueva en el campo correspondiente.</li>
-              <li>Guardar.</li>
+              <li>Por defecto la tabla muestra solo usuarios activos.</li>
+              <li>Clic en <span class="badge bg-secondary"><i class="fas fa-eye-slash me-1"></i>Show Inactive</span> para ver también los inactivos.</li>
+              <li>Clic nuevamente en <span class="badge bg-secondary"><i class="fas fa-eye me-1"></i>Hide Inactive</span> para ocultarlos.</li>
             </ol>
           </div>
 
           <div class="step-box">
-            <div class="d-flex align-items-center mb-2"><span class="step-num">3</span><strong>Activar / Desactivar usuario</strong></div>
+            <div class="d-flex align-items-center mb-2"><span class="step-num">3</span><strong>Eliminar un usuario permanentemente</strong></div>
             <ol class="ps-4 mb-0">
-              <li>Clic en el interruptor <i class="fas fa-toggle-on text-success"></i> en la fila del usuario.</li>
-              <li>Un usuario desactivado no puede iniciar sesión pero su historial se conserva.</li>
+              <li>Primero <strong>desactiva</strong> el usuario con el botón <i class="fas fa-ban text-danger"></i>.</li>
+              <li>Clic en <span class="badge bg-secondary"><i class="fas fa-eye-slash me-1"></i>Show Inactive</span> para ver el usuario inactivo.</li>
+              <li>Clic en el botón <i class="fas fa-trash text-danger"></i> que aparece en la fila.</li>
+              <li>Confirmar en el modal. <strong>Esta acción no se puede deshacer.</strong></li>
             </ol>
+            <div class="warn-box mt-2">Solo <strong>SuperAdmin</strong> puede eliminar usuarios. Si el usuario tiene registros de negocio asociados (órdenes, cálculos), el sistema mostrará un error y no permitirá la eliminación.</div>
+          </div>
+
+          <div class="step-box">
+            <div class="d-flex align-items-center mb-2"><span class="step-num">4</span><strong>Permisos individuales por usuario</strong></div>
+            <p class="mb-2">Además de los permisos del rol, es posible configurar permisos específicos para un usuario individual que tienen <strong>prioridad</strong> sobre el rol.</p>
+            <ol class="ps-4 mb-0">
+              <li>Clic en <i class="fas fa-shield-alt text-info"></i> en la fila del usuario.</li>
+              <li>Se abre una tabla con todos los módulos y sub-módulos.</li>
+              <li>Marca la columna <strong>"Override"</strong> en las filas que deseas personalizar. Las filas con override activo se destacan en amarillo.</li>
+              <li>Ajusta los permisos (Access, Read, Write, Edit, Delete, Approve) según necesidad.</li>
+              <li>Clic en <span class="badge bg-primary">Save Overrides</span>.</li>
+              <li>Para revertir al usuario a los permisos del rol: clic en <span class="badge bg-danger">Clear all overrides</span>.</li>
+            </ol>
+            <div class="info-box mt-2">Los permisos individuales aplican en el <strong>próximo login</strong> del usuario. Las filas sin "Override" marcado siguen usando los permisos del rol asignado.</div>
           </div>
 
           <table class="table table-bordered field-table mt-3">
@@ -277,7 +308,7 @@
               <tr><td>Username</td><td>Nombre de usuario para el login. Debe ser único.</td></tr>
               <tr><td>Full Name</td><td>Nombre completo que aparece en el sistema y en los documentos.</td></tr>
               <tr><td>Email</td><td>Correo del usuario. Recibe notificaciones cuando sus solicitudes son aprobadas/rechazadas.</td></tr>
-              <tr><td>Role</td><td>Rol asignado que determina sus permisos.</td></tr>
+              <tr><td>Role</td><td>Rol base que determina los permisos iniciales del usuario.</td></tr>
               <tr><td>Password</td><td>Contraseña encriptada. Solo se modifica al ingresar una nueva.</td></tr>
             </tbody>
           </table>
@@ -306,9 +337,25 @@
             <ol class="ps-4 mb-0">
               <li>Ir a <strong>Administration → Roles</strong>.</li>
               <li>Clic en <i class="fas fa-shield-alt text-primary"></i> (Permissions) del rol.</li>
-              <li>Para cada módulo y sub-módulo marcar: <strong>Can Access</strong> (ver), <strong>Can Create</strong>, <strong>Can Edit</strong>, <strong>Can Delete</strong>.</li>
-              <li>Guardar. Los cambios aplican en el próximo login del usuario.</li>
+              <li>Para cada sub-módulo marcar los permisos necesarios (ver tabla abajo).</li>
+              <li>Guardar. Los cambios aplican en el <strong>próximo login</strong> de los usuarios con ese rol.</li>
             </ol>
+          </div>
+
+          <table class="table table-bordered field-table mt-3">
+            <thead><tr><th>Permiso</th><th>Descripción</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Access</strong></td><td>El usuario puede ver el módulo en el menú y acceder a la página.</td></tr>
+              <tr><td><strong>Read</strong></td><td>Puede consultar y listar registros.</td></tr>
+              <tr><td><strong>Write</strong></td><td>Puede crear nuevos registros.</td></tr>
+              <tr><td><strong>Edit</strong></td><td>Puede modificar registros existentes.</td></tr>
+              <tr><td><strong>Delete</strong></td><td>Puede eliminar registros.</td></tr>
+              <tr><td><strong>Approve</strong> <span class="badge bg-warning text-dark">especial</span></td><td>Puede aprobar o rechazar solicitudes. Aplica solo en <strong>Aankoopbonnen</strong> y <strong>Cost Calculation</strong>. Permite que usuarios sin rol Admin puedan aprobar en esos módulos.</td></tr>
+            </tbody>
+          </table>
+
+          <div class="info-box mt-2">
+            <strong>Columna "All":</strong> marca o desmarca todos los permisos base (Access → Delete) de una fila de forma rápida. El permiso <strong>Approve</strong> se configura de forma independiente.
           </div>
           <div class="warn-box mt-2">Los permisos de SuperAdmin no pueden modificarse. Siempre tienen acceso total.</div>
         </div>
@@ -424,6 +471,15 @@
 
           <p><strong>¿El logo se actualiza automáticamente para todos?</strong><br/>
           Sí. Al guardar un nuevo logo en Company Settings, todos los usuarios lo verán actualizado en el sidebar en su próxima carga o al limpiar la caché del navegador (<kbd>Ctrl+Shift+R</kbd>).</p>
+
+          <p><strong>¿Por qué no veo el botón de eliminar usuario?</strong><br/>
+          El botón <i class="fas fa-trash"></i> solo aparece para usuarios <strong>inactivos</strong>. Primero desactiva el usuario con el botón <i class="fas fa-ban"></i>, luego usa <strong>Show Inactive</strong> para verlo y podrás eliminarlo. Además, solo los usuarios con rol <strong>SuperAdmin</strong> tienen esta opción.</p>
+
+          <p><strong>¿Qué diferencia hay entre permisos del rol y permisos individuales del usuario?</strong><br/>
+          Los permisos del <strong>rol</strong> aplican a todos los usuarios que tienen ese rol. Los <strong>permisos individuales</strong> (botón <i class="fas fa-shield-alt"></i> en la fila del usuario) son overrides específicos para un usuario y tienen prioridad sobre el rol. Si un usuario no tiene overrides configurados, hereda completamente los permisos de su rol.</p>
+
+          <p><strong>¿Puede un usuario sin rol Admin aprobar órdenes?</strong><br/>
+          Sí. Marcando el permiso <strong>Approve</strong> en el rol del usuario (o en sus permisos individuales) para los sub-módulos <em>Aankoopbonnen</em> o <em>Cost Calculation</em>, ese usuario podrá aprobar y rechazar en esos módulos.</p>
         </div>
       </div>
 

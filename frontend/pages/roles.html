@@ -163,6 +163,7 @@
                 <th class="text-center">Write</th>
                 <th class="text-center">Edit</th>
                 <th class="text-center">Delete</th>
+                <th class="text-center" style="background:#fff3cd;color:#856404;">Approve</th>
                 <th class="text-center" style="min-width:50px;background:#f8f9fa;">All</th>
               </tr>
             </thead>
@@ -516,6 +517,7 @@
   }
 
   const PERM_FIELDS = ['CanAccess','CanRead','CanWrite','CanEdit','CanDelete'];
+  const APPROVE_SUBMODULES = ['AB_AANKOOPBON', 'COST_CALCULATIONS'];
 
   function renderPermsTable() {
     let html = '';
@@ -525,7 +527,7 @@
         <td style="font-weight:700;color:var(--primary-dark);padding:.5rem 1rem;">
           <i class="fas fa-folder me-2"></i>${mod.label}
         </td>
-        <td colspan="5" style="color:var(--primary-dark);padding:.5rem .75rem;font-size:.75rem;">
+        <td colspan="6" style="color:var(--primary-dark);padding:.5rem .75rem;font-size:.75rem;">
           <span class="text-muted">${mod.submodules.length} submodule(s)</span>
         </td>
         <td class="text-center" style="background:#f8f9fa;">
@@ -536,6 +538,7 @@
       mod.submodules.forEach(sub => {
         const p = getPerm(sub.code);
         const allChecked = PERM_FIELDS.every(f => p[f]);
+        const showApprove = APPROVE_SUBMODULES.includes(sub.code);
         html += `<tr>
           <td style="padding-left:2rem;">${sub.label}</td>
           ${PERM_FIELDS.map(f => `
@@ -543,6 +546,12 @@
             <input type="checkbox" class="form-check-input perm-cb" data-sub="${sub.code}" data-field="${f}"
               ${p[f] ? 'checked' : ''} />
           </td>`).join('')}
+          <td class="text-center" style="background:#fff8e1;">
+            ${showApprove
+              ? `<input type="checkbox" class="form-check-input perm-cb" data-sub="${sub.code}" data-field="CanApprove"
+                  ${p['CanApprove'] ? 'checked' : ''} />`
+              : ''}
+          </td>
           <td class="text-center" style="background:#f8f9fa;">
             <input type="checkbox" class="form-check-input all-row-cb" title="Check all"
               data-sub="${sub.code}" ${allChecked ? 'checked' : ''} />

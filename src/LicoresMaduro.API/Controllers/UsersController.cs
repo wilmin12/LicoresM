@@ -220,22 +220,38 @@ public sealed class UsersController : ControllerBase
 
     // ── DELETE /api/users/{id} ─────────────────────────────────────────────────
 
-    /// <summary>Soft-delete a user (sets IsActive = false).</summary>
+    /// <summary>Hard-delete an inactive user. User must be deactivated first.</summary>
     [HttpDelete("{id:int}")]
     [Authorize(Roles = "SuperAdmin")]
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
         try
         {
             await _authService.DeleteUserAsync(id, ct);
-            _logger.LogWarning("User {UserId} soft-deleted by '{Caller}'", id, User.Identity?.Name);
-            return Ok(ApiResponse.Ok("User deleted successfully."));
+            _logger.LogWarning("User {UserId} permanently deleted by '{Caller}'", id, User.Identity?.Name);
+            return Ok(ApiResponse.Ok("User deleted permanently."));
         }
         catch (KeyNotFoundException)
         {
             return NotFound(ApiResponse.Fail($"User {id} not found."));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(ApiResponse.Fail(ex.Message));
+        }
+        catch (Microsoft.EntityFrameworkCore.DbUpdateException ex)
+        {
+            var inner = ex.InnerException?.Message ?? ex.Message;
+            _logger.LogError("Delete user {Id} DbUpdateException: {Msg}", id, inner);
+            return Conflict(ApiResponse.Fail($"Cannot delete user: {inner}"));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError("Delete user {Id} unexpected error: {Msg}", id, ex.Message);
+            return StatusCode(500, ApiResponse.Fail($"Unexpected error: {ex.Message}"));
         }
     }
 }

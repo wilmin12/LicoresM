@@ -1,5 +1,6 @@
 using LicoresMaduro.API.Data;
 using LicoresMaduro.API.Helpers;
+using LicoresMaduro.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -15,9 +16,10 @@ public sealed class CostCalculationsController : ControllerBase
     private readonly ApplicationDbContext _db;
     private readonly DhwDbContext         _dhw;
     private readonly ILogger<CostCalculationsController> _logger;
+    private readonly IPermissionService   _permissions;
 
-    public CostCalculationsController(ApplicationDbContext db, DhwDbContext dhw, ILogger<CostCalculationsController> logger)
-    { _db = db; _dhw = dhw; _logger = logger; }
+    public CostCalculationsController(ApplicationDbContext db, DhwDbContext dhw, ILogger<CostCalculationsController> logger, IPermissionService permissions)
+    { _db = db; _dhw = dhw; _logger = logger; _permissions = permissions; }
 
     // ── List all calculations ─────────────────────────────────────────────────
     [HttpGet]
@@ -332,9 +334,12 @@ public sealed class CostCalculationsController : ControllerBase
         return Ok(ApiResponse.Ok("Calculation confirmed."));
     }
 
-    [HttpPatch("{id:int}/approve"), Authorize(Roles = "SuperAdmin,Admin")]
+    [HttpPatch("{id:int}/approve")]
     public async Task<IActionResult> Approve(int id, CancellationToken ct)
     {
+        if (!await _permissions.HasPermissionAsync(User, "COST_CALCULATIONS", "APPROVE", ct))
+            return Forbid();
+
         var calc = await _db.CcCalcHeaders.Include(x => x.PoHeads).FirstOrDefaultAsync(x => x.CcCalcNumber == id, ct);
         if (calc is null) return NotFound(ApiResponse.Fail($"Calculation {id} not found."));
         if (calc.CcStatus != "CF") return BadRequest(ApiResponse.Fail("Only Confirmed calculations can be approved."));

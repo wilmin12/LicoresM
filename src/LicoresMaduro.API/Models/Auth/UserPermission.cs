@@ -1,12 +1,14 @@
 namespace LicoresMaduro.API.Models.Auth;
 
 /// <summary>
-/// Maps a role to a submodule with granular CRUD permissions (LM_RolePermissions).
+/// Per-user permission override stored in LM_UserPermissions.
+/// When a record exists for a user+submodule it takes precedence
+/// over the role's permission for that submodule.
 /// </summary>
-public sealed class LmRolePermission
+public sealed class LmUserPermission
 {
-    public int  PermissionId { get; set; }
-    public int  RoleId       { get; set; }
+    public int  PermissionId { get; set; }   // UP_Id
+    public int  UserId       { get; set; }
     public int  SubmoduleId  { get; set; }
     public bool CanAccess    { get; set; }
     public bool CanRead      { get; set; }
@@ -16,6 +18,6 @@ public sealed class LmRolePermission
     public bool CanApprove   { get; set; }
 
     // Navigation
-    public LmRole?      Role      { get; set; }
+    public LmUser?      User      { get; set; }
     public LmSubmodule? Submodule { get; set; }
 }
