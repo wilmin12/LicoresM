@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Maintenance Cost Calculation - Licores Maduro</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="../../css/main.css"/>
+  <style>
+    .field-label    { font-weight: 600; font-size: .875rem; color: #343a40; margin-bottom: .25rem; }
+    .field-desc     { font-size: .775rem; color: #6c757d; margin-bottom: .4rem; }
+    .section-divider{ border-top: 1px solid #dee2e6; margin: 1.5rem 0; }
+    .last-saved-bar { font-size: .75rem; color: #aaa; margin-top: .75rem; }
+  </style>
+</head>
+<body>
+<div id="sidebar-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;"></div>
+<div class="app-wrapper">
+  <nav id="sidebar" class="sidebar">
+    <div class="sidebar-header"><img src="../../img/LogoLicores.png" alt="Licores Maduro" class="sidebar-logo-img" id="sidebar-logo-img"/><span class="sidebar-logo-text" id="sidebar-company-name">LICORES MADURO</span></div>
+    <div id="sidebar-nav" class="sidebar-nav"></div>
+    <div class="sidebar-footer"><div class="sidebar-user"><div class="sidebar-avatar" id="sidebar-user-initials">LM</div><div class="sidebar-text"><div id="sidebar-user-name" style="font-weight:600;">–</div></div></div></div>
+  </nav>
+  <div class="main-area">
+    <header class="topbar">
+      <button id="btn-sidebar-toggle" class="btn-sidebar-toggle"><i class="fas fa-bars"></i></button>
+      <span class="topbar-title"><i class="fas fa-sliders me-2 text-wine"></i>Maintenance Cost Calculation</span>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown">
+            <span class="sidebar-avatar" id="topbar-user-initials" style="width:28px;height:28px;font-size:.75rem;">LM</span>
+            <span id="topbar-user-name" class="d-none d-md-inline">–</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+            <li><div class="dropdown-header"><strong id="topbar-user-fullname">User</strong><br/><small class="text-muted" id="topbar-user-role">Role</small></div></li>
+            <li><hr class="dropdown-divider"/></li>
+            <li><a class="dropdown-item text-danger" href="#" id="btn-logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+          </ul>
+        </div>
+      </div>
+    </header>
+    <main class="page-content">
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="../../dashboard.html"><i class="fas fa-home me-1"></i>Home</a></li>
+          <li class="breadcrumb-item active">Maintenance Cost Calculation</li>
+        </ol>
+      </nav>
+      <div class="page-title">Maintenance Cost Calculation</div>
+      <div class="page-subtitle">Configure the email addresses for each Cost Calculation notification type. Separate multiple addresses with a comma.</div>
+
+      <!-- Read-only alert -->
+      <div id="readonly-alert" class="alert alert-warning d-none mt-3">
+        <i class="fas fa-lock me-2"></i>Read-only — Admin or SuperAdmin access required to edit.
+      </div>
+
+      <!-- Main form card -->
+      <div class="card mt-3" style="border-left: 3px solid var(--primary); max-width: 860px;">
+        <div class="card-header d-flex align-items-center gap-2" style="background:transparent; font-weight:700; color:var(--primary); font-size:.85rem; text-transform:uppercase; letter-spacing:.05em;">
+          <i class="fas fa-calculator"></i>
+          Cost Calculation — Email Notifications
+        </div>
+        <div class="card-body" id="form-body">
+          <p class="text-muted small mb-4">
+            <i class="fas fa-info-circle me-1"></i>
+            Each field accepts one or more email addresses separated by a comma.
+          </p>
+
+          <!-- Fields rendered dynamically -->
+
+        </div>
+        <div class="card-footer bg-transparent d-flex align-items-center justify-content-between">
+          <div class="last-saved-bar" id="last-saved-bar">–</div>
+          <div id="save-btn-wrapper">
+            <button class="btn btn-primary" id="btn-save" onclick="saveAll()">
+              <i class="fas fa-save me-2"></i>Save All
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index:9999">
+  <div id="toast" class="toast align-items-center text-white border-0" role="alert">
+    <div class="d-flex">
+      <div class="toast-body" id="toast-msg"></div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../../js/api.js"></script>
+<script src="../../js/auth.js"></script>
+<script src="../../js/sidebar.js"></script>
+<script>
+  const FIELDS = [
+    { key: 'COSTCALC_PURCHASE_DEPT',      label: 'Purchase Department',                      desc: 'General purchase department email notifications.' },
+    { key: 'COSTCALC_APPROVED_SALES',     label: 'Approved by Sales Manager',                desc: 'Sent when a Sales Manager approves a calculation.' },
+    { key: 'COSTCALC_APPROVED_FINANCIAL', label: 'Approved by Financial Manager',            desc: 'Sent when a Financial Manager approves a calculation.' },
+    { key: 'COSTCALC_PRICE_CALC',         label: 'Cost Price Calculations (To: Financials)', desc: 'Notified when a calculation is confirmed and pending financial approval.' },
+    { key: 'COSTCALC_PRICE_CHANGE',       label: 'Cost Price Change (To: Financials)',       desc: 'Sent when a confirmed cost price is changed.' },
+    { key: 'COSTCALC_DOLLAR_RATE',        label: 'Dollar Rate Edit — Calculations (PDF)',    desc: 'Notified when the dollar rate is edited on a calculation.' },
+    { key: 'COSTCALC_DOLLAR_SELLING',     label: 'Dollar Rate Edit — Selling Prices',        desc: 'Notified when the dollar rate affects selling prices (COST_PRICE_CURRENT).' },
+  ];
+
+  let _isAdmin = false;
+  let _rows    = [];
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    if (!Auth.requireAuth()) return;
+    Auth.startExpiryWatcher();
+    Auth.populateUserUI();
+    Sidebar.init();
+    document.getElementById('btn-logout').addEventListener('click', e => { e.preventDefault(); Auth.logout(); });
+
+    const user = Auth.getCurrentUser();
+    _isAdmin = user?.RoleName === 'SuperAdmin' || user?.RoleName === 'Admin';
+
+    if (!_isAdmin) {
+      document.getElementById('readonly-alert').classList.remove('d-none');
+      document.getElementById('save-btn-wrapper').classList.add('d-none');
+    }
+
+    await load();
+  });
+
+  async function load() {
+    try {
+      const res = await API.system.getModuleApprovers();
+      _rows = res?.Data || res || [];
+      renderFields();
+    } catch (err) {
+      showToast(err.message || 'Error loading configuration.', 'danger');
+    }
+  }
+
+  function renderFields() {
+    const body = document.getElementById('form-body');
+    let html = `<p class="text-muted small mb-4"><i class="fas fa-info-circle me-1"></i>Each field accepts one or more email addresses separated by a comma.</p>`;
+
+    FIELDS.forEach((f, idx) => {
+      const row    = _rows.find(r => r.MaeModuleKey === f.key);
+      const emails = row?.MaeEmails ?? '';
+      const divider = idx > 0 ? '<div class="section-divider"></div>' : '';
+
+      html += `
+        ${divider}
+        <div class="mb-1">
+          <div class="field-label">${f.label}</div>
+          <div class="field-desc">${f.desc}</div>
+          <textarea
+            id="field-${f.key}"
+            class="form-control"
+            rows="2"
+            placeholder="correo1@empresa.com, correo2@empresa.com"
+            ${_isAdmin ? '' : 'disabled'}
+          >${emails}</textarea>
+        </div>`;
+    });
+
+    body.innerHTML = html;
+    updateSavedBar();
+  }
+
+  function updateSavedBar() {
+    // Show the most recent save across all keys
+    const dates = _rows
+      .filter(r => FIELDS.some(f => f.key === r.MaeModuleKey) && r.MaeUpdatedAt)
+      .map(r => ({ date: new Date(r.MaeUpdatedAt), by: r.MaeUpdatedBy }));
+
+    const bar = document.getElementById('last-saved-bar');
+    if (dates.length === 0) { bar.textContent = 'Not yet saved'; return; }
+
+    dates.sort((a, b) => b.date - a.date);
+    const latest = dates[0];
+    bar.textContent = `Last saved: ${latest.date.toLocaleDateString()} ${latest.date.toLocaleTimeString()}${latest.by ? ' by ' + latest.by : ''}`;
+  }
+
+  async function saveAll() {
+    // Validate all fields first
+    const emailRx = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    for (const f of FIELDS) {
+      const val = document.getElementById(`field-${f.key}`)?.value?.trim() ?? '';
+      if (val) {
+        const parts   = val.split(',').map(e => e.trim()).filter(Boolean);
+        const invalid = parts.filter(e => !emailRx.test(e));
+        if (invalid.length > 0) {
+          showToast(`"${f.label}" — invalid email(s): ${invalid.join(', ')}`, 'danger');
+          return;
+        }
+      }
+    }
+
+    const btn = document.getElementById('btn-save');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving…';
+
+    try {
+      // Save each key sequentially
+      let lastUpdated = null;
+      for (const f of FIELDS) {
+        const emails = document.getElementById(`field-${f.key}`)?.value?.trim() ?? '';
+        const res    = await API.system.updateModuleApprover(f.key, { Emails: emails });
+        const updated = res?.Data || res;
+
+        // Update local cache
+        const row = _rows.find(r => r.MaeModuleKey === f.key);
+        if (row) {
+          row.MaeEmails    = emails;
+          row.MaeUpdatedAt = updated?.MaeUpdatedAt;
+          row.MaeUpdatedBy = updated?.MaeUpdatedBy;
+        }
+        if (updated?.MaeUpdatedAt) lastUpdated = updated;
+      }
+
+      updateSavedBar();
+      showToast('All settings saved successfully.', 'success');
+    } catch (err) {
+      showToast(err.message || 'Error saving.', 'danger');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-save me-2"></i>Save All';
+    }
+  }
+
+  function showToast(msg, type = 'success') {
+    const el  = document.getElementById('toast');
+    const map = { success: 'bg-success', danger: 'bg-danger', warning: 'bg-warning text-dark' };
+    el.className = `toast align-items-center text-white border-0 ${map[type] || 'bg-secondary'}`;
+    document.getElementById('toast-msg').textContent = msg;
+    new bootstrap.Toast(el, { delay: 4000 }).show();
+  }
+</script>
+</body>
+</html>

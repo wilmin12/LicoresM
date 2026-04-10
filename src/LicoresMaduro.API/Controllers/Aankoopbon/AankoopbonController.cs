@@ -72,6 +72,10 @@ public sealed class AankoopbonController : ControllerBase
 
         var q = _db.AbOrderHeaders.AsNoTracking().Where(h => h.IsActive);
 
+        // Non-admin users only see their own aankoopbonnen
+        if (!IsAdminOrSuperAdmin() && !await _permissions.HasPermissionAsync(User, "AB_AANKOOPBON", "CanApprove", ct))
+            q = q.Where(h => h.AohCreatedBy == myId);
+
         if (!string.IsNullOrWhiteSpace(status))
             q = q.Where(h => h.AohStatus == status.ToUpper());
 
@@ -181,12 +185,14 @@ public sealed class AankoopbonController : ControllerBase
             {
                 _db.AbOrderDetails.Add(new AbOrderDetail
                 {
-                    AodHeaderId    = header.AohId,
-                    AodLineNr      = lineNr++,
-                    AodProductCode = d.AodProductCode,
-                    AodProductDesc = d.AodProductDesc,
-                    AodQuantity    = d.AodQuantity,
-                    AodUnit        = d.AodUnit
+                    AodHeaderId       = header.AohId,
+                    AodLineNr         = lineNr++,
+                    AodProductCode    = d.AodProductCode,
+                    AodProductDesc    = d.AodProductDesc,
+                    AodAdditionalDesc = d.AodAdditionalDesc,
+                    AodCostType       = d.AodCostType,
+                    AodQuantity       = d.AodQuantity,
+                    AodUnit           = d.AodUnit
                 });
             }
             await _db.SaveChangesAsync(ct);
@@ -238,12 +244,14 @@ public sealed class AankoopbonController : ControllerBase
         {
             _db.AbOrderDetails.Add(new AbOrderDetail
             {
-                AodHeaderId    = header.AohId,
-                AodLineNr      = lineNr++,
-                AodProductCode = d.AodProductCode,
-                AodProductDesc = d.AodProductDesc,
-                AodQuantity    = d.AodQuantity,
-                AodUnit        = d.AodUnit
+                AodHeaderId       = header.AohId,
+                AodLineNr         = lineNr++,
+                AodProductCode    = d.AodProductCode,
+                AodProductDesc    = d.AodProductDesc,
+                AodAdditionalDesc = d.AodAdditionalDesc,
+                AodCostType       = d.AodCostType,
+                AodQuantity       = d.AodQuantity,
+                AodUnit           = d.AodUnit
             });
         }
 
@@ -588,39 +596,90 @@ public sealed class AankoopbonController : ControllerBase
             }
             else if (type == "approved")
             {
-                // Both the creator (logged-in user) and the requestor (catalog) receive the approval
                 var creatorEmail   = await GetCreatorEmailAsync(header, ct);
                 var requestorEmail = await GetRequestorEmailAsync(header.AohRequestor, ct);
 
                 _log.LogInformation("Aankoopbon {BonNr} approval emails — creator: {C}, requestor: {R}",
                     header.AohBonNr, creatorEmail ?? "none", requestorEmail ?? "none");
 
-                if (!string.IsNullOrEmpty(creatorEmail))
-                    recipients.Add(creatorEmail);
+                if (header.Details is null or { Count: 0 })
+                    await _db.Entry(header).Collection(h => h.Details).LoadAsync(ct);
 
-                // Add requestor only if different from creator (avoid duplicate)
-                if (!string.IsNullOrEmpty(requestorEmail) &&
-                    !string.Equals(requestorEmail, creatorEmail, StringComparison.OrdinalIgnoreCase))
-                    recipients.Add(requestorEmail);
+                var logoPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "LogoLicores.png");
+                var safeName = header.AohBonNr.Replace('/', '-');
 
                 subject = $"[Aankoopbon] {header.AohBonNr} — Approved ✔";
-                body    = $@"<p>The aankoopbon below has been <b style='color:green;'>approved</b> by {header.AohApprovedByName}.</p>
+
+                // ── Send "Original" to requestor ──────────────────────────────
+                if (!string.IsNullOrEmpty(requestorEmail))
+                {
+                    try
+                    {
+                        var originalPdf = AankoopbonPdfBuilder.Generate(header, logoPath, "Original");
+                        var bbOrig = new BodyBuilder
+                        {
+                            HtmlBody = $@"<p>The aankoopbon below has been <b style='color:green;'>approved</b> by {header.AohApprovedByName}.</p>
 {orderTable}
-<p>The purchase order document is attached to this email.</p>";
+<p>Your copy (Original) is attached.</p>"
+                        };
+                        bbOrig.Attachments.Add($"Aankoopbon_{safeName}_Original.pdf", originalPdf,
+                            new MimeKit.ContentType("application", "pdf"));
 
-                // Generate aankoopbon PDF
-                try
-                {
-                    if (header.Details is null or { Count: 0 })
-                        await _db.Entry(header).Collection(h => h.Details).LoadAsync(ct);
+                        using var clientOrig = new SmtpClient();
+                        var sslOpt = cfg.SmtpPort == 465 ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTls;
+                        await clientOrig.ConnectAsync(cfg.SmtpHost, cfg.SmtpPort, sslOpt, ct);
+                        await clientOrig.AuthenticateAsync(cfg.SenderEmail, cfg.SenderPassword, ct);
+                        var msgOrig = new MimeMessage();
+                        msgOrig.From.Add(new MailboxAddress(cfg.SenderName, cfg.SenderEmail));
+                        msgOrig.To.Add(MailboxAddress.Parse(requestorEmail));
+                        msgOrig.Subject = subject;
+                        msgOrig.Body    = bbOrig.ToMessageBody();
+                        await clientOrig.SendAsync(msgOrig, ct);
+                        await clientOrig.DisconnectAsync(true, ct);
+                        _log.LogInformation("Aankoopbon {BonNr} — Original sent to requestor {To}", header.AohBonNr, requestorEmail);
+                    }
+                    catch (Exception ex)
+                    {
+                        _log.LogWarning(ex, "Could not send Original PDF for {BonNr}", header.AohBonNr);
+                    }
+                }
 
-                    var logoPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Assets", "LogoLicores.png");
-                    pdfAttachment = AankoopbonPdfBuilder.Generate(header, logoPath);
-                }
-                catch (Exception ex)
+                // ── Send "Office Copy" to creator ─────────────────────────────
+                if (!string.IsNullOrEmpty(creatorEmail))
                 {
-                    _log.LogWarning(ex, "Could not generate aankoopbon PDF for {BonNr}", header.AohBonNr);
+                    try
+                    {
+                        var officePdf = AankoopbonPdfBuilder.Generate(header, logoPath, "Office Copy");
+                        var bbOffice = new BodyBuilder
+                        {
+                            HtmlBody = $@"<p>The aankoopbon below has been <b style='color:green;'>approved</b> by {header.AohApprovedByName}.</p>
+{orderTable}
+<p>Your copy (Office Copy) is attached.</p>"
+                        };
+                        bbOffice.Attachments.Add($"Aankoopbon_{safeName}_OfficeCopy.pdf", officePdf,
+                            new MimeKit.ContentType("application", "pdf"));
+
+                        using var clientOffice = new SmtpClient();
+                        var sslOpt = cfg.SmtpPort == 465 ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTls;
+                        await clientOffice.ConnectAsync(cfg.SmtpHost, cfg.SmtpPort, sslOpt, ct);
+                        await clientOffice.AuthenticateAsync(cfg.SenderEmail, cfg.SenderPassword, ct);
+                        var msgOffice = new MimeMessage();
+                        msgOffice.From.Add(new MailboxAddress(cfg.SenderName, cfg.SenderEmail));
+                        msgOffice.To.Add(MailboxAddress.Parse(creatorEmail));
+                        msgOffice.Subject = subject;
+                        msgOffice.Body    = bbOffice.ToMessageBody();
+                        await clientOffice.SendAsync(msgOffice, ct);
+                        await clientOffice.DisconnectAsync(true, ct);
+                        _log.LogInformation("Aankoopbon {BonNr} — Office Copy sent to creator {To}", header.AohBonNr, creatorEmail);
+                    }
+                    catch (Exception ex)
+                    {
+                        _log.LogWarning(ex, "Could not send Office Copy PDF for {BonNr}", header.AohBonNr);
+                    }
                 }
+
+                // Skip the generic send loop below — emails already sent above
+                return;
             }
             else // rejected
             {
@@ -689,10 +748,12 @@ public sealed class AankoopbonController : ControllerBase
 // ── DTOs ──────────────────────────────────────────────────────────────────────
 public sealed class AankoopbonDetailDto
 {
-    public string?  AodProductCode { get; set; }
-    public string   AodProductDesc { get; set; } = string.Empty;
-    public decimal  AodQuantity    { get; set; } = 1;
-    public string?  AodUnit        { get; set; }
+    public string?  AodProductCode    { get; set; }
+    public string   AodProductDesc    { get; set; } = string.Empty;
+    public string?  AodAdditionalDesc { get; set; }
+    public string?  AodCostType       { get; set; }
+    public decimal  AodQuantity       { get; set; } = 1;
+    public string?  AodUnit           { get; set; }
 }
 
 public sealed class AankoopbonCreateDto

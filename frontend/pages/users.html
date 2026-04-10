@@ -519,42 +519,56 @@
 
   // MODULES_PERMS: same structure used in roles.html — defined inline here
   const UP_MODULES = [
-    { label:'Aankoopbon',  submodules:[
-        { code:'AB_AANKOOPBON',      label:'Purchase Orders' },
-        { code:'AB_VENDORS',         label:'Vendors' },
-        { code:'AB_PRODUCTS',        label:'Products' },
-        { code:'AB_CATALOGS',        label:'Catalogs' },
+    { label:'Aankoopbon', submodules:[
+        { code:'AB_AANKOOPBON',        label:'Purchase Orders' },
+        { code:'AB_VENDORS',           label:'Vendors' },
+        { code:'AB_PRODUCTS_MGT',      label:'Products' },
+        { code:'AB_DEPARTMENTS',       label:'Departments' },
+        { code:'AB_EENHEDEN',          label:'Eenheden (Units)' },
+        { code:'AB_RECEIVERS',         label:'Receivers' },
+        { code:'AB_REQUESTORS',        label:'Requestors' },
+        { code:'AB_REQUESTORS_VENDOR', label:'Requestors / Vendor' },
+        { code:'AB_COST_TYPE',         label:'Cost Types' },
+        { code:'AB_VEHICLE_TYPE',      label:'Vehicle Types' },
+        { code:'AB_VEHICLES',          label:'Vehicles' },
     ]},
-    { label:'Freight',     submodules:[
-        { code:'FREIGHT_CURRENCIES', label:'Currencies' },
-        { code:'FREIGHT_PORTS',      label:'Ports of Loading' },
-        { code:'FREIGHT_SLINES',     label:'Shipping Lines' },
-        { code:'FREIGHT_AGENTS',     label:'Shipping Agents' },
-        { code:'FREIGHT_ROUTES',     label:'Routes' },
-        { code:'FREIGHT_CONTAINERS', label:'Container Specs' },
-        { code:'FREIGHT_FORWARDERS', label:'Forwarders' },
-        { code:'FREIGHT_QUOTES',     label:'Quotes' },
-        { code:'FREIGHT_REGIONS',    label:'Regions' },
-        { code:'FREIGHT_LOADTYPES',  label:'Load Types' },
-        { code:'FREIGHT_CHARGETYPES',label:'Charge Types' },
-        { code:'FREIGHT_COUNTRIES',  label:'Countries' },
-        { code:'FREIGHT_SUPPLIERS',  label:'Suppliers' },
+    { label:'Freight', submodules:[
+        { code:'FF_CURRENCIES',            label:'Currencies' },
+        { code:'FF_COUNTRIES',             label:'Countries' },
+        { code:'FF_SUPPLIERS',             label:'Suppliers' },
+        { code:'FF_LOADTYPES',             label:'Load Types' },
+        { code:'FF_PORT_OF_LOADING',       label:'Ports of Loading' },
+        { code:'FF_SHIPPING_LINES',        label:'Shipping Lines' },
+        { code:'FF_SHIPPING_AGENT',        label:'Shipping Agents' },
+        { code:'FF_ROUTES',                label:'Routes' },
+        { code:'FF_CONTAINER_SPECS',       label:'Container Specs' },
+        { code:'FF_CONTAINER_TYPES',       label:'Container Types' },
+        { code:'FF_ROUTES_BY_SA',          label:'Routes by Shipping Agent' },
+        { code:'FF_REGIONS',               label:'Regions' },
+        { code:'FF_OCEAN_FREIGHT_CHARGE',  label:'Ocean Freight Charges' },
+        { code:'FF_INLAND_FREIGHT_CHARGE', label:'Inland Freight Charges' },
+        { code:'FF_LCL_CHARGE',            label:'LCL Charge Types' },
+        { code:'FF_PRICE_TYPE',            label:'Price Types' },
+        { code:'FF_AMOUNT_TYPE',           label:'Amount Types' },
+        { code:'FF_CHARGE_ACTION',         label:'Charge Actions' },
+        { code:'FF_CHARGE_OVER',           label:'Charge Over' },
+        { code:'FF_CHARGE_PER',            label:'Charge Per' },
+        { code:'FF_FORWARDERS',            label:'Freight Forwarders' },
+        { code:'FF_OCEAN_QUOTES',          label:'Ocean Freight Quotes' },
+        { code:'FF_INLAND_QUOTES',         label:'Inland Freight Quotes' },
+        { code:'FF_LCL_QUOTES',            label:'LCL Quotes' },
+        { code:'FF_INLAND_ADD_CHARGES',    label:'Inland Additional Charges' },
+        { code:'FF_QUOTES',                label:'Applied Quotes' },
     ]},
-    { label:'Cost Calc',   submodules:[
-        { code:'COST_CALCULATIONS',  label:'Calculations' },
-        { code:'COST_TARIFF',        label:'Tariff Items' },
-        { code:'COST_GOODS_CLASS',   label:'Goods Classification' },
-        { code:'COST_WEIGHTS',       label:'Item Weights' },
-        { code:'COST_MARGINS',       label:'Allowed Margins' },
-        { code:'COST_INLAND',        label:'Inland Tariffs' },
-    ]},
-    { label:'Platform',    submodules:[
-        { code:'PLATFORM_USERS',     label:'Users' },
-        { code:'PLATFORM_ROLES',     label:'Roles' },
-        { code:'PLATFORM_EMAIL',     label:'Email Config' },
-        { code:'PLATFORM_COMPANY',   label:'Company Settings' },
-        { code:'PLATFORM_SESSIONS',  label:'Sessions' },
-        { code:'PLATFORM_APPROVERS', label:'Module Approvers' },
+    { label:'Cost Calculation', submodules:[
+        { code:'COST_CALCULATIONS',   label:'Calculations' },
+        { code:'COST_NEW_CALC',       label:'New Calculation' },
+        { code:'COST_PO_LOOKUP',      label:'Purchase Orders' },
+        { code:'COST_TARIFF_ITEMS',   label:'Tariff Items (HS)' },
+        { code:'COST_GOODS_CLASS',    label:'Goods Classification' },
+        { code:'COST_ITEM_WEIGHTS',   label:'Item Weights' },
+        { code:'COST_ALLOWED_MARGINS',label:'Allowed Margins' },
+        { code:'COST_INLAND_TARIFFS', label:'Inland Tariffs' },
     ]},
   ];
 
@@ -636,16 +650,26 @@
     });
     document.getElementById('up-tbody').innerHTML = html;
 
-    // Toggle row highlight when override checkbox changes
+    // Toggle row highlight + mark/unmark all permission checkboxes when Override changes
     document.querySelectorAll('.up-override-cb').forEach(cb => {
       cb.addEventListener('change', function() {
-        const row = this.closest('tr');
-        row.style.background = this.checked ? '#fffde7' : '';
+        const row    = this.closest('tr');
+        const check  = this.checked;
+
+        // Mark or unmark all permission checkboxes in this row
+        row.querySelectorAll('.up-perm-cb').forEach(pcb => {
+          pcb.checked = check;
+        });
+
+        // Highlight row
+        row.style.background = check ? '#fffde7' : '';
+
+        // Badge
         const badge = row.querySelector('.badge');
-        if (this.checked && !badge) {
+        if (check && !badge) {
           row.querySelector('td:first-child').insertAdjacentHTML('beforeend',
             '<span class="badge bg-warning text-dark ms-1" style="font-size:.65rem;">override</span>');
-        } else if (!this.checked && badge) {
+        } else if (!check && badge) {
           badge.remove();
         }
       });

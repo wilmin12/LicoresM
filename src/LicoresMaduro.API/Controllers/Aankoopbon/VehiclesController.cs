@@ -1,5 +1,6 @@
 using LicoresMaduro.API.Data;
 using LicoresMaduro.API.Helpers;
+using LicoresMaduro.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -13,10 +14,11 @@ namespace LicoresMaduro.API.Controllers.Aankoopbon;
 public sealed class VehiclesController : ControllerBase
 {
     private readonly ApplicationDbContext          _db;
+    private readonly IPermissionService            _permissions;
     private readonly ILogger<VehiclesController> _logger;
 
-    public VehiclesController(ApplicationDbContext db, ILogger<VehiclesController> logger)
-    { _db = db; _logger = logger; }
+    public VehiclesController(ApplicationDbContext db, IPermissionService permissions, ILogger<VehiclesController> logger)
+    { _db = db; _permissions = permissions; _logger = logger; }
 
     [HttpGet]
     public async Task<IActionResult> GetAll(
@@ -42,9 +44,10 @@ public sealed class VehiclesController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "SuperAdmin,Admin")]
     public async Task<IActionResult> Create([FromBody] VehicleDto dto, CancellationToken ct)
     {
+        if (!await _permissions.HasPermissionAsync(User, "AB_VEHICLES", "WRITE", ct))
+            return Forbid();
         if (!ModelState.IsValid)
             return BadRequest(ApiResponse.Fail(ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage))));
         var entity = new Vehicle { VhLicense = dto.VhLicense, VhType = dto.VhType, VhModel = dto.VhModel, IsActive = true, CreatedAt = DateTime.UtcNow };
@@ -55,9 +58,10 @@ public sealed class VehiclesController : ControllerBase
     }
 
     [HttpPut("{id:int}")]
-    [Authorize(Roles = "SuperAdmin,Admin")]
     public async Task<IActionResult> Update(int id, [FromBody] VehicleDto dto, CancellationToken ct)
     {
+        if (!await _permissions.HasPermissionAsync(User, "AB_VEHICLES", "EDIT", ct))
+            return Forbid();
         if (!ModelState.IsValid)
             return BadRequest(ApiResponse.Fail(ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage))));
         var entity = await _db.Vehicles.FindAsync([id], ct);
@@ -68,9 +72,10 @@ public sealed class VehiclesController : ControllerBase
     }
 
     [HttpPatch("{id:int}/toggle")]
-    [Authorize(Roles = "SuperAdmin,Admin")]
     public async Task<IActionResult> ToggleStatus(int id, CancellationToken ct)
     {
+        if (!await _permissions.HasPermissionAsync(User, "AB_VEHICLES", "EDIT", ct))
+            return Forbid();
         var entity = await _db.Vehicles.FindAsync([id], ct);
         if (entity is null) return NotFound(ApiResponse.Fail($"Vehicle {id} not found."));
         entity.IsActive = !entity.IsActive; await _db.SaveChangesAsync(ct);
@@ -78,9 +83,10 @@ public sealed class VehiclesController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
-    [Authorize(Roles = "SuperAdmin,Admin")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
+        if (!await _permissions.HasPermissionAsync(User, "AB_VEHICLES", "DELETE", ct))
+            return Forbid();
         var entity = await _db.Vehicles.FindAsync([id], ct);
         if (entity is null) return NotFound(ApiResponse.Fail($"Vehicle {id} not found."));
         entity.IsActive = false; await _db.SaveChangesAsync(ct);

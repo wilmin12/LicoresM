@@ -1,5 +1,6 @@
 using LicoresMaduro.API.Data;
 using LicoresMaduro.API.Helpers;
+using LicoresMaduro.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -13,10 +14,11 @@ namespace LicoresMaduro.API.Controllers.Aankoopbon;
 public sealed class EenhedenController : ControllerBase
 {
     private readonly ApplicationDbContext         _db;
+    private readonly IPermissionService           _permissions;
     private readonly ILogger<EenhedenController> _logger;
 
-    public EenhedenController(ApplicationDbContext db, ILogger<EenhedenController> logger)
-    { _db = db; _logger = logger; }
+    public EenhedenController(ApplicationDbContext db, IPermissionService permissions, ILogger<EenhedenController> logger)
+    { _db = db; _permissions = permissions; _logger = logger; }
 
     [HttpGet]
     public async Task<IActionResult> GetAll(
@@ -40,9 +42,10 @@ public sealed class EenhedenController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "SuperAdmin,Admin")]
     public async Task<IActionResult> Create([FromBody] EenheidDto dto, CancellationToken ct)
     {
+        if (!await _permissions.HasPermissionAsync(User, "AB_EENHEDEN", "WRITE", ct))
+            return Forbid();
         if (!ModelState.IsValid)
             return BadRequest(ApiResponse.Fail(ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage))));
         var entity = new Eenheid { UnitCode = dto.UnitCode, Omschrijving = dto.Omschrijving, OmrekenFaktor = dto.OmrekenFaktor, IsActive = true, CreatedAt = DateTime.UtcNow };
@@ -53,9 +56,10 @@ public sealed class EenhedenController : ControllerBase
     }
 
     [HttpPut("{id:int}")]
-    [Authorize(Roles = "SuperAdmin,Admin")]
     public async Task<IActionResult> Update(int id, [FromBody] EenheidDto dto, CancellationToken ct)
     {
+        if (!await _permissions.HasPermissionAsync(User, "AB_EENHEDEN", "EDIT", ct))
+            return Forbid();
         if (!ModelState.IsValid)
             return BadRequest(ApiResponse.Fail(ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage))));
         var entity = await _db.Eenheden.FindAsync([id], ct);
@@ -66,9 +70,10 @@ public sealed class EenhedenController : ControllerBase
     }
 
     [HttpPatch("{id:int}/toggle")]
-    [Authorize(Roles = "SuperAdmin,Admin")]
     public async Task<IActionResult> ToggleStatus(int id, CancellationToken ct)
     {
+        if (!await _permissions.HasPermissionAsync(User, "AB_EENHEDEN", "EDIT", ct))
+            return Forbid();
         var entity = await _db.Eenheden.FindAsync([id], ct);
         if (entity is null) return NotFound(ApiResponse.Fail($"Eenheid {id} not found."));
         entity.IsActive = !entity.IsActive; await _db.SaveChangesAsync(ct);
@@ -76,9 +81,10 @@ public sealed class EenhedenController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
-    [Authorize(Roles = "SuperAdmin,Admin")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
+        if (!await _permissions.HasPermissionAsync(User, "AB_EENHEDEN", "DELETE", ct))
+            return Forbid();
         var entity = await _db.Eenheden.FindAsync([id], ct);
         if (entity is null) return NotFound(ApiResponse.Fail($"Eenheid {id} not found."));
         entity.IsActive = false; await _db.SaveChangesAsync(ct);

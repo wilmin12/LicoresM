@@ -14,7 +14,8 @@ public static class AankoopbonPdfBuilder
 
     /// <param name="h">Order header (Details must be loaded).</param>
     /// <param name="logoPath">Absolute path to the company logo image (optional).</param>
-    public static byte[] Generate(AbOrderHeader h, string? logoPath = null)
+    /// <param name="copyLabel">Optional copy label rendered top-right, e.g. "Original" or "Office Copy".</param>
+    public static byte[] Generate(AbOrderHeader h, string? logoPath = null, string? copyLabel = null)
     {
         QuestPDF.Settings.License = LicenseType.Community;
 
@@ -30,7 +31,7 @@ public static class AankoopbonPdfBuilder
                 page.Margin(1.5f, Unit.Centimetre);
                 page.DefaultTextStyle(t => t.FontSize(9).FontFamily(Fonts.Arial));
 
-                page.Header().Element(c => Header(c, logoBytes));
+                page.Header().Element(c => Header(c, logoBytes, copyLabel));
                 page.Content().PaddingTop(10).Element(c => Content(c, h));
                 page.Footer().AlignCenter().Text(x =>
                 {
@@ -44,7 +45,7 @@ public static class AankoopbonPdfBuilder
     }
 
     // ── Page header ───────────────────────────────────────────────────────────
-    private static void Header(IContainer c, byte[]? logoBytes)
+    private static void Header(IContainer c, byte[]? logoBytes, string? copyLabel)
     {
         c.Column(col =>
         {
@@ -69,9 +70,23 @@ public static class AankoopbonPdfBuilder
                     });
                 });
 
-                // Right: document type + status
+                // Right: copy label + document type + status
                 row.ConstantItem(130).AlignRight().AlignMiddle().Column(inner =>
                 {
+                    if (!string.IsNullOrWhiteSpace(copyLabel))
+                    {
+                        var labelColor = copyLabel.Equals("Original", StringComparison.OrdinalIgnoreCase)
+                            ? "#1e40af"   // blue for Original
+                            : WineColor;  // wine/red for Office Copy
+
+                        inner.Item().AlignRight()
+                            .Background(labelColor)
+                            .Padding(3).PaddingHorizontal(8)
+                            .Text(copyLabel.ToUpper())
+                            .Bold().FontSize(8).FontColor(Colors.White);
+                        inner.Item().Height(4); // spacer
+                    }
+
                     inner.Item().Text("AANKOOPBON").Bold().FontSize(13).FontColor(WineColor);
                     inner.Item().Text(t =>
                     {

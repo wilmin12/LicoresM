@@ -152,14 +152,14 @@ const Sidebar = (() => {
       children: [
         { code: 'AB_AANKOOPBON',        label: 'Aankoopbonnen',       href: 'pages/aankoopbon/orders.html' },
         { code: 'AB_VENDORS',           label: 'Vendors',             href: 'pages/aankoopbon/vendors.html' },
-        { code: 'AB_DEPARTMENTS',       label: 'Departments',         href: 'pages/aankoopbon/catalogs.html' },
-        { code: 'AB_EENHEDEN',          label: 'Eenheden (Units)',    href: 'pages/aankoopbon/catalogs.html' },
-        { code: 'AB_RECEIVERS',         label: 'Receivers',           href: 'pages/aankoopbon/catalogs.html' },
-        { code: 'AB_REQUESTORS',        label: 'Requestors',          href: 'pages/aankoopbon/catalogs.html' },
-        { code: 'AB_REQUESTORS_VENDOR', label: 'Requestors / Vendor', href: 'pages/aankoopbon/catalogs.html' },
-        { code: 'AB_COST_TYPE',         label: 'Cost Types',          href: 'pages/aankoopbon/catalogs.html' },
-        { code: 'AB_VEHICLE_TYPE',      label: 'Vehicle Types',       href: 'pages/aankoopbon/catalogs.html' },
-        { code: 'AB_VEHICLES',          label: 'Vehicles',            href: 'pages/aankoopbon/catalogs.html' },
+        { code: 'AB_DEPARTMENTS',       label: 'Departments',         href: 'pages/aankoopbon/catalogs.html#departments' },
+        { code: 'AB_EENHEDEN',          label: 'Eenheden (Units)',    href: 'pages/aankoopbon/catalogs.html#eenheden' },
+        { code: 'AB_RECEIVERS',         label: 'Receivers',           href: 'pages/aankoopbon/catalogs.html#receivers' },
+        { code: 'AB_REQUESTORS',        label: 'Requestors',          href: 'pages/aankoopbon/catalogs.html#requestors' },
+        { code: 'AB_REQUESTORS_VENDOR', label: 'Requestors / Vendor', href: 'pages/aankoopbon/catalogs.html#requestors-vendor' },
+        { code: 'AB_COST_TYPE',         label: 'Cost Types',          href: 'pages/aankoopbon/catalogs.html#cost-types' },
+        { code: 'AB_VEHICLE_TYPE',      label: 'Vehicle Types',       href: 'pages/aankoopbon/catalogs.html#vehicle-types' },
+        { code: 'AB_VEHICLES',          label: 'Vehicles',            href: 'pages/aankoopbon/catalogs.html#vehicles' },
         { code: 'AB_PRODUCTS_MGT',      label: 'AB Products',         href: 'pages/aankoopbon/products.html' },
       ]
     }
@@ -180,8 +180,9 @@ const Sidebar = (() => {
 
   // ── Admin menu items (always shown to SuperAdmin/Admin) ─────────────────────
   const ADMIN_ITEMS = [
-    { code: 'SETTINGS_COMPANY',    label: 'Company Settings', href: 'pages/settings/company.html',   icon: 'fa-building' },
-    { code: 'SETTINGS_APPROVERS', label: 'Module Approvers', href: 'pages/settings/approvers.html', icon: 'fa-envelope-circle-check' },
+    { code: 'SETTINGS_COMPANY',         label: 'Company Settings',              href: 'pages/settings/company.html',               icon: 'fa-building' },
+    { code: 'SETTINGS_APPROVERS',       label: 'Module Approvers',              href: 'pages/settings/approvers.html',             icon: 'fa-envelope-circle-check' },
+    { code: 'SETTINGS_MAINT_COSTCALC',  label: 'Maintenance Cost Calculation',  href: 'pages/settings/maintenance-costcalc.html',  icon: 'fa-sliders' },
     { label: 'Users',           href: 'pages/users.html',  icon: 'fa-users' },
     { label: 'Roles',           href: 'pages/roles.html',  icon: 'fa-user-shield' },
     { label: 'Email Config',    href: 'pages/email-config.html', icon: 'fa-envelope-open-text', superAdminOnly: true },

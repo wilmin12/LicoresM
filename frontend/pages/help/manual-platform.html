@@ -87,6 +87,7 @@
           <a href="#sec3">3. Company Settings</a>
           <a href="#sec4">4. Email Configuration</a>
           <a href="#sec5">5. Module Approvers</a>
+          <a href="#sec5b">5b. Maintenance Cost Calculation</a>
           <a href="#sec6">6. Gestión de Usuarios</a>
           <a href="#sec7">7. Gestión de Roles</a>
           <a href="#sec8">8. Sesiones Activas</a>
@@ -123,7 +124,13 @@
             <div class="col-md-6">
               <div class="feature-card">
                 <h6><i class="fas fa-envelope-circle-check me-2"></i>Module Approvers</h6>
-                <p class="mb-0 text-muted" style="font-size:.88rem;">Correos de los aprobadores de cada módulo (Aankoopbon, Cost Calc, Activity Request).</p>
+                <p class="mb-0 text-muted" style="font-size:.88rem;">Correos de los aprobadores de Aankoopbon y Activity Request.</p>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="feature-card">
+                <h6><i class="fas fa-sliders me-2"></i>Maintenance Cost Calculation</h6>
+                <p class="mb-0 text-muted" style="font-size:.88rem;">Configuración de los 7 tipos de notificación por correo del módulo Cost Calculation.</p>
               </div>
             </div>
             <div class="col-md-6">
@@ -217,7 +224,7 @@
       <div id="sec5" class="card shadow-sm mb-4">
         <div class="card-body p-4">
           <div class="section-title"><span data-i18n="Module Approvers">Module Approvers</span></div>
-          <p>Define los correos electrónicos de las personas que reciben las notificaciones de aprobación para cada módulo del sistema.</p>
+          <p>Define los correos electrónicos de las personas que reciben las notificaciones de aprobación para <strong>Aankoopbonnen</strong> y <strong>Activity Request</strong>.</p>
           <ol class="ps-3">
             <li class="mb-2">Ir a <strong>Administration → Module Approvers</strong>.</li>
             <li class="mb-2">Para cada módulo, ingresar los correos separados por <strong>coma (,)</strong>.</li>
@@ -227,13 +234,42 @@
             <thead><tr><th>Módulo</th><th>Cuándo se notifica</th></tr></thead>
             <tbody>
               <tr><td><strong>Aankoopbonnen</strong></td><td>Cuando una orden de compra es enviada a aprobación (estado PENDING).</td></tr>
-              <tr><td><strong>Cost Calculation</strong></td><td>Cuando una calculación es confirmada (estado CF) y requiere aprobación.</td></tr>
               <tr><td><strong>Activity Request</strong></td><td>Cuando una solicitud de actividad es enviada para revisión.</td></tr>
             </tbody>
           </table>
           <div class="info-box mt-2">
             Puedes ingresar múltiples correos: <code>gerencia@empresa.com, finanzas@empresa.com</code><br/>
-            El sistema validará el formato de cada dirección antes de guardar.
+            El sistema validará el formato de cada dirección antes de guardar.<br/>
+            Para las notificaciones de <strong>Cost Calculation</strong>, usa <strong>Administration → Maintenance Cost Calculation</strong>.
+          </div>
+        </div>
+      </div>
+
+      <!-- 5b -->
+      <div id="sec5b" class="card shadow-sm mb-4">
+        <div class="card-body p-4">
+          <div class="section-title"><i class="fas fa-sliders me-2"></i>Maintenance Cost Calculation</div>
+          <p>Configura los correos electrónicos para cada tipo de notificación del módulo <strong>Cost Calculation</strong>. A diferencia de Module Approvers, aquí cada tipo de evento tiene su propia lista de destinatarios.</p>
+          <ol class="ps-3">
+            <li class="mb-2">Ir a <strong>Administration → Maintenance Cost Calculation</strong>.</li>
+            <li class="mb-2">Ingresar los correos en cada campo según el tipo de notificación. Separar múltiples correos con <strong>coma (,)</strong>.</li>
+            <li class="mb-2">Hacer clic en <span class="badge bg-primary"><i class="fas fa-save me-1"></i>Save All</span> al pie del formulario para guardar todos los campos a la vez.</li>
+          </ol>
+          <table class="table table-bordered field-table mt-3">
+            <thead><tr><th>Campo</th><th>Cuándo se envía el correo</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Purchase Department</strong></td><td>Notificaciones generales al departamento de compras.</td></tr>
+              <tr><td><strong>Approved by Sales Manager</strong></td><td>Se envía cuando un Sales Manager aprueba una calculación.</td></tr>
+              <tr><td><strong>Approved by Financial Manager</strong></td><td>Se envía cuando un Financial Manager aprueba una calculación (estado AP).</td></tr>
+              <tr><td><strong>Cost Price Calculations (To: Financials)</strong></td><td>Notifica a finanzas cuando una calculación es confirmada (estado CF) y está pendiente de aprobación.</td></tr>
+              <tr><td><strong>Cost Price Change (To: Financials)</strong></td><td>Se envía cuando un precio de costo confirmado es modificado.</td></tr>
+              <tr><td><strong>Dollar Rate Edit — Calculations (PDF)</strong></td><td>Notifica cuando se edita la tasa de dólar en una calculación.</td></tr>
+              <tr><td><strong>Dollar Rate Edit — Selling Prices</strong></td><td>Notifica cuando el cambio de tasa afecta los precios de venta (COST_PRICE_CURRENT).</td></tr>
+            </tbody>
+          </table>
+          <div class="info-box mt-2">
+            Si un campo se deja vacío, simplemente no se enviará correo para ese evento.<br/>
+            El botón <strong>Save All</strong> valida el formato de todos los campos antes de guardar. Si algún correo tiene formato inválido, se mostrará un error indicando cuál campo tiene el problema.
           </div>
         </div>
       </div>
@@ -480,6 +516,10 @@
 
           <p><strong>¿Puede un usuario sin rol Admin aprobar órdenes?</strong><br/>
           Sí. Marcando el permiso <strong>Approve</strong> en el rol del usuario (o en sus permisos individuales) para los sub-módulos <em>Aankoopbonnen</em> o <em>Cost Calculation</em>, ese usuario podrá aprobar y rechazar en esos módulos.</p>
+
+          <p><strong>¿Dónde configuro los correos de Cost Calculation?</strong><br/>
+          En <strong>Administration → Maintenance Cost Calculation</strong>. Esa página tiene 7 campos de correo, uno por tipo de evento (confirmación, aprobación, cambio de precio, tasa de dólar, etc.). Se guardan todos con un solo botón <strong>Save All</strong>.<br/>
+          <strong>Module Approvers</strong> solo gestiona los correos de Aankoopbon y Activity Request.</p>
         </div>
       </div>
 

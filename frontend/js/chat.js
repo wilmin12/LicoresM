@@ -4,7 +4,7 @@
  * Requires: api.js, auth.js, SignalR client already loaded.
  */
 const ChatWidget = (() => {
-  const BASE_URL = window.API?.BASE_URL || 'https://localhost:54928';
+  const BASE_URL = window.API?.BASE_URL ?? '';
 
   let _connection   = null;
   let _myUser       = null;

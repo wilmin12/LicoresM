@@ -1,5 +1,6 @@
 using LicoresMaduro.API.Data;
 using LicoresMaduro.API.Helpers;
+using LicoresMaduro.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -13,10 +14,11 @@ namespace LicoresMaduro.API.Controllers.Aankoopbon;
 public sealed class ReceiversController : ControllerBase
 {
     private readonly ApplicationDbContext          _db;
+    private readonly IPermissionService            _permissions;
     private readonly ILogger<ReceiversController> _logger;
 
-    public ReceiversController(ApplicationDbContext db, ILogger<ReceiversController> logger)
-    { _db = db; _logger = logger; }
+    public ReceiversController(ApplicationDbContext db, IPermissionService permissions, ILogger<ReceiversController> logger)
+    { _db = db; _permissions = permissions; _logger = logger; }
 
     [HttpGet]
     public async Task<IActionResult> GetAll(
@@ -40,9 +42,10 @@ public sealed class ReceiversController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "SuperAdmin,Admin")]
     public async Task<IActionResult> Create([FromBody] ReceiverDto dto, CancellationToken ct)
     {
+        if (!await _permissions.HasPermissionAsync(User, "AB_RECEIVERS", "WRITE", ct))
+            return Forbid();
         if (!ModelState.IsValid)
             return BadRequest(ApiResponse.Fail(ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage))));
         var entity = new Receiver { RecName = dto.RecName, RecIdDoc = dto.RecIdDoc, IsActive = true, CreatedAt = DateTime.UtcNow };
@@ -53,9 +56,10 @@ public sealed class ReceiversController : ControllerBase
     }
 
     [HttpPut("{id:int}")]
-    [Authorize(Roles = "SuperAdmin,Admin")]
     public async Task<IActionResult> Update(int id, [FromBody] ReceiverDto dto, CancellationToken ct)
     {
+        if (!await _permissions.HasPermissionAsync(User, "AB_RECEIVERS", "EDIT", ct))
+            return Forbid();
         if (!ModelState.IsValid)
             return BadRequest(ApiResponse.Fail(ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage))));
         var entity = await _db.Receivers.FindAsync([id], ct);
@@ -66,9 +70,10 @@ public sealed class ReceiversController : ControllerBase
     }
 
     [HttpPatch("{id:int}/toggle")]
-    [Authorize(Roles = "SuperAdmin,Admin")]
     public async Task<IActionResult> ToggleStatus(int id, CancellationToken ct)
     {
+        if (!await _permissions.HasPermissionAsync(User, "AB_RECEIVERS", "EDIT", ct))
+            return Forbid();
         var entity = await _db.Receivers.FindAsync([id], ct);
         if (entity is null) return NotFound(ApiResponse.Fail($"Receiver {id} not found."));
         entity.IsActive = !entity.IsActive; await _db.SaveChangesAsync(ct);
@@ -76,9 +81,10 @@ public sealed class ReceiversController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
-    [Authorize(Roles = "SuperAdmin,Admin")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
+        if (!await _permissions.HasPermissionAsync(User, "AB_RECEIVERS", "DELETE", ct))
+            return Forbid();
         var entity = await _db.Receivers.FindAsync([id], ct);
         if (entity is null) return NotFound(ApiResponse.Fail($"Receiver {id} not found."));
         entity.IsActive = false; await _db.SaveChangesAsync(ct);

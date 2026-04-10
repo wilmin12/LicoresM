@@ -243,41 +243,41 @@ public sealed class AuthService : IAuthService
             .Where(p => p.RoleId == roleId && p.Submodule!.IsActive)
             .ToListAsync(ct);
 
-        // Load user-level overrides
+        // Load user-level overrides (with submodule info for orphan overrides)
         var userOverrides = await _db.LmUserPermissions
+            .Include(p => p.Submodule)
+                .ThenInclude(s => s!.Module)
             .Where(p => p.UserId == userId)
-            .ToDictionaryAsync(p => p.SubmoduleId, ct);
+            .ToListAsync(ct);
 
-        return rolePerms.Select(p =>
+        var result          = new List<PermissionDto>();
+        var coveredIds      = new HashSet<int>();
+
+        // 1. Role permissions — apply user override if one exists for the submodule
+        foreach (var p in rolePerms)
         {
-            // If a user-level override exists for this submodule, use it
-            if (userOverrides.TryGetValue(p.SubmoduleId, out var ov))
-                return new PermissionDto(
-                    p.SubmoduleId,
-                    p.Submodule!.SubmoduleName,
-                    p.Submodule.SubmoduleCode,
-                    p.Submodule.Module!.ModuleCode,
-                    ov.CanAccess,
-                    ov.CanRead,
-                    ov.CanWrite,
-                    ov.CanEdit,
-                    ov.CanDelete,
-                    ov.CanApprove
-                );
+            coveredIds.Add(p.SubmoduleId);
+            var ov = userOverrides.FirstOrDefault(o => o.SubmoduleId == p.SubmoduleId);
+            result.Add(ov is not null
+                ? new PermissionDto(p.SubmoduleId, p.Submodule!.SubmoduleName, p.Submodule.SubmoduleCode, p.Submodule.Module!.ModuleCode,
+                    ov.CanAccess, ov.CanRead, ov.CanWrite, ov.CanEdit, ov.CanDelete, ov.CanApprove)
+                : new PermissionDto(p.SubmoduleId, p.Submodule!.SubmoduleName, p.Submodule.SubmoduleCode, p.Submodule.Module!.ModuleCode,
+                    p.CanAccess, p.CanRead, p.CanWrite, p.CanEdit, p.CanDelete, p.CanApprove));
+        }
 
-            return new PermissionDto(
-                p.SubmoduleId,
-                p.Submodule!.SubmoduleName,
-                p.Submodule.SubmoduleCode,
-                p.Submodule.Module!.ModuleCode,
-                p.CanAccess,
-                p.CanRead,
-                p.CanWrite,
-                p.CanEdit,
-                p.CanDelete,
-                p.CanApprove
-            );
-        }).ToList();
+        // 2. User overrides for submodules NOT present in the role (e.g. Generic role with no base perms)
+        foreach (var ov in userOverrides.Where(o => !coveredIds.Contains(o.SubmoduleId) && o.Submodule?.IsActive == true))
+        {
+            var sub = ov.Submodule!;
+            result.Add(new PermissionDto(
+                ov.SubmoduleId,
+                sub.SubmoduleName,
+                sub.SubmoduleCode,
+                sub.Module!.ModuleCode,
+                ov.CanAccess, ov.CanRead, ov.CanWrite, ov.CanEdit, ov.CanDelete, ov.CanApprove));
+        }
+
+        return result;
     }
 
     private (string token, DateTime expiresAt) GenerateToken(LmUser user)

@@ -142,11 +142,11 @@
           </div>
           <div class="flow-step">
             <div class="flow-icon bg-warning text-dark"><i class="fas fa-check"></i></div>
-            <div><strong><span class="badge-status badge-cf">CF — Confirmed</span></strong><br/>El usuario confirmó que los datos son correctos. Se notifica a los aprobadores por correo. Ya no se puede recalcular.</div>
+            <div><strong><span class="badge-status badge-cf">CF — Confirmed</span></strong><br/>El usuario confirmó que los datos son correctos. Se notifica al equipo de Finanzas por correo para revisión y aprobación. Ya no se puede recalcular.</div>
           </div>
           <div class="flow-step">
             <div class="flow-icon bg-success text-white"><i class="fas fa-check-double"></i></div>
-            <div><strong><span class="badge-status badge-ap">AP — Approved</span></strong><br/>Un Admin/SuperAdmin aprobó la calculación. Los precios calculados son oficiales. El creador recibe confirmación por correo. Estado final.</div>
+            <div><strong><span class="badge-status badge-ap">AP — Approved</span></strong><br/>Un Admin/SuperAdmin (o usuario con permiso Approve) aprobó la calculación. Los precios calculados son oficiales. Se notifica al Financial Manager por correo. Estado final.</div>
           </div>
         </div>
       </div>
@@ -210,7 +210,7 @@
           <ol class="ps-3">
             <li class="mb-2">Verificar que todos los costos y el desglose por ítem sean correctos.</li>
             <li class="mb-2">Hacer clic en <span class="badge bg-warning text-dark">Confirm</span>.</li>
-            <li class="mb-2">La calculación pasa a <span class="badge-status badge-cf">CF</span>. Los aprobadores configurados reciben un correo de notificación.</li>
+            <li class="mb-2">La calculación pasa a <span class="badge-status badge-cf">CF</span>. El equipo de Finanzas configurado en <strong>Maintenance Cost Calculation</strong> recibe un correo de notificación para proceder con la aprobación.</li>
           </ol>
           <div class="warn-box"><strong>Atención:</strong> Una vez confirmada, no podrás recalcular. Si necesitas corregir algo, contacta a un Admin para que la vuelva a Draft.</div>
         </div>
@@ -224,7 +224,7 @@
             <li class="mb-2">Localizar la calculación en estado <span class="badge-status badge-cf">CF</span>.</li>
             <li class="mb-2">Revisar el resumen: POs incluidos, costos totales, precios sugeridos.</li>
             <li class="mb-2">Clic en <span class="badge bg-success">Approve</span>.</li>
-            <li class="mb-2">La calculación pasa a <span class="badge-status badge-ap">AP</span>. El creador recibe un correo de confirmación.</li>
+            <li class="mb-2">La calculación pasa a <span class="badge-status badge-ap">AP</span>. Los destinatarios configurados en <strong>Maintenance Cost Calculation → Approved by Financial Manager</strong> reciben un correo de confirmación.</li>
           </ol>
         </div>
       </div>

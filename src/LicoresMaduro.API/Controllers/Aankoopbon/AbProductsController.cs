@@ -136,6 +136,14 @@ public sealed class AbProductsController : ControllerBase
     {
         var entity = await _db.AbProducts.FindAsync([id], ct);
         if (entity is null) return NotFound(ApiResponse.Fail($"AB product {id} not found."));
+
+        // Block delete if product code has ever been used in any aankoopbon line
+        var inUse = await _db.AbOrderDetails
+            .AnyAsync(d => d.AodProductCode == entity.ItemKode, ct);
+        if (inUse)
+            return Conflict(ApiResponse.Fail(
+                $"Cannot delete '{entity.ItemKode}': it is linked to one or more aankoopbonnen. Deactivate it instead."));
+
         entity.IsActive = false; await _db.SaveChangesAsync(ct);
         _logger.LogWarning("AbProduct {Id} soft-deleted", id);
         return Ok(ApiResponse.Ok("AB product deleted."));

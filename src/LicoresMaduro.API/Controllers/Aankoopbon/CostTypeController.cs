@@ -1,5 +1,6 @@
 using LicoresMaduro.API.Data;
 using LicoresMaduro.API.Helpers;
+using LicoresMaduro.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -13,10 +14,11 @@ namespace LicoresMaduro.API.Controllers.Aankoopbon;
 public sealed class CostTypeController : ControllerBase
 {
     private readonly ApplicationDbContext         _db;
+    private readonly IPermissionService           _permissions;
     private readonly ILogger<CostTypeController> _logger;
 
-    public CostTypeController(ApplicationDbContext db, ILogger<CostTypeController> logger)
-    { _db = db; _logger = logger; }
+    public CostTypeController(ApplicationDbContext db, IPermissionService permissions, ILogger<CostTypeController> logger)
+    { _db = db; _permissions = permissions; _logger = logger; }
 
     [HttpGet]
     public async Task<IActionResult> GetAll(
@@ -39,9 +41,10 @@ public sealed class CostTypeController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "SuperAdmin,Admin")]
     public async Task<IActionResult> Create([FromBody] CostTypeDto dto, CancellationToken ct)
     {
+        if (!await _permissions.HasPermissionAsync(User, "AB_COST_TYPE", "WRITE", ct))
+            return Forbid();
         if (!ModelState.IsValid)
             return BadRequest(ApiResponse.Fail(ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage))));
         var entity = new CostType { TcName = dto.TcName, IsActive = true, CreatedAt = DateTime.UtcNow };
@@ -52,9 +55,10 @@ public sealed class CostTypeController : ControllerBase
     }
 
     [HttpPut("{id:int}")]
-    [Authorize(Roles = "SuperAdmin,Admin")]
     public async Task<IActionResult> Update(int id, [FromBody] CostTypeDto dto, CancellationToken ct)
     {
+        if (!await _permissions.HasPermissionAsync(User, "AB_COST_TYPE", "EDIT", ct))
+            return Forbid();
         if (!ModelState.IsValid)
             return BadRequest(ApiResponse.Fail(ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage))));
         var entity = await _db.CostTypes.FindAsync([id], ct);
@@ -64,9 +68,10 @@ public sealed class CostTypeController : ControllerBase
     }
 
     [HttpPatch("{id:int}/toggle")]
-    [Authorize(Roles = "SuperAdmin,Admin")]
     public async Task<IActionResult> ToggleStatus(int id, CancellationToken ct)
     {
+        if (!await _permissions.HasPermissionAsync(User, "AB_COST_TYPE", "EDIT", ct))
+            return Forbid();
         var entity = await _db.CostTypes.FindAsync([id], ct);
         if (entity is null) return NotFound(ApiResponse.Fail($"Cost type {id} not found."));
         entity.IsActive = !entity.IsActive; await _db.SaveChangesAsync(ct);
@@ -74,9 +79,10 @@ public sealed class CostTypeController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
-    [Authorize(Roles = "SuperAdmin,Admin")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
+        if (!await _permissions.HasPermissionAsync(User, "AB_COST_TYPE", "DELETE", ct))
+            return Forbid();
         var entity = await _db.CostTypes.FindAsync([id], ct);
         if (entity is null) return NotFound(ApiResponse.Fail($"Cost type {id} not found."));
         entity.IsActive = false; await _db.SaveChangesAsync(ct);

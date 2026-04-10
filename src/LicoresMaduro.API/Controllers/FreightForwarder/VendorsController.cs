@@ -111,8 +111,9 @@ public sealed class VendorsController : ControllerBase
             VndCurr     = dto.VndCurr,
             VndCrib     = dto.VndCrib,
             VndKvk      = dto.VndKvk,
-            VndCash     = dto.VndCash,
-            IsActive    = true,
+            VndCash            = dto.VndCash,
+            VndQuoteMandatory  = dto.VndQuoteMandatory,
+            IsActive           = true,
             CreatedAt   = DateTime.UtcNow
         };
 
@@ -149,8 +150,9 @@ public sealed class VendorsController : ControllerBase
         vendor.VndCurr     = dto.VndCurr;
         vendor.VndCrib     = dto.VndCrib;
         vendor.VndKvk      = dto.VndKvk;
-        vendor.VndCash     = dto.VndCash;
-        vendor.IsActive    = dto.IsActive;
+        vendor.VndCash           = dto.VndCash;
+        vendor.VndQuoteMandatory = dto.VndQuoteMandatory;
+        vendor.IsActive          = dto.IsActive;
 
         await _db.SaveChangesAsync(ct);
         return Ok(ApiResponse<Vendor>.Ok(vendor, "Vendor updated."));
@@ -199,7 +201,8 @@ public sealed record VendorCreateDto(
     string? VndCurr,
     string? VndCrib,
     string? VndKvk,
-    bool    VndCash
+    bool    VndCash,
+    bool    VndQuoteMandatory
 );
 
 public sealed record VendorUpdateDto(
@@ -212,5 +215,6 @@ public sealed record VendorUpdateDto(
     string? VndCrib,
     string? VndKvk,
     bool    VndCash,
+    bool    VndQuoteMandatory,
     bool    IsActive
 );

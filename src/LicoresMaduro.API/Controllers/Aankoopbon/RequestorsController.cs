@@ -1,5 +1,6 @@
 using LicoresMaduro.API.Data;
 using LicoresMaduro.API.Helpers;
+using LicoresMaduro.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -13,10 +14,11 @@ namespace LicoresMaduro.API.Controllers.Aankoopbon;
 public sealed class RequestorsController : ControllerBase
 {
     private readonly ApplicationDbContext           _db;
+    private readonly IPermissionService             _permissions;
     private readonly ILogger<RequestorsController> _logger;
 
-    public RequestorsController(ApplicationDbContext db, ILogger<RequestorsController> logger)
-    { _db = db; _logger = logger; }
+    public RequestorsController(ApplicationDbContext db, IPermissionService permissions, ILogger<RequestorsController> logger)
+    { _db = db; _permissions = permissions; _logger = logger; }
 
     [HttpGet]
     public async Task<IActionResult> GetAll(
@@ -40,9 +42,10 @@ public sealed class RequestorsController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "SuperAdmin,Admin")]
     public async Task<IActionResult> Create([FromBody] RequestorDto dto, CancellationToken ct)
     {
+        if (!await _permissions.HasPermissionAsync(User, "AB_REQUESTORS", "WRITE", ct))
+            return Forbid();
         if (!ModelState.IsValid)
             return BadRequest(ApiResponse.Fail(ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage))));
         var entity = new Requestor { ReqName = dto.ReqName, ReqEmail = dto.ReqEmail, IsActive = true, CreatedAt = DateTime.UtcNow };
@@ -53,9 +56,10 @@ public sealed class RequestorsController : ControllerBase
     }
 
     [HttpPut("{id:int}")]
-    [Authorize(Roles = "SuperAdmin,Admin")]
     public async Task<IActionResult> Update(int id, [FromBody] RequestorDto dto, CancellationToken ct)
     {
+        if (!await _permissions.HasPermissionAsync(User, "AB_REQUESTORS", "EDIT", ct))
+            return Forbid();
         if (!ModelState.IsValid)
             return BadRequest(ApiResponse.Fail(ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage))));
         var entity = await _db.Requestors.FindAsync([id], ct);
@@ -66,9 +70,10 @@ public sealed class RequestorsController : ControllerBase
     }
 
     [HttpPatch("{id:int}/toggle")]
-    [Authorize(Roles = "SuperAdmin,Admin")]
     public async Task<IActionResult> ToggleStatus(int id, CancellationToken ct)
     {
+        if (!await _permissions.HasPermissionAsync(User, "AB_REQUESTORS", "EDIT", ct))
+            return Forbid();
         var entity = await _db.Requestors.FindAsync([id], ct);
         if (entity is null) return NotFound(ApiResponse.Fail($"Requestor {id} not found."));
         entity.IsActive = !entity.IsActive; await _db.SaveChangesAsync(ct);
@@ -76,9 +81,10 @@ public sealed class RequestorsController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
-    [Authorize(Roles = "SuperAdmin,Admin")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
+        if (!await _permissions.HasPermissionAsync(User, "AB_REQUESTORS", "DELETE", ct))
+            return Forbid();
         var entity = await _db.Requestors.FindAsync([id], ct);
         if (entity is null) return NotFound(ApiResponse.Fail($"Requestor {id} not found."));
         entity.IsActive = false; await _db.SaveChangesAsync(ct);

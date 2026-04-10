@@ -70,7 +70,7 @@
         <div class="card-body p-0">
           <div class="table-responsive">
             <table class="table table-hover mb-0">
-              <thead id="data-thead"><tr><th>#</th><th>Name</th><th>Status</th><th>Actions</th></tr></thead>
+              <thead id="data-thead"><tr><th>No.</th><th>Name</th><th>Status</th><th>Actions</th></tr></thead>
               <tbody id="data-tbody"><tr><td colspan="4" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading...</td></tr></tbody>
             </table>
           </div>
@@ -139,7 +139,7 @@
     vehicles:       {label:'Vehicles',          api:API.catalogs.vehicles,          endpoint:'/api/aankoopbon/vehicles',           type:'vehicle',                       idField:'VhId'},
     requestorsVendor:{label:'Requestors-Vendor',api:API.catalogs.requestorsVendor,  endpoint:'/api/aankoopbon/requestors-vendor',  type:'rv',                            idField:'RvId'},
   };
-  let currentTab=TABS.departments,allItems=[],filtered=[],currentPage=1;const PAGE_SIZE=15;
+  let currentTab=TABS.departments,allItems=[],filtered=[],currentPage=1;const PAGE_SIZE=25;
   let vehicleTypes=[],requestors=[],vendors=[];
 
   document.addEventListener('DOMContentLoaded',async()=>{
@@ -148,10 +148,12 @@
     document.getElementById('btn-new').addEventListener('click',openCreate);
     document.getElementById('btn-save').addEventListener('click',saveItem);
     document.getElementById('search-input').addEventListener('input',filterAndRender);
-    // Check hash
-    const hash=location.hash.replace('#','');
-    if(hash&&TABS[hash]){currentTab=TABS[hash];document.querySelectorAll('#abTabs .nav-link').forEach(a=>a.classList.remove('active'));const found=[...document.querySelectorAll('#abTabs .nav-link')].find(a=>a.getAttribute('onclick')?.includes(hash));if(found)found.classList.add('active');document.getElementById('tab-title').textContent=TABS[hash].label;}
+    // Check hash on load — normalize kebab-case to camelCase TABS keys
+    _applyHash();
     await loadLookups();await loadData();
+
+    // React to hash changes when navigating from sidebar while already on this page
+    window.addEventListener('hashchange', async () => { _applyHash(); await loadData(); });
   });
 
   async function loadLookups(){
@@ -160,10 +162,25 @@
     try{const v=await API.catalogs.vendors.getAll();vendors=v?.Data||v||[];document.getElementById('f-vnd').innerHTML='<option value="">-- Select --</option>'+vendors.map(x=>`<option value="${esc(x.VndCode)}">${esc(x.VndCode||'')} - ${esc(x.VndName||'')}</option>`).join('');}catch(e){}
   }
 
+  const HASH_MAP={'cost-types':'costTypes','requestors-vendor':'requestorsVendor','vehicle-types':'vehicleTypes'};
+  function _applyHash(){
+    const raw=location.hash.replace('#','');
+    const key=HASH_MAP[raw]||raw;
+    if(key&&TABS[key]){
+      currentTab=TABS[key];
+      document.querySelectorAll('#abTabs .nav-link').forEach(a=>a.classList.remove('active'));
+      const found=[...document.querySelectorAll('#abTabs .nav-link')].find(a=>a.getAttribute('onclick')?.includes(`'${key}'`));
+      if(found)found.classList.add('active');
+      document.getElementById('tab-title').textContent=TABS[key].label;
+      document.getElementById('search-input').value='';
+      updateHead();
+    }
+  }
+
   async function switchTab(key,el){event.preventDefault();document.querySelectorAll('#abTabs .nav-link').forEach(a=>a.classList.remove('active'));el.classList.add('active');currentTab=TABS[key];document.getElementById('tab-title').textContent=currentTab.label;document.getElementById('search-input').value='';updateHead();await loadData();}
 
   function updateHead(){
-    const t=currentTab.type;let h='<tr><th>#</th>';
+    const t=currentTab.type;let h='<tr><th>No.</th>';
     if(t==='eenheden')h+='<th>Unit Code</th><th>Description</th><th>Omreken Faktor</th>';
     else if(t==='receiver')h+='<th>Name</th><th>ID Document</th>';
     else if(t==='requestor')h+='<th>Name</th><th>Email</th>';

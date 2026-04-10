@@ -508,7 +508,7 @@ public sealed class TrackingOrdersController : ControllerBase
         // ── 1. Load VIP PO headers with PHSTAT starting with "0" ─────────────
         // PhStat is CHAR(2) so values may be "0 " — StartsWith("0") handles that.
         var vipPos = await _dhw.PoHeaders.AsNoTracking()
-            .Where(x => x.PhStat.StartsWith("0") && x.PhPoNo != null)
+            .Where(x => x.PhStat != null && x.PhStat.StartsWith("0") && x.PhPoNo != null)
             .ToListAsync(ct);
 
         if (!vipPos.Any())

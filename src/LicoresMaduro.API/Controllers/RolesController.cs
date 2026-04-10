@@ -144,6 +144,58 @@ public sealed class RolesController : ControllerBase
         return Ok(ApiResponse.Ok($"Role '{role.RoleName}' deleted successfully."));
     }
 
+    // ── POST /api/roles/{id}/copy ──────────────────────────────────────────────
+
+    /// <summary>Creates a new role as a copy of an existing one (same permissions).</summary>
+    [HttpPost("{id:int}/copy")]
+    [Authorize(Roles = "SuperAdmin")]
+    public async Task<IActionResult> Copy(int id, [FromBody] CreateRoleDto dto, CancellationToken ct)
+    {
+        var source = await _db.LmRoles.FindAsync([id], ct);
+        if (source is null)
+            return NotFound(ApiResponse.Fail($"Role {id} not found."));
+
+        if (await _db.LmRoles.AnyAsync(r => r.RoleName == dto.RoleName, ct))
+            return Conflict(ApiResponse.Fail($"Role '{dto.RoleName}' already exists."));
+
+        // Create the new role
+        var newRole = new LmRole
+        {
+            RoleName    = dto.RoleName,
+            Description = dto.Description,
+            IsActive    = true
+        };
+        _db.LmRoles.Add(newRole);
+        await _db.SaveChangesAsync(ct); // get the new RoleId
+
+        // Copy all permissions from source role
+        var sourcePerms = await _db.LmRolePermissions
+            .Where(p => p.RoleId == id)
+            .ToListAsync(ct);
+
+        foreach (var p in sourcePerms)
+        {
+            _db.LmRolePermissions.Add(new LmRolePermission
+            {
+                RoleId      = newRole.RoleId,
+                SubmoduleId = p.SubmoduleId,
+                CanAccess   = p.CanAccess,
+                CanRead     = p.CanRead,
+                CanWrite    = p.CanWrite,
+                CanEdit     = p.CanEdit,
+                CanDelete   = p.CanDelete,
+                CanApprove  = p.CanApprove
+            });
+        }
+
+        await _db.SaveChangesAsync(ct);
+        _logger.LogInformation("Role {SourceId} copied to '{NewName}' ({NewId}) by {User}",
+            id, newRole.RoleName, newRole.RoleId, User.Identity?.Name);
+
+        return CreatedAtAction(nameof(GetById), new { id = newRole.RoleId },
+            ApiResponse<LmRole>.Ok(newRole, $"Role copied as '{newRole.RoleName}'."));
+    }
+
     // ── GET /api/roles/{id}/permissions ────────────────────────────────────────
 
     [HttpGet("{id:int}/permissions")]

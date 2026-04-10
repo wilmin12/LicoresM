@@ -1,9 +1,12 @@
 using LicoresMaduro.API.Data;
 using LicoresMaduro.API.Helpers;
 using LicoresMaduro.API.Services;
+using MailKit.Net.Smtp;
+using MailKit.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using MimeKit;
 
 namespace LicoresMaduro.API.Controllers.CostCalc;
 
@@ -331,6 +334,7 @@ public sealed class CostCalculationsController : ControllerBase
         calc.CcStatus = "CF";
         foreach (var p in calc.PoHeads) { p.CcphStatus = "CF"; p.CcphConfirmedBy = User.Identity?.Name; }
         await _db.SaveChangesAsync(ct);
+        _ = SendCostCalcEmailAsync(calc, "confirmed", CancellationToken.None);
         return Ok(ApiResponse.Ok("Calculation confirmed."));
     }
 
@@ -346,6 +350,7 @@ public sealed class CostCalculationsController : ControllerBase
         calc.CcStatus = "AP";
         foreach (var p in calc.PoHeads) { p.CcphStatus = "AP"; p.CcphApprovedBy = User.Identity?.Name; }
         await _db.SaveChangesAsync(ct);
+        _ = SendCostCalcEmailAsync(calc, "approved", CancellationToken.None);
         return Ok(ApiResponse.Ok("Calculation approved."));
     }
 
@@ -358,6 +363,79 @@ public sealed class CostCalculationsController : ControllerBase
         _db.CcCalcHeaders.Remove(calc);
         await _db.SaveChangesAsync(ct);
         return Ok(ApiResponse.Ok("Deleted."));
+    }
+
+    // ── Email helper ──────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// type = "confirmed" → notifies COSTCALC_PRICE_CALC recipients that a calculation is pending approval.
+    /// type = "approved"  → notifies COSTCALC_APPROVED_FINANCIAL recipients that a calculation was approved.
+    /// </summary>
+    private async Task SendCostCalcEmailAsync(CcCalcHeader calc, string type, CancellationToken ct)
+    {
+        try
+        {
+            var cfg = await _db.LmEmailConfig.AsNoTracking().FirstOrDefaultAsync(ct);
+            if (cfg is null || !cfg.IsEnabled || string.IsNullOrEmpty(cfg.SmtpHost)) return;
+
+            var moduleKey = type == "confirmed" ? "COSTCALC_PRICE_CALC" : "COSTCALC_APPROVED_FINANCIAL";
+
+            var approverCfg = await _db.ModuleApproverEmails.AsNoTracking()
+                .FirstOrDefaultAsync(m => m.MaeModuleKey == moduleKey, ct);
+            var recipients = approverCfg?.MaeEmails
+                ?.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(r => r.Trim())
+                .Where(r => !string.IsNullOrEmpty(r))
+                .ToList() ?? [];
+
+            if (recipients.Count == 0) return;
+
+            var calcTable = $@"
+<table style='border-collapse:collapse;font-family:sans-serif;font-size:14px;'>
+  <tr><td style='padding:4px 12px 4px 0;font-weight:bold;'>Calculation #:</td><td>{calc.CcCalcNumber}</td></tr>
+  <tr><td style='padding:4px 12px 4px 0;font-weight:bold;'>Date:</td><td>{calc.CcCalcDate:yyyy-MM-dd}</td></tr>
+  <tr><td style='padding:4px 12px 4px 0;font-weight:bold;'>Forwarder:</td><td>{calc.CcForwarderName}</td></tr>
+  <tr><td style='padding:4px 12px 4px 0;font-weight:bold;'>Currency:</td><td>{calc.CcCurrCode} @ {calc.CcCurrRate:N4}</td></tr>
+</table>";
+
+            string subject;
+            string body;
+
+            if (type == "confirmed")
+            {
+                subject = $"[Cost Calculation] #{calc.CcCalcNumber} — Confirmed, Pending Approval";
+                body    = $"<p>Cost Calculation <b>#{calc.CcCalcNumber}</b> has been <b style='color:#0d6efd;'>confirmed</b> and is awaiting financial approval.</p>{calcTable}<p>Please log in to review and approve.</p>";
+            }
+            else
+            {
+                subject = $"[Cost Calculation] #{calc.CcCalcNumber} — Approved ✔";
+                body    = $"<p>Cost Calculation <b>#{calc.CcCalcNumber}</b> has been <b style='color:green;'>approved</b>.</p>{calcTable}";
+            }
+
+            using var client = new SmtpClient();
+            var sslOption = cfg.SmtpPort == 465
+                ? SecureSocketOptions.SslOnConnect
+                : SecureSocketOptions.StartTls;
+            await client.ConnectAsync(cfg.SmtpHost, cfg.SmtpPort, sslOption, ct);
+            await client.AuthenticateAsync(cfg.SenderEmail, cfg.SenderPassword, ct);
+
+            foreach (var to in recipients)
+            {
+                var message = new MimeMessage();
+                message.From.Add(new MailboxAddress(cfg.SenderName, cfg.SenderEmail));
+                message.To.Add(MailboxAddress.Parse(to));
+                message.Subject = subject;
+                message.Body    = new TextPart("html") { Text = body };
+                await client.SendAsync(message, ct);
+                _logger.LogInformation("Cost Calc #{Id} — email '{Type}' sent to {To}", calc.CcCalcNumber, type, to);
+            }
+
+            await client.DisconnectAsync(true, ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to send '{Type}' email for Cost Calculation #{Id}", type, calc.CcCalcNumber);
+        }
     }
 }
 

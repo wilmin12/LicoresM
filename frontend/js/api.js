@@ -142,7 +142,8 @@ const API = (() => {
     toggleStatus:    (id)        => patch(`/api/roles/${id}/toggle-status`, {}),
     delete:          (id)        => del(`/api/roles/${id}`),
     getPermissions:  (id)        => get(`/api/roles/${id}/permissions`),
-    setPermissions:  (id, perms) => put(`/api/roles/${id}/permissions`, perms)
+    setPermissions:  (id, perms) => put(`/api/roles/${id}/permissions`, perms),
+    copy:            (id, dto)   => post(`/api/roles/${id}/copy`, dto)
   };
 
   // ── Generic CRUD helper ─────────────────────────────────────────────────────

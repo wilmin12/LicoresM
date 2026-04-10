@@ -55,9 +55,7 @@
       </div>
 
       <!-- Module cards -->
-      <div class="row g-4 mt-1" id="modules-container">
-        <!-- Cards are rendered dynamically -->
-      </div>
+      <div class="row g-4 mt-1" id="modules-container"></div>
     </main>
   </div>
 </div>
@@ -77,15 +75,14 @@
 <script src="../../js/auth.js"></script>
 <script src="../../js/sidebar.js"></script>
 <script>
-  // Module display names and icons
+  // Only these two modules live in Module Approvers
   const MODULE_META = {
-    AANKOOPBON:      { icon: 'fa-file-invoice',      color: '#6f42c1', label: 'Aankoopbonnen' },
-    COSTCALCULATION: { icon: 'fa-calculator',        color: '#0d6efd', label: 'Cost Calculation' },
-    ACTIVITYREQUEST: { icon: 'fa-calendar-check',    color: '#198754', label: 'Activity Request' },
+    AANKOOPBON:      { icon: 'fa-file-invoice',   color: '#6f42c1', label: 'Aankoopbonnen',    desc: 'Receives the approval request when an aankoopbon is submitted.' },
+    ACTIVITYREQUEST: { icon: 'fa-calendar-check', color: '#198754', label: 'Activity Request', desc: 'Receives notifications for activity request approvals.' },
   };
 
   let _isAdmin = false;
-  let _rows = [];
+  let _rows    = [];
 
   document.addEventListener('DOMContentLoaded', async () => {
     if (!Auth.requireAuth()) return;
@@ -118,8 +115,10 @@
     const container = document.getElementById('modules-container');
     container.innerHTML = '';
 
-    _rows.forEach(row => {
-      const meta   = MODULE_META[row.MaeModuleKey] || { icon: 'fa-envelope', color: '#6c757d', label: row.MaeModuleName };
+    for (const [moduleKey, meta] of Object.entries(MODULE_META)) {
+      const row = _rows.find(r => r.MaeModuleKey === moduleKey);
+      if (!row) continue;
+
       const savedAt = row.MaeUpdatedAt
         ? `Last saved: ${new Date(row.MaeUpdatedAt).toLocaleDateString()} ${new Date(row.MaeUpdatedAt).toLocaleTimeString()}${row.MaeUpdatedBy ? ' by ' + row.MaeUpdatedBy : ''}`
         : 'Not yet configured';
@@ -133,36 +132,34 @@
             ${meta.label}
           </div>
           <div class="card-body">
-            <label class="form-label fw-semibold" for="emails-${row.MaeModuleKey}">
-              Approver Emails
-            </label>
+            <p class="text-muted small mb-2">${meta.desc}</p>
+            <label class="form-label fw-semibold" for="emails-${moduleKey}">Approver Emails</label>
             <textarea
-              id="emails-${row.MaeModuleKey}"
+              id="emails-${moduleKey}"
               class="form-control"
               rows="3"
               placeholder="correo1@empresa.com, correo2@empresa.com"
               ${_isAdmin ? '' : 'disabled'}
             >${row.MaeEmails ?? ''}</textarea>
             <div class="email-hint"><i class="fas fa-info-circle me-1"></i>Separate multiple emails with a comma ( , )</div>
-            <div class="last-saved" id="saved-lbl-${row.MaeModuleKey}">${savedAt}</div>
+            <div class="last-saved" id="saved-lbl-${moduleKey}">${savedAt}</div>
           </div>
           ${_isAdmin ? `
           <div class="card-footer bg-transparent d-flex justify-content-end">
-            <button class="btn btn-sm btn-primary" onclick="saveModule('${row.MaeModuleKey}')">
+            <button class="btn btn-sm btn-primary" onclick="saveModule('${moduleKey}')">
               <i class="fas fa-save me-1"></i>Save
             </button>
           </div>` : ''}
         </div>`;
       container.appendChild(card);
-    });
+    }
   }
 
   async function saveModule(moduleKey) {
     const emails = document.getElementById(`emails-${moduleKey}`)?.value?.trim() ?? '';
 
-    // Basic email format validation for each entry
     if (emails) {
-      const parts = emails.split(',').map(e => e.trim()).filter(Boolean);
+      const parts   = emails.split(',').map(e => e.trim()).filter(Boolean);
       const emailRx = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       const invalid = parts.filter(e => !emailRx.test(e));
       if (invalid.length > 0) {
@@ -172,17 +169,15 @@
     }
 
     try {
-      const res = await API.system.updateModuleApprover(moduleKey, { Emails: emails });
+      const res     = await API.system.updateModuleApprover(moduleKey, { Emails: emails });
       const updated = res?.Data || res;
 
-      // Update label
       const lbl = document.getElementById(`saved-lbl-${moduleKey}`);
       if (lbl && updated?.MaeUpdatedAt) {
         const dt = new Date(updated.MaeUpdatedAt);
         lbl.textContent = `Last saved: ${dt.toLocaleDateString()} ${dt.toLocaleTimeString()}${updated.MaeUpdatedBy ? ' by ' + updated.MaeUpdatedBy : ''}`;
       }
 
-      // Update local data
       const row = _rows.find(r => r.MaeModuleKey === moduleKey);
       if (row) { row.MaeEmails = emails; row.MaeUpdatedAt = updated?.MaeUpdatedAt; row.MaeUpdatedBy = updated?.MaeUpdatedBy; }
 
@@ -193,7 +188,7 @@
   }
 
   function showToast(msg, type = 'success') {
-    const el = document.getElementById('toast');
+    const el  = document.getElementById('toast');
     const map = { success: 'bg-success', danger: 'bg-danger', warning: 'bg-warning text-dark' };
     el.className = `toast align-items-center text-white border-0 ${map[type] || 'bg-secondary'}`;
     document.getElementById('toast-msg').textContent = msg;

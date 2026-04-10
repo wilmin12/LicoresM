@@ -19,6 +19,9 @@ try
 {
     var builder = WebApplication.CreateBuilder(args);
 
+    // ── Windows Service support ───────────────────────────────────────────────
+    builder.Host.UseWindowsService();
+
     // ── Serilog ───────────────────────────────────────────────────────────────
     builder.Host.UseSerilog((ctx, services, cfg) =>
         cfg.ReadFrom.Configuration(ctx.Configuration)

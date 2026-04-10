@@ -2,6 +2,10 @@
 bin/
 obj/
 bin_local/
+publish/
+
+# Temp Office files
+~$*
 
 # Visual Studio
 .vs/

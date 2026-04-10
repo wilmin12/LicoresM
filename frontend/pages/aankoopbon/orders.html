@@ -28,6 +28,9 @@
     .kpi-card .kpi-label { font-size: .7rem; text-transform: uppercase; letter-spacing: .05em; opacity: .8; margin-top: .25rem; }
     .kpi-card .kpi-icon  { font-size: 2rem; opacity: .18; position: absolute; right: .9rem; top: 50%; transform: translateY(-50%); }
 
+    /* ── Tom Select inside modal — must be above Bootstrap modal z-index (1055) */
+    .ts-dropdown { z-index: 1060 !important; }
+
     /* ── Print styles ─────────────────────────────────────────────────────── */
     @media print {
       body * { visibility: hidden; }
@@ -83,7 +86,7 @@
         <div class="col-6 col-sm-2">
           <div class="kpi-card text-white" style="background:#f59e0b;" data-kpi="PENDING" onclick="kpiFilter(this,'PENDING')">
             <div class="kpi-value" id="kpi-pending">–</div>
-            <div class="kpi-label">Pending</div>
+            <div class="kpi-label">Pending Approval</div>
             <i class="fas fa-clock kpi-icon"></i>
           </div>
         </div>
@@ -121,7 +124,7 @@
               <select id="filter-status" class="form-select form-select-sm">
                 <option value="">All Statuses</option>
                 <option value="DRAFT">Draft</option>
-                <option value="PENDING">Pending</option>
+                <option value="PENDING">Pending Approval</option>
                 <option value="APPROVED">Approved</option>
                 <option value="REJECTED">Rejected</option>
                 <option value="CLOSED">Closed</option>
@@ -136,7 +139,7 @@
       </div>
 
       <!-- Table -->
-      <div class="card no-print">
+      <div class="card no-print mb-5">
         <div class="card-header d-flex justify-content-between align-items-center py-2">
           <span class="fw-semibold"><i class="fas fa-list me-2 text-wine"></i>Aankoopbonnen</span>
           <small class="text-muted" id="record-count"></small>
@@ -144,22 +147,26 @@
         <div class="card-body p-0">
           <div class="table-responsive">
             <table class="table table-hover table-sm mb-0 align-middle">
-              <thead class="table-light">
+              <thead class="table-light" id="orders-thead">
                 <tr>
-                  <th>Bon #</th>
-                  <th>Date</th>
-                  <th>Status</th>
-                  <th>Requestor</th>
-                  <th>Vendor</th>
-                  <th>Department</th>
+                  <th style="cursor:pointer;white-space:nowrap;" data-col="AohBonNr"       onclick="sortTable('AohBonNr')">Bon # <i class="fas fa-sort ms-1 text-muted opacity-50"></i></th>
+                  <th style="cursor:pointer;white-space:nowrap;" data-col="AohOrderDate"   onclick="sortTable('AohOrderDate')">Date <i class="fas fa-sort ms-1 text-muted opacity-50"></i></th>
+                  <th style="cursor:pointer;white-space:nowrap;" data-col="AohStatus"      onclick="sortTable('AohStatus')">Status <i class="fas fa-sort ms-1 text-muted opacity-50"></i></th>
+                  <th style="cursor:pointer;white-space:nowrap;" data-col="AohRequestor"   onclick="sortTable('AohRequestor')">Requestor <i class="fas fa-sort ms-1 text-muted opacity-50"></i></th>
+                  <th style="cursor:pointer;white-space:nowrap;" data-col="AohVendorName"  onclick="sortTable('AohVendorName')">Vendor <i class="fas fa-sort ms-1 text-muted opacity-50"></i></th>
+                  <th style="cursor:pointer;white-space:nowrap;" data-col="AohDepartment"  onclick="sortTable('AohDepartment')">Department <i class="fas fa-sort ms-1 text-muted opacity-50"></i></th>
                   <th>Remarks</th>
-                  <th class="text-end">Amount</th>
+                  <th style="cursor:pointer;white-space:nowrap;" data-col="AohAmount" class="text-end" onclick="sortTable('AohAmount')">Amount <i class="fas fa-sort ms-1 text-muted opacity-50"></i></th>
                   <th class="text-center">Actions</th>
                 </tr>
               </thead>
               <tbody id="table-body"><tr><td colspan="9" class="text-center py-4 text-muted">Loading...</td></tr></tbody>
             </table>
           </div>
+        </div>
+        <div class="card-footer d-flex align-items-center justify-content-between flex-wrap gap-2 py-2">
+          <small class="text-muted" id="page-info-orders"></small>
+          <nav><ul class="pagination pagination-sm mb-0" id="pagination-row"></ul></nav>
         </div>
       </div>
     </main>
@@ -188,6 +195,10 @@
               <option value="">— Select Vendor —</option>
             </select>
             <small class="text-muted" id="f-vendor-address"></small>
+            <div id="quote-mandatory-warning" class="alert alert-warning py-1 px-2 mt-1 mb-0" style="display:none;font-size:.8rem;">
+              <i class="fas fa-exclamation-triangle me-1"></i>
+              This vendor requires a quotation PDF. A PDF <strong>must</strong> be attached before sending for approval.
+            </div>
           </div>
           <!-- Department -->
           <div class="col-md-4">
@@ -251,6 +262,8 @@
               <tr>
                 <th style="width:180px">Product Code</th>
                 <th>Description <span class="text-danger">*</span></th>
+                <th>Additional Description</th>
+                <th style="width:120px">Cost Type</th>
                 <th style="width:90px">Qty</th>
                 <th style="width:90px">Unit</th>
                 <th style="width:40px"></th>
@@ -391,7 +404,8 @@
 <script src="../../js/sidebar.js"></script>
 <script src="../../js/notifications.js"></script>
 <script>
-const BASE = window.API?.BASE_URL || 'http://localhost:54929';
+const BASE = window.API?.BASE_URL ?? '';
+const STATUS_LABELS = { DRAFT:'DRAFT', PENDING:'PENDING APPROVAL', APPROVED:'APPROVED', REJECTED:'REJECTED', CLOSED:'CLOSED' };
 
 let _editId      = null;
 let _closeId     = null;
@@ -406,6 +420,13 @@ let _receivers        = [];
 let _ts               = {};   // Tom Select instances
 let _currentUser = null;
 let _isAdmin     = false;
+
+// ── Table state (sort + pagination) ──────────────────────────────────────
+let _tableItems  = [];
+let _sortCol     = '';
+let _sortDir     = 'asc';
+let _tablePage   = 1;
+const _PAGE_SIZE = 20;
 
 // ── Init ──────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
@@ -436,14 +457,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function load() {
   const search = document.getElementById('filter-search').value.trim();
   const status = document.getElementById('filter-status').value;
-  const params = new URLSearchParams({ pageSize: 200 });
+  const params = new URLSearchParams({ pageSize: 500 });
   if (search) params.set('search', search);
   if (status) params.set('status', status);
 
   const res = await API.get(`/api/aankoopbon/orders?${params}`);
-  const items = res?.Data || [];
+  _tableItems = res?.Data || [];
 
-  // KPIs
+  // KPIs — use the same loaded set for filtered counts, full set for totals
   const all = await API.get('/api/aankoopbon/orders?pageSize=1000');
   const allItems = all?.Data || [];
   document.getElementById('kpi-total').textContent    = allItems.length;
@@ -452,13 +473,51 @@ async function load() {
   document.getElementById('kpi-rejected').textContent = allItems.filter(x => x.AohStatus==='REJECTED').length;
   document.getElementById('kpi-closed').textContent   = allItems.filter(x => x.AohStatus==='CLOSED').length;
 
-  document.getElementById('record-count').textContent = `${items.length} record(s)`;
+  _tablePage = 1;
+  _renderTable();
+}
+
+function _sortItems(arr) {
+  if (!_sortCol) return arr;
+  const dir = _sortDir === 'asc' ? 1 : -1;
+  return [...arr].sort((a, b) => {
+    let va = a[_sortCol] ?? '', vb = b[_sortCol] ?? '';
+    if (typeof va === 'string') va = va.toLowerCase();
+    if (typeof vb === 'string') vb = vb.toLowerCase();
+    return va < vb ? -dir : va > vb ? dir : 0;
+  });
+}
+
+function _setSortIndicator() {
+  document.querySelectorAll('#orders-thead th[data-col]').forEach(th => {
+    const icon = th.querySelector('i');
+    if (!icon) return;
+    icon.className = th.dataset.col === _sortCol
+      ? `fas fa-sort-${_sortDir === 'asc' ? 'up' : 'down'} ms-1`
+      : 'fas fa-sort ms-1 text-muted opacity-50';
+  });
+}
+
+function sortTable(col) {
+  if (_sortCol === col) _sortDir = _sortDir === 'asc' ? 'desc' : 'asc';
+  else { _sortCol = col; _sortDir = 'asc'; }
+  _tablePage = 1;
+  _renderTable();
+}
+
+function _renderTable() {
+  const sorted = _sortItems(_tableItems);
+  const total  = Math.ceil(sorted.length / _PAGE_SIZE) || 1;
+  const page   = sorted.slice((_tablePage - 1) * _PAGE_SIZE, _tablePage * _PAGE_SIZE);
+
+  document.getElementById('record-count').textContent = `${_tableItems.length} record(s)`;
+  _setSortIndicator();
 
   const tbody = document.getElementById('table-body');
-  if (!items.length) { tbody.innerHTML = `<tr><td colspan="9" class="text-center py-4 text-muted">No aankoopbonnen found.</td></tr>`; return; }
+  if (!page.length) { tbody.innerHTML = `<tr><td colspan="9" class="text-center py-4 text-muted">No aankoopbonnen found.</td></tr>`; _renderPagination(total); return; }
 
-  tbody.innerHTML = items.map(r => {
-    const statusBadge = `<span class="status-badge status-${r.AohStatus}">${r.AohStatus}</span>`;
+  tbody.innerHTML = page.map(r => {
+    const statusBadge = `<span class="status-badge status-${r.AohStatus}">${STATUS_LABELS[r.AohStatus]||r.AohStatus}</span>`;
     const date = r.AohOrderDate ? r.AohOrderDate.slice(0,10) : '–';
     const amount = r.AohAmount != null ? `${parseFloat(r.AohAmount).toFixed(2)} NAF` : '–';
     const actions = _buildActions(r);
@@ -474,6 +533,25 @@ async function load() {
       <td class="text-center">${actions}</td>
     </tr>`;
   }).join('');
+
+  _renderPagination(total);
+}
+
+function _renderPagination(total) {
+  const el = document.getElementById('pagination-row');
+  if (!el) return;
+  if (total <= 1) { el.innerHTML = ''; return; }
+  let html = `<li class="page-item ${_tablePage===1?'disabled':''}"><a class="page-link" href="#" onclick="event.preventDefault();_gotoPage(${_tablePage-1})">&#8249;</a></li>`;
+  for (let p = 1; p <= total; p++)
+    html += `<li class="page-item ${p===_tablePage?'active':''}"><a class="page-link" href="#" onclick="event.preventDefault();_gotoPage(${p})">${p}</a></li>`;
+  html += `<li class="page-item ${_tablePage>=total?'disabled':''}"><a class="page-link" href="#" onclick="event.preventDefault();_gotoPage(${_tablePage+1})">&#8250;</a></li>`;
+  el.innerHTML = html;
+}
+
+function _gotoPage(p) {
+  const total = Math.ceil(_tableItems.length / _PAGE_SIZE) || 1;
+  if (p < 1 || p > total) return;
+  _tablePage = p; _renderTable();
 }
 
 function _buildActions(r) {
@@ -547,22 +625,26 @@ function _initVendorTs() {
     onChange(val) {
       const v = _vendors.find(x => x.VndId == val);
       document.getElementById('f-vendor-address').textContent = v?.VndAddress1 || '';
+      document.getElementById('quote-mandatory-warning').style.display = v?.VndQuoteMandatory ? 'block' : 'none';
     }
   });
 }
 
 // ── Load catalogs ─────────────────────────────────────────────────────────
 async function loadCatalogs() {
-  const [vendors, vehicles, receivers, departments, costTypes, eenheden, requestors, reqVendors] = await Promise.all([
-    API.get('/api/aankoopbon/vendors?pageSize=500'),
-    API.get('/api/aankoopbon/vehicles?pageSize=200'),
-    API.get('/api/aankoopbon/receivers?pageSize=200'),
-    API.get('/api/aankoopbon/departments?pageSize=200'),
-    API.get('/api/aankoopbon/cost-types?pageSize=200'),
-    API.get('/api/aankoopbon/eenheden?pageSize=500'),
-    API.get('/api/aankoopbon/requestors?pageSize=200'),
-    API.get('/api/aankoopbon/requestors-vendor?pageSize=1000'),
+  const [vendors, vehicles, receivers, departments, costTypes, eenheden, requestors, reqVendors, products] = await Promise.all([
+    API.get('/api/aankoopbon/vendors?pageSize=500').catch(() => null),
+    API.get('/api/aankoopbon/vehicles?pageSize=200').catch(() => null),
+    API.get('/api/aankoopbon/receivers?pageSize=200').catch(() => null),
+    API.get('/api/aankoopbon/departments?pageSize=200').catch(() => null),
+    API.get('/api/aankoopbon/cost-types?pageSize=200').catch(() => null),
+    API.get('/api/aankoopbon/eenheden?pageSize=500').catch(() => null),
+    API.get('/api/aankoopbon/requestors?pageSize=200').catch(() => null),
+    API.get('/api/aankoopbon/requestors-vendor?pageSize=1000').catch(() => null),
+    API.get('/api/aankoopbon/products?pageSize=500&includeInactive=false').catch(() => null),
   ]);
+  window._abProducts = (products?.Data || []).filter(p => p.IsActive);
+  window._costTypes  = (costTypes?.Data || []).filter(c => c.IsActive);
 
   _vendors          = (vendors?.Data    || []).filter(v => v.IsActive);
   _requestorVendors = (reqVendors?.Data || []).filter(r => r.IsActive);
@@ -629,6 +711,7 @@ function _resetForm() {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   document.getElementById('f-vendor-address').textContent = '';
+  document.getElementById('quote-mandatory-warning').style.display = 'none';
   document.getElementById('f-quotation-pdf').value = '';
   document.getElementById('f-pdf-current').style.display = 'none';
   document.getElementById('details-body').innerHTML = '';
@@ -672,33 +755,51 @@ function _fillForm(h) {
 
 function addDetailRow(d = null) {
   const units = (window._eenheden||[]).map(e=>`<option ${d?.AodUnit===e.UnitCode?'selected':''}>${e.UnitCode}</option>`).join('');
+  const products = (window._abProducts||[]);
+  const existingCode = d?.AodProductCode || '';
+
+  // Build product options — always include the current value even if not in catalog
+  let productOpts = '<option value="">— Search product —</option>';
+  if (existingCode && !products.find(p => p.ItemKode === existingCode))
+    productOpts += `<option value="${_esc(existingCode)}" selected>${_esc(existingCode)}</option>`;
+  productOpts += products.map(p =>
+    `<option value="${_esc(p.ItemKode)}" data-desc="${_esc(p.Omschrijving||'')}" data-unit="${_esc(p.Eenheid||'')}" ${p.ItemKode===existingCode?'selected':''}>${_esc(p.ItemKode)} — ${_esc(p.Omschrijving||'')}</option>`
+  ).join('');
+
   const row = document.createElement('tr');
   row.className = 'detail-row';
+  const costTypeOpts = '<option value=""></option>' + (window._costTypes||[]).map(c =>
+    `<option value="${_esc(c.TcName)}" ${c.TcName===d?.AodCostType?'selected':''}>${_esc(c.TcName)}</option>`).join('');
+
   row.innerHTML = `
-    <td><input type="text" class="form-control form-control-sm det-code text-uppercase" value="${_esc(d?.AodProductCode||'')}" placeholder="Code" onblur="onProductCodeLookup(this)"/></td>
+    <td style="min-width:200px"><select class="form-select form-select-sm det-code">${productOpts}</select></td>
     <td><input type="text" class="form-control form-control-sm det-desc" value="${_esc(d?.AodProductDesc||'')}" placeholder="Description" required/></td>
+    <td><input type="text" class="form-control form-control-sm det-addesc" value="${_esc(d?.AodAdditionalDesc||'')}" placeholder="e.g. Color verde"/></td>
+    <td><select class="form-select form-select-sm det-costtype">${costTypeOpts}</select></td>
     <td><input type="number" class="form-control form-control-sm det-qty" value="${d?.AodQuantity||1}" min="0.01" step="0.01"/></td>
     <td><select class="form-select form-select-sm det-unit"><option value=""></option>${units}</select></td>
     <td><button class="btn btn-xs btn-outline-danger" onclick="this.closest('tr').remove()" title="Remove"><i class="fas fa-times"></i></button></td>`;
   document.getElementById('details-body').appendChild(row);
-}
 
-
-async function onProductCodeLookup(input) {
-  const code = input.value.trim().toUpperCase();
-  if (!code) return;
-  const row = input.closest('tr');
-  const descInput = row.querySelector('.det-desc');
-  const unitSel   = row.querySelector('.det-unit');
-  // Solo auto-completa si descripción está vacía
-  if (descInput.value.trim()) return;
-  try {
-    const res = await API.get(`/api/aankoopbon/products?search=${encodeURIComponent(code)}&pageSize=1`);
-    const p = (res?.Data || res || [])[0];
-    if (!p) return;
-    descInput.value = p.Omschrijving || '';
-    if (p.Eenheid && unitSel) unitSel.value = p.Eenheid;
-  } catch (_) {}
+  // Init Tom Select on the product selector
+  // dropdownParent:'body' prevents the dropdown from being clipped by the modal's overflow
+  const sel = row.querySelector('.det-code');
+  new TomSelect(sel, {
+    allowEmptyOption: true,
+    maxOptions: null,
+    dropdownParent: 'body',
+    onChange(value) {
+      const product   = (window._abProducts || []).find(p => p.ItemKode === value);
+      const descInput = row.querySelector('.det-desc');
+      const unitSel   = row.querySelector('.det-unit');
+      if (product) {
+        if (!descInput.value.trim()) descInput.value = product.Omschrijving || '';
+        if (product.Eenheid && unitSel) unitSel.value = product.Eenheid;
+        const costSel = row.querySelector('.det-costtype');
+        if (product.CostType && costSel) costSel.value = product.CostType;
+      }
+    }
+  });
 }
 
 function onVendorChange() {
@@ -713,6 +814,7 @@ function _rebuildVendorDropdown(requestorName, selectedVndId = null) {
 
   const vSel = document.getElementById('f-vendor');
   document.getElementById('f-vendor-address').textContent = '';
+  document.getElementById('quote-mandatory-warning').style.display = 'none';
 
   if (!requestorName) {
     vSel.innerHTML = '<option value="">— Select a requestor first —</option>';
@@ -738,6 +840,7 @@ function _rebuildVendorDropdown(requestorName, selectedVndId = null) {
     _ts['f-vendor'].setValue(String(selectedVndId), true);
     const v = _vendors.find(x => x.VndId == selectedVndId);
     document.getElementById('f-vendor-address').textContent = v?.VndAddress1 || '';
+    document.getElementById('quote-mandatory-warning').style.display = v?.VndQuoteMandatory ? 'block' : 'none';
   }
 }
 
@@ -769,9 +872,11 @@ function _buildDto() {
   const vhSel = document.getElementById('f-vehicle');
   const vhOpt = vhSel.options[vhSel.selectedIndex];
   const details = [...document.querySelectorAll('#details-body tr.detail-row')].map(row => ({
-    AodProductCode: row.querySelector('.det-code')?.value.trim() || null,
-    AodProductDesc: row.querySelector('.det-desc')?.value.trim() || '',
-    AodQuantity:    parseFloat(row.querySelector('.det-qty')?.value) || 1,
+    AodProductCode:    row.querySelector('.det-code')?.value.trim() || null,
+    AodProductDesc:    row.querySelector('.det-desc')?.value.trim() || '',
+    AodAdditionalDesc: row.querySelector('.det-addesc')?.value.trim() || null,
+    AodCostType:       row.querySelector('.det-costtype')?.value || null,
+    AodQuantity:       parseFloat(row.querySelector('.det-qty')?.value) || 1,
     AodUnit:        row.querySelector('.det-unit')?.value || null,
   })).filter(d => d.AodProductDesc);
 
@@ -798,6 +903,18 @@ async function saveDraft() {
   if (!dto.AohRequestor) { showToast('Please select a requestor.','danger'); return; }
   if (!dto.AohVendorId)  { showToast('Please select a vendor.','danger'); return; }
   if (!dto.AohRemarks)   { showToast('Remarks are required.','danger'); return; }
+
+  // Quote Mandatory check: vendor requires PDF and none is attached/existing
+  const vendorId = parseInt(dto.AohVendorId);
+  const vendor   = (_vendors || []).find(v => v.VndId === vendorId);
+  if (vendor?.VndQuoteMandatory) {
+    const hasNewFile     = !!document.getElementById('f-quotation-pdf').files?.[0];
+    const hasExistingPdf = document.getElementById('f-pdf-current').style.display !== 'none';
+    if (!hasNewFile && !hasExistingPdf) {
+      showToast('This vendor requires a quotation PDF. Please attach a PDF before saving.', 'danger');
+      return;
+    }
+  }
 
   let res;
   if (_editId) {
@@ -1076,6 +1193,120 @@ async function printBon(id) {
                     : h.AohStatus === 'CLOSED'   ? '#1e293b'
                     : '#f59e0b';
 
+  const _buildBonPage = (copyLabel, copyColor) => `
+<div class="print-page">
+
+  <!-- ── Header ── -->
+  <div class="print-header">
+    <div class="print-header-left">
+      <img src="../../img/LogoLicores.png" alt="Licores Maduro" onerror="this.style.display='none'"/>
+      <div>
+        <div class="print-company-name">LICORES MADURO</div>
+        <div class="print-company-sub">Dokweg z.n., Willemstad, Curaçao</div>
+      </div>
+    </div>
+    <div class="print-header-right">
+      <div class="print-copy-label" style="background:${copyColor};">${copyLabel}</div>
+      <div class="print-doc-title">AANKOOPBON</div>
+      <div class="print-bon-nr"># ${_esc(h.AohBonNr||'')}</div>
+      <div style="font-size:10px;color:#666;margin-top:2px;">${h.AohOrderDate?.slice(0,10)||''}</div>
+      <div><span class="print-status-badge" style="background:${statusColor};">${statusLabel}</span></div>
+    </div>
+  </div>
+
+  ${rejected ? `
+  <div class="print-rejection-box">
+    <div class="rej-title">&#9888; Rechazado / Rejected</div>
+    ${h.AohRejectionReason ? `<div class="rej-reason"><b>Motivo:</b> ${_esc(h.AohRejectionReason)}</div>` : ''}
+    ${h.AohRejectedByName  ? `<div class="rej-reason"><b>Por:</b> ${_esc(h.AohRejectedByName)}</div>` : ''}
+  </div>` : ''}
+
+  <!-- ── Info grid ── -->
+  <div class="print-info-grid">
+    <div class="print-info-cell"><span class="print-info-label">Aan (To):</span><span class="print-info-value">${_esc(h.AohVendorName||'–')}</span></div>
+    <div class="print-info-cell"><span class="print-info-label">Dirección:</span><span class="print-info-value">${_esc(h.AohVendorAddress||'–')}</span></div>
+    <div class="print-info-cell"><span class="print-info-label">Van (From):</span><span class="print-info-value">Licores Maduro, Dokweg z.n.</span></div>
+    <div class="print-info-cell"><span class="print-info-label">Afdeling:</span><span class="print-info-value">${_esc(h.AohDepartment||'–')}</span></div>
+    ${h.AohRemarks ? `<div class="print-info-cell print-delivery-row" style="grid-column:1/-1;"><span class="print-info-label">Betreft:</span><span class="print-info-value">${_esc(h.AohRemarks)}</span></div>` : ''}
+    ${h.AohAmount != null ? `<div class="print-info-cell"><span class="print-info-label">Bedrag:</span><span class="print-info-value"><b>${Number(h.AohAmount).toFixed(2)} NAF</b></span></div>` : '<div class="print-info-cell"></div>'}
+    ${h.AohQuotationNr ? `<div class="print-info-cell"><span class="print-info-label">Offerte #:</span><span class="print-info-value">${_esc(h.AohQuotationNr)}</span></div>` : '<div class="print-info-cell"></div>'}
+    ${h.AohReceiverName ? `<div class="print-info-cell"><span class="print-info-label">Ontvanger:</span><span class="print-info-value">${_esc(h.AohReceiverName)}${h.AohReceiverIdDoc?' &nbsp; ID# '+_esc(h.AohReceiverIdDoc):''}</span></div>` : ''}
+    ${h.AohVehicleLicense ? `<div class="print-info-cell"><span class="print-info-label">Voertuig:</span><span class="print-info-value">${_esc(h.AohVehicleLicense)} ${h.AohVehicleType?'/ '+_esc(h.AohVehicleType):''} ${h.AohVehicleModel?'/ '+_esc(h.AohVehicleModel):''}</span></div>` : ''}
+
+    <!-- Delivery options -->
+    <div class="print-info-cell print-delivery-row" style="grid-column:1/-1;">
+      <span class="print-info-label">Entrega:</span>
+      <div class="delivery-options">
+        <span class="delivery-opt ${h.AohMeegeven?'selected':''}"><span style="font-size:13px;">${h.AohMeegeven?'☑':'☐'}</span> Wilt u meegeven</span>
+        <span class="delivery-opt ${h.AohOntvangen?'selected':''}"><span style="font-size:13px;">${h.AohOntvangen?'☑':'☐'}</span> Hierbij ontvangt u</span>
+        <span class="delivery-opt ${h.AohZenden?'selected':''}"><span style="font-size:13px;">${h.AohZenden?'☑':'☐'}</span> Wilt u zenden</span>
+        <span class="delivery-opt ${!h.AohMeegeven&&!h.AohOntvangen&&!h.AohZenden?'selected':''}"><span style="font-size:13px;">${!h.AohMeegeven&&!h.AohOntvangen&&!h.AohZenden?'☑':'☐'}</span> Andere</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Line items ── -->
+  <table class="print-table">
+    <thead>
+      <tr>
+        <th style="width:30px;">#</th>
+        <th style="width:100px;">Código</th>
+        <th>Descripción</th>
+        <th style="width:50px;">Cant.</th>
+        <th style="width:60px;">Unidad</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${(h.Details||[]).map((d,i) => `
+        <tr>
+          <td style="text-align:center;">${i+1}</td>
+          <td>${_esc(d.AodProductCode||'')}</td>
+          <td>${_esc(d.AodProductDesc||'')}</td>
+          <td style="text-align:center;">${d.AodQuantity}</td>
+          <td style="text-align:center;">${_esc(d.AodUnit||'')}</td>
+        </tr>`).join('')}
+    </tbody>
+  </table>
+
+  <!-- ── Invoice info (if CLOSED) ── -->
+  ${h.AohStatus === 'CLOSED' && h.AohInvoiceNr ? `
+  <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:6px;padding:10px 14px;margin-bottom:20px;">
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#16a34a;margin-bottom:4px;">Datos de Factura</div>
+    <div style="display:flex;gap:24px;font-size:11px;">
+      <span><b>Invoice #:</b> ${_esc(h.AohInvoiceNr)}</span>
+      ${h.AohInvoiceDate ? `<span><b>Fecha:</b> ${h.AohInvoiceDate.slice(0,10)}</span>` : ''}
+      ${h.AohInvoiceAmount != null ? `<span><b>Monto:</b> ${Number(h.AohInvoiceAmount).toFixed(2)} NAF</span>` : ''}
+    </div>
+  </div>` : ''}
+
+  <!-- ── Signatures ── -->
+  <div class="print-signatures">
+    <div class="sig-block">
+      <div class="sig-name">${_esc(h.AohRequestor||'')}</div>
+      <div class="sig-line"></div>
+      <div class="sig-role">Solicitado por</div>
+    </div>
+    <div class="sig-block">
+      <div class="sig-name">${_esc(h.AohApprovedByName||'')}</div>
+      <div class="sig-line"></div>
+      <div class="sig-role">Aprobado por</div>
+    </div>
+    <div class="sig-block">
+      <div class="sig-name">${_esc(h.AohReceiverName||'')}</div>
+      <div class="sig-line"></div>
+      <div class="sig-role">Recibido por</div>
+    </div>
+  </div>
+
+  <!-- ── Footer ── -->
+  <div class="print-footer">
+    <span>Creado por: ${_esc(h.AohCreatedByName||'–')}</span>
+    <span>Impreso: ${new Date().toLocaleString('es-CW')}</span>
+    <span>Licores Maduro &copy; ${new Date().getFullYear()}</span>
+  </div>
+
+</div>`;
+
   const pa = document.getElementById('print-area');
   pa.style.display = 'block';
   pa.innerHTML = `
@@ -1083,7 +1314,19 @@ async function printBon(id) {
   @media print {
     body > *:not(#print-area) { display: none !important; }
     #print-area { display: block !important; }
-    .print-page { box-shadow: none !important; margin: 0 !important; }
+    .print-page { box-shadow: none !important; margin: 0 !important; page-break-after: always; }
+    .print-page:last-child { page-break-after: avoid; }
+  }
+  .print-copy-label {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #fff;
+    padding: 3px 10px;
+    border-radius: 4px;
+    margin-bottom: 4px;
   }
   .print-page {
     font-family: 'Segoe UI', Arial, sans-serif;
@@ -1278,117 +1521,8 @@ async function printBon(id) {
   }
 </style>
 
-<div class="print-page">
-
-  <!-- ── Header ── -->
-  <div class="print-header">
-    <div class="print-header-left">
-      <img src="../../img/LogoLicores.png" alt="Licores Maduro" onerror="this.style.display='none'"/>
-      <div>
-        <div class="print-company-name">LICORES MADURO</div>
-        <div class="print-company-sub">Dokweg z.n., Willemstad, Curaçao</div>
-      </div>
-    </div>
-    <div class="print-header-right">
-      <div class="print-doc-title">AANKOOPBON</div>
-      <div class="print-bon-nr"># ${_esc(h.AohBonNr||'')}</div>
-      <div style="font-size:10px;color:#666;margin-top:2px;">${h.AohOrderDate?.slice(0,10)||''}</div>
-      <div><span class="print-status-badge" style="background:${statusColor};">${statusLabel}</span></div>
-    </div>
-  </div>
-
-  ${rejected ? `
-  <div class="print-rejection-box">
-    <div class="rej-title">&#9888; Rechazado / Rejected</div>
-    ${h.AohRejectionReason ? `<div class="rej-reason"><b>Motivo:</b> ${_esc(h.AohRejectionReason)}</div>` : ''}
-    ${h.AohRejectedByName  ? `<div class="rej-reason"><b>Por:</b> ${_esc(h.AohRejectedByName)}</div>` : ''}
-  </div>` : ''}
-
-  <!-- ── Info grid ── -->
-  <div class="print-info-grid">
-    <div class="print-info-cell"><span class="print-info-label">Aan (To):</span><span class="print-info-value">${_esc(h.AohVendorName||'–')}</span></div>
-    <div class="print-info-cell"><span class="print-info-label">Dirección:</span><span class="print-info-value">${_esc(h.AohVendorAddress||'–')}</span></div>
-    <div class="print-info-cell"><span class="print-info-label">Van (From):</span><span class="print-info-value">Licores Maduro, Dokweg z.n.</span></div>
-    <div class="print-info-cell"><span class="print-info-label">Afdeling:</span><span class="print-info-value">${_esc(h.AohDepartment||'–')}</span></div>
-    ${h.AohRemarks ? `<div class="print-info-cell print-delivery-row" style="grid-column:1/-1;"><span class="print-info-label">Betreft:</span><span class="print-info-value">${_esc(h.AohRemarks)}</span></div>` : ''}
-    ${h.AohAmount != null ? `<div class="print-info-cell"><span class="print-info-label">Bedrag:</span><span class="print-info-value"><b>${Number(h.AohAmount).toFixed(2)} NAF</b></span></div>` : '<div class="print-info-cell"></div>'}
-    ${h.AohQuotationNr ? `<div class="print-info-cell"><span class="print-info-label">Offerte #:</span><span class="print-info-value">${_esc(h.AohQuotationNr)}</span></div>` : '<div class="print-info-cell"></div>'}
-    ${h.AohReceiverName ? `<div class="print-info-cell"><span class="print-info-label">Ontvanger:</span><span class="print-info-value">${_esc(h.AohReceiverName)}${h.AohReceiverIdDoc?' &nbsp; ID# '+_esc(h.AohReceiverIdDoc):''}</span></div>` : ''}
-    ${h.AohVehicleLicense ? `<div class="print-info-cell"><span class="print-info-label">Voertuig:</span><span class="print-info-value">${_esc(h.AohVehicleLicense)} ${h.AohVehicleType?'/ '+_esc(h.AohVehicleType):''} ${h.AohVehicleModel?'/ '+_esc(h.AohVehicleModel):''}</span></div>` : ''}
-
-    <!-- Delivery options -->
-    <div class="print-info-cell print-delivery-row" style="grid-column:1/-1;">
-      <span class="print-info-label">Entrega:</span>
-      <div class="delivery-options">
-        <span class="delivery-opt ${h.AohMeegeven?'selected':''}"><span style="font-size:13px;">${h.AohMeegeven?'☑':'☐'}</span> Wilt u meegeven</span>
-        <span class="delivery-opt ${h.AohOntvangen?'selected':''}"><span style="font-size:13px;">${h.AohOntvangen?'☑':'☐'}</span> Hierbij ontvangt u</span>
-        <span class="delivery-opt ${h.AohZenden?'selected':''}"><span style="font-size:13px;">${h.AohZenden?'☑':'☐'}</span> Wilt u zenden</span>
-        <span class="delivery-opt ${!h.AohMeegeven&&!h.AohOntvangen&&!h.AohZenden?'selected':''}"><span style="font-size:13px;">${!h.AohMeegeven&&!h.AohOntvangen&&!h.AohZenden?'☑':'☐'}</span> Andere</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── Line items ── -->
-  <table class="print-table">
-    <thead>
-      <tr>
-        <th style="width:30px;">#</th>
-        <th style="width:100px;">Código</th>
-        <th>Descripción</th>
-        <th style="width:50px;">Cant.</th>
-        <th style="width:60px;">Unidad</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${(h.Details||[]).map((d,i) => `
-        <tr>
-          <td style="text-align:center;">${i+1}</td>
-          <td>${_esc(d.AodProductCode||'')}</td>
-          <td>${_esc(d.AodProductDesc||'')}</td>
-          <td style="text-align:center;">${d.AodQuantity}</td>
-          <td style="text-align:center;">${_esc(d.AodUnit||'')}</td>
-        </tr>`).join('')}
-    </tbody>
-  </table>
-
-  <!-- ── Invoice info (if CLOSED) ── -->
-  ${h.AohStatus === 'CLOSED' && h.AohInvoiceNr ? `
-  <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:6px;padding:10px 14px;margin-bottom:20px;">
-    <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#16a34a;margin-bottom:4px;">Datos de Factura</div>
-    <div style="display:flex;gap:24px;font-size:11px;">
-      <span><b>Invoice #:</b> ${_esc(h.AohInvoiceNr)}</span>
-      ${h.AohInvoiceDate ? `<span><b>Fecha:</b> ${h.AohInvoiceDate.slice(0,10)}</span>` : ''}
-      ${h.AohInvoiceAmount != null ? `<span><b>Monto:</b> ${Number(h.AohInvoiceAmount).toFixed(2)} NAF</span>` : ''}
-    </div>
-  </div>` : ''}
-
-  <!-- ── Signatures ── -->
-  <div class="print-signatures">
-    <div class="sig-block">
-      <div class="sig-name">${_esc(h.AohRequestor||'')}</div>
-      <div class="sig-line"></div>
-      <div class="sig-role">Solicitado por</div>
-    </div>
-    <div class="sig-block">
-      <div class="sig-name">${_esc(h.AohApprovedByName||'')}</div>
-      <div class="sig-line"></div>
-      <div class="sig-role">Aprobado por</div>
-    </div>
-    <div class="sig-block">
-      <div class="sig-name">${_esc(h.AohReceiverName||'')}</div>
-      <div class="sig-line"></div>
-      <div class="sig-role">Recibido por</div>
-    </div>
-  </div>
-
-  <!-- ── Footer ── -->
-  <div class="print-footer">
-    <span>Creado por: ${_esc(h.AohCreatedByName||'–')}</span>
-    <span>Impreso: ${new Date().toLocaleString('es-CW')}</span>
-    <span>Licores Maduro &copy; ${new Date().getFullYear()}</span>
-  </div>
-
-</div>`;
+${_buildBonPage('Original',    '#1e40af')}
+${_buildBonPage('Office Copy', '#A52535')}`;
 
   window.print();
   setTimeout(() => { pa.style.display='none'; pa.innerHTML=''; }, 1000);

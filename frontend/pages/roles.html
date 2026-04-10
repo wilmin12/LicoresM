@@ -205,6 +205,37 @@
   </div>
 </div>
 
+<!-- Copy Role Modal -->
+<div class="modal fade" id="copyModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header" style="background:var(--primary);">
+        <h5 class="modal-title text-white"><i class="fas fa-copy me-2"></i>Copy Role</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted mb-3" style="font-size:.85rem;">
+          Copying <strong id="copy-source-name"></strong>. All permissions will be duplicated to the new role.
+        </p>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">New Role Name</label>
+          <input type="text" id="copy-role-name" class="form-control" placeholder="e.g. Aankoopbon2" maxlength="100"/>
+        </div>
+        <div class="mb-2">
+          <label class="form-label fw-semibold">Description <span class="text-muted fw-normal">(optional)</span></label>
+          <input type="text" id="copy-role-desc" class="form-control" placeholder="Description" maxlength="200"/>
+        </div>
+      </div>
+      <div class="modal-footer justify-content-end gap-2">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary btn-sm" id="btn-confirm-copy">
+          <i class="fas fa-copy me-1"></i>Copy
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Toast -->
 <div class="toast-container">
   <div id="toast" class="toast align-items-center text-white border-0" role="alert">
@@ -402,6 +433,7 @@
         <td>
           <button class="btn-action edit me-1" onclick="openEdit(${r.RoleId})" title="Edit"><i class="fas fa-edit"></i></button>
           <button class="btn-action view me-1" onclick="openPerms(${r.RoleId},'${esc(r.RoleName)}')" title="Permissions"><i class="fas fa-key"></i></button>
+          <button class="btn-action view me-1" onclick="openCopy(${r.RoleId},'${esc(r.RoleName)}')" title="Copy role"><i class="fas fa-copy"></i></button>
           <button class="btn-action ${r.IsActive !== false ? 'delete' : 'edit'} me-1" onclick="toggleRole(${r.RoleId})" title="${r.IsActive !== false ? 'Deactivate' : 'Activate'}">
             <i class="fas fa-${r.IsActive !== false ? 'ban' : 'check-circle'}"></i>
           </button>
@@ -493,6 +525,50 @@
       showToast(res?.Message || 'Role deleted.', 'success');
       await loadRoles();
     } catch (err) { showToast(err.message, 'danger'); }
+  }
+
+  // ── Copy Role ──────────────────────────────────────────────────────────────
+  let _pendingCopyId = null;
+
+  function openCopy(id, name) {
+    _pendingCopyId = id;
+    document.getElementById('copy-source-name').textContent = name;
+    document.getElementById('copy-role-name').value = name + ' - Copy';
+    document.getElementById('copy-role-desc').value = '';
+    new bootstrap.Modal('#copyModal').show();
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('btn-confirm-copy').addEventListener('click', copyRole);
+    document.getElementById('copy-role-name').addEventListener('keydown', e => {
+      if (e.key === 'Enter') copyRole();
+    });
+  });
+
+  async function copyRole() {
+    const name = document.getElementById('copy-role-name').value.trim();
+    if (!name) {
+      document.getElementById('copy-role-name').classList.add('is-invalid');
+      return;
+    }
+    document.getElementById('copy-role-name').classList.remove('is-invalid');
+
+    const btn = document.getElementById('btn-confirm-copy');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Copying…';
+
+    try {
+      const dto = { RoleName: name, Description: document.getElementById('copy-role-desc').value.trim() };
+      const res = await API.roles.copy(_pendingCopyId, dto);
+      bootstrap.Modal.getInstance(document.getElementById('copyModal'))?.hide();
+      showToast(res?.Message || 'Role copied successfully.', 'success');
+      await loadRoles();
+    } catch (err) {
+      showToast(err.message, 'danger');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-copy me-1"></i>Copy';
+    }
   }
 
   async function openPerms(id, name) {

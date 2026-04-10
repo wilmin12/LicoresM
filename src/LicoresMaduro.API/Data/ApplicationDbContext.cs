@@ -1066,6 +1066,8 @@ public sealed class ApplicationDbContext : DbContext
             e.Property(x => x.AodLineNr).HasColumnName("AOD_Line_Nr");
             e.Property(x => x.AodProductCode).HasColumnName("AOD_Product_Code").HasMaxLength(20);
             e.Property(x => x.AodProductDesc).HasColumnName("AOD_Product_Desc").HasMaxLength(100).IsRequired();
+            e.Property(x => x.AodAdditionalDesc).HasColumnName("AOD_Additional_Desc").HasMaxLength(255);
+            e.Property(x => x.AodCostType).HasColumnName("AOD_Cost_Type").HasMaxLength(50);
             e.Property(x => x.AodQuantity).HasColumnName("AOD_Quantity").HasColumnType("decimal(18,2)");
             e.Property(x => x.AodUnit).HasColumnName("AOD_Unit").HasMaxLength(10);
             e.Property(x => x.IsActive).HasColumnName("IS_Active");
@@ -1081,7 +1083,7 @@ public sealed class ApplicationDbContext : DbContext
         modelBuilder.Entity<CostType>(e => { e.ToTable("COST_TYPE"); e.HasKey(x => x.CtId); e.Property(x => x.CtId).HasColumnName("CT_Id"); e.Property(x => x.TcName).HasColumnName("TC_NAME").HasMaxLength(15); e.Property(x => x.IsActive).HasColumnName("IS_Active"); e.Property(x => x.CreatedAt).HasColumnName("Created_At"); });
         modelBuilder.Entity<VehicleType>(e => { e.ToTable("VEHICLE_TYPE"); e.HasKey(x => x.VtId); e.Property(x => x.VtId).HasColumnName("VT_Id"); e.Property(x => x.VtName).HasColumnName("VT_NAME").HasMaxLength(15); e.Property(x => x.IsActive).HasColumnName("IS_Active"); e.Property(x => x.CreatedAt).HasColumnName("Created_At"); });
         modelBuilder.Entity<Vehicle>(e => { e.ToTable("VEHICLES"); e.HasKey(x => x.VhId); e.Property(x => x.VhId).HasColumnName("VH_Id"); e.Property(x => x.VhLicense).HasColumnName("VH_LICENSE").HasMaxLength(10); e.Property(x => x.VhType).HasColumnName("VH_TYPE").HasMaxLength(15); e.Property(x => x.VhModel).HasColumnName("VH_MODEL").HasMaxLength(15); e.Property(x => x.IsActive).HasColumnName("IS_Active"); e.Property(x => x.CreatedAt).HasColumnName("Created_At"); });
-        modelBuilder.Entity<Vendor>(e => { e.ToTable("VENDORS"); e.HasKey(x => x.VndId); e.Property(x => x.VndId).HasColumnName("VND_Id"); e.Property(x => x.VndCode).HasColumnName("VND_Code").HasMaxLength(6); e.Property(x => x.VndName).HasColumnName("VND_Name").HasMaxLength(100); e.Property(x => x.VndAddress1).HasColumnName("VND_Address_1").HasMaxLength(100); e.Property(x => x.VndPhone1).HasColumnName("VND_Phone_1").HasMaxLength(25); e.Property(x => x.VndEmail).HasColumnName("VND_Email").HasMaxLength(50); e.Property(x => x.VndContact).HasColumnName("VND_Contact").HasMaxLength(100); e.Property(x => x.VndCurr).HasColumnName("VND_CURR").HasMaxLength(3); e.Property(x => x.VndCrib).HasColumnName("VND_CRIB").HasMaxLength(15); e.Property(x => x.VndKvk).HasColumnName("VND_KVK").HasMaxLength(15); e.Property(x => x.VndCash).HasColumnName("VND_CASH"); e.Property(x => x.IsActive).HasColumnName("IS_Active"); e.Property(x => x.CreatedAt).HasColumnName("Created_At"); });
+        modelBuilder.Entity<Vendor>(e => { e.ToTable("VENDORS"); e.HasKey(x => x.VndId); e.Property(x => x.VndId).HasColumnName("VND_Id"); e.Property(x => x.VndCode).HasColumnName("VND_Code").HasMaxLength(6); e.Property(x => x.VndName).HasColumnName("VND_Name").HasMaxLength(100); e.Property(x => x.VndAddress1).HasColumnName("VND_Address_1").HasMaxLength(100); e.Property(x => x.VndPhone1).HasColumnName("VND_Phone_1").HasMaxLength(25); e.Property(x => x.VndEmail).HasColumnName("VND_Email").HasMaxLength(50); e.Property(x => x.VndContact).HasColumnName("VND_Contact").HasMaxLength(100); e.Property(x => x.VndCurr).HasColumnName("VND_CURR").HasMaxLength(3); e.Property(x => x.VndCrib).HasColumnName("VND_CRIB").HasMaxLength(15); e.Property(x => x.VndKvk).HasColumnName("VND_KVK").HasMaxLength(15); e.Property(x => x.VndCash).HasColumnName("VND_CASH"); e.Property(x => x.VndQuoteMandatory).HasColumnName("VND_Quote_Mandatory"); e.Property(x => x.IsActive).HasColumnName("IS_Active"); e.Property(x => x.CreatedAt).HasColumnName("Created_At"); });
 
         // ── Cost Calculation ───────────────────────────────────────────────────
         modelBuilder.Entity<CcCalcHeader>(e =>
@@ -1824,7 +1826,7 @@ public class RequestorVendor { public int RvId { get; set; } public string RsReq
 public class CostType { public int CtId { get; set; } public string TcName { get; set; } = string.Empty; public bool IsActive { get; set; } = true; public DateTime CreatedAt { get; set; } = DateTime.UtcNow; }
 public class VehicleType { public int VtId { get; set; } public string VtName { get; set; } = string.Empty; public bool IsActive { get; set; } = true; public DateTime CreatedAt { get; set; } = DateTime.UtcNow; }
 public class Vehicle { public int VhId { get; set; } public string VhLicense { get; set; } = string.Empty; public string? VhType { get; set; } public string? VhModel { get; set; } public bool IsActive { get; set; } = true; public DateTime CreatedAt { get; set; } = DateTime.UtcNow; }
-public class Vendor { public int VndId { get; set; } public string VndCode { get; set; } = string.Empty; public string VndName { get; set; } = string.Empty; public string? VndAddress1 { get; set; } public string? VndPhone1 { get; set; } public string? VndEmail { get; set; } public string? VndContact { get; set; } public string? VndCurr { get; set; } public string? VndCrib { get; set; } public string? VndKvk { get; set; } public bool VndCash { get; set; } = false; public bool IsActive { get; set; } = true; public DateTime CreatedAt { get; set; } = DateTime.UtcNow; }
+public class Vendor { public int VndId { get; set; } public string VndCode { get; set; } = string.Empty; public string VndName { get; set; } = string.Empty; public string? VndAddress1 { get; set; } public string? VndPhone1 { get; set; } public string? VndEmail { get; set; } public string? VndContact { get; set; } public string? VndCurr { get; set; } public string? VndCrib { get; set; } public string? VndKvk { get; set; } public bool VndCash { get; set; } = false; public bool VndQuoteMandatory { get; set; } = false; public bool IsActive { get; set; } = true; public DateTime CreatedAt { get; set; } = DateTime.UtcNow; }
 
 // ── Aankoopbon Orders ─────────────────────────────────────────────────────────
 public class AbOrderHeader
@@ -1880,11 +1882,13 @@ public class AbOrderDetail
     public int      AodId          { get; set; }
     public int      AodHeaderId    { get; set; }
     public int      AodLineNr      { get; set; }
-    public string?  AodProductCode { get; set; }
-    public string   AodProductDesc { get; set; } = string.Empty;
-    public decimal  AodQuantity    { get; set; } = 1;
-    public string?  AodUnit        { get; set; }
-    public bool     IsActive       { get; set; } = true;
+    public string?  AodProductCode     { get; set; }
+    public string   AodProductDesc     { get; set; } = string.Empty;
+    public string?  AodAdditionalDesc  { get; set; }
+    public string?  AodCostType        { get; set; }
+    public decimal  AodQuantity        { get; set; } = 1;
+    public string?  AodUnit            { get; set; }
+    public bool     IsActive           { get; set; } = true;
     public DateTime CreatedAt      { get; set; } = DateTime.UtcNow;
 
     public AbOrderHeader? Header { get; set; }
