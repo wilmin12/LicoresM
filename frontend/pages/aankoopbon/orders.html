@@ -117,10 +117,13 @@
       <div class="card mb-3 no-print">
         <div class="card-body py-2">
           <div class="row g-2 align-items-center">
-            <div class="col-md-4">
+            <div class="col-md-3">
               <input id="filter-search" type="text" class="form-control form-control-sm" placeholder="Search bon#, vendor, requestor..."/>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
+              <input id="filter-vehicle" type="text" class="form-control form-control-sm" placeholder="Vehicle license..."/>
+            </div>
+            <div class="col-md-2">
               <select id="filter-status" class="form-select form-select-sm">
                 <option value="">All Statuses</option>
                 <option value="DRAFT">Draft</option>
@@ -155,6 +158,7 @@
                   <th style="cursor:pointer;white-space:nowrap;" data-col="AohRequestor"   onclick="sortTable('AohRequestor')">Requestor <i class="fas fa-sort ms-1 text-muted opacity-50"></i></th>
                   <th style="cursor:pointer;white-space:nowrap;" data-col="AohVendorName"  onclick="sortTable('AohVendorName')">Vendor <i class="fas fa-sort ms-1 text-muted opacity-50"></i></th>
                   <th style="cursor:pointer;white-space:nowrap;" data-col="AohDepartment"  onclick="sortTable('AohDepartment')">Department <i class="fas fa-sort ms-1 text-muted opacity-50"></i></th>
+                  <th style="cursor:pointer;white-space:nowrap;" data-col="AohVehicleLicense" onclick="sortTable('AohVehicleLicense')">Vehicle License <i class="fas fa-sort ms-1 text-muted opacity-50"></i></th>
                   <th>Remarks</th>
                   <th style="cursor:pointer;white-space:nowrap;" data-col="AohAmount" class="text-end" onclick="sortTable('AohAmount')">Amount <i class="fas fa-sort ms-1 text-muted opacity-50"></i></th>
                   <th class="text-center">Actions</th>
@@ -212,12 +216,12 @@
           </div>
           <!-- Amount -->
           <div class="col-md-4">
-            <label class="form-label fw-semibold">Amount (NAF)</label>
+            <label class="form-label fw-semibold">Amount (XCG)</label>
             <input id="f-amount" type="number" step="0.01" class="form-control form-control-sm" placeholder="Optional"/>
           </div>
           <!-- Vehicle -->
           <div class="col-md-4">
-            <label class="form-label fw-semibold">Vehicle (optional)</label>
+            <label class="form-label fw-semibold">Vehicle License <span class="text-muted fw-normal">(optional)</span></label>
             <select id="f-vehicle" class="form-select form-select-sm" onchange="onVehicleChange()">
               <option value="">— No vehicle —</option>
             </select>
@@ -243,7 +247,12 @@
           <!-- Quotation PDF -->
           <div class="col-12">
             <label class="form-label fw-semibold">Quotation PDF <span class="text-danger">*</span></label>
-            <input id="f-quotation-pdf" type="file" accept=".pdf,application/pdf" class="form-control form-control-sm"/>
+            <div class="d-flex align-items-center gap-2">
+              <input id="f-quotation-pdf" type="file" accept=".pdf,application/pdf" class="form-control form-control-sm" onchange="onPdfFileSelected(this)"/>
+              <button type="button" id="btn-pdf-preview-local" class="btn btn-sm btn-outline-danger" style="display:none;white-space:nowrap;" onclick="previewLocalPdf()">
+                <i class="fas fa-file-pdf me-1"></i>Preview
+              </button>
+            </div>
             <div id="f-pdf-current" class="mt-1" style="display:none">
               <small class="text-success"><i class="fas fa-file-pdf me-1"></i>PDF already attached — upload a new file to replace it.</small>
             </div>
@@ -290,7 +299,15 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <div id="close-no-pdf-warning" class="alert alert-danger d-flex align-items-center gap-2 mb-3" style="display:none!important">
+        <div id="close-bon-info" class="mb-3 p-2 rounded border bg-light small">
+          <div class="row g-1">
+            <div class="col-6"><span class="text-muted">BON #:</span> <strong id="close-info-bonnr"></strong></div>
+            <div class="col-6"><span class="text-muted">Requestor:</span> <strong id="close-info-requestor"></strong></div>
+            <div class="col-6"><span class="text-muted">Vendor:</span> <strong id="close-info-vendor"></strong></div>
+            <div class="col-6"><span class="text-muted">Department:</span> <strong id="close-info-department"></strong></div>
+          </div>
+        </div>
+        <div id="close-no-pdf-warning" class="alert alert-danger d-flex align-items-center gap-2 mb-3 d-none">
           <i class="fas fa-exclamation-triangle"></i>
           <span>This aankoopbon does not have a quotation PDF attached. Please edit it and upload the PDF before submitting for approval.</span>
         </div>
@@ -374,7 +391,7 @@
             <input id="f-invoice-date" type="date" class="form-control form-control-sm"/>
           </div>
           <div class="col-md-6">
-            <label class="form-label fw-semibold">Invoice Amount (NAF) <span class="text-danger">*</span></label>
+            <label class="form-label fw-semibold">Invoice Amount (XCG) <span class="text-danger">*</span></label>
             <input id="f-invoice-amount" type="number" step="0.01" class="form-control form-control-sm" placeholder="0.00"/>
           </div>
         </div>
@@ -409,6 +426,7 @@ const STATUS_LABELS = { DRAFT:'DRAFT', PENDING:'PENDING APPROVAL', APPROVED:'APP
 
 let _editId      = null;
 let _closeId     = null;
+let _rowsMap     = {};
 let _closePdf    = false;
 let _rejectId    = null;
 let _invoiceId   = null;
@@ -444,6 +462,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   _initTomSelects();
 
   document.getElementById('filter-search').addEventListener('input', _debounce(load, 400));
+  document.getElementById('filter-vehicle').addEventListener('input', () => { _tablePage = 1; _renderTable(); });
   document.getElementById('filter-status').addEventListener('change', () => {
     const val = document.getElementById('filter-status').value;
     document.querySelectorAll('#kpi-row .kpi-card').forEach(c => {
@@ -463,6 +482,7 @@ async function load() {
 
   const res = await API.get(`/api/aankoopbon/orders?${params}`);
   _tableItems = res?.Data || [];
+  _rowsMap = Object.fromEntries(_tableItems.map(r => [r.AohId, r]));
 
   // KPIs — use the same loaded set for filtered counts, full set for totals
   const all = await API.get('/api/aankoopbon/orders?pageSize=1000');
@@ -506,20 +526,24 @@ function sortTable(col) {
 }
 
 function _renderTable() {
-  const sorted = _sortItems(_tableItems);
+  const vehicleFilter = (document.getElementById('filter-vehicle')?.value || '').trim().toLowerCase();
+  const filtered = vehicleFilter
+    ? _tableItems.filter(r => (r.AohVehicleLicense || '').toLowerCase().includes(vehicleFilter))
+    : _tableItems;
+  const sorted = _sortItems(filtered);
   const total  = Math.ceil(sorted.length / _PAGE_SIZE) || 1;
   const page   = sorted.slice((_tablePage - 1) * _PAGE_SIZE, _tablePage * _PAGE_SIZE);
 
-  document.getElementById('record-count').textContent = `${_tableItems.length} record(s)`;
+  document.getElementById('record-count').textContent = `${sorted.length} record(s)`;
   _setSortIndicator();
 
   const tbody = document.getElementById('table-body');
-  if (!page.length) { tbody.innerHTML = `<tr><td colspan="9" class="text-center py-4 text-muted">No aankoopbonnen found.</td></tr>`; _renderPagination(total); return; }
+  if (!page.length) { tbody.innerHTML = `<tr><td colspan="10" class="text-center py-4 text-muted">No aankoopbonnen found.</td></tr>`; _renderPagination(total); return; }
 
   tbody.innerHTML = page.map(r => {
     const statusBadge = `<span class="status-badge status-${r.AohStatus}">${STATUS_LABELS[r.AohStatus]||r.AohStatus}</span>`;
     const date = r.AohOrderDate ? r.AohOrderDate.slice(0,10) : '–';
-    const amount = r.AohAmount != null ? `${parseFloat(r.AohAmount).toFixed(2)} NAF` : '–';
+    const amount = r.AohAmount != null ? `${parseFloat(r.AohAmount).toFixed(2)} XCG` : '–';
     const actions = _buildActions(r);
     return `<tr>
       <td class="fw-semibold">${r.AohBonNr}</td>
@@ -528,6 +552,7 @@ function _renderTable() {
       <td>${r.AohRequestor||'–'}</td>
       <td>${r.AohVendorName||'–'}</td>
       <td>${r.AohDepartment||'–'}</td>
+      <td>${r.AohVehicleLicense||'–'}</td>
       <td class="text-muted">${_esc(r.AohRemarks||'')}</td>
       <td class="text-end">${amount}</td>
       <td class="text-center">${actions}</td>
@@ -713,6 +738,7 @@ function _resetForm() {
   document.getElementById('f-vendor-address').textContent = '';
   document.getElementById('quote-mandatory-warning').style.display = 'none';
   document.getElementById('f-quotation-pdf').value = '';
+  document.getElementById('btn-pdf-preview-local').style.display = 'none';
   document.getElementById('f-pdf-current').style.display = 'none';
   document.getElementById('details-body').innerHTML = '';
   addDetailRow();
@@ -740,6 +766,7 @@ function _fillForm(h) {
   _setVal('f-vehicle-type', h.AohVehicleType);
   _setVal('f-vehicle-model',h.AohVehicleModel);
   document.getElementById('f-quotation-pdf').value = '';
+  document.getElementById('btn-pdf-preview-local').style.display = 'none';
   document.getElementById('f-pdf-current').style.display = h.AohQuotationPdfPath ? 'block' : 'none';
 
   // Vendor address fallback if not in catalog
@@ -956,9 +983,15 @@ function openClose(id, hasPdf = false) {
   document.getElementById('receiver-section').style.display = 'none';
   document.getElementById('f-receiver').value = '';
   document.getElementById('f-receiver-id-doc').value = '';
+  // Populate bon info
+  const row = _rowsMap[id] || {};
+  document.getElementById('close-info-bonnr').textContent      = row.AohBonNr      || '–';
+  document.getElementById('close-info-requestor').textContent  = row.AohRequestor  || '–';
+  document.getElementById('close-info-vendor').textContent     = row.AohVendorName || '–';
+  document.getElementById('close-info-department').textContent = row.AohDepartment || '–';
   // Show warning if no PDF attached
   const warn = document.getElementById('close-no-pdf-warning');
-  warn.style.display = hasPdf ? 'none' : 'block';
+  warn.classList.toggle('d-none', hasPdf);
   new bootstrap.Modal(document.getElementById('modal-close')).show();
 }
 
@@ -1058,7 +1091,7 @@ async function viewBon(id) {
     <div class="row g-2">
       <div class="col-md-4"><b>Invoice #:</b> ${_esc(h.AohInvoiceNr||'–')}</div>
       <div class="col-md-4"><b>Invoice Date:</b> ${h.AohInvoiceDate?.slice(0,10)||'–'}</div>
-      <div class="col-md-4"><b>Invoice Amount:</b> ${h.AohInvoiceAmount!=null?parseFloat(h.AohInvoiceAmount).toFixed(2)+' NAF':'–'}</div>
+      <div class="col-md-4"><b>Invoice Amount:</b> ${h.AohInvoiceAmount!=null?parseFloat(h.AohInvoiceAmount).toFixed(2)+' XCG':'–'}</div>
     </div>`;
   } else if (h.AohStatus === 'CLOSED') {
     invoiceSection = `
@@ -1070,7 +1103,7 @@ async function viewBon(id) {
     <div class="row g-2">
       <div class="col-md-4"><b>Invoice #:</b> ${_esc(h.AohInvoiceNr||'–')}</div>
       <div class="col-md-4"><b>Invoice Date:</b> ${h.AohInvoiceDate?.slice(0,10)||'–'}</div>
-      <div class="col-md-4"><b>Invoice Amount:</b> ${h.AohInvoiceAmount!=null?parseFloat(h.AohInvoiceAmount).toFixed(2)+' NAF':'–'}</div>
+      <div class="col-md-4"><b>Invoice Amount:</b> ${h.AohInvoiceAmount!=null?parseFloat(h.AohInvoiceAmount).toFixed(2)+' XCG':'–'}</div>
     </div>`;
   }
 
@@ -1083,7 +1116,7 @@ async function viewBon(id) {
       <div class="col-md-6"><b>Address:</b> ${h.AohVendorAddress||'–'}</div>
       <div class="col-md-4"><b>Department:</b> ${h.AohDepartment||'–'}</div>
       <div class="col-md-4"><b>Cost Type:</b> ${h.AohCostType||'–'}</div>
-      <div class="col-md-4"><b>Amount:</b> ${h.AohAmount!=null?h.AohAmount.toFixed(2)+' NAF':'–'}</div>
+      <div class="col-md-4"><b>Amount:</b> ${h.AohAmount!=null?h.AohAmount.toFixed(2)+' XCG':'–'}</div>
       ${h.AohVehicleLicense?`<div class="col-12"><b>Vehicle:</b> ${h.AohVehicleLicense} / ${h.AohVehicleType||''} / ${h.AohVehicleModel||''}</div>`:''}
       <div class="col-md-6"><b>Quotation #:</b> ${h.AohQuotationNr||'–'}</div>
       <div class="col-md-6"><b>Delivery:</b> ${delivery}</div>
@@ -1113,6 +1146,19 @@ async function viewBon(id) {
   }
   document.getElementById('modal-view-footer').innerHTML = footer;
   new bootstrap.Modal(document.getElementById('modal-view')).show();
+}
+
+// ── Preview local PDF (before upload) ────────────────────────────────────
+function onPdfFileSelected(input) {
+  const btn = document.getElementById('btn-pdf-preview-local');
+  btn.style.display = input.files?.[0] ? 'inline-flex' : 'none';
+}
+
+function previewLocalPdf() {
+  const file = document.getElementById('f-quotation-pdf').files?.[0];
+  if (!file) return;
+  const url = URL.createObjectURL(file);
+  window.open(url, '_blank');
 }
 
 // ── Preview PDF ───────────────────────────────────────────────────────────
@@ -1228,7 +1274,7 @@ async function printBon(id) {
     <div class="print-info-cell"><span class="print-info-label">Van (From):</span><span class="print-info-value">Licores Maduro, Dokweg z.n.</span></div>
     <div class="print-info-cell"><span class="print-info-label">Afdeling:</span><span class="print-info-value">${_esc(h.AohDepartment||'–')}</span></div>
     ${h.AohRemarks ? `<div class="print-info-cell print-delivery-row" style="grid-column:1/-1;"><span class="print-info-label">Betreft:</span><span class="print-info-value">${_esc(h.AohRemarks)}</span></div>` : ''}
-    ${h.AohAmount != null ? `<div class="print-info-cell"><span class="print-info-label">Bedrag:</span><span class="print-info-value"><b>${Number(h.AohAmount).toFixed(2)} NAF</b></span></div>` : '<div class="print-info-cell"></div>'}
+    ${h.AohAmount != null ? `<div class="print-info-cell"><span class="print-info-label">Bedrag:</span><span class="print-info-value"><b>${Number(h.AohAmount).toFixed(2)} XCG</b></span></div>` : '<div class="print-info-cell"></div>'}
     ${h.AohQuotationNr ? `<div class="print-info-cell"><span class="print-info-label">Offerte #:</span><span class="print-info-value">${_esc(h.AohQuotationNr)}</span></div>` : '<div class="print-info-cell"></div>'}
     ${h.AohReceiverName ? `<div class="print-info-cell"><span class="print-info-label">Ontvanger:</span><span class="print-info-value">${_esc(h.AohReceiverName)}${h.AohReceiverIdDoc?' &nbsp; ID# '+_esc(h.AohReceiverIdDoc):''}</span></div>` : ''}
     ${h.AohVehicleLicense ? `<div class="print-info-cell"><span class="print-info-label">Voertuig:</span><span class="print-info-value">${_esc(h.AohVehicleLicense)} ${h.AohVehicleType?'/ '+_esc(h.AohVehicleType):''} ${h.AohVehicleModel?'/ '+_esc(h.AohVehicleModel):''}</span></div>` : ''}
@@ -1275,7 +1321,7 @@ async function printBon(id) {
     <div style="display:flex;gap:24px;font-size:11px;">
       <span><b>Invoice #:</b> ${_esc(h.AohInvoiceNr)}</span>
       ${h.AohInvoiceDate ? `<span><b>Fecha:</b> ${h.AohInvoiceDate.slice(0,10)}</span>` : ''}
-      ${h.AohInvoiceAmount != null ? `<span><b>Monto:</b> ${Number(h.AohInvoiceAmount).toFixed(2)} NAF</span>` : ''}
+      ${h.AohInvoiceAmount != null ? `<span><b>Monto:</b> ${Number(h.AohInvoiceAmount).toFixed(2)} XCG</span>` : ''}
     </div>
   </div>` : ''}
 

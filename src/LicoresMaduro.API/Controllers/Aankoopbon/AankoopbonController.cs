@@ -271,7 +271,7 @@ public sealed class AankoopbonController : ControllerBase
             return Forbid();
         if (header.AohStatus != "DRAFT")
             return BadRequest(ApiResponse.Fail("Only DRAFT aankoopbonnen can be closed."));
-        if (string.IsNullOrEmpty(header.AohQuotationPdfPath) || !System.IO.File.Exists(header.AohQuotationPdfPath))
+        if (string.IsNullOrEmpty(header.AohQuotationPdfPath))
             return BadRequest(ApiResponse.Fail("A quotation PDF must be attached before submitting for approval."));
 
         header.AohStatus      = "PENDING";
