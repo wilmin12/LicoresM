@@ -129,7 +129,41 @@
     new bootstrap.Modal('#itemModal').show();
     setTimeout(()=>document.getElementById('f-code').focus(),300);
   }
-  function openEdit(id){const r=allItems.find(x=>x.AbpId===id);if(!r)return;document.getElementById('edit-id').value=id;document.getElementById('f-code').value=r.ItemKode||'';document.getElementById('f-desc').value=r.Omschrijving||'';document.getElementById('f-cost').value=r.CostType||'';document.getElementById('f-unit').value=r.Eenheid||'';document.getElementById('f-qty').value=r.UnitQuantity||'';['f-code','f-desc'].forEach(id=>document.getElementById(id).classList.remove('is-invalid'));document.getElementById('modalTitle').innerHTML='<i class="fas fa-edit me-2"></i>Edit AB Product';new bootstrap.Modal('#itemModal').show();}
+  function openEdit(id){
+    const r=allItems.find(x=>x.AbpId===id);if(!r)return;
+    document.getElementById('edit-id').value=id;
+    document.getElementById('f-code').value=r.ItemKode||'';
+    document.getElementById('f-desc').value=r.Omschrijving||'';
+
+    // Cost Type: if value not in catalog options, add it temporarily so it shows correctly
+    const costSel=document.getElementById('f-cost');
+    if(r.CostType){
+      const exists=[...costSel.options].some(o=>o.value===r.CostType);
+      if(!exists){
+        const opt=document.createElement('option');
+        opt.value=r.CostType;opt.textContent=r.CostType;
+        costSel.appendChild(opt);
+      }
+    }
+    costSel.value=r.CostType||'';
+
+    // Unit: same safeguard
+    const unitSel=document.getElementById('f-unit');
+    if(r.Eenheid){
+      const exists=[...unitSel.options].some(o=>o.value===r.Eenheid);
+      if(!exists){
+        const opt=document.createElement('option');
+        opt.value=r.Eenheid;opt.textContent=r.Eenheid;
+        unitSel.appendChild(opt);
+      }
+    }
+    unitSel.value=r.Eenheid||'';
+
+    document.getElementById('f-qty').value=r.UnitQuantity||'';
+    ['f-code','f-desc'].forEach(id=>document.getElementById(id).classList.remove('is-invalid'));
+    document.getElementById('modalTitle').innerHTML='<i class="fas fa-edit me-2"></i>Edit AB Product';
+    new bootstrap.Modal('#itemModal').show();
+  }
   async function saveItem(){const id=document.getElementById('edit-id').value;const code=document.getElementById('f-code').value.trim().toUpperCase();const desc=document.getElementById('f-desc').value.trim();let valid=true;if(!code){document.getElementById('f-code').classList.add('is-invalid');valid=false;}else document.getElementById('f-code').classList.remove('is-invalid');if(!desc){document.getElementById('f-desc').classList.add('is-invalid');valid=false;}else document.getElementById('f-desc').classList.remove('is-invalid');if(!valid)return;const dto={ItemKode:code,Omschrijving:desc,VendorCode:null,CostType:document.getElementById('f-cost').value||null,Eenheid:document.getElementById('f-unit').value||null,UnitQuantity:parseFloat(document.getElementById('f-qty').value)||null};try{if(id){await endpoint.update(id,dto);showToast(I18n.t('Updated.'),'success');}else{await endpoint.create(dto);showToast(I18n.t('Created.'),'success');}bootstrap.Modal.getInstance(document.getElementById('itemModal'))?.hide();await loadData();}catch(err){showToast(err.message,'danger');}}
   let _pendingAction=null;
   function showConfirm({headerClass,titleHtml,bodyText,btnClass,btnHtml}){

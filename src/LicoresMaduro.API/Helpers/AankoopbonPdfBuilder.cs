@@ -32,7 +32,7 @@ public static class AankoopbonPdfBuilder
                 page.DefaultTextStyle(t => t.FontSize(9).FontFamily(Fonts.Arial));
 
                 page.Header().Element(c => Header(c, logoBytes, copyLabel));
-                page.Content().PaddingTop(10).Element(c => Content(c, h));
+                page.Content().PaddingTop(10).Element(c => Content(c, h, copyLabel));
                 page.Footer().AlignCenter().Text(x =>
                 {
                     x.Span("Pagina ").FontSize(8).FontColor(Colors.Grey.Medium);
@@ -101,7 +101,7 @@ public static class AankoopbonPdfBuilder
     }
 
     // ── Page content ──────────────────────────────────────────────────────────
-    private static void Content(IContainer c, AbOrderHeader h)
+    private static void Content(IContainer c, AbOrderHeader h, string? copyLabel = null)
     {
         c.Column(col =>
         {
@@ -119,27 +119,27 @@ public static class AankoopbonPdfBuilder
                 });
 
                 Row2(tbl, "Bon Nr:",        h.AohBonNr,
-                          "Fecha:",         h.AohOrderDate.ToString("yyyy-MM-dd"));
-                Row2(tbl, "Requestor:",     h.AohRequestor ?? "–",
-                          "Departamento:",  h.AohDepartment ?? "–");
-                Row1(tbl, "Proveedor:",     h.AohVendorName ?? "–");
+                          "Datum:",         h.AohOrderDate.ToString("yyyy-MM-dd"));
+                Row2(tbl, "Aanvrager:",     h.AohRequestor ?? "–",
+                          "Afdeling:",      h.AohDepartment ?? "–");
+                Row1(tbl, "Leverancier:",   h.AohVendorName ?? "–");
 
                 if (!string.IsNullOrWhiteSpace(h.AohVendorAddress))
-                    Row1(tbl, "Dirección:", h.AohVendorAddress);
+                    Row1(tbl, "Adres:", h.AohVendorAddress);
 
-                Row2(tbl, "Tipo de gasto:", h.AohCostType ?? "–",
-                          "Cotización Nr:", h.AohQuotationNr ?? "–");
+                Row2(tbl, "Kostentype:", h.AohCostType ?? "–",
+                          "Offerte Nr:", h.AohQuotationNr ?? "–");
 
                 if (!string.IsNullOrWhiteSpace(h.AohRemarks))
-                    Row1(tbl, "Observaciones:", h.AohRemarks);
+                    Row1(tbl, "Opmerkingen:", h.AohRemarks);
 
                 if (h.AohVehicleId.HasValue)
                 {
                     var model = string.Join(" ",
                         new[] { h.AohVehicleType, h.AohVehicleModel }
                             .Where(s => !string.IsNullOrWhiteSpace(s)));
-                    Row2(tbl, "Vehículo:", h.AohVehicleLicense ?? "–",
-                              "Modelo:",   model);
+                    Row2(tbl, "Voertuig:", h.AohVehicleLicense ?? "–",
+                              "Model:",    model);
                 }
             });
 
@@ -151,23 +151,24 @@ public static class AankoopbonPdfBuilder
                          :                  "–";
             col.Item().Text(t =>
             {
-                t.Span("Entrega: ").Bold();
+                t.Span("Bezorging: ").Bold();
                 t.Span(delivery);
             });
 
             // ── Line items ──
             if (h.Details is { Count: > 0 })
             {
-                col.Item().Text("Líneas de Pedido").Bold().FontSize(10);
+                col.Item().Text("Bestelregels").Bold().FontSize(10);
                 col.Item().Table(tbl =>
                 {
                     tbl.ColumnsDefinition(cd =>
                     {
-                        cd.ConstantColumn(20);
-                        cd.ConstantColumn(70);
-                        cd.RelativeColumn();
-                        cd.ConstantColumn(45);
-                        cd.ConstantColumn(45);
+                        cd.ConstantColumn(18);   // #
+                        cd.ConstantColumn(60);   // Code
+                        cd.RelativeColumn(2);    // Omschrijving
+                        cd.RelativeColumn(2);    // Aanv. Omschrijving
+                        cd.ConstantColumn(38);   // Aantal
+                        cd.ConstantColumn(38);   // Eenheid
                     });
 
                     tbl.Header(hdr =>
@@ -176,10 +177,11 @@ public static class AankoopbonPdfBuilder
                             cell.Background(Colors.Grey.Lighten3).Padding(4);
 
                         hdr.Cell().Element(ThStyle).Text("#").Bold().FontSize(8);
-                        hdr.Cell().Element(ThStyle).Text("Código").Bold().FontSize(8);
-                        hdr.Cell().Element(ThStyle).Text("Descripción").Bold().FontSize(8);
-                        hdr.Cell().Element(ThStyle).Text("Cantidad").Bold().FontSize(8);
-                        hdr.Cell().Element(ThStyle).Text("Unidad").Bold().FontSize(8);
+                        hdr.Cell().Element(ThStyle).Text("Code").Bold().FontSize(8);
+                        hdr.Cell().Element(ThStyle).Text("Omschrijving").Bold().FontSize(8);
+                        hdr.Cell().Element(ThStyle).Text("Aanv. Omschrijving").Bold().FontSize(8);
+                        hdr.Cell().Element(ThStyle).Text("Aantal").Bold().FontSize(8);
+                        hdr.Cell().Element(ThStyle).Text("Eenheid").Bold().FontSize(8);
                     });
 
                     var i = 1;
@@ -189,6 +191,7 @@ public static class AankoopbonPdfBuilder
                         tbl.Cell().Background(bg).Padding(3).Text($"{i}").FontSize(8);
                         tbl.Cell().Background(bg).Padding(3).Text(d.AodProductCode ?? "").FontSize(8);
                         tbl.Cell().Background(bg).Padding(3).Text(d.AodProductDesc).FontSize(8);
+                        tbl.Cell().Background(bg).Padding(3).Text(d.AodAdditionalDesc ?? "").FontSize(8);
                         tbl.Cell().Background(bg).Padding(3).Text(d.AodQuantity.ToString("G29")).FontSize(8);
                         tbl.Cell().Background(bg).Padding(3).Text(d.AodUnit ?? "").FontSize(8);
                         i++;
@@ -203,12 +206,12 @@ public static class AankoopbonPdfBuilder
                 {
                     inner.Item().Text(t =>
                     {
-                        t.Span("Aprobado por: ").Bold();
+                        t.Span("Goedgekeurd door: ").Bold();
                         t.Span(h.AohApprovedByName ?? "–");
                     });
                     inner.Item().Text(t =>
                     {
-                        t.Span("Fecha de aprobación: ").Bold();
+                        t.Span("Goedkeuringsdatum: ").Bold();
                         t.Span(h.AohApprovedAt?.ToString("yyyy-MM-dd") ?? "–");
                     });
                 });
@@ -216,21 +219,30 @@ public static class AankoopbonPdfBuilder
                 {
                     inner.Item().Text(t =>
                     {
-                        t.Span("Monto Total: ").Bold().FontSize(11);
+                        t.Span("Totaalbedrag: ").Bold().FontSize(11);
                         t.Span($"{h.AohAmount:N2} NAF").Bold().FontSize(11).FontColor(WineColor);
                     });
                 });
             });
 
             // ── Signature block ──
-            // Solicitado = requestor, Aprobado = approver, Recibido = receiver of goods
+            // Original: only Ontvangen door
+            // Office Copy: all three blocks
+            var isOriginal = "Original".Equals(copyLabel, StringComparison.OrdinalIgnoreCase);
+            var receiverLabel = string.IsNullOrWhiteSpace(h.AohReceiverIdDoc)
+                ? h.AohReceiverName
+                : $"{h.AohReceiverName} (ID: {h.AohReceiverIdDoc})";
+
             col.Item().PaddingTop(25).Row(row =>
             {
-                SigBlock(row, "Solicitado por", h.AohRequestor);
-                row.ConstantItem(25);
-                SigBlock(row, "Aprobado por", h.AohApprovedByName);
-                row.ConstantItem(25);
-                SigBlock(row, "Recibido por", h.AohReceiverName);
+                if (!isOriginal)
+                {
+                    SigBlock(row, "Aangevraagd door", h.AohRequestor);
+                    row.ConstantItem(25);
+                    SigBlock(row, "Goedgekeurd door", h.AohApprovedByName);
+                    row.ConstantItem(25);
+                }
+                SigBlock(row, "Ontvangen door", receiverLabel);
             });
         });
     }

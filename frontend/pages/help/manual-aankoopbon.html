@@ -76,7 +76,7 @@
     <h1><i class="fas fa-file-invoice me-2"></i>Aankoopbonnen</h1>
     <p>Módulo de Órdenes de Compra Internas — Guía completa para solicitar, aprobar y cerrar órdenes de compra.</p>
     <div class="mt-3 d-flex gap-2 flex-wrap">
-      <span class="badge bg-white text-dark">Versión 1.3</span>
+      <span class="badge bg-white text-dark">Versión 1.4</span>
       <span class="badge bg-white text-dark">Fase 1</span>
       <span class="badge bg-white text-dark">Licores Maduro © 2026</span>
     </div>
@@ -97,7 +97,7 @@
           <a href="#sec4">4. Crear una Orden</a>
           <a href="#sec4b">5. Líneas de Pedido</a>
           <a href="#sec5">6. Enviar a Aprobación</a>
-          <a href="#sec6">7. Aprobar o Rechazar</a>
+          <a href="#sec6">7. Aprobar, Rechazar o Devolver</a>
           <a href="#sec7">8. Registrar Factura</a>
           <a href="#sec8">9. Cerrar la Orden</a>
           <a href="#sec9">10. Reenviar (Tras Rechazo)</a>
@@ -160,6 +160,10 @@
           <div class="flow-step">
             <div class="flow-icon bg-danger text-white"><i class="fas fa-times"></i></div>
             <div><strong><span class="badge-status badge-rejected">REJECTED</span></strong><br/>La orden fue rechazada con un motivo. El creador y el solicitante reciben correo con el motivo. El creador puede devolverla a DRAFT para corregirla.</div>
+          </div>
+          <div class="flow-step">
+            <div class="flow-icon bg-secondary text-white"><i class="fas fa-undo"></i></div>
+            <div><strong>Return to Draft</strong> <span class="badge bg-secondary text-white" style="font-size:.72rem;">PENDING → DRAFT</span><br/>Un aprobador puede devolver una orden en PENDING de vuelta a DRAFT indicando el motivo. El creador y el solicitante reciben un correo con el motivo. La orden puede corregirse y reenviarse.</div>
           </div>
           <div class="flow-step">
             <div class="flow-icon bg-primary text-white"><i class="fas fa-file-invoice-dollar"></i></div>
@@ -244,12 +248,19 @@
       <!-- 6 -->
       <div id="sec6" class="card shadow-sm mb-4">
         <div class="card-body p-4">
-          <div class="section-title">7. Aprobar o Rechazar <small class="text-muted fs-6">(Admin / SuperAdmin)</small></div>
+          <div class="section-title">7. Aprobar, Rechazar o Devolver a Borrador <small class="text-muted fs-6">(Admin / SuperAdmin)</small></div>
+
+          <div class="info-box mb-3">
+            <strong><i class="fas fa-info-circle me-1"></i>Importante:</strong> Para las órdenes en estado <span class="badge-status badge-pending">PENDING APPROVAL</span>, los botones de acción <strong>no aparecen directamente en la tabla</strong>. Debes hacer clic en el ícono <i class="fas fa-eye"></i> (View) para abrir el detalle de la orden y desde allí ejecutar la acción.
+          </div>
+
           <div class="step-box">
             <div class="d-flex align-items-center mb-2"><span class="step-num">A</span><strong>Aprobar</strong></div>
             <ol class="ps-4 mb-0">
               <li>Localizar la orden en estado <span class="badge-status badge-pending">PENDING APPROVAL</span>.</li>
-              <li>Clic en <i class="fas fa-check text-success"></i> (Approve).</li>
+              <li>Clic en <i class="fas fa-eye text-primary"></i> (View) para abrir el detalle.</li>
+              <li>Clic en el botón <span class="badge bg-success">Approve</span> en el modal de View.</li>
+              <li>El sistema muestra un modal de confirmación — revisar los datos y confirmar.</li>
               <li>La orden pasa a <span class="badge-status badge-approved">APPROVED</span>.</li>
               <li>El sistema envía automáticamente dos correos con PDF adjunto:
                 <ul class="mt-1">
@@ -259,15 +270,31 @@
               </li>
             </ol>
           </div>
+
           <div class="step-box">
             <div class="d-flex align-items-center mb-2"><span class="step-num">R</span><strong>Rechazar</strong></div>
             <ol class="ps-4 mb-0">
-              <li>Clic en <i class="fas fa-times text-danger"></i> (Reject).</li>
+              <li>Abrir el detalle de la orden con <i class="fas fa-eye text-primary"></i> (View).</li>
+              <li>Clic en el botón <span class="badge bg-danger">Reject</span>.</li>
               <li>Ingresar el <strong>motivo del rechazo</strong> (obligatorio).</li>
               <li>La orden pasa a <span class="badge-status badge-rejected">REJECTED</span>.</li>
               <li>El creador y el solicitante reciben un correo con el motivo del rechazo.</li>
             </ol>
           </div>
+
+          <div class="step-box">
+            <div class="d-flex align-items-center mb-2"><span class="step-num">D</span><strong>Devolver a Borrador (Return to Draft)</strong></div>
+            <ol class="ps-4 mb-0">
+              <li>Abrir el detalle de la orden con <i class="fas fa-eye text-primary"></i> (View).</li>
+              <li>Clic en el botón <span class="badge bg-secondary">Return to Draft</span>.</li>
+              <li>Ingresar el <strong>motivo</strong> por el que se devuelve a borrador (obligatorio).</li>
+              <li>La orden vuelve a <span class="badge-status badge-draft">DRAFT</span>.</li>
+              <li>El creador y el solicitante reciben un correo con el motivo indicado.</li>
+              <li>El creador puede corregir la orden y reenviarla a aprobación.</li>
+            </ol>
+            <div class="note-box mt-2">Use <strong>Return to Draft</strong> cuando la orden necesita correcciones menores (ej: datos incompletos, producto incorrecto) sin rechazarla formalmente.</div>
+          </div>
+
           <div class="note-box mt-2">Para que los correos lleguen correctamente, el Requestor debe tener un email configurado en el catálogo de Requestors y el usuario creator debe tener email en su perfil de usuario.</div>
         </div>
       </div>
@@ -339,8 +366,21 @@
             </div>
           </div>
 
-          <p>Ambas páginas contienen exactamente la misma información — la única diferencia es la etiqueta de copia en la esquina superior derecha.</p>
-          <div class="note-box">El PDF incluye: datos del proveedor, líneas de pedido, monto total, método de entrega, datos de aprobación y bloque de firmas.</div>
+          <p>Las dos páginas difieren en el contenido del bloque de firmas al pie del documento:</p>
+          <table class="table table-bordered field-table mb-3">
+            <thead><tr><th>Copia</th><th>Bloques de firma incluidos</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><span class="copy-badge-orig">ORIGINAL</span></td>
+                <td>Solo <strong>Ontvangen door</strong> (Recibido por) — nombre e ID del Receiver</td>
+              </tr>
+              <tr>
+                <td><span class="copy-badge-office">OFFICE COPY</span></td>
+                <td><strong>Aangevraagd door</strong> (Solicitado por) + <strong>Goedgekeurd door</strong> (Aprobado por) + <strong>Ontvangen door</strong></td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="note-box">El PDF incluye: datos del proveedor, líneas de pedido (con columna <strong>Additional Description</strong>), monto total, método de entrega, datos de aprobación y bloque de firmas. El Receiver aparece con su número de identificación (ID) cuando está configurado.</div>
         </div>
       </div>
 
@@ -371,6 +411,11 @@
                 <td>Orden rechazada</td>
                 <td>Creator + Requestor</td>
                 <td>Notificación con el motivo del rechazo</td>
+              </tr>
+              <tr>
+                <td>Orden devuelta a borrador (Return to Draft)</td>
+                <td>Creator + Requestor</td>
+                <td>Notificación con el motivo indicado por el aprobador</td>
               </tr>
             </tbody>
           </table>
@@ -485,11 +530,17 @@
 
           <p><strong>¿Qué pasa si selecciono un producto que no tiene Cost Type?</strong><br/>
           El campo Cost Type de la línea quedará en blanco y podrás ingresarlo manualmente.</p>
+
+          <p><strong>¿Cuál es la diferencia entre Reject y Return to Draft?</strong><br/>
+          <strong>Reject</strong> cambia el estado a <span class="badge-status badge-rejected">REJECTED</span> (rechazo formal). <strong>Return to Draft</strong> devuelve la orden directamente a <span class="badge-status badge-draft">DRAFT</span> para que el creador la corrija y reenvíe, sin pasar por REJECTED. Ambas opciones envían correo al creador y al requestor con el motivo indicado.</p>
+
+          <p><strong>¿El aprobador puede ver el detalle completo de la orden antes de decidir?</strong><br/>
+          Sí. Al hacer clic en el ícono <i class="fas fa-eye"></i> (View) en la tabla, se abre un modal con todos los datos de la orden, incluyendo las líneas de pedido con sus columnas Additional Description y Cost Type, así como el PDF de cotización adjunto. Desde ese modal están disponibles los botones Approve, Reject y Return to Draft.</p>
         </div>
       </div>
 
       <div class="text-center text-muted mt-3 mb-5" style="font-size:.82rem;">
-        Licores Maduro — Sistema de Gestión Interna &nbsp;|&nbsp; Manual Aankoopbonnen v1.3 &nbsp;|&nbsp; 2026
+        Licores Maduro — Sistema de Gestión Interna &nbsp;|&nbsp; Manual Aankoopbonnen v1.4 &nbsp;|&nbsp; 2026
       </div>
     </div><!-- /col -->
   </div><!-- /row -->

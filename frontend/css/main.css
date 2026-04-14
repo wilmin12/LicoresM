@@ -651,7 +651,7 @@ h1,h2,h3,h4,h5,h6 { font-weight: 600; color: var(--text-primary); }
 }
 
 .page-content {
-  padding: calc(var(--topbar-height) + 1.5rem) 1.5rem 2rem;
+  padding: calc(var(--topbar-height) + 1.5rem) 1.5rem 5rem;
   flex: 1;
 }
 

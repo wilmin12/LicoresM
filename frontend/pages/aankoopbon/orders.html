@@ -253,8 +253,11 @@
                 <i class="fas fa-file-pdf me-1"></i>Preview
               </button>
             </div>
-            <div id="f-pdf-current" class="mt-1" style="display:none">
-              <small class="text-success"><i class="fas fa-file-pdf me-1"></i>PDF already attached — upload a new file to replace it.</small>
+            <div id="f-pdf-current" class="mt-1 d-none" style="display:flex;align-items:center;gap:8px;">
+              <small class="text-success" id="f-pdf-current-name"><i class="fas fa-file-pdf me-1"></i>PDF already attached — upload a new file to replace it.</small>
+              <button type="button" id="btn-pdf-preview-existing" class="btn btn-sm btn-outline-danger" style="white-space:nowrap;" onclick="previewExistingPdf()">
+                <i class="fas fa-file-pdf me-1"></i>Preview
+              </button>
             </div>
           </div>
         </div>
@@ -363,6 +366,47 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
         <button type="button" class="btn btn-danger fw-bold" onclick="confirmReject()"><i class="fas fa-times me-1"></i>Reject</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Confirm Approve ─────────────────────────────────────────────── -->
+<div class="modal fade" id="modal-confirm-approve" tabindex="-1" data-bs-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header border-0">
+        <h5 class="modal-title fw-bold text-success"><i class="fas fa-check-circle me-2"></i>Approve Aankoopbon</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body pt-0">
+        <p>Are you sure you want to approve aankoopbon <strong id="confirm-approve-bonnr"></strong>?</p>
+        <p class="text-muted small mb-0">This action will notify the requestor and creator by email.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-success fw-bold" onclick="confirmApprove()"><i class="fas fa-check me-1"></i>Approve</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Return to Draft ────────────────────────────────────────────── -->
+<div class="modal fade" id="modal-return-draft" tabindex="-1" data-bs-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header border-0">
+        <h5 class="modal-title fw-bold text-warning"><i class="fas fa-undo me-2"></i>Return to Draft</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body pt-0">
+        <p class="text-muted small">The aankoopbon will be returned to <strong>DRAFT</strong> so the creator can make changes and resubmit.</p>
+        <label class="form-label fw-semibold">Reason <span class="text-danger">*</span></label>
+        <textarea id="f-return-reason" class="form-control" rows="3" maxlength="500" placeholder="Explain why this aankoopbon is being returned to draft..."></textarea>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-warning fw-bold" onclick="confirmReturnToDraft()"><i class="fas fa-undo me-1"></i>Return to Draft</button>
       </div>
     </div>
   </div>
@@ -591,12 +635,7 @@ function _buildActions(r) {
     html += `<button class="btn btn-xs btn-outline-danger" onclick="deleteBon(${r.AohId})" title="Delete"><i class="fas fa-trash"></i></button>`;
   }
 
-  if (r.AohStatus === 'PENDING' && _isAdmin) {
-    if (r.HasQuotationPdf)
-      html += ` <button class="btn btn-xs btn-outline-danger" onclick="previewPdf(${r.AohId})" title="Preview Quotation PDF"><i class="fas fa-file-pdf"></i></button>`;
-    html += ` <button class="btn btn-xs btn-success" onclick="approveBon(${r.AohId})" title="Approve"><i class="fas fa-check"></i></button>`;
-    html += ` <button class="btn btn-xs btn-danger"  onclick="openReject(${r.AohId})" title="Reject"><i class="fas fa-times"></i></button>`;
-  }
+  // PENDING: approver must open View first — no direct action buttons in the table
 
   if (r.AohStatus === 'APPROVED') {
     if (isOwner || _isAdmin)
@@ -739,7 +778,7 @@ function _resetForm() {
   document.getElementById('quote-mandatory-warning').style.display = 'none';
   document.getElementById('f-quotation-pdf').value = '';
   document.getElementById('btn-pdf-preview-local').style.display = 'none';
-  document.getElementById('f-pdf-current').style.display = 'none';
+  document.getElementById('f-pdf-current').classList.add('d-none');
   document.getElementById('details-body').innerHTML = '';
   addDetailRow();
 }
@@ -767,7 +806,16 @@ function _fillForm(h) {
   _setVal('f-vehicle-model',h.AohVehicleModel);
   document.getElementById('f-quotation-pdf').value = '';
   document.getElementById('btn-pdf-preview-local').style.display = 'none';
-  document.getElementById('f-pdf-current').style.display = h.AohQuotationPdfPath ? 'block' : 'none';
+  if (h.AohQuotationPdfPath) {
+    const pdfName = h.AohQuotationPdfPath.split(/[\\/]/).pop();
+    const el = document.getElementById('f-pdf-current');
+    el.classList.remove('d-none');
+    document.getElementById('f-pdf-current-name').innerHTML =
+      `<i class="fas fa-file-pdf me-1"></i><strong>${_esc(pdfName)}</strong> — PDF already attached, upload a new file to replace it.`;
+    el.dataset.bonId = h.AohId;
+  } else {
+    document.getElementById('f-pdf-current').classList.add('d-none');
+  }
 
   // Vendor address fallback if not in catalog
   if (h.AohVendorId && !document.getElementById('f-vendor').value)
@@ -936,7 +984,7 @@ async function saveDraft() {
   const vendor   = (_vendors || []).find(v => v.VndId === vendorId);
   if (vendor?.VndQuoteMandatory) {
     const hasNewFile     = !!document.getElementById('f-quotation-pdf').files?.[0];
-    const hasExistingPdf = document.getElementById('f-pdf-current').style.display !== 'none';
+    const hasExistingPdf = !document.getElementById('f-pdf-current').classList.contains('d-none');
     if (!hasNewFile && !hasExistingPdf) {
       showToast('This vendor requires a quotation PDF. Please attach a PDF before saving.', 'danger');
       return;
@@ -1026,10 +1074,22 @@ async function submitClose() {
 }
 
 // ── Approve / Reject ──────────────────────────────────────────────────────
-async function approveBon(id) {
-  const res = await API.patch(`/api/aankoopbon/orders/${id}/approve`, {});
-  if (res?.Success) { showToast('Approved!','success'); load(); }
-  else showToast(res?.Message||'Error.','danger');
+let _approveId = null;
+
+function approveBon(id) {
+  _approveId = id;
+  const bon = _viewData?.AohBonNr || _rowsMap[id]?.AohBonNr || `#${id}`;
+  document.getElementById('confirm-approve-bonnr').textContent = bon;
+  bootstrap.Modal.getInstance(document.getElementById('modal-view'))?.hide();
+  new bootstrap.Modal(document.getElementById('modal-confirm-approve')).show();
+}
+
+async function confirmApprove() {
+  if (!_approveId) return;
+  bootstrap.Modal.getInstance(document.getElementById('modal-confirm-approve')).hide();
+  const res = await API.patch(`/api/aankoopbon/orders/${_approveId}/approve`, {});
+  if (res?.Success) { showToast('Approved!', 'success'); load(); }
+  else showToast(res?.Message || 'Error.', 'danger');
 }
 
 function openReject(id) {
@@ -1047,6 +1107,26 @@ async function confirmReject() {
     showToast('Aankoopbon rejected.','warning');
     load();
   } else showToast(res?.Message||'Error.','danger');
+}
+
+// ── Return to Draft (PENDING → DRAFT, by approver) ───────────────────────
+let _returnDraftId = null;
+function openReturnToDraft(id) {
+  _returnDraftId = id;
+  document.getElementById('f-return-reason').value = '';
+  bootstrap.Modal.getInstance(document.getElementById('modal-view'))?.hide();
+  new bootstrap.Modal(document.getElementById('modal-return-draft')).show();
+}
+
+async function confirmReturnToDraft() {
+  const reason = document.getElementById('f-return-reason').value.trim();
+  if (!reason) { showToast('Reason is required.', 'danger'); return; }
+  const res = await API.patch(`/api/aankoopbon/orders/${_returnDraftId}/return-to-draft`, { Reason: reason });
+  if (res?.Success) {
+    bootstrap.Modal.getInstance(document.getElementById('modal-return-draft')).hide();
+    showToast('Aankoopbon returned to Draft.', 'warning');
+    load();
+  } else showToast(res?.Message || 'Error.', 'danger');
 }
 
 // ── Resubmit (REJECTED → DRAFT) ──────────────────────────────────────────
@@ -1120,7 +1200,8 @@ async function viewBon(id) {
       ${h.AohVehicleLicense?`<div class="col-12"><b>Vehicle:</b> ${h.AohVehicleLicense} / ${h.AohVehicleType||''} / ${h.AohVehicleModel||''}</div>`:''}
       <div class="col-md-6"><b>Quotation #:</b> ${h.AohQuotationNr||'–'}</div>
       <div class="col-md-6"><b>Delivery:</b> ${delivery}</div>
-      ${h.AohReceiverName?`<div class="col-md-6"><b>Receiver:</b> ${h.AohReceiverName} (ID: ${h.AohReceiverIdDoc||'–'})</div>`:''}
+      <div class="col-md-6"><b>Quotation PDF:</b> ${h.AohQuotationPdfPath ? `<span class="text-success"><i class="fas fa-file-pdf me-1"></i>${_esc(h.AohQuotationPdfPath.split(/[\\/]/).pop())}</span>` : '<span class="text-muted">–</span>'}</div>
+      ${h.AohReceiverName?`<div class="col-md-6"><b>Receiver:</b> ${_esc(h.AohReceiverName)} (ID: ${_esc(h.AohReceiverIdDoc||'–')})</div>`:''}
       <div class="col-12"><b>Remarks:</b> ${_esc(h.AohRemarks||'–')}</div>
       ${h.AohStatus==='APPROVED'?`<div class="col-12 text-success"><b>Approved by:</b> ${h.AohApprovedByName} on ${h.AohApprovedAt?.slice(0,10)}</div>`:''}
       ${h.AohStatus==='REJECTED'?`<div class="col-12 text-danger"><b>Rejected by:</b> ${h.AohRejectedByName} — <i>${_esc(h.AohRejectionReason||'')}</i></div>`:''}
@@ -1128,8 +1209,8 @@ async function viewBon(id) {
     </div>
     <hr/>
     <table class="table table-sm table-bordered mb-0">
-      <thead class="table-light"><tr><th>#</th><th>Code</th><th>Description</th><th>Qty</th><th>Unit</th></tr></thead>
-      <tbody>${(h.Details||[]).map((d,i)=>`<tr><td>${i+1}</td><td>${d.AodProductCode||'–'}</td><td>${_esc(d.AodProductDesc)}</td><td>${d.AodQuantity}</td><td>${d.AodUnit||'–'}</td></tr>`).join('')}</tbody>
+      <thead class="table-light"><tr><th>#</th><th>Code</th><th>Description</th><th>Aanv. Description</th><th>Cost Type</th><th>Qty</th><th>Unit</th></tr></thead>
+      <tbody>${(h.Details||[]).map((d,i)=>`<tr><td>${i+1}</td><td>${d.AodProductCode||'–'}</td><td>${_esc(d.AodProductDesc)}</td><td>${_esc(d.AodAdditionalDesc||'–')}</td><td>${_esc(d.AodCostType||'–')}</td><td>${d.AodQuantity}</td><td>${d.AodUnit||'–'}</td></tr>`).join('')}</tbody>
     </table>
     ${invoiceSection}`;
 
@@ -1141,6 +1222,7 @@ async function viewBon(id) {
   if (h.AohStatus === 'APPROVED')
     footer += ` <button class="btn btn-outline-dark" onclick="printBon(${h.AohId})"><i class="fas fa-print me-1"></i>Print</button>`;
   if (h.AohStatus === 'PENDING' && _isAdmin) {
+    footer += ` <button class="btn btn-warning" onclick="openReturnToDraft(${h.AohId})"><i class="fas fa-undo me-1"></i>Return to Draft</button>`;
     footer += ` <button class="btn btn-danger" onclick="openReject(${h.AohId});bootstrap.Modal.getInstance(document.getElementById('modal-view')).hide()"><i class="fas fa-times me-1"></i>Reject</button>`;
     footer += ` <button class="btn btn-success" onclick="approveBon(${h.AohId});bootstrap.Modal.getInstance(document.getElementById('modal-view')).hide()"><i class="fas fa-check me-1"></i>Approve</button>`;
   }
@@ -1159,6 +1241,12 @@ function previewLocalPdf() {
   if (!file) return;
   const url = URL.createObjectURL(file);
   window.open(url, '_blank');
+}
+
+async function previewExistingPdf() {
+  const id = document.getElementById('f-pdf-current').dataset.bonId;
+  if (!id) return;
+  await previewPdf(parseInt(id));
 }
 
 // ── Preview PDF ───────────────────────────────────────────────────────────

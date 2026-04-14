@@ -355,6 +355,35 @@ public sealed class AankoopbonController : ControllerBase
         return Ok(ApiResponse.Ok("Aankoopbon rejected."));
     }
 
+    // ── PATCH /api/aankoopbon/orders/{id}/return-to-draft ── PENDING → DRAFT (by approver) ──
+    [HttpPatch("{id:int}/return-to-draft")]
+    public async Task<IActionResult> ReturnToDraft(int id, [FromBody] RejectDto dto, CancellationToken ct)
+    {
+        if (!await _permissions.HasPermissionAsync(User, "AB_AANKOOPBON", "APPROVE", ct))
+            return Forbid();
+
+        if (string.IsNullOrWhiteSpace(dto.Reason))
+            return BadRequest(ApiResponse.Fail("A reason is required to return to draft."));
+
+        var header = await _db.AbOrderHeaders
+            .FirstOrDefaultAsync(h => h.AohId == id && h.IsActive, ct);
+
+        if (header is null) return NotFound(ApiResponse.Fail($"Aankoopbon {id} not found."));
+        if (header.AohStatus != "PENDING")
+            return BadRequest(ApiResponse.Fail("Only PENDING aankoopbonnen can be returned to draft."));
+
+        header.AohStatus          = "DRAFT";
+        header.AohRejectionReason = dto.Reason.Trim();
+
+        await _db.SaveChangesAsync(ct);
+
+        await _sendEmailAsync(header, "returned", ct, rejectionReason: dto.Reason.Trim());
+
+        _log.LogInformation("Aankoopbon {BonNr} returned to DRAFT by approver {User}: {Reason}",
+            header.AohBonNr, CurrentUserName(), dto.Reason);
+        return Ok(ApiResponse.Ok("Aankoopbon returned to Draft."));
+    }
+
     // ── PATCH /api/aankoopbon/orders/{id}/resubmit ── REJECTED → DRAFT ──────────
     [HttpPatch("{id:int}/resubmit")]
     public async Task<IActionResult> Resubmit(int id, CancellationToken ct)
@@ -579,6 +608,15 @@ public sealed class AankoopbonController : ControllerBase
             byte[]? pdfAttachment = null;
             string? quotationPath = null;
 
+            // Display name per email type
+            var displayName = type switch
+            {
+                "approved" => "Aankoopbon: Request for approval",
+                "rejected" => "Request for Reject",
+                "returned" => "Request to returned to Draft",
+                _          => cfg.SenderName   // "pending" keeps the configured sender name
+            };
+
             if (type == "pending")
             {
                 var approverCfg = await _db.ModuleApproverEmails.AsNoTracking()
@@ -630,7 +668,7 @@ public sealed class AankoopbonController : ControllerBase
                         await clientOrig.ConnectAsync(cfg.SmtpHost, cfg.SmtpPort, sslOpt, ct);
                         await clientOrig.AuthenticateAsync(cfg.SenderEmail, cfg.SenderPassword, ct);
                         var msgOrig = new MimeMessage();
-                        msgOrig.From.Add(new MailboxAddress(cfg.SenderName, cfg.SenderEmail));
+                        msgOrig.From.Add(new MailboxAddress(displayName, cfg.SenderEmail));
                         msgOrig.To.Add(MailboxAddress.Parse(requestorEmail));
                         msgOrig.Subject = subject;
                         msgOrig.Body    = bbOrig.ToMessageBody();
@@ -664,7 +702,7 @@ public sealed class AankoopbonController : ControllerBase
                         await clientOffice.ConnectAsync(cfg.SmtpHost, cfg.SmtpPort, sslOpt, ct);
                         await clientOffice.AuthenticateAsync(cfg.SenderEmail, cfg.SenderPassword, ct);
                         var msgOffice = new MimeMessage();
-                        msgOffice.From.Add(new MailboxAddress(cfg.SenderName, cfg.SenderEmail));
+                        msgOffice.From.Add(new MailboxAddress(displayName, cfg.SenderEmail));
                         msgOffice.To.Add(MailboxAddress.Parse(creatorEmail));
                         msgOffice.Subject = subject;
                         msgOffice.Body    = bbOffice.ToMessageBody();
@@ -681,10 +719,55 @@ public sealed class AankoopbonController : ControllerBase
                 // Skip the generic send loop below — emails already sent above
                 return;
             }
+            else if (type == "returned")
+            {
+                var creatorEmail   = await GetCreatorEmailAsync(header, ct);
+                var requestorEmail = await GetRequestorEmailAsync(header.AohRequestor, ct);
+
+                _log.LogInformation("Aankoopbon {BonNr} return-to-draft emails — creator: {C}, requestor: {R}",
+                    header.AohBonNr, creatorEmail ?? "none", requestorEmail ?? "none");
+
+                var returnSubject = $"[Aankoopbon] {header.AohBonNr} — Returned to Draft";
+                var returnBody    = $@"<p>The aankoopbon below has been <b style='color:#b45309;'>returned to Draft</b> by {CurrentUserName()}.</p>
+{orderTable}
+<p><b>Reason:</b> {rejectionReason}</p>
+<p>Please make the necessary changes and resubmit for approval.</p>";
+
+                var sslOpt = cfg.SmtpPort == 465 ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTls;
+
+                foreach (var emailTo in new[] { creatorEmail, requestorEmail }
+                    .Where(e => !string.IsNullOrEmpty(e))
+                    .Distinct(StringComparer.OrdinalIgnoreCase))
+                {
+                    try
+                    {
+                        var bb2 = new BodyBuilder { HtmlBody = returnBody };
+                        using var c2 = new SmtpClient();
+                        await c2.ConnectAsync(cfg.SmtpHost, cfg.SmtpPort, sslOpt, ct);
+                        await c2.AuthenticateAsync(cfg.SenderEmail, cfg.SenderPassword, ct);
+                        var msg2 = new MimeMessage();
+                        msg2.From.Add(new MailboxAddress(displayName, cfg.SenderEmail));
+                        msg2.To.Add(MailboxAddress.Parse(emailTo));
+                        msg2.Subject = returnSubject;
+                        msg2.Body    = bb2.ToMessageBody();
+                        await c2.SendAsync(msg2, ct);
+                        await c2.DisconnectAsync(true, ct);
+                        _log.LogInformation("Aankoopbon {BonNr} — return-to-draft email sent to {To}", header.AohBonNr, emailTo);
+                    }
+                    catch (Exception ex)
+                    {
+                        _log.LogWarning(ex, "Could not send return-to-draft email to {To} for {BonNr}", emailTo, header.AohBonNr);
+                    }
+                }
+                return;
+            }
             else // rejected
             {
                 var creatorEmail   = await GetCreatorEmailAsync(header, ct);
                 var requestorEmail = await GetRequestorEmailAsync(header.AohRequestor, ct);
+
+                _log.LogInformation("Aankoopbon {BonNr} rejection emails — creator: {C}, requestor: {R}",
+                    header.AohBonNr, creatorEmail ?? "none", requestorEmail ?? "none");
 
                 if (!string.IsNullOrEmpty(creatorEmail))
                     recipients.Add(creatorEmail);
@@ -700,6 +783,8 @@ public sealed class AankoopbonController : ControllerBase
 <p>Please contact your manager for more information.</p>";
             }
 
+            _log.LogInformation("Aankoopbon {BonNr} [{Type}] — final recipients: {Count} ({List})",
+                header.AohBonNr, type, recipients.Count, string.Join(", ", recipients));
             if (recipients.Count == 0) return;
 
             // ── Build MimeMessage ──────────────────────────────────────────
@@ -728,7 +813,7 @@ public sealed class AankoopbonController : ControllerBase
             foreach (var to in recipients)
             {
                 var message = new MimeMessage();
-                message.From.Add(new MailboxAddress(cfg.SenderName, cfg.SenderEmail));
+                message.From.Add(new MailboxAddress(displayName, cfg.SenderEmail));
                 message.To.Add(MailboxAddress.Parse(to));
                 message.Subject = subject;
                 message.Body    = messageBody;
