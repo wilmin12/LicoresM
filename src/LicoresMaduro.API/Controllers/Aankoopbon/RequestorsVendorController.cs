@@ -23,7 +23,7 @@ public sealed class RequestorsVendorController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAll(
         [FromQuery] string? search = null, [FromQuery] bool includeInactive = false,
-        [FromQuery] int page = 1, [FromQuery] int pageSize = 50, CancellationToken ct = default)
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 500, CancellationToken ct = default)
     {
         var q = _db.RequestorVendors.AsNoTracking();
         if (!includeInactive) q = q.Where(x => x.IsActive);
