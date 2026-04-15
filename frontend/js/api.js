@@ -513,3 +513,46 @@ const API = (() => {
 
 // Make available globally
 window.API = API;
+
+/**
+ * BtnLoader — maneja el estado loading/ready de un botón.
+ *
+ * Uso:
+ *   BtnLoader.start(btn);          // activa spinner, deshabilita
+ *   BtnLoader.stop(btn);           // restaura texto, habilita
+ *   BtnLoader.wrap(btn, asyncFn);  // auto start/stop alrededor de una promesa
+ */
+window.BtnLoader = (() => {
+  function start(btn) {
+    if (!btn) return;
+    if (!btn.dataset.originalHtml) {
+      btn.dataset.originalHtml = btn.innerHTML;
+    }
+    btn.classList.add('btn-loading');
+    btn.disabled = true;
+    if (!btn.querySelector('.btn-text')) {
+      btn.innerHTML = `<span class="btn-text">${btn.innerHTML}</span>`;
+    }
+  }
+
+  function stop(btn) {
+    if (!btn) return;
+    btn.classList.remove('btn-loading');
+    btn.disabled = false;
+    if (btn.dataset.originalHtml) {
+      btn.innerHTML = btn.dataset.originalHtml;
+      delete btn.dataset.originalHtml;
+    }
+  }
+
+  async function wrap(btn, asyncFn) {
+    start(btn);
+    try {
+      return await asyncFn();
+    } finally {
+      stop(btn);
+    }
+  }
+
+  return { start, stop, wrap };
+})();
