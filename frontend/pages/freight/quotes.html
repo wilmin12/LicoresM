@@ -266,7 +266,7 @@
     <div class="modal-header"><h5 class="modal-title" id="modal-quote-title">New Quote</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
     <div class="modal-body">
       <div class="row g-3">
-        <div class="col-sm-4" id="q-num-wrap" style="display:none;"><label class="form-label fw-600">Quote #</label><input type="number" id="q-num" class="form-control form-control-sm" min="1" readonly /></div>
+        <div class="col-sm-4" id="q-num-wrap"><label class="form-label fw-600">Quote #</label><input type="number" id="q-num" class="form-control form-control-sm" min="1" readonly /></div>
         <div class="col-sm-8"><label class="form-label fw-600">Forwarder<span class="text-danger">*</span></label><select id="q-fwd" class="form-select form-select-sm" onchange="onModalFwdChange(this)"><option value="">— select —</option></select></div>
         <div class="col-12" id="q-based-on-wrap" style="display:none;"><label class="form-label fw-600">Based on Quote</label><select id="q-based-on" class="form-select form-select-sm" onchange="onBasedOnChange(this)"><option value="">— start fresh —</option></select></div>
         <div class="col-sm-6"><label class="form-label fw-600">Port of Loading</label><select id="q-port" class="form-select form-select-sm"><option value="">— select —</option></select></div>
@@ -1724,8 +1724,9 @@ async function onBasedOnChange(sel) {
 // ── QUOTE MODAL ────────────────────────────────────────────────────────────
 async function openNewQuote() {
   document.getElementById('modal-quote-title').textContent = 'New Quote';
-  document.getElementById('q-num-wrap').style.display = 'none';
-  document.getElementById('q-num').value = '';
+  document.getElementById('q-num').value = '...';
+  const numRes = await API.appliedQuotes.getNextNumber().catch(() => ({ Data: '?' }));
+  document.getElementById('q-num').value = numRes.Data || '?';
   _fillSelect('q-fwd',   _forwarders, 'FfCode',  'FfName');
   _fillSelect('q-port',  _ports,      'PlCode',  'PlName');
   _fillSelect('q-route', _routes,     'RouCode', 'RouDescription');
@@ -1758,7 +1759,6 @@ function openEditQuote(q) {
   _fillSelect('q-route', _routes,     'RouCode', 'RouDescription');
   _tsReinit('q-fwd'); _tsReinit('q-port'); _tsReinit('q-route');
   document.getElementById('q-based-on-wrap').style.display = 'none';
-  document.getElementById('q-num-wrap').style.display = '';
   document.getElementById('q-num').value = q.FqhQuoteNumber;
   _tsSet('q-fwd',   q.FqhForwarder || '');
   _tsSet('q-port',  q.FqhPort      || '');
