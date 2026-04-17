@@ -108,13 +108,13 @@ public sealed class FreightQuotesController : ControllerBase
         if (!ModelState.IsValid)
             return BadRequest(ApiResponse.Fail(ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage))));
 
-        // Guard against duplicate quote number
-        if (await _db.FreightQuoteHeaders.AnyAsync(x => x.FqhQuoteNumber == dto.QuoteNumber, ct))
-            return Conflict(ApiResponse.Fail($"Quote number {dto.QuoteNumber} already exists."));
+        // Quote number is assigned server-side (MAX+1) inside the transaction to prevent collisions
+        var max = await _db.FreightQuoteHeaders
+                           .MaxAsync(x => (int?)x.FqhQuoteNumber, ct) ?? 0;
 
         var entity = new FreightQuoteHeader
         {
-            FqhQuoteNumber = dto.QuoteNumber,
+            FqhQuoteNumber = max + 1,
             FqhForwarder   = dto.Forwarder,
             FqhPort        = dto.Port,
             FqhRoute       = dto.Route,
