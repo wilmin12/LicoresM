@@ -408,6 +408,9 @@ let _activeQuote   = null;
 let _activeTab     = null;   // null = sin filtro de tab; se activa al hacer click en un tab
 let _pendingDeleteFn = null;
 let _newQuoteSourceOceanPorts = null;
+let _newQuoteSourceInland     = null;
+let _newQuoteSourcePortAdd    = null;
+let _newQuoteSourceLcl        = null;
 
 // catalog caches
 let _forwarders = [], _ports = [], _routes = [], _currencies = [];
@@ -1700,6 +1703,9 @@ async function onModalFwdChange(sel) {
 
 async function onBasedOnChange(sel) {
   _newQuoteSourceOceanPorts = null;
+  _newQuoteSourceInland     = null;
+  _newQuoteSourcePortAdd    = null;
+  _newQuoteSourceLcl        = null;
   if (!sel.value) {
     document.getElementById('q-port').value    = '';
     document.getElementById('q-route').value   = '';
@@ -1717,7 +1723,10 @@ async function onBasedOnChange(sel) {
     document.getElementById('q-transit').value = q.FqhTransitDays != null ? q.FqhTransitDays : '';
     document.getElementById('q-start').value   = q.FqhStartDate   ? q.FqhStartDate.substring(0,10) : '';
     document.getElementById('q-end').value     = q.FqhEndDate     ? q.FqhEndDate.substring(0,10)   : '';
-    _newQuoteSourceOceanPorts = q.OceanPorts?.length ? q.OceanPorts : null;
+    _newQuoteSourceOceanPorts = q.OceanPorts?.length    ? q.OceanPorts    : null;
+    _newQuoteSourceInland     = q.InlandRegions?.length  ? q.InlandRegions  : null;
+    _newQuoteSourcePortAdd    = q.InlandPortAdds?.length ? q.InlandPortAdds : null;
+    _newQuoteSourceLcl        = q.LclPorts?.length       ? q.LclPorts       : null;
   } catch { /* ignore */ }
 }
 
@@ -1740,7 +1749,30 @@ async function openNewQuote() {
   document.getElementById('q-transit').value = '';
   document.getElementById('q-start').value   = '';
   document.getElementById('q-end').value     = '';
+  // Resetear todas las fuentes de clonación
   _newQuoteSourceOceanPorts = null;
+  _newQuoteSourceInland     = null;
+  _newQuoteSourcePortAdd    = null;
+  _newQuoteSourceLcl        = null;
+
+  // Si hay un quote activo, pre-cargar la fuente según el tab activo
+  if (_activeQuote) {
+    switch (_activeTab) {
+      case 'ocean':
+        _newQuoteSourceOceanPorts = _activeQuote.OceanPorts?.length    ? _activeQuote.OceanPorts    : null;
+        break;
+      case 'inland':
+        _newQuoteSourceInland     = _activeQuote.InlandRegions?.length  ? _activeQuote.InlandRegions  : null;
+        break;
+      case 'portadd':
+        _newQuoteSourcePortAdd    = _activeQuote.InlandPortAdds?.length ? _activeQuote.InlandPortAdds : null;
+        break;
+      case 'lcl':
+        _newQuoteSourceLcl        = _activeQuote.LclPorts?.length       ? _activeQuote.LclPorts       : null;
+        break;
+    }
+  }
+
   _hideErr('quote-form-error');
   document.getElementById('modal-quote').dataset.editId = '';
   // Si hay un Forwarder seleccionado en el filtro → pre-seleccionar y cargar sus quotes
@@ -1811,6 +1843,75 @@ async function saveQuote() {
         }
       }
       _newQuoteSourceOceanPorts = null;
+
+      // Copy Inland data (regions → types → details)
+      if (_activeQuoteId && _newQuoteSourceInland?.length) {
+        try {
+          for (const region of _newQuoteSourceInland) {
+            const rRes = await API.appliedQuotes.addInlandRegion(_activeQuoteId, { Region: region.FqerRegion });
+            const newRegionId = rRes?.Data?.FqerId;
+            if (!newRegionId) continue;
+            for (const rt of (region.RegionTypes || [])) {
+              const rtRes = await API.appliedQuotes.addInlandRegionType(newRegionId, { ChargeType: rt.FqertChargeType });
+              const newRtId = rtRes?.Data?.FqertId;
+              if (!newRtId) continue;
+              for (const det of (rt.Details || [])) {
+                await API.appliedQuotes.addInlandDetail(newRtId, {
+                  From: det.FqertdFrom ?? null, To: det.FqertdTo ?? null,
+                  Price: det.FqertdPrice ?? null, PriceType: det.FqertdPriceType || null,
+                  AmountMin: det.FqertdAmountMin ?? null, AmountMax: det.FqertdAmountMax ?? null
+                });
+              }
+            }
+          }
+        } catch (inlandErr) { console.warn('Inland copy failed:', inlandErr?.message); }
+      }
+      _newQuoteSourceInland = null;
+
+      // Copy Port Additional data (flat list)
+      if (_activeQuoteId && _newQuoteSourcePortAdd?.length) {
+        try {
+          for (const pa of _newQuoteSourcePortAdd) {
+            await API.appliedQuotes.addPortAdd(_activeQuoteId, {
+              ChargeType: pa.FqipaChargeType || null, LoadType: pa.FqipaLoadType || null,
+              Amount: pa.FqipaAmount ?? null, Currency: pa.FqipaCurrency || null,
+              Action: pa.FqipaAction || null, ChargeOver: pa.FqipaChargeOver || null,
+              ChargePer: pa.FqipaChargePer || null, From: pa.FqipaFrom ?? null,
+              To: pa.FqipaTo ?? null, AmountMin: pa.FqipaAmountMin ?? null,
+              AmountMax: pa.FqipaAmountMax ?? null
+            });
+          }
+        } catch (paErr) { console.warn('Port Additional copy failed:', paErr?.message); }
+      }
+      _newQuoteSourcePortAdd = null;
+
+      // Copy LCL data (ports → port types → details)
+      if (_activeQuoteId && _newQuoteSourceLcl?.length) {
+        try {
+          for (const port of _newQuoteSourceLcl) {
+            const pRes = await API.appliedQuotes.addLclPort(_activeQuoteId, { Port: port.FqlcpPort, Remarks: port.FqlcpRemarks || null });
+            const newPortId = pRes?.Data?.FqlcpId;
+            if (!newPortId) continue;
+            for (const pt of (port.PortTypes || [])) {
+              const ptRes = await API.appliedQuotes.addLclPortType(newPortId, {
+                ChargeType: pt.FqlcptChargeType || null, AmountMin: pt.FqlcptAmountMin ?? null,
+                AmountMax: pt.FqlcptAmountMax ?? null, Currency: pt.FqlcptCurrency || null
+              });
+              const newPtId = ptRes?.Data?.FqlcptId;
+              if (!newPtId) continue;
+              for (const det of (pt.Details || [])) {
+                await API.appliedQuotes.addLclDetail(newPtId, {
+                  From: det.FqlcptdFrom ?? null, To: det.FqlcptdTo ?? null,
+                  Price: det.FqlcptdPrice ?? null, Over: det.FqlcptdOver ?? null,
+                  PriceType: det.FqlcptdPriceType || null,
+                  AmountMin: det.FqlcptdAmountMin ?? null, AmountMax: det.FqlcptdAmountMax ?? null
+                });
+              }
+            }
+          }
+        } catch (lclErr) { console.warn('LCL copy failed:', lclErr?.message); }
+      }
+      _newQuoteSourceLcl = null;
     }
     mQuote.hide();
     await _loadList();
