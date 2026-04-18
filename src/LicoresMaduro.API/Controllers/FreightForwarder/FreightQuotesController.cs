@@ -47,10 +47,10 @@ public sealed class FreightQuotesController : ControllerBase
 
         q = tab switch
         {
-            "ocean"   => q.Where(x => x.OceanPorts.Any()),
-            "inland"  => q.Where(x => x.InlandRegions.Any()),
-            "portadd" => q.Where(x => x.InlandPortAdds.Any()),
-            "lcl"     => q.Where(x => x.LclPorts.Any()),
+            "ocean"   => q.Where(x => x.FqhFreightType == "ocean"),
+            "inland"  => q.Where(x => x.FqhFreightType == "inland"),
+            "portadd" => q.Where(x => x.FqhFreightType == "portadd"),
+            "lcl"     => q.Where(x => x.FqhFreightType == "lcl"),
             _         => q
         };
 
@@ -116,6 +116,7 @@ public sealed class FreightQuotesController : ControllerBase
         {
             FqhQuoteNumber = max + 1,
             FqhForwarder   = dto.Forwarder,
+            FqhFreightType = dto.FreightType,
             FqhPort        = dto.Port,
             FqhRoute       = dto.Route,
             FqhTransitDays = dto.TransitDays,
@@ -639,6 +640,7 @@ public sealed class FreightQuotesController : ControllerBase
 public sealed record FreightQuoteHeaderDto(
     int      QuoteNumber,
     string   Forwarder,
+    string?  FreightType,
     string?  Port,
     string?  Route,
     int?     TransitDays,

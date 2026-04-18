@@ -141,6 +141,8 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<Receiver>                   Receivers                   => Set<Receiver>();
     public DbSet<Requestor>                  Requestors                  => Set<Requestor>();
     public DbSet<RequestorVendor>            RequestorVendors            => Set<RequestorVendor>();
+    public DbSet<VendorDepartment>           VendorDepartments           => Set<VendorDepartment>();
+    public DbSet<DepartmentCostType>         DepartmentCostTypes         => Set<DepartmentCostType>();
     public DbSet<CostType>                   CostTypes                   => Set<CostType>();
     public DbSet<VehicleType>                VehicleTypes                => Set<VehicleType>();
     public DbSet<Vehicle>                    Vehicles                    => Set<Vehicle>();
@@ -596,6 +598,7 @@ public sealed class ApplicationDbContext : DbContext
             e.Property(x => x.FqhId).HasColumnName("FQH_Id");
             e.Property(x => x.FqhQuoteNumber).HasColumnName("FQH_QUOTE_NUMBER");
             e.Property(x => x.FqhForwarder).HasColumnName("FQH_FORWARDER").HasMaxLength(10);
+            e.Property(x => x.FqhFreightType).HasColumnName("FQH_FREIGHT_TYPE").HasMaxLength(10);
             e.Property(x => x.FqhPort).HasColumnName("FQH_PORT").HasMaxLength(10);
             e.Property(x => x.FqhRoute).HasColumnName("FQH_ROUTE").HasMaxLength(15);
             e.Property(x => x.FqhTransitDays).HasColumnName("FQH_TRANSIT_DAYS");
@@ -1080,6 +1083,8 @@ public sealed class ApplicationDbContext : DbContext
         modelBuilder.Entity<Receiver>(e => { e.ToTable("RECEIVERS"); e.HasKey(x => x.RecId); e.Property(x => x.RecId).HasColumnName("REC_Id"); e.Property(x => x.RecName).HasColumnName("REC_NAME").HasMaxLength(30); e.Property(x => x.RecIdDoc).HasColumnName("REC_ID_DOC").HasMaxLength(15); e.Property(x => x.IsActive).HasColumnName("IS_Active"); e.Property(x => x.CreatedAt).HasColumnName("Created_At"); });
         modelBuilder.Entity<Requestor>(e => { e.ToTable("REQUESTORS"); e.HasKey(x => x.ReqId); e.Property(x => x.ReqId).HasColumnName("REQ_Id"); e.Property(x => x.ReqName).HasColumnName("REQ_NAME").HasMaxLength(15); e.Property(x => x.ReqEmail).HasColumnName("REQ_EMAIL").HasMaxLength(50); e.Property(x => x.IsActive).HasColumnName("IS_Active"); e.Property(x => x.CreatedAt).HasColumnName("Created_At"); });
         modelBuilder.Entity<RequestorVendor>(e => { e.ToTable("REQUESTORS_VENDOR"); e.HasKey(x => x.RvId); e.Property(x => x.RvId).HasColumnName("RV_Id"); e.Property(x => x.RsRequestor).HasColumnName("RS_REQUESTOR").HasMaxLength(15); e.Property(x => x.RsVendor).HasColumnName("RS_VENDOR").HasMaxLength(6); e.Property(x => x.IsActive).HasColumnName("IS_Active"); e.Property(x => x.CreatedAt).HasColumnName("Created_At"); });
+        modelBuilder.Entity<VendorDepartment>(e => { e.ToTable("AB_VENDOR_DEPARTMENT"); e.HasKey(x => x.VdId); e.Property(x => x.VdId).HasColumnName("VD_Id"); e.Property(x => x.VdVendor).HasColumnName("VD_VENDOR").HasMaxLength(10); e.Property(x => x.VdDepartment).HasColumnName("VD_DEPARTMENT").HasMaxLength(50); e.Property(x => x.IsActive).HasColumnName("IS_Active"); e.Property(x => x.CreatedAt).HasColumnName("Created_At"); });
+        modelBuilder.Entity<DepartmentCostType>(e => { e.ToTable("AB_DEPARTMENT_COST_TYPE"); e.HasKey(x => x.DctId); e.Property(x => x.DctId).HasColumnName("DCT_Id"); e.Property(x => x.DctDepartment).HasColumnName("DCT_DEPARTMENT").HasMaxLength(50); e.Property(x => x.DctCostType).HasColumnName("DCT_COST_TYPE").HasMaxLength(50); e.Property(x => x.IsActive).HasColumnName("IS_Active"); e.Property(x => x.CreatedAt).HasColumnName("Created_At"); });
         modelBuilder.Entity<CostType>(e => { e.ToTable("COST_TYPE"); e.HasKey(x => x.CtId); e.Property(x => x.CtId).HasColumnName("CT_Id"); e.Property(x => x.TcName).HasColumnName("TC_NAME").HasMaxLength(15); e.Property(x => x.IsActive).HasColumnName("IS_Active"); e.Property(x => x.CreatedAt).HasColumnName("Created_At"); });
         modelBuilder.Entity<VehicleType>(e => { e.ToTable("VEHICLE_TYPE"); e.HasKey(x => x.VtId); e.Property(x => x.VtId).HasColumnName("VT_Id"); e.Property(x => x.VtName).HasColumnName("VT_NAME").HasMaxLength(15); e.Property(x => x.IsActive).HasColumnName("IS_Active"); e.Property(x => x.CreatedAt).HasColumnName("Created_At"); });
         modelBuilder.Entity<Vehicle>(e => { e.ToTable("VEHICLES"); e.HasKey(x => x.VhId); e.Property(x => x.VhId).HasColumnName("VH_Id"); e.Property(x => x.VhLicense).HasColumnName("VH_LICENSE").HasMaxLength(10); e.Property(x => x.VhType).HasColumnName("VH_TYPE").HasMaxLength(15); e.Property(x => x.VhModel).HasColumnName("VH_MODEL").HasMaxLength(15); e.Property(x => x.IsActive).HasColumnName("IS_Active"); e.Property(x => x.CreatedAt).HasColumnName("Created_At"); });
@@ -1822,7 +1827,9 @@ public class Department { public int DpId { get; set; } public string DpName { g
 public class Eenheid { public int EeId { get; set; } public string UnitCode { get; set; } = string.Empty; public string Omschrijving { get; set; } = string.Empty; public double? OmrekenFaktor { get; set; } public bool IsActive { get; set; } = true; public DateTime CreatedAt { get; set; } = DateTime.UtcNow; }
 public class Receiver { public int RecId { get; set; } public string RecName { get; set; } = string.Empty; public string? RecIdDoc { get; set; } public bool IsActive { get; set; } = true; public DateTime CreatedAt { get; set; } = DateTime.UtcNow; }
 public class Requestor { public int ReqId { get; set; } public string ReqName { get; set; } = string.Empty; public string? ReqEmail { get; set; } public bool IsActive { get; set; } = true; public DateTime CreatedAt { get; set; } = DateTime.UtcNow; }
-public class RequestorVendor { public int RvId { get; set; } public string RsRequestor { get; set; } = string.Empty; public string RsVendor { get; set; } = string.Empty; public bool IsActive { get; set; } = true; public DateTime CreatedAt { get; set; } = DateTime.UtcNow; }
+public class RequestorVendor  { public int RvId  { get; set; } public string RsRequestor { get; set; } = string.Empty; public string RsVendor     { get; set; } = string.Empty; public bool IsActive { get; set; } = true; public DateTime CreatedAt { get; set; } = DateTime.UtcNow; }
+public class VendorDepartment { public int VdId  { get; set; } public string VdVendor     { get; set; } = string.Empty; public string VdDepartment { get; set; } = string.Empty; public bool IsActive { get; set; } = true; public DateTime CreatedAt { get; set; } = DateTime.UtcNow; }
+public class DepartmentCostType { public int DctId { get; set; } public string DctDepartment { get; set; } = string.Empty; public string DctCostType  { get; set; } = string.Empty; public bool IsActive { get; set; } = true; public DateTime CreatedAt { get; set; } = DateTime.UtcNow; }
 public class CostType { public int CtId { get; set; } public string TcName { get; set; } = string.Empty; public bool IsActive { get; set; } = true; public DateTime CreatedAt { get; set; } = DateTime.UtcNow; }
 public class VehicleType { public int VtId { get; set; } public string VtName { get; set; } = string.Empty; public bool IsActive { get; set; } = true; public DateTime CreatedAt { get; set; } = DateTime.UtcNow; }
 public class Vehicle { public int VhId { get; set; } public string VhLicense { get; set; } = string.Empty; public string? VhType { get; set; } public string? VhModel { get; set; } public bool IsActive { get; set; } = true; public DateTime CreatedAt { get; set; } = DateTime.UtcNow; }
@@ -2576,15 +2583,16 @@ public class LmNotification
 
 public class FreightQuoteHeader
 {
-    public int       FqhId          { get; set; }
-    public int       FqhQuoteNumber { get; set; }
-    public string    FqhForwarder   { get; set; } = string.Empty;
-    public string?   FqhPort        { get; set; }
-    public string?   FqhRoute       { get; set; }
-    public int?      FqhTransitDays { get; set; }
-    public DateOnly? FqhStartDate   { get; set; }
-    public DateOnly? FqhEndDate     { get; set; }
-    public DateTime  CreatedAt      { get; set; } = DateTime.UtcNow;
+    public int       FqhId           { get; set; }
+    public int       FqhQuoteNumber  { get; set; }
+    public string    FqhForwarder    { get; set; } = string.Empty;
+    public string?   FqhFreightType  { get; set; }
+    public string?   FqhPort         { get; set; }
+    public string?   FqhRoute        { get; set; }
+    public int?      FqhTransitDays  { get; set; }
+    public DateOnly? FqhStartDate    { get; set; }
+    public DateOnly? FqhEndDate      { get; set; }
+    public DateTime  CreatedAt       { get; set; } = DateTime.UtcNow;
     public ICollection<FreightQuoteOceanPort>    OceanPorts    { get; set; } = [];
     public ICollection<FreightQuoteInlRegion>    InlandRegions { get; set; } = [];
     public ICollection<FreightQuoteInlPortAdd>   InlandPortAdds{ get; set; } = [];

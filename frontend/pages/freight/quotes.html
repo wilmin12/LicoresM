@@ -880,6 +880,8 @@ async function saveAllOceanCharges() {
     }
     const msg = skipped ? `Guardado. ${skipped} fila(s) sin Charge Type omitidas.` : `${saved} cargo(s) guardado(s) correctamente.`;
     showToast(msg, skipped ? 'danger' : 'success');
+    const tb = document.getElementById('oc-flat-tbody');
+    if (tb) { tb.innerHTML = ''; if (_isSuperAdmin) _appendEmptyOceanRow(tb); }
   } catch(e) {
     showToast('Error guardando: ' + (e?.message || 'Error desconocido.'), 'danger');
   } finally {
@@ -927,7 +929,7 @@ async function saveAllInland() {
       ? `Guardado. ${skipped} fila(s) omitidas por falta de datos.`
       : `${saved} fila(s) guardada(s) correctamente.`;
     showToast(msg, skipped ? 'warning' : 'success');
-    await _refreshDetail();
+    document.querySelectorAll('[id^="det-tbody-"]').forEach(tb => { tb.innerHTML = ''; });
   } catch(e) {
     showToast('Error guardando: ' + (e?.message || 'Error desconocido.'), 'danger');
   } finally {
@@ -1684,7 +1686,7 @@ async function onModalFwdChange(sel) {
   const fw = sel.value;
   if (!fw) return;
   try {
-    const res = await API.appliedQuotes.getQuotes({ forwarder: fw, page: 1, pageSize: 100 });
+    const res = await API.appliedQuotes.getQuotes({ forwarder: fw, tab: _activeTab, page: 1, pageSize: 100 });
     const quotes = res?.Data || [];
     if (!quotes.length) return;  // sin quotes anteriores → formulario vacío
     quotes.forEach(q => {
@@ -1809,9 +1811,10 @@ async function saveQuote() {
   const editId = document.getElementById('modal-quote').dataset.editId;
   if (!fwdVal) { _showErr('quote-form-error', 'Forwarder is required.'); return; }
   const dto = {
-    QuoteNumber: editId ? +numVal : 0,   // en create el servidor asigna el número
-    Forwarder:   fwdVal,
-    Port:        document.getElementById('q-port').value    || null,
+    QuoteNumber:  editId ? +numVal : 0,   // en create el servidor asigna el número
+    Forwarder:    fwdVal,
+    FreightType:  editId ? null : _activeTab,
+    Port:         document.getElementById('q-port').value    || null,
     Route:       document.getElementById('q-route').value   || null,
     TransitDays: document.getElementById('q-transit').value ? +document.getElementById('q-transit').value : null,
     StartDate:   document.getElementById('q-start').value   || null,
@@ -1823,7 +1826,7 @@ async function saveQuote() {
       const res = await API.appliedQuotes.createQuote(dto);
       _activeQuoteId = res.Data?.FqhId;
       // Copy Ocean Freight data (ports → slines → charges) from source quote
-      if (_activeQuoteId && _newQuoteSourceOceanPorts?.length) {
+      if (_activeTab === 'ocean' && _activeQuoteId && _newQuoteSourceOceanPorts?.length) {
         try {
           for (const port of _newQuoteSourceOceanPorts) {
             const pRes = await API.appliedQuotes.addOceanPort(_activeQuoteId, { Port: port.FqopPort, Remarks: port.FqopRemarks || null });
@@ -1845,7 +1848,7 @@ async function saveQuote() {
       _newQuoteSourceOceanPorts = null;
 
       // Copy Inland data (regions → types → details)
-      if (_activeQuoteId && _newQuoteSourceInland?.length) {
+      if (_activeTab === 'inland' && _activeQuoteId && _newQuoteSourceInland?.length) {
         try {
           for (const region of _newQuoteSourceInland) {
             const rRes = await API.appliedQuotes.addInlandRegion(_activeQuoteId, { Region: region.FqerRegion });
@@ -1869,7 +1872,7 @@ async function saveQuote() {
       _newQuoteSourceInland = null;
 
       // Copy Port Additional data (flat list)
-      if (_activeQuoteId && _newQuoteSourcePortAdd?.length) {
+      if (_activeTab === 'portadd' && _activeQuoteId && _newQuoteSourcePortAdd?.length) {
         try {
           for (const pa of _newQuoteSourcePortAdd) {
             await API.appliedQuotes.addPortAdd(_activeQuoteId, {
@@ -1886,7 +1889,7 @@ async function saveQuote() {
       _newQuoteSourcePortAdd = null;
 
       // Copy LCL data (ports → port types → details)
-      if (_activeQuoteId && _newQuoteSourceLcl?.length) {
+      if (_activeTab === 'lcl' && _activeQuoteId && _newQuoteSourceLcl?.length) {
         try {
           for (const port of _newQuoteSourceLcl) {
             const pRes = await API.appliedQuotes.addLclPort(_activeQuoteId, { Port: port.FqlcpPort, Remarks: port.FqlcpRemarks || null });

@@ -54,6 +54,8 @@
         <li class="nav-item"><a class="nav-link" href="#" onclick="switchTab('vehicleTypes',this)">Vehicle Types</a></li>
         <li class="nav-item"><a class="nav-link" href="#" onclick="switchTab('vehicles',this)">Vehicles</a></li>
         <li class="nav-item"><a class="nav-link" href="#" onclick="switchTab('requestorsVendor',this)">Requestors-Vendor</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="switchTab('vendorDepartment',this)">Vendor / Department</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" onclick="switchTab('departmentCostType',this)">Dept / Cost Type</a></li>
       </ul>
 
       <div class="card mb-3">
@@ -112,6 +114,16 @@
         <div class="mb-3"><label class="form-label">Requestor <span class="text-danger">*</span></label><select id="f-req" class="form-select" required><option value="">-- Select --</option></select><div class="invalid-feedback">Requestor required.</div></div>
         <div class="mb-3"><label class="form-label">Vendor <span class="text-danger">*</span></label><select id="f-vnd" class="form-select" required><option value="">-- Select --</option></select><div class="invalid-feedback">Vendor required.</div></div>
       </div>
+      <!-- VendorDepartment specific -->
+      <div id="vd-group" style="display:none;">
+        <div class="mb-3"><label class="form-label">Vendor <span class="text-danger">*</span></label><select id="f-vd-vendor" class="form-select" required><option value="">-- Select --</option></select><div class="invalid-feedback">Vendor required.</div></div>
+        <div class="mb-3"><label class="form-label">Department <span class="text-danger">*</span></label><select id="f-vd-dept" class="form-select" required><option value="">-- Select --</option></select><div class="invalid-feedback">Department required.</div></div>
+      </div>
+      <!-- DepartmentCostType specific -->
+      <div id="dct-group" style="display:none;">
+        <div class="mb-3"><label class="form-label">Department <span class="text-danger">*</span></label><select id="f-dct-dept" class="form-select" required><option value="">-- Select --</option></select><div class="invalid-feedback">Department required.</div></div>
+        <div class="mb-3"><label class="form-label">Cost Type <span class="text-danger">*</span></label><select id="f-dct-ct" class="form-select" required><option value="">-- Select --</option></select><div class="invalid-feedback">Cost Type required.</div></div>
+      </div>
     </form></div>
     <div class="modal-footer"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-wine btn-sm" id="btn-save"><i class="fas fa-save me-1"></i>Save</button></div>
   </div></div>
@@ -137,10 +149,12 @@
     costTypes:      {label:'Cost Types',        api:API.catalogs.costTypes,         endpoint:'/api/aankoopbon/cost-types',         type:'name',      nameField:'TcName', idField:'CtId'},
     vehicleTypes:   {label:'Vehicle Types',     api:API.catalogs.vehicleTypes,      endpoint:'/api/aankoopbon/vehicle-types',      type:'name',      nameField:'VtName', idField:'VtId'},
     vehicles:       {label:'Vehicles',          api:API.catalogs.vehicles,          endpoint:'/api/aankoopbon/vehicles',           type:'vehicle',                       idField:'VhId'},
-    requestorsVendor:{label:'Requestors-Vendor',api:API.catalogs.requestorsVendor,  endpoint:'/api/aankoopbon/requestors-vendor',  type:'rv',                            idField:'RvId'},
+    requestorsVendor: {label:'Requestors-Vendor',  api:API.catalogs.requestorsVendor,   endpoint:'/api/aankoopbon/requestors-vendor',    type:'rv',  idField:'RvId'},
+    vendorDepartment: {label:'Vendor / Department',api:API.catalogs.vendorDepartment,  endpoint:'/api/aankoopbon/vendor-department',    type:'vd',  idField:'VdId'},
+    departmentCostType:{label:'Dept / Cost Type',  api:API.catalogs.departmentCostType, endpoint:'/api/aankoopbon/department-cost-type', type:'dct', idField:'DctId'},
   };
   let currentTab=TABS.departments,allItems=[],filtered=[],currentPage=1;const PAGE_SIZE=25;
-  let vehicleTypes=[],requestors=[],vendors=[];
+  let vehicleTypes=[],requestors=[],vendors=[],departments=[],costTypesList=[];
 
   document.addEventListener('DOMContentLoaded',async()=>{
     if(!Auth.requireAuth())return;Auth.startExpiryWatcher();Auth.populateUserUI();Sidebar.init();
@@ -159,10 +173,12 @@
   async function loadLookups(){
     try{const v=await API.catalogs.vehicleTypes.getAll();vehicleTypes=v?.Data||v||[];document.getElementById('f-vtype').innerHTML='<option value="">-- Select --</option>'+vehicleTypes.map(x=>`<option value="${esc(x.VtName)}">${esc(x.VtName||'')}</option>`).join('');}catch(e){}
     try{const r=await API.catalogs.requestors.getAll();requestors=r?.Data||r||[];document.getElementById('f-req').innerHTML='<option value="">-- Select --</option>'+requestors.map(x=>`<option value="${esc(x.ReqName)}">${esc(x.ReqName||'')}</option>`).join('');}catch(e){}
-    try{const v=await API.catalogs.vendors.getAll();vendors=v?.Data||v||[];document.getElementById('f-vnd').innerHTML='<option value="">-- Select --</option>'+vendors.map(x=>`<option value="${esc(x.VndCode)}">${esc(x.VndCode||'')} - ${esc(x.VndName||'')}</option>`).join('');}catch(e){}
+    try{const v=await API.catalogs.vendors.getAll();vendors=v?.Data||v||[];const vOpts='<option value="">-- Select --</option>'+vendors.map(x=>`<option value="${esc(x.VndCode)}">${esc(x.VndCode||'')} - ${esc(x.VndName||'')}</option>`).join('');document.getElementById('f-vnd').innerHTML=vOpts;document.getElementById('f-vd-vendor').innerHTML=vOpts;}catch(e){}
+    try{const d=await API.catalogs.departments.getAll();departments=d?.Data||d||[];const dOpts='<option value="">-- Select --</option>'+departments.map(x=>`<option value="${esc(x.DpName)}">${esc(x.DpName||'')}</option>`).join('');document.getElementById('f-vd-dept').innerHTML=dOpts;document.getElementById('f-dct-dept').innerHTML=dOpts;}catch(e){}
+    try{const c=await API.catalogs.costTypes.getAll();costTypesList=c?.Data||c||[];document.getElementById('f-dct-ct').innerHTML='<option value="">-- Select --</option>'+costTypesList.map(x=>`<option value="${esc(x.TcName)}">${esc(x.TcName||'')}</option>`).join('');}catch(e){}
   }
 
-  const HASH_MAP={'cost-types':'costTypes','requestors-vendor':'requestorsVendor','vehicle-types':'vehicleTypes'};
+  const HASH_MAP={'cost-types':'costTypes','requestors-vendor':'requestorsVendor','vehicle-types':'vehicleTypes','vendor-department':'vendorDepartment','department-cost-type':'departmentCostType'};
   function _applyHash(){
     const raw=location.hash.replace('#','');
     const key=HASH_MAP[raw]||raw;
@@ -186,6 +202,8 @@
     else if(t==='requestor')h+='<th>Name</th><th>Email</th>';
     else if(t==='vehicle')h+='<th>License</th><th>Type</th><th>Model</th>';
     else if(t==='rv')h+='<th>Requestor</th><th>Vendor</th>';
+    else if(t==='vd')h+='<th>Vendor</th><th>Department</th>';
+    else if(t==='dct')h+='<th>Department</th><th>Cost Type</th>';
     else h+='<th>Name</th>';
     h+='<th>Status</th><th>Actions</th></tr>';
     document.getElementById('data-thead').innerHTML=h;
@@ -207,6 +225,8 @@
       else if(t==='requestor')cols+=`<td>${esc(r.ReqName||'')}</td><td>${esc(r.ReqEmail||'')}</td>`;
       else if(t==='vehicle')cols+=`<td><strong>${esc(r.VhLicense||'')}</strong></td><td>${esc(r.VhType||'–')}</td><td>${esc(r.VhModel||'')}</td>`;
       else if(t==='rv')cols+=`<td>${esc(r.RsRequestor||'–')}</td><td>${esc(r.RsVendor||'–')}</td>`;
+      else if(t==='vd')cols+=`<td>${esc(r.VdVendor||'–')}</td><td>${esc(r.VdDepartment||'–')}</td>`;
+      else if(t==='dct')cols+=`<td>${esc(r.DctDepartment||'–')}</td><td>${esc(r.DctCostType||'–')}</td>`;
       else cols+=`<td>${esc(r[currentTab.nameField]||'')}</td>`;
       cols+=`<td><span class="${r.IsActive!==false?'badge-active':'badge-inactive'}">${I18n.t(r.IsActive!==false?'Active':'Inactive')}</span></td>`;
       cols+=`<td><button class="btn-action edit me-1" onclick="openEdit(${id})" title="Edit"><i class="fas fa-edit"></i></button><button class="btn-action ${r.IsActive!==false?'delete':'edit'} me-1" onclick="toggleItem(${id})" title="Toggle"><i class="fas fa-${r.IsActive!==false?'ban':'check'}"></i></button><button class="btn-action delete" onclick="confirmDelete(${id})" title="Delete"><i class="fas fa-trash"></i></button></td>`;
@@ -225,6 +245,8 @@
     document.getElementById('eenheden-group').style.display=t==='eenheden'?'':'none';
     document.getElementById('vehicle-group').style.display=t==='vehicle'?'':'none';
     document.getElementById('rv-group').style.display=t==='rv'?'':'none';
+    document.getElementById('vd-group').style.display=t==='vd'?'':'none';
+    document.getElementById('dct-group').style.display=t==='dct'?'':'none';
     // maxlength correcto según la columna BD
     const nameInput=document.getElementById('f-name');
     if(t==='receiver') nameInput.maxLength=30;
@@ -241,6 +263,8 @@
     if(t==='eenheden'){document.getElementById('f-unitcode').value=r.UnitCode||'';document.getElementById('f-desc').value=r.Omschrijving||'';document.getElementById('f-faktor').value=r.OmrekenFaktor||'';}
     else if(t==='vehicle'){document.getElementById('f-license').value=r.VhLicense||'';document.getElementById('f-vtype').value=r.VhType||'';document.getElementById('f-model').value=r.VhModel||'';}
     else if(t==='rv'){document.getElementById('f-req').value=r.RsRequestor||'';document.getElementById('f-vnd').value=r.RsVendor||'';}
+    else if(t==='vd'){document.getElementById('f-vd-vendor').value=r.VdVendor||'';document.getElementById('f-vd-dept').value=r.VdDepartment||'';}
+    else if(t==='dct'){document.getElementById('f-dct-dept').value=r.DctDepartment||'';document.getElementById('f-dct-ct').value=r.DctCostType||'';}
     else{document.getElementById('f-name').value=r[currentTab.nameField]||'';if(t==='receiver')document.getElementById('f-iddoc').value=r.RecIdDoc||'';if(t==='requestor')document.getElementById('f-email').value=r.ReqEmail||'';}
     document.getElementById('modalTitle').innerHTML=`<i class="fas fa-edit me-2"></i>Edit ${currentTab.label}`;
     new bootstrap.Modal('#itemModal').show();
@@ -262,6 +286,8 @@
     if(t==='eenheden'){const uc=document.getElementById('f-unitcode').value.trim().toUpperCase();const desc=document.getElementById('f-desc').value.trim();if(!uc){document.getElementById('f-unitcode').classList.add('is-invalid');valid=false;}else document.getElementById('f-unitcode').classList.remove('is-invalid');if(!desc){document.getElementById('f-desc').classList.add('is-invalid');valid=false;}else document.getElementById('f-desc').classList.remove('is-invalid');if(!valid)return;dto={UnitCode:uc,Omschrijving:desc,OmrekenFaktor:parseFloat(document.getElementById('f-faktor').value)||1};}
     else if(t==='vehicle'){const lic=document.getElementById('f-license').value.trim().toUpperCase();if(!lic){document.getElementById('f-license').classList.add('is-invalid');valid=false;}else document.getElementById('f-license').classList.remove('is-invalid');if(!valid)return;dto={VhLicense:lic,VhType:document.getElementById('f-vtype').value||null,VhModel:document.getElementById('f-model').value.trim()||null};}
     else if(t==='rv'){const req=document.getElementById('f-req').value;const vnd=document.getElementById('f-vnd').value;if(!req){document.getElementById('f-req').classList.add('is-invalid');valid=false;}else document.getElementById('f-req').classList.remove('is-invalid');if(!vnd){document.getElementById('f-vnd').classList.add('is-invalid');valid=false;}else document.getElementById('f-vnd').classList.remove('is-invalid');if(!valid)return;dto={RsRequestor:req,RsVendor:vnd};}
+    else if(t==='vd'){const vnd=document.getElementById('f-vd-vendor').value;const dept=document.getElementById('f-vd-dept').value;if(!vnd){document.getElementById('f-vd-vendor').classList.add('is-invalid');valid=false;}else document.getElementById('f-vd-vendor').classList.remove('is-invalid');if(!dept){document.getElementById('f-vd-dept').classList.add('is-invalid');valid=false;}else document.getElementById('f-vd-dept').classList.remove('is-invalid');if(!valid)return;dto={Vendor:vnd,Department:dept};}
+    else if(t==='dct'){const dept=document.getElementById('f-dct-dept').value;const ct=document.getElementById('f-dct-ct').value;if(!dept){document.getElementById('f-dct-dept').classList.add('is-invalid');valid=false;}else document.getElementById('f-dct-dept').classList.remove('is-invalid');if(!ct){document.getElementById('f-dct-ct').classList.add('is-invalid');valid=false;}else document.getElementById('f-dct-ct').classList.remove('is-invalid');if(!valid)return;dto={Department:dept,CostType:ct};}
     else{const name=document.getElementById('f-name').value.trim();if(!name){document.getElementById('f-name').classList.add('is-invalid');return;}document.getElementById('f-name').classList.remove('is-invalid');if(t==='receiver')dto={RecName:name,RecIdDoc:document.getElementById('f-iddoc').value.trim()||null};else if(t==='requestor')dto={ReqName:name,ReqEmail:document.getElementById('f-email').value.trim()||null};else dto={[currentTab.nameField]:name};}
     try{if(id){await currentTab.api.update(id,dto);showToast(I18n.t('Updated.'),'success');}else{await currentTab.api.create(dto);showToast(I18n.t('Created.'),'success');}bootstrap.Modal.getInstance(document.getElementById('itemModal'))?.hide();await loadData();}catch(err){showToast(err.message,'danger');}
   }

@@ -72,9 +72,9 @@ public sealed class AankoopbonController : ControllerBase
 
         var q = _db.AbOrderHeaders.AsNoTracking().Where(h => h.IsActive);
 
-        // Non-admin users only see their own aankoopbonnen
-        if (!IsAdminOrSuperAdmin() && !await _permissions.HasPermissionAsync(User, "AB_AANKOOPBON", "CanApprove", ct))
-            q = q.Where(h => h.AohCreatedBy == myId);
+        // [TEMP DISABLED] Non-admin users only see their own aankoopbonnen
+        // if (!IsAdminOrSuperAdmin() && !await _permissions.HasPermissionAsync(User, "AB_AANKOOPBON", "CanApprove", ct))
+        //     q = q.Where(h => h.AohCreatedBy == myId);
 
         if (!string.IsNullOrWhiteSpace(status))
             q = q.Where(h => h.AohStatus == status.ToUpper());

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -195,7 +195,7 @@
           <!-- Vendor -->
           <div class="col-md-8">
             <label class="form-label fw-semibold">Vendor <span class="text-danger">*</span></label>
-            <select id="f-vendor" class="form-select form-select-sm" onchange="onVendorChange()">
+            <select id="f-vendor" class="form-select form-select-sm" onchange="onVendorChange()" disabled>
               <option value="">— Select Vendor —</option>
             </select>
             <small class="text-muted" id="f-vendor-address"></small>
@@ -207,22 +207,22 @@
           <!-- Department -->
           <div class="col-md-4">
             <label class="form-label fw-semibold">Department</label>
-            <select id="f-department" class="form-select form-select-sm"></select>
+            <select id="f-department" class="form-select form-select-sm" onchange="onDepartmentChange()" disabled></select>
           </div>
           <!-- Cost Type -->
           <div class="col-md-4">
             <label class="form-label fw-semibold">Cost Type</label>
-            <select id="f-cost-type" class="form-select form-select-sm"></select>
+            <select id="f-cost-type" class="form-select form-select-sm" onchange="onCostTypeChange()" disabled></select>
           </div>
           <!-- Amount -->
           <div class="col-md-4">
             <label class="form-label fw-semibold">Amount (XCG)</label>
-            <input id="f-amount" type="number" step="0.01" class="form-control form-control-sm" placeholder="Optional"/>
+            <input id="f-amount" type="number" step="0.01" class="form-control form-control-sm" placeholder="Optional" disabled/>
           </div>
           <!-- Vehicle -->
           <div class="col-md-4">
             <label class="form-label fw-semibold">Vehicle License <span class="text-muted fw-normal">(optional)</span></label>
-            <select id="f-vehicle" class="form-select form-select-sm" onchange="onVehicleChange()">
+            <select id="f-vehicle" class="form-select form-select-sm" onchange="onVehicleChange()" disabled>
               <option value="">— No vehicle —</option>
             </select>
           </div>
@@ -237,18 +237,18 @@
           <!-- Quotation -->
           <div class="col-md-6">
             <label class="form-label fw-semibold">Quotation Number</label>
-            <input id="f-quotation-nr" type="text" class="form-control form-control-sm" maxlength="15"/>
+            <input id="f-quotation-nr" type="text" class="form-control form-control-sm" maxlength="15" disabled/>
           </div>
           <!-- Remarks -->
           <div class="col-md-6">
             <label class="form-label fw-semibold">Remarks <span class="text-danger">*</span></label>
-            <input id="f-remarks" type="text" class="form-control form-control-sm" maxlength="255"/>
+            <input id="f-remarks" type="text" class="form-control form-control-sm" maxlength="255" disabled/>
           </div>
           <!-- Quotation PDF -->
           <div class="col-12">
             <label class="form-label fw-semibold">Quotation PDF <span class="text-danger">*</span></label>
             <div class="d-flex align-items-center gap-2">
-              <input id="f-quotation-pdf" type="file" accept=".pdf,application/pdf" class="form-control form-control-sm" onchange="onPdfFileSelected(this)"/>
+              <input id="f-quotation-pdf" type="file" accept=".pdf,application/pdf" class="form-control form-control-sm" onchange="onPdfFileSelected(this)" disabled/>
               <button type="button" id="btn-pdf-preview-local" class="btn btn-sm btn-outline-danger" style="display:none;white-space:nowrap;" onclick="previewLocalPdf()">
                 <i class="fas fa-file-pdf me-1"></i>Preview
               </button>
@@ -266,7 +266,7 @@
         <hr class="my-3"/>
         <div class="d-flex justify-content-between align-items-center mb-2">
           <span class="fw-semibold"><i class="fas fa-boxes me-1 text-wine"></i>Products</span>
-          <button class="btn btn-sm btn-outline-wine" onclick="addDetailRow()"><i class="fas fa-plus me-1"></i>Add Line</button>
+          <button class="btn btn-sm btn-outline-wine" id="btn-add-line" onclick="addDetailRow()" disabled><i class="fas fa-plus me-1"></i>Add Line</button>
         </div>
         <div class="table-responsive">
           <table class="table table-sm table-bordered mb-0" id="details-table">
@@ -477,6 +477,8 @@ let _invoiceId   = null;
 let _viewData    = null;   // holds the last bon loaded in the view modal
 let _vendors          = [];
 let _requestorVendors = [];
+let _vendorDepartments = [];
+let _deptCostTypes     = [];
 let _vehicles         = [];
 let _receivers        = [];
 let _ts               = {};   // Tom Select instances
@@ -666,9 +668,7 @@ const _tsCfg = { allowEmptyOption: true, maxOptions: null, plugins: [] };
 
 function _initTomSelects() {
   const ids = [
-    { id: 'f-requestor', onChange: () => onRequestorChange() },
-    { id: 'f-department' },
-    { id: 'f-cost-type' },
+    { id: 'f-requestor',  onChange: () => onRequestorChange()  },
     { id: 'f-vehicle',   onChange: () => onVehicleChange() },
     { id: 'f-receiver',  onChange: () => onReceiverChange() },
   ];
@@ -690,13 +690,14 @@ function _initVendorTs() {
       const v = _vendors.find(x => x.VndId == val);
       document.getElementById('f-vendor-address').textContent = v?.VndAddress1 || '';
       document.getElementById('quote-mandatory-warning').style.display = v?.VndQuoteMandatory ? 'block' : 'none';
+      onVendorChange();
     }
   });
 }
 
 // ── Load catalogs ─────────────────────────────────────────────────────────
 async function loadCatalogs() {
-  const [vendors, vehicles, receivers, departments, costTypes, eenheden, requestors, reqVendors, products] = await Promise.all([
+  const [vendors, vehicles, receivers, departments, costTypes, eenheden, requestors, reqVendors, products, vndDepts, deptCts] = await Promise.all([
     API.get('/api/aankoopbon/vendors?pageSize=500').catch(() => null),
     API.get('/api/aankoopbon/vehicles?pageSize=200').catch(() => null),
     API.get('/api/aankoopbon/receivers?pageSize=200').catch(() => null),
@@ -706,12 +707,16 @@ async function loadCatalogs() {
     API.get('/api/aankoopbon/requestors?pageSize=200').catch(() => null),
     API.get('/api/aankoopbon/requestors-vendor?pageSize=1000').catch(() => null),
     API.get('/api/aankoopbon/products?pageSize=500&includeInactive=false').catch(() => null),
+    API.get('/api/aankoopbon/vendor-department?pageSize=1000').catch(() => null),
+    API.get('/api/aankoopbon/department-cost-type?pageSize=1000').catch(() => null),
   ]);
   window._abProducts = (products?.Data || []).filter(p => p.IsActive);
   window._costTypes  = (costTypes?.Data || []).filter(c => c.IsActive);
 
-  _vendors          = (vendors?.Data    || []).filter(v => v.IsActive);
-  _requestorVendors = (reqVendors?.Data || []).filter(r => r.IsActive);
+  _vendors           = (vendors?.Data    || []).filter(v => v.IsActive);
+  _requestorVendors  = (reqVendors?.Data || []).filter(r => r.IsActive);
+  _vendorDepartments = (vndDepts?.Data   || []).filter(r => r.IsActive);
+  _deptCostTypes     = (deptCts?.Data    || []).filter(r => r.IsActive);
   _vehicles         = (vehicles?.Data   || []).filter(v => v.IsActive);
   _receivers        = receivers?.Data   || [];
 
@@ -728,15 +733,9 @@ async function loadCatalogs() {
   recSel.innerHTML = '<option value="">— Select receiver —</option>' +
     _receivers.filter(r=>r.IsActive).map(r => `<option value="${r.RecId}" data-iddoc="${_esc(r.RecIdDoc||'')}">${_esc(r.RecName)}</option>`).join('');
 
-  // Department
-  const dpSel = document.getElementById('f-department');
-  dpSel.innerHTML = '<option value="">— Select —</option>' +
-    (departments?.Data||[]).filter(d=>d.IsActive).map(d=>`<option>${_esc(d.DpName)}</option>`).join('');
-
-  // Cost Type
-  const ctSel = document.getElementById('f-cost-type');
-  ctSel.innerHTML = '<option value="">— Select —</option>' +
-    (costTypes?.Data||[]).filter(c=>c.IsActive).map(c=>`<option>${_esc(c.TcName)}</option>`).join('');
+  // Department & Cost Type start empty — filled by cascade when vendor/department selected
+  document.getElementById('f-department').innerHTML = '<option value="">— Select vendor first —</option>';
+  document.getElementById('f-cost-type').innerHTML  = '<option value="">— Select department first —</option>';
 
   // Eenheden (for detail rows)
   window._eenheden = (eenheden?.Data||[]).filter(e=>e.IsActive);
@@ -764,13 +763,24 @@ async function openEdit(id) {
   new bootstrap.Modal(document.getElementById('modal-form')).show();
 }
 
+// ── Enable/disable the form fields below the cascade chain ────────────────
+function _setLowerFormEnabled(enabled) {
+  ['f-amount','f-vehicle','f-quotation-nr','f-remarks','f-quotation-pdf','btn-add-line'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.disabled = !enabled;
+  });
+  if (_ts['f-vehicle']) { enabled ? _ts['f-vehicle'].enable() : _ts['f-vehicle'].disable(); }
+}
+
 function _resetForm() {
   // Clear Tom Select dropdowns
-  ['f-requestor','f-department','f-cost-type','f-vehicle'].forEach(id => {
+  ['f-requestor','f-vehicle'].forEach(id => {
     if (_ts[id]) _ts[id].clear(true); else { const el = document.getElementById(id); if (el) el.value = ''; }
   });
-  // Rebuild vendor with no requestor (clears it)
+  // Rebuild vendor with no requestor (clears it) and disable it
   _rebuildVendorDropdown('');
+  document.getElementById('f-vendor').disabled = true;
+  // Reset department + cost type + lower fields via cascade helpers
+  _resetDepartmentAndBelow();
   ['f-amount','f-quotation-nr','f-remarks','f-vehicle-type','f-vehicle-model'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
@@ -780,21 +790,33 @@ function _resetForm() {
   document.getElementById('btn-pdf-preview-local').style.display = 'none';
   document.getElementById('f-pdf-current').classList.add('d-none');
   document.getElementById('details-body').innerHTML = '';
-  addDetailRow();
 }
 
 function _fillForm(h) {
-  // Tom Select dropdowns — use setValue; rebuild vendor after requestor is set
+  // Set requestor
   if (_ts['f-requestor']) _ts['f-requestor'].setValue(h.AohRequestor || '', true);
   else _setVal('f-requestor', h.AohRequestor);
 
+  // Rebuild vendor dropdown for this requestor and select the saved vendor
   _rebuildVendorDropdown(h.AohRequestor || '', h.AohVendorId);
+  _setLowerFormEnabled(true);
 
-  if (_ts['f-department']) _ts['f-department'].setValue(h.AohDepartment || '', true);
-  else _setVal('f-department', h.AohDepartment);
+  // Populate department dropdown with vendor's departments and select saved one
+  if (h.AohVendorId && h.AohDepartment) {
+    const vendor = _vendors.find(v => String(v.VndId) === String(h.AohVendorId));
+    const code = vendor?.VndCode?.trim() || '';
+    const vendorDepts = _vendorDepartments.filter(r => r.VdVendor?.trim() === code);
+    _setTsOptions('f-department', vendorDepts.map(r => r.VdDepartment), '— Select Department —');
+    const dpEl = document.getElementById('f-department'); if (dpEl) { dpEl.disabled = false; dpEl.value = h.AohDepartment; }
+  }
 
-  if (_ts['f-cost-type']) _ts['f-cost-type'].setValue(h.AohCostType || '', true);
-  else _setVal('f-cost-type', h.AohCostType);
+  // Populate cost type dropdown for saved department and select saved cost type
+  if (h.AohDepartment) {
+    const filteredCts = _deptCostTypes.filter(r => r.DctDepartment === h.AohDepartment);
+    window._filteredCostTypes = filteredCts;
+    _setTsOptions('f-cost-type', filteredCts.map(c => c.DctCostType), '— Select Cost Type —');
+    const ctEl = document.getElementById('f-cost-type'); if (ctEl) { ctEl.disabled = false; ctEl.value = h.AohCostType || ''; }
+  }
 
   if (_ts['f-vehicle']) _ts['f-vehicle'].setValue(h.AohVehicleId ? String(h.AohVehicleId) : '', true);
   else _setVal('f-vehicle', h.AohVehicleId);
@@ -843,7 +865,8 @@ function addDetailRow(d = null) {
 
   const row = document.createElement('tr');
   row.className = 'detail-row';
-  const costTypeOpts = '<option value=""></option>' + (window._costTypes||[]).map(c =>
+  const activeCostTypes = (window._filteredCostTypes||[]).map(c => ({ TcName: c.DctCostType || c.TcName }));
+  const costTypeOpts = '<option value=""></option>' + activeCostTypes.map(c =>
     `<option value="${_esc(c.TcName)}" ${c.TcName===d?.AodCostType?'selected':''}>${_esc(c.TcName)}</option>`).join('');
 
   row.innerHTML = `
@@ -877,10 +900,89 @@ function addDetailRow(d = null) {
   });
 }
 
+// -- Cascade helpers -------------------------------------------------------
+function _setTsOptions(id, values, placeholder) {
+  const ts = _ts[id];
+  if (ts) {
+    ts.clear(true);
+    ts.clearOptions();
+    ts.addOption({ value: '', text: placeholder });
+    values.forEach(v => ts.addOption({ value: v, text: v }));
+    ts.refreshOptions(false);
+  } else {
+    const el = document.getElementById(id);
+    if (el) {
+      el.innerHTML = '<option value="">' + placeholder + '</option>' +
+        values.map(v => '<option value="' + v + '">' + v + '</option>').join('');
+    }
+  }
+}
+
+function _resetCostTypeAndBelow() {
+  _setTsOptions('f-cost-type', [], '— Select department first —');
+  if (_ts['f-cost-type']) _ts['f-cost-type'].disable();
+  else { const el = document.getElementById('f-cost-type'); if (el) el.disabled = true; }
+  _setLowerFormEnabled(false);
+  document.getElementById('details-body').innerHTML = '';
+  window._filteredCostTypes = [];
+}
+
+function _resetDepartmentAndBelow() {
+  _setTsOptions('f-department', [], '— Select vendor first —');
+  if (_ts['f-department']) _ts['f-department'].disable();
+  else { const el = document.getElementById('f-department'); if (el) el.disabled = true; }
+  _resetCostTypeAndBelow();
+}
+
 function onVendorChange() {
   const sel = document.getElementById('f-vendor');
-  const opt = sel.options[sel.selectedIndex];
-  document.getElementById('f-vendor-address').textContent = opt?.dataset.address || '';
+  const vendorId = sel.value;
+
+  _resetDepartmentAndBelow();
+  if (!vendorId) return;
+
+  const vendor = _vendors.find(v => String(v.VndId) === String(vendorId));
+  if (!vendor) return;
+
+  const code = (vendor.VndCode || '').trim();
+  document.getElementById('f-vendor-address').textContent = vendor.VndAddress1 || '';
+  document.getElementById('quote-mandatory-warning').style.display = vendor.VndQuoteMandatory ? 'block' : 'none';
+
+  const vendorDepts = _vendorDepartments.filter(r => (r.VdVendor || '').trim() === code);
+  const dpEl = document.getElementById('f-department');
+  if (!vendorDepts.length) {
+    dpEl.innerHTML = '<option value="">— No departments configured for this vendor —</option>';
+    dpEl.disabled = false;
+    return;
+  }
+  dpEl.innerHTML = '<option value="">— Select Department —</option>' +
+    vendorDepts.map(r => '<option value="' + r.VdDepartment + '">' + r.VdDepartment + '</option>').join('');
+  dpEl.disabled = false;
+}
+
+function onDepartmentChange() {
+  const dept = document.getElementById('f-department').value;
+  _resetCostTypeAndBelow();
+  if (!dept) return;
+
+  const filteredCts = _deptCostTypes.filter(r => (r.DctDepartment || '').trim() === dept.trim());
+  window._filteredCostTypes = filteredCts;
+
+  const ctEl = document.getElementById('f-cost-type');
+  if (!filteredCts.length) {
+    ctEl.innerHTML = '<option value="">— No cost types configured for this department —</option>';
+    ctEl.disabled = false;
+    return;
+  }
+  ctEl.innerHTML = '<option value="">— Select Cost Type —</option>' +
+    filteredCts.map(c => '<option value="' + c.DctCostType + '">' + c.DctCostType + '</option>').join('');
+  ctEl.disabled = false;
+}
+
+function onCostTypeChange() {
+  const val = document.getElementById('f-cost-type').value;
+  _setLowerFormEnabled(!!val);
+  if (val && !document.getElementById('details-body').children.length) addDetailRow();
 }
 
 function _rebuildVendorDropdown(requestorName, selectedVndId = null) {
@@ -909,7 +1011,7 @@ function _rebuildVendorDropdown(requestorName, selectedVndId = null) {
     return;
   }
   vSel.innerHTML = '<option value="">— Select Vendor —</option>' +
-    filtered.map(v => `<option value="${v.VndId}" data-address="${_esc(v.VndAddress1||'')}">${v.VndCode} — ${_esc(v.VndName)}</option>`).join('');
+    filtered.map(v => `<option value="${v.VndId}" data-code="${_esc(v.VndCode)}" data-address="${_esc(v.VndAddress1||'')}">${v.VndCode} — ${_esc(v.VndName)}</option>`).join('');
   _initVendorTs();
   if (selectedVndId) {
     _ts['f-vendor'].setValue(String(selectedVndId), true);
@@ -921,7 +1023,9 @@ function _rebuildVendorDropdown(requestorName, selectedVndId = null) {
 
 function onRequestorChange() {
   const name = document.getElementById('f-requestor').value;
+  _resetDepartmentAndBelow();
   _rebuildVendorDropdown(name);
+  document.getElementById('f-vendor').disabled = !name;
 }
 
 function onVehicleChange() {

@@ -203,6 +203,14 @@ const API = (() => {
     receivers:         catalog('/api/aankoopbon/receivers'),
     requestors:        catalog('/api/aankoopbon/requestors'),
     requestorsVendor:  catalog('/api/aankoopbon/requestors-vendor'),
+    vendorDepartment:  {
+      ...catalog('/api/aankoopbon/vendor-department'),
+      byVendor: (vendor) => get(`/api/aankoopbon/vendor-department/by-vendor/${encodeURIComponent(vendor)}`)
+    },
+    departmentCostType: {
+      ...catalog('/api/aankoopbon/department-cost-type'),
+      byDepartment: (dept) => get(`/api/aankoopbon/department-cost-type/by-department/${encodeURIComponent(dept)}`)
+    },
     costTypes:         catalog('/api/aankoopbon/cost-types'),
     vehicleTypes:      catalog('/api/aankoopbon/vehicle-types'),
     vehicles:          catalog('/api/aankoopbon/vehicles'),
