@@ -414,23 +414,1371 @@
   </div>
 </div>
 
-<!-- MODAL: Invoice Update -->
-...
-<!-- PRINT AREA -->
-<div id="print-area" style="display:none;"></div>
+<!-- ── MODAL: Invoice Update ─────────────────────────────────────────────── -->
+<div class="modal fade" id="modal-invoice" tabindex="-1" data-bs-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header border-0">
+        <h5 class="modal-title fw-bold"><i class="fas fa-file-invoice-dollar me-2 text-wine"></i>Register Invoice &amp; Close</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body pt-0">
+        <div class="alert alert-warning d-flex align-items-start gap-2 mb-3 py-2 px-3" style="font-size:.82rem;">
+          <i class="fas fa-lock mt-1"></i>
+          <span><strong>Attention:</strong> Saving the invoice data will permanently <strong>close</strong> this aankoopbon. This action cannot be undone.</span>
+        </div>
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label fw-semibold">Invoice Number <span class="text-danger">*</span></label>
+            <input id="f-invoice-nr" type="text" class="form-control form-control-sm" maxlength="50" placeholder="e.g. INV-2025-001"/>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Invoice Date <span class="text-danger">*</span></label>
+            <input id="f-invoice-date" type="date" class="form-control form-control-sm"/>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Invoice Amount (XCG) <span class="text-danger">*</span></label>
+            <input id="f-invoice-amount" type="number" step="0.01" class="form-control form-control-sm" placeholder="0.00"/>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger fw-bold" onclick="saveInvoice()"><i class="fas fa-lock me-1"></i>Save &amp; Close Order</button>
+      </div>
+    </div>
+  </div>
+</div>
 
-<!-- Toast -->
-...
+<!-- ── PRINT AREA ─────────────────────────────────────────────────────────── -->
+<div id="print-area" style="display:none;font-family:Arial,sans-serif;font-size:13px;"></div>
 
+<!-- ── Toast ─────────────────────────────────────────────────────────────── -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index:9999">
+  <div id="toast" class="toast align-items-center border-0" role="alert">
+    <div class="d-flex"><div class="toast-body" id="toast-msg"></div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+<script src="../../js/api.js"></script>
+<script src="../../js/auth.js"></script>
+<script src="../../js/sidebar.js"></script>
+<script src="../../js/notifications.js"></script>
 <script>
-...
-// ── Print (via backend) ───────────────────────────────────────────────────
-async function printBon(id) {
-    const copyLabel = 'REPRINT'; // Or determine dynamically if needed
-    const url = `${BASE}/api/aankoopbon/orders/${id}/pdf?copyLabel=${encodeURIComponent(copyLabel)}`;
-    window.open(url, '_blank');
+const BASE = window.API?.BASE_URL ?? '';
+const STATUS_LABELS = { DRAFT:'DRAFT', PENDING:'PENDING APPROVAL', APPROVED:'APPROVED', REJECTED:'REJECTED', CLOSED:'CLOSED' };
+
+let _editId      = null;
+let _closeId     = null;
+let _rowsMap     = {};
+let _closePdf    = false;
+let _rejectId    = null;
+let _invoiceId   = null;
+let _viewData    = null;   // holds the last bon loaded in the view modal
+let _vendors          = [];
+let _requestorVendors = [];
+let _requestorDepartments = [];
+let _deptCostTypes     = [];
+let _vehicles         = [];
+let _receivers        = [];
+let _ts               = {};   // Tom Select instances
+let _currentUser = null;
+let _isAdmin     = false;
+
+// ── Table state (sort + pagination) ──────────────────────────────────────
+let _tableItems  = [];
+let _sortCol     = '';
+let _sortDir     = 'asc';
+let _tablePage   = 1;
+const _PAGE_SIZE = 20;
+
+// ── Init ──────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!Auth.requireAuth()) return;
+  _currentUser = Auth.getCurrentUser();
+  _isAdmin = ['SuperAdmin','Admin'].includes(_currentUser?.RoleName) ||
+             Auth.hasPermission('AB_AANKOOPBON', 'CanApprove');
+  Auth.startExpiryWatcher();
+  Auth.populateUserUI();
+  Sidebar.init();
+  Notifications.init();
+  document.getElementById('btn-logout').addEventListener('click', e => { e.preventDefault(); Auth.logout(); });
+
+  await Promise.all([loadCatalogs(), load()]);
+  _initTomSelects();
+
+  document.getElementById('filter-search').addEventListener('input', _debounce(load, 400));
+  document.getElementById('filter-vehicle').addEventListener('input', () => { _tablePage = 1; _renderTable(); });
+  document.getElementById('filter-status').addEventListener('change', () => {
+    const val = document.getElementById('filter-status').value;
+    document.querySelectorAll('#kpi-row .kpi-card').forEach(c => {
+      c.classList.toggle('active', c.dataset.kpi === val);
+    });
+    load();
+  });
+});
+
+// ── Load list ──────────────────────────────────────────────────────────────
+async function load() {
+  const search = document.getElementById('filter-search').value.trim();
+  const status = document.getElementById('filter-status').value;
+  const params = new URLSearchParams({ pageSize: 500 });
+  if (search) params.set('search', search);
+  if (status) params.set('status', status);
+
+  const res = await API.get(`/api/aankoopbon/orders?${params}`);
+  _tableItems = res?.Data || [];
+  _rowsMap = Object.fromEntries(_tableItems.map(r => [r.AohId, r]));
+
+  // KPIs — use the same loaded set for filtered counts, full set for totals
+  const all = await API.get('/api/aankoopbon/orders?pageSize=1000');
+  const allItems = all?.Data || [];
+  document.getElementById('kpi-total').textContent    = allItems.length;
+  document.getElementById('kpi-pending').textContent  = allItems.filter(x => x.AohStatus==='PENDING').length;
+  document.getElementById('kpi-approved').textContent = allItems.filter(x => x.AohStatus==='APPROVED').length;
+  document.getElementById('kpi-rejected').textContent = allItems.filter(x => x.AohStatus==='REJECTED').length;
+  document.getElementById('kpi-closed').textContent   = allItems.filter(x => x.AohStatus==='CLOSED').length;
+
+  _tablePage = 1;
+  _renderTable();
 }
-...
+
+function _sortItems(arr) {
+  if (!_sortCol) return arr;
+  const dir = _sortDir === 'asc' ? 1 : -1;
+  return [...arr].sort((a, b) => {
+    let va = a[_sortCol] ?? '', vb = b[_sortCol] ?? '';
+    if (typeof va === 'string') va = va.toLowerCase();
+    if (typeof vb === 'string') vb = vb.toLowerCase();
+    return va < vb ? -dir : va > vb ? dir : 0;
+  });
+}
+
+function _setSortIndicator() {
+  document.querySelectorAll('#orders-thead th[data-col]').forEach(th => {
+    const icon = th.querySelector('i');
+    if (!icon) return;
+    icon.className = th.dataset.col === _sortCol
+      ? `fas fa-sort-${_sortDir === 'asc' ? 'up' : 'down'} ms-1`
+      : 'fas fa-sort ms-1 text-muted opacity-50';
+  });
+}
+
+function sortTable(col) {
+  if (_sortCol === col) _sortDir = _sortDir === 'asc' ? 'desc' : 'asc';
+  else { _sortCol = col; _sortDir = 'asc'; }
+  _tablePage = 1;
+  _renderTable();
+}
+
+function _renderTable() {
+  const vehicleFilter = (document.getElementById('filter-vehicle')?.value || '').trim().toLowerCase();
+  const filtered = vehicleFilter
+    ? _tableItems.filter(r => (r.AohVehicleLicense || '').toLowerCase().includes(vehicleFilter))
+    : _tableItems;
+  const sorted = _sortItems(filtered);
+  const total  = Math.ceil(sorted.length / _PAGE_SIZE) || 1;
+  const page   = sorted.slice((_tablePage - 1) * _PAGE_SIZE, _tablePage * _PAGE_SIZE);
+
+  document.getElementById('record-count').textContent = `${sorted.length} record(s)`;
+  _setSortIndicator();
+
+  const tbody = document.getElementById('table-body');
+  if (!page.length) { tbody.innerHTML = `<tr><td colspan="10" class="text-center py-4 text-muted">No aankoopbonnen found.</td></tr>`; _renderPagination(total); return; }
+
+  tbody.innerHTML = page.map(r => {
+    const statusBadge = `<span class="status-badge status-${r.AohStatus}">${STATUS_LABELS[r.AohStatus]||r.AohStatus}</span>`;
+    const date = r.AohOrderDate ? r.AohOrderDate.slice(0,10) : '–';
+    const amount = r.AohAmount != null ? `${parseFloat(r.AohAmount).toFixed(2)} XCG` : '–';
+    const actions = _buildActions(r);
+    return `<tr>
+      <td class="fw-semibold">${r.AohBonNr}</td>
+      <td>${date}</td>
+      <td>${statusBadge}</td>
+      <td>${r.AohRequestor||'–'}</td>
+      <td>${r.AohVendorName||'–'}</td>
+      <td>${r.AohDepartment||'–'}</td>
+      <td>${r.AohVehicleLicense||'–'}</td>
+      <td class="text-muted">${_esc(r.AohRemarks||'')}</td>
+      <td class="text-end">${amount}</td>
+      <td class="text-center">${actions}</td>
+    </tr>`;
+  }).join('');
+
+  _renderPagination(total);
+}
+
+function _renderPagination(total) {
+  const el = document.getElementById('pagination-row');
+  if (!el) return;
+  if (total <= 1) { el.innerHTML = ''; return; }
+  let html = `<li class="page-item ${_tablePage===1?'disabled':''}"><a class="page-link" href="#" onclick="event.preventDefault();_gotoPage(${_tablePage-1})">&#8249;</a></li>`;
+  for (let p = 1; p <= total; p++)
+    html += `<li class="page-item ${p===_tablePage?'active':''}"><a class="page-link" href="#" onclick="event.preventDefault();_gotoPage(${p})">${p}</a></li>`;
+  html += `<li class="page-item ${_tablePage>=total?'disabled':''}"><a class="page-link" href="#" onclick="event.preventDefault();_gotoPage(${_tablePage+1})">&#8250;</a></li>`;
+  el.innerHTML = html;
+}
+
+function _gotoPage(p) {
+  const total = Math.ceil(_tableItems.length / _PAGE_SIZE) || 1;
+  if (p < 1 || p > total) return;
+  _tablePage = p; _renderTable();
+}
+
+function _buildActions(r) {
+  const myId    = _currentUser?.UserId;
+  const isOwner = r.AohCreatedBy === myId;
+
+  let html = `<button class="btn btn-xs btn-outline-secondary" onclick="viewBon(${r.AohId})" title="View"><i class="fas fa-eye"></i></button> `;
+
+  if (r.AohStatus === 'DRAFT' && (isOwner || _isAdmin)) {
+    html += `<button class="btn btn-xs btn-outline-primary" onclick="openEdit(${r.AohId})" title="Edit"><i class="fas fa-edit"></i></button> `;
+    html += `<button class="btn btn-xs btn-outline-warning" onclick="openClose(${r.AohId}, ${!!r.HasQuotationPdf})" title="Send for Approval"><i class="fas fa-paper-plane"></i></button> `;
+    html += `<button class="btn btn-xs btn-outline-danger" onclick="deleteBon(${r.AohId})" title="Delete"><i class="fas fa-trash"></i></button>`;
+  }
+
+  // PENDING: approver must open View first — no direct action buttons in the table
+
+  if (r.AohStatus === 'APPROVED') {
+    if (isOwner || _isAdmin)
+      html += ` <button class="btn btn-xs btn-outline-wine" onclick="quickInvoice(${r.AohId})" title="Register Invoice"><i class="fas fa-file-invoice-dollar"></i></button>`;
+    html += ` <button class="btn btn-xs btn-outline-dark" onclick="printBon(${r.AohId})" title="Print"><i class="fas fa-print"></i></button>`;
+  }
+
+  if (r.AohStatus === 'REJECTED' && (isOwner || _isAdmin)) {
+    html += ` <button class="btn btn-xs btn-outline-warning" onclick="resubmitBon(${r.AohId})" title="Return to Draft"><i class="fas fa-undo"></i></button>`;
+  }
+
+  if (r.AohStatus === 'CLOSED') {
+    html += ` <button class="btn btn-xs btn-outline-dark" onclick="printBon(${r.AohId})" title="Print"><i class="fas fa-print"></i></button>`;
+  }
+
+  return html;
+}
+
+function kpiFilter(card, s) {
+  document.querySelectorAll('#kpi-row .kpi-card').forEach(c => c.classList.remove('active'));
+  card.classList.add('active');
+  document.getElementById('filter-status').value = s;
+  load();
+}
+
+// ── Tom Select init ───────────────────────────────────────────────────────
+const _tsCfg = { allowEmptyOption: true, maxOptions: null, plugins: [] };
+
+function _initTomSelects() {
+  const ids = [
+    { id: 'f-requestor',  onChange: () => onRequestorChange()  },
+    { id: 'f-vehicle',   onChange: () => onVehicleChange() },
+    { id: 'f-receiver',  onChange: () => onReceiverChange() },
+  ];
+  ids.forEach(({ id, onChange }) => {
+    if (_ts[id]) _ts[id].destroy();
+    _ts[id] = new TomSelect(`#${id}`, {
+      ..._tsCfg,
+      ...(onChange ? { onChange } : {})
+    });
+  });
+  _initVendorTs();
+}
+
+function _initVendorTs() {
+  if (_ts['f-vendor']) { _ts['f-vendor'].destroy(); _ts['f-vendor'] = null; }
+  _ts['f-vendor'] = new TomSelect('#f-vendor', {
+    ..._tsCfg,
+    onChange(val) {
+      const v = _vendors.find(x => x.VndId == val);
+      document.getElementById('f-vendor-address').textContent = v?.VndAddress1 || '';
+      document.getElementById('quote-mandatory-warning').style.display = v?.VndQuoteMandatory ? 'block' : 'none';
+      onVendorChange();
+    }
+  });
+}
+
+// ── Load catalogs ─────────────────────────────────────────────────────────
+async function loadCatalogs() {
+  const [vendors, vehicles, receivers, departments, costTypes, eenheden, requestors, reqVendors, products, vndDepts, deptCts] = await Promise.all([
+    API.get('/api/aankoopbon/vendors?pageSize=500').catch(() => null),
+    API.get('/api/aankoopbon/vehicles?pageSize=200').catch(() => null),
+    API.get('/api/aankoopbon/receivers?pageSize=200').catch(() => null),
+    API.get('/api/aankoopbon/departments?pageSize=200').catch(() => null),
+    API.get('/api/aankoopbon/cost-types?pageSize=200').catch(() => null),
+    API.get('/api/aankoopbon/eenheden?pageSize=500').catch(() => null),
+    API.get('/api/aankoopbon/requestors?pageSize=200').catch(() => null),
+    API.get('/api/aankoopbon/requestors-vendor?pageSize=1000').catch(() => null),
+    API.get('/api/aankoopbon/products?pageSize=500&includeInactive=false').catch(() => null),
+    API.get('/api/aankoopbon/requestor-department?pageSize=1000').catch(() => null),
+    API.get('/api/aankoopbon/department-cost-type?pageSize=1000').catch(() => null),
+  ]);
+  window._abProducts = (products?.Data || []).filter(p => p.IsActive);
+  window._costTypes  = (costTypes?.Data || []).filter(c => c.IsActive);
+
+  _vendors           = (vendors?.Data    || []).filter(v => v.IsActive);
+  _requestorVendors  = (reqVendors?.Data || []).filter(r => r.IsActive);
+  _requestorDepartments = (vndDepts?.Data   || []).filter(r => r.IsActive);
+  _deptCostTypes     = (deptCts?.Data    || []).filter(r => r.IsActive);
+  _vehicles         = (vehicles?.Data   || []).filter(v => v.IsActive);
+  _receivers        = receivers?.Data   || [];
+
+  // Vendor dropdown starts empty — populated dynamically when a requestor is selected
+  document.getElementById('f-vendor').innerHTML = '<option value="">— Select a requestor first —</option>';
+
+  // Vehicle select
+  const vhSel = document.getElementById('f-vehicle');
+  vhSel.innerHTML = '<option value="">— No vehicle —</option>' +
+    _vehicles.filter(v=>v.IsActive).map(v => `<option value="${v.VhId}" data-type="${_esc(v.VhType||'')}" data-model="${_esc(v.VhModel||'')}" data-license="${_esc(v.VhLicense||'')}">${v.VhLicense} — ${v.VhType||''} ${v.VhModel||''}</option>`).join('');
+
+  // Receiver select
+  const recSel = document.getElementById('f-receiver');
+  recSel.innerHTML = '<option value="">— Select receiver —</option>' +
+    _receivers.filter(r=>r.IsActive).map(r => `<option value="${r.RecId}" data-iddoc="${_esc(r.RecIdDoc||'')}">${_esc(r.RecName)}</option>`).join('');
+
+  // Department & Cost Type start empty — filled by cascade when vendor/department selected
+  document.getElementById('f-department').innerHTML = '<option value="">— Select vendor first —</option>';
+  document.getElementById('f-cost-type').innerHTML  = '<option value="">— Select department first —</option>';
+
+  // Eenheden (for detail rows)
+  window._eenheden = (eenheden?.Data||[]).filter(e=>e.IsActive);
+
+  // Requestors
+  const reqSel = document.getElementById('f-requestor');
+  reqSel.innerHTML = '<option value="">— Select —</option>' +
+    (requestors?.Data||[]).filter(r=>r.IsActive).map(r=>`<option>${_esc(r.ReqName)}</option>`).join('');
+}
+
+// ── Create / Edit ─────────────────────────────────────────────────────────
+function openCreate() {
+  _editId = null;
+  document.getElementById('modal-form-title').innerHTML = '<i class="fas fa-file-invoice me-2 text-wine"></i>New Aankoopbon';
+  _resetForm();
+  new bootstrap.Modal(document.getElementById('modal-form')).show();
+}
+
+async function openEdit(id) {
+  const res = await API.get(`/api/aankoopbon/orders/${id}`);
+  const h = res?.Data; if (!h) return;
+  _editId = id;
+  document.getElementById('modal-form-title').innerHTML = `<i class="fas fa-edit me-2 text-wine"></i>Edit Aankoopbon ${h.AohBonNr}`;
+  _fillForm(h);
+  new bootstrap.Modal(document.getElementById('modal-form')).show();
+}
+
+// ── Enable/disable the form fields below the cascade chain ────────────────
+function _setLowerFormEnabled(enabled) {
+  ['f-amount','f-vehicle','f-quotation-nr','f-remarks','f-quotation-pdf','btn-add-line'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.disabled = !enabled;
+  });
+  if (_ts['f-vehicle']) { enabled ? _ts['f-vehicle'].enable() : _ts['f-vehicle'].disable(); }
+}
+
+function _resetForm() {
+  // Clear Tom Select dropdowns
+  ['f-requestor','f-vehicle'].forEach(id => {
+    if (_ts[id]) _ts[id].clear(true); else { const el = document.getElementById(id); if (el) el.value = ''; }
+  });
+  // Rebuild vendor with no requestor (clears it) and disable it
+  _rebuildVendorDropdown('');
+  document.getElementById('f-vendor').disabled = true;
+  // Reset department + cost type + lower fields via cascade helpers
+  _resetDepartmentAndBelow();
+  ['f-amount','f-quotation-nr','f-remarks','f-vehicle-type','f-vehicle-model'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.getElementById('f-vendor-address').textContent = '';
+  document.getElementById('quote-mandatory-warning').style.display = 'none';
+  document.getElementById('f-quotation-pdf').value = '';
+  document.getElementById('btn-pdf-preview-local').style.display = 'none';
+  document.getElementById('f-pdf-current').classList.add('d-none');
+  document.getElementById('details-body').innerHTML = '';
+}
+
+function _fillForm(h) {
+  // Set requestor
+  if (_ts['f-requestor']) _ts['f-requestor'].setValue(h.AohRequestor || '', true);
+  else _setVal('f-requestor', h.AohRequestor);
+
+  // Rebuild vendor dropdown for this requestor and select the saved vendor
+  _rebuildVendorDropdown(h.AohRequestor || '', h.AohVendorId);
+  _setLowerFormEnabled(true);
+
+  // Populate department dropdown with requestor's departments and select saved one
+  if (h.AohRequestor && h.AohDepartment) {
+    const reqName = (h.AohRequestor || '').trim();
+    const reqDepts = _requestorDepartments.filter(r => (r.RdRequestor || '').trim() === reqName);
+    _setTsOptions('f-department', reqDepts.map(r => r.RdDepartment), '— Select Department —');
+    const dpEl = document.getElementById('f-department'); if (dpEl) { dpEl.disabled = false; dpEl.value = h.AohDepartment; }
+  }
+
+  // Populate cost type dropdown for saved department and select saved cost type
+  if (h.AohDepartment) {
+    const filteredCts = _deptCostTypes.filter(r => r.DctDepartment === h.AohDepartment);
+    window._filteredCostTypes = filteredCts;
+    _setTsOptions('f-cost-type', filteredCts.map(c => c.DctCostType), '— Select Cost Type —');
+    const ctEl = document.getElementById('f-cost-type'); if (ctEl) { ctEl.disabled = false; ctEl.value = h.AohCostType || ''; }
+  }
+
+  if (_ts['f-vehicle']) _ts['f-vehicle'].setValue(h.AohVehicleId ? String(h.AohVehicleId) : '', true);
+  else _setVal('f-vehicle', h.AohVehicleId);
+
+  _setVal('f-remarks',      h.AohRemarks);
+  _setVal('f-quotation-nr', h.AohQuotationNr);
+  _setVal('f-amount',       h.AohAmount);
+  _setVal('f-vehicle-type', h.AohVehicleType);
+  _setVal('f-vehicle-model',h.AohVehicleModel);
+  document.getElementById('f-quotation-pdf').value = '';
+  document.getElementById('btn-pdf-preview-local').style.display = 'none';
+  if (h.AohQuotationPdfPath) {
+    const pdfName = h.AohQuotationPdfPath.split(/[\\/]/).pop();
+    const el = document.getElementById('f-pdf-current');
+    el.classList.remove('d-none');
+    document.getElementById('f-pdf-current-name').innerHTML =
+      `<i class="fas fa-file-pdf me-1"></i><strong>${_esc(pdfName)}</strong> — PDF already attached, upload a new file to replace it.`;
+    el.dataset.bonId = h.AohId;
+  } else {
+    document.getElementById('f-pdf-current').classList.add('d-none');
+  }
+
+  // Vendor address fallback if not in catalog
+  if (h.AohVendorId && !document.getElementById('f-vendor').value)
+    document.getElementById('f-vendor-address').textContent = h.AohVendorAddress || '';
+
+  // Details
+  const tbody = document.getElementById('details-body');
+  tbody.innerHTML = '';
+  (h.Details||[]).forEach(d => addDetailRow(d));
+  if (!h.Details?.length) addDetailRow();
+}
+
+function addDetailRow(d = null) {
+  const units = (window._eenheden||[]).map(e=>`<option ${d?.AodUnit===e.UnitCode?'selected':''}>${e.UnitCode}</option>`).join('');
+  const products = (window._abProducts||[]);
+  const existingCode = d?.AodProductCode || '';
+
+  // Build product options — always include the current value even if not in catalog
+  let productOpts = '<option value="">— Search product —</option>';
+  if (existingCode && !products.find(p => p.ItemKode === existingCode))
+    productOpts += `<option value="${_esc(existingCode)}" selected>${_esc(existingCode)}</option>`;
+  productOpts += products.map(p =>
+    `<option value="${_esc(p.ItemKode)}" data-desc="${_esc(p.Omschrijving||'')}" data-unit="${_esc(p.Eenheid||'')}" ${p.ItemKode===existingCode?'selected':''}>${_esc(p.ItemKode)} — ${_esc(p.Omschrijving||'')}</option>`
+  ).join('');
+
+  const row = document.createElement('tr');
+  row.className = 'detail-row';
+  const activeCostTypes = (window._filteredCostTypes||[]).map(c => ({ TcName: c.DctCostType || c.TcName }));
+  const costTypeOpts = '<option value=""></option>' + activeCostTypes.map(c =>
+    `<option value="${_esc(c.TcName)}" ${c.TcName===d?.AodCostType?'selected':''}>${_esc(c.TcName)}</option>`).join('');
+
+  row.innerHTML = `
+    <td style="min-width:200px"><select class="form-select form-select-sm det-code">${productOpts}</select></td>
+    <td><input type="text" class="form-control form-control-sm det-desc" value="${_esc(d?.AodProductDesc||'')}" placeholder="Description" required/></td>
+    <td><input type="text" class="form-control form-control-sm det-addesc" value="${_esc(d?.AodAdditionalDesc||'')}" placeholder="e.g. Color verde"/></td>
+    <td><select class="form-select form-select-sm det-costtype">${costTypeOpts}</select></td>
+    <td><input type="number" class="form-control form-control-sm det-qty" value="${d?.AodQuantity||1}" min="1" step="1"/></td>
+    <td><select class="form-select form-select-sm det-unit"><option value=""></option>${units}</select></td>
+    <td><button class="btn btn-xs btn-outline-danger" onclick="this.closest('tr').remove()" title="Remove"><i class="fas fa-times"></i></button></td>`;
+  document.getElementById('details-body').appendChild(row);
+
+  // Init Tom Select on the product selector
+  // dropdownParent:'body' prevents the dropdown from being clipped by the modal's overflow
+  const sel = row.querySelector('.det-code');
+  new TomSelect(sel, {
+    allowEmptyOption: true,
+    maxOptions: null,
+    dropdownParent: 'body',
+    onChange(value) {
+      const product   = (window._abProducts || []).find(p => p.ItemKode === value);
+      const descInput = row.querySelector('.det-desc');
+      const unitSel   = row.querySelector('.det-unit');
+      if (product) {
+        if (!descInput.value.trim()) descInput.value = product.Omschrijving || '';
+        if (product.Eenheid && unitSel) unitSel.value = product.Eenheid;
+        const costSel = row.querySelector('.det-costtype');
+        if (product.CostType && costSel) costSel.value = product.CostType;
+      }
+    }
+  });
+}
+
+// -- Cascade helpers -------------------------------------------------------
+function _setTsOptions(id, values, placeholder) {
+  const ts = _ts[id];
+  if (ts) {
+    ts.clear(true);
+    ts.clearOptions();
+    ts.addOption({ value: '', text: placeholder });
+    values.forEach(v => ts.addOption({ value: v, text: v }));
+    ts.refreshOptions(false);
+  } else {
+    const el = document.getElementById(id);
+    if (el) {
+      el.innerHTML = '<option value="">' + placeholder + '</option>' +
+        values.map(v => '<option value="' + v + '">' + v + '</option>').join('');
+    }
+  }
+}
+
+function _resetCostTypeAndBelow() {
+  _setTsOptions('f-cost-type', [], '— Select department first —');
+  if (_ts['f-cost-type']) _ts['f-cost-type'].disable();
+  else { const el = document.getElementById('f-cost-type'); if (el) el.disabled = true; }
+  _setLowerFormEnabled(false);
+  document.getElementById('details-body').innerHTML = '';
+  window._filteredCostTypes = [];
+}
+
+function _resetDepartmentAndBelow() {
+  _setTsOptions('f-department', [], '— Select requestor first —');
+  if (_ts['f-department']) _ts['f-department'].disable();
+  else { const el = document.getElementById('f-department'); if (el) el.disabled = true; }
+  _resetCostTypeAndBelow();
+}
+
+function onVendorChange() {
+  const sel = document.getElementById('f-vendor');
+  const vendorId = sel.value;
+  document.getElementById('f-vendor-address').textContent = '';
+  document.getElementById('quote-mandatory-warning').style.display = 'none';
+  if (!vendorId) return;
+  const vendor = _vendors.find(v => String(v.VndId) === String(vendorId));
+  if (!vendor) return;
+  document.getElementById('f-vendor-address').textContent = vendor.VndAddress1 || '';
+  document.getElementById('quote-mandatory-warning').style.display = vendor.VndQuoteMandatory ? 'block' : 'none';
+}
+
+function onDepartmentChange() {
+  const dept = document.getElementById('f-department').value;
+  _resetCostTypeAndBelow();
+  if (!dept) return;
+
+  const filteredCts = _deptCostTypes.filter(r => (r.DctDepartment || '').trim() === dept.trim());
+  window._filteredCostTypes = filteredCts;
+
+  const ctEl = document.getElementById('f-cost-type');
+  if (!filteredCts.length) {
+    ctEl.innerHTML = '<option value="">— No cost types configured for this department —</option>';
+    ctEl.disabled = false;
+    return;
+  }
+  ctEl.innerHTML = '<option value="">— Select Cost Type —</option>' +
+    filteredCts.map(c => '<option value="' + c.DctCostType + '">' + c.DctCostType + '</option>').join('');
+  ctEl.disabled = false;
+}
+
+function onCostTypeChange() {
+  const val = document.getElementById('f-cost-type').value;
+  _setLowerFormEnabled(!!val);
+  if (val && !document.getElementById('details-body').children.length) addDetailRow();
+}
+
+function _rebuildVendorDropdown(requestorName, selectedVndId = null) {
+  // Destroy Tom Select instance so we can safely rebuild the underlying <select>
+  if (_ts['f-vendor']) { _ts['f-vendor'].destroy(); _ts['f-vendor'] = null; }
+
+  const vSel = document.getElementById('f-vendor');
+  document.getElementById('f-vendor-address').textContent = '';
+  document.getElementById('quote-mandatory-warning').style.display = 'none';
+
+  if (!requestorName) {
+    vSel.innerHTML = '<option value="">— Select a requestor first —</option>';
+    _initVendorTs();
+    return;
+  }
+  // Get vendor codes assigned to this requestor (RsVendor stores VndCode)
+  const assignedCodes = new Set(
+    _requestorVendors
+      .filter(rv => rv.RsRequestor === requestorName)
+      .map(rv => rv.RsVendor.trim())
+  );
+  const filtered = _vendors.filter(v => assignedCodes.has(v.VndCode.trim()));
+  if (!filtered.length) {
+    vSel.innerHTML = '<option value="">— No vendors assigned to this requestor —</option>';
+    _initVendorTs();
+    return;
+  }
+  vSel.innerHTML = '<option value="">— Select Vendor —</option>' +
+    filtered.map(v => `<option value="${v.VndId}" data-code="${_esc(v.VndCode)}" data-address="${_esc(v.VndAddress1||'')}">${v.VndCode} — ${_esc(v.VndName)}</option>`).join('');
+  _initVendorTs();
+  if (selectedVndId) {
+    _ts['f-vendor'].setValue(String(selectedVndId), true);
+    const v = _vendors.find(x => x.VndId == selectedVndId);
+    document.getElementById('f-vendor-address').textContent = v?.VndAddress1 || '';
+    document.getElementById('quote-mandatory-warning').style.display = v?.VndQuoteMandatory ? 'block' : 'none';
+  }
+}
+
+function onRequestorChange() {
+  const name = document.getElementById('f-requestor').value;
+  _resetDepartmentAndBelow();
+  _rebuildVendorDropdown(name);
+  document.getElementById('f-vendor').disabled = !name;
+
+  if (!name) return;
+  const reqDepts = _requestorDepartments.filter(r => (r.RdRequestor || '').trim() === name.trim());
+  if (!reqDepts.length) {
+    const dpEl = document.getElementById('f-department');
+    dpEl.innerHTML = '<option value="">— No departments configured for this requestor —</option>';
+    dpEl.disabled = false;
+  } else {
+    _setTsOptions('f-department', reqDepts.map(r => r.RdDepartment), '— Select Department —');
+    if (_ts['f-department']) _ts['f-department'].enable();
+    else document.getElementById('f-department').disabled = false;
+  }
+}
+
+function onVehicleChange() {
+  const sel = document.getElementById('f-vehicle');
+  const opt = sel.options[sel.selectedIndex];
+  document.getElementById('f-vehicle-type').value  = opt?.dataset.type  || '';
+  document.getElementById('f-vehicle-model').value = opt?.dataset.model || '';
+}
+
+function onReceiverChange() {
+  const sel = document.getElementById('f-receiver');
+  const opt = sel.options[sel.selectedIndex];
+  document.getElementById('f-receiver-id-doc').value = opt?.dataset.iddoc || '';
+}
+
+function onDeliveryChange() {
+  const val = document.querySelector('input[name="delivery"]:checked')?.value;
+  document.getElementById('receiver-section').style.display = val === 'meegeven' ? 'block' : 'none';
+}
+
+function _buildDto() {
+  const vSel  = document.getElementById('f-vendor');
+  const vhSel = document.getElementById('f-vehicle');
+  const vhOpt = vhSel.options[vhSel.selectedIndex];
+  const details = [...document.querySelectorAll('#details-body tr.detail-row')].map(row => ({
+    AodProductCode:    row.querySelector('.det-code')?.value.trim() || null,
+    AodProductDesc:    row.querySelector('.det-desc')?.value.trim() || '',
+    AodAdditionalDesc: row.querySelector('.det-addesc')?.value.trim() || null,
+    AodCostType:       row.querySelector('.det-costtype')?.value || null,
+    AodQuantity:       parseInt(row.querySelector('.det-qty')?.value) || 1,
+    AodUnit:        row.querySelector('.det-unit')?.value || null,
+  })).filter(d => d.AodProductDesc);
+
+  return {
+    AohRequestor:    document.getElementById('f-requestor').value  || null,
+    AohVendorId:     vSel.value ? parseInt(vSel.value) : null,
+    AohVendorName:   vSel.options[vSel.selectedIndex]?.text?.split(' — ')[1] || null,
+    AohVendorAddress:document.getElementById('f-vendor-address').textContent || null,
+    AohDepartment:   document.getElementById('f-department').value || null,
+    AohCostType:     document.getElementById('f-cost-type').value  || null,
+    AohRemarks:      document.getElementById('f-remarks').value.trim() || null,
+    AohVehicleId:    vhSel.value ? parseInt(vhSel.value) : null,
+    AohVehicleLicense: vhOpt?.dataset.license || null,
+    AohVehicleType:  document.getElementById('f-vehicle-type').value  || null,
+    AohVehicleModel: document.getElementById('f-vehicle-model').value || null,
+    AohQuotationNr:  document.getElementById('f-quotation-nr').value.trim() || null,
+    AohAmount:       parseFloat(document.getElementById('f-amount').value) || null,
+    Details: details
+  };
+}
+
+async function saveDraft(quiet = false) {
+  const dto = _buildDto();
+  if (!dto.AohRequestor) { showToast('Please select a requestor.','danger'); return null; }
+  if (!dto.AohVendorId)  { showToast('Please select a vendor.','danger'); return null; }
+  if (!dto.AohRemarks)   { showToast('Remarks are required.','danger'); return null; }
+  if (!dto.Details || dto.Details.length === 0) {
+    showToast('Por favor, añada al menos un producto antes de guardar.', 'danger');
+    return null;
+  }
+
+  // Quote Mandatory check: vendor requires PDF and none is attached/existing
+  const vendorId = parseInt(dto.AohVendorId);
+  const vendor   = (_vendors || []).find(v => v.VndId === vendorId);
+  if (vendor?.VndQuoteMandatory) {
+    const hasNewFile     = !!document.getElementById('f-quotation-pdf').files?.[0];
+    const hasExistingPdf = !document.getElementById('f-pdf-current').classList.contains('d-none');
+    if (!hasNewFile && !hasExistingPdf) {
+      showToast('This vendor requires a quotation PDF. Please attach a PDF before saving.', 'danger');
+      return null;
+    }
+  }
+
+  let res;
+  if (_editId) {
+    res = await API.put(`/api/aankoopbon/orders/${_editId}`, dto);
+  } else {
+    res = await API.post('/api/aankoopbon/orders', dto);
+  }
+
+  if (!res?.Success) { showToast(res?.Message || 'Error saving.', 'danger'); return null; }
+
+  const savedId = _editId || res.Data?.AohId;
+  const bonNr   = res.Data?.AohBonNr || (_rowsMap[savedId]?.AohBonNr);
+
+  // Upload PDF if a file was selected
+  const pdfFile = document.getElementById('f-quotation-pdf').files?.[0];
+  if (pdfFile && savedId) {
+    const fd = new FormData();
+    fd.append('file', pdfFile);
+    try {
+      const pdfRes = await fetch(`${BASE}/api/aankoopbon/orders/${savedId}/upload-pdf`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${Auth.getToken()}` },
+        body: fd
+      });
+      const pdfJson = await pdfRes.json();
+      if (!pdfJson?.Success) showToast('Saved, but PDF upload failed: ' + (pdfJson?.Message || ''), 'warning');
+    } catch { showToast('Saved, but PDF upload failed.', 'warning'); }
+  }
+
+  if (!quiet) {
+    bootstrap.Modal.getInstance(document.getElementById('modal-form')).hide();
+    const msg = res.Message || (bonNr ? `Aankoopbon ${bonNr} guardado exitosamente.` : 'Saved.');
+    showToast(msg, 'success');
+    load();
+  }
+  return { success: true, id: savedId, bonNr: bonNr };
+}
+
+async function saveAndSend() {
+  const res = await saveDraft(true);
+  if (res?.success) {
+    bootstrap.Modal.getInstance(document.getElementById('modal-form')).hide();
+    await load();
+    // Open the send for approval modal
+    openClose(res.id, true); // true because if it was a mandatory PDF, it was already validated or it exists
+  }
+}
+
+// ── Close (send for approval) ─────────────────────────────────────────────
+function openClose(id, hasPdf = false) {
+  _closeId  = id;
+  _closePdf = hasPdf;
+  document.querySelectorAll('input[name="delivery"]').forEach(r => r.checked = false);
+  document.getElementById('receiver-section').style.display = 'none';
+  document.getElementById('f-receiver').value = '';
+  document.getElementById('f-receiver-id-doc').value = '';
+  // Populate bon info
+  const row = _rowsMap[id] || {};
+  document.getElementById('close-info-bonnr').textContent      = row.AohBonNr      || '–';
+  document.getElementById('close-info-requestor').textContent  = row.AohRequestor  || '–';
+  document.getElementById('close-info-vendor').textContent     = row.AohVendorName || '–';
+  document.getElementById('close-info-department').textContent = row.AohDepartment || '–';
+  // Show warning if no PDF attached
+  const warn = document.getElementById('close-no-pdf-warning');
+  warn.classList.toggle('d-none', hasPdf);
+  new bootstrap.Modal(document.getElementById('modal-close')).show();
+}
+
+async function submitClose() {
+  if (!_closePdf) { showToast('A quotation PDF is required before submitting for approval.', 'danger'); return; }
+  const delivery = document.querySelector('input[name="delivery"]:checked')?.value;
+  if (!delivery) { showToast('Select a delivery method.','danger'); return; }
+  if (delivery === 'meegeven' && !document.getElementById('f-receiver').value) {
+    showToast('Select a receiver.','danger'); return;
+  }
+  const recSel = document.getElementById('f-receiver');
+  const recOpt = recSel.options[recSel.selectedIndex];
+
+  const dto = {
+    Meegeven:  delivery === 'meegeven',
+    Ontvangen: delivery === 'ontvangen',
+    Zenden:    delivery === 'zenden',
+    Andere:    delivery === 'andere',
+    ReceiverId:    recSel.value ? parseInt(recSel.value) : null,
+    ReceiverName:  recOpt?.text || null,
+    ReceiverIdDoc: document.getElementById('f-receiver-id-doc').value || null,
+  };
+
+  const res = await API.patch(`/api/aankoopbon/orders/${_closeId}/close`, dto);
+  if (res?.Success) {
+    bootstrap.Modal.getInstance(document.getElementById('modal-close')).hide();
+    showToast('Aankoopbon sent for approval!', 'success');
+    load();
+  } else {
+    showToast(res?.Message || 'Error.', 'danger');
+  }
+}
+
+// ── Approve / Reject ──────────────────────────────────────────────────────
+let _approveId = null;
+
+function approveBon(id) {
+  _approveId = id;
+  const bon = _viewData?.AohBonNr || _rowsMap[id]?.AohBonNr || `#${id}`;
+  document.getElementById('confirm-approve-bonnr').textContent = bon;
+  new bootstrap.Modal(document.getElementById('modal-confirm-approve')).show();
+}
+
+async function confirmApprove() {
+  if (!_approveId) return;
+  bootstrap.Modal.getInstance(document.getElementById('modal-confirm-approve')).hide();
+  const res = await API.patch(`/api/aankoopbon/orders/${_approveId}/approve`, {});
+  if (res?.Success) { showToast('Approved!', 'success'); load(); }
+  else showToast(res?.Message || 'Error.', 'danger');
+}
+
+function openReject(id) {
+  _rejectId = id;
+  document.getElementById('f-reject-reason').value = '';
+  new bootstrap.Modal(document.getElementById('modal-reject')).show();
+}
+
+async function confirmReject() {
+  const reason = document.getElementById('f-reject-reason').value.trim();
+  if (!reason) { showToast('Reason is required.','danger'); return; }
+  const res = await API.patch(`/api/aankoopbon/orders/${_rejectId}/reject`, { Reason: reason });
+  if (res?.Success) {
+    bootstrap.Modal.getInstance(document.getElementById('modal-reject')).hide();
+    showToast('Aankoopbon rejected.','warning');
+    load();
+  } else showToast(res?.Message||'Error.','danger');
+}
+
+// ── Return to Draft (PENDING → DRAFT, by approver) ───────────────────────
+let _returnDraftId = null;
+function openReturnToDraft(id) {
+  _returnDraftId = id;
+  document.getElementById('f-return-reason').value = '';
+  new bootstrap.Modal(document.getElementById('modal-return-draft')).show();
+}
+
+async function confirmReturnToDraft() {
+  const reason = document.getElementById('f-return-reason').value.trim();
+  if (!reason) { showToast('Reason is required.', 'danger'); return; }
+  const res = await API.patch(`/api/aankoopbon/orders/${_returnDraftId}/return-to-draft`, { Reason: reason });
+  if (res?.Success) {
+    bootstrap.Modal.getInstance(document.getElementById('modal-return-draft')).hide();
+    showToast('Aankoopbon returned to Draft.', 'warning');
+    load();
+  } else showToast(res?.Message || 'Error.', 'danger');
+}
+
+// ── Resubmit (REJECTED → DRAFT) ──────────────────────────────────────────
+async function resubmitBon(id) {
+  if (!confirm('Return this aankoopbon to DRAFT for editing?')) return;
+  const res = await API.patch(`/api/aankoopbon/orders/${id}/resubmit`, {});
+  if (res?.Success) { showToast('Returned to Draft.', 'warning'); load(); }
+  else showToast(res?.Message || 'Error.', 'danger');
+}
+
+// ── Delete ────────────────────────────────────────────────────────────────
+async function deleteBon(id) {
+  if (!confirm('Delete this draft aankoopbon?')) return;
+  const res = await API.del(`/api/aankoopbon/orders/${id}`);
+  if (res?.Success) { showToast('Deleted.','success'); load(); }
+  else showToast(res?.Message||'Error.','danger');
+}
+
+// ── View ──────────────────────────────────────────────────────────────────
+async function viewBon(id) {
+  const res = await API.get(`/api/aankoopbon/orders/${id}`);
+  const h = res?.Data; if (!h) return;
+  _viewData = h;
+
+  const statusColor = { DRAFT:'secondary', PENDING:'warning', APPROVED:'success', REJECTED:'danger' };
+  const delivery = h.AohMeegeven ? 'Wilt u meegeven' : h.AohOntvangen ? 'Hierbij ontvangt u' : h.AohZenden ? 'Wilt u zenden' : h.AohAndere ? 'Andere' : '–';
+
+  document.getElementById('modal-view-title').innerHTML = `<i class="fas fa-file-invoice me-2"></i>${h.AohBonNr} <span class="badge bg-${statusColor[h.AohStatus]||'secondary'} ms-2">${h.AohStatus}</span>`;
+
+  const hasPdf = !!h.AohQuotationPdfPath;
+  const isMyOrder = h.AohCreatedBy === _currentUser?.UserId || _isAdmin;
+
+  // Invoice section — APPROVED (editable) or CLOSED (read-only)
+  let invoiceSection = '';
+  if (h.AohStatus === 'APPROVED') {
+    invoiceSection = `
+    <hr/>
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <span class="fw-semibold"><i class="fas fa-file-invoice-dollar me-1 text-wine"></i>Invoice</span>
+      ${isMyOrder ? `<button class="btn btn-sm btn-outline-wine" onclick="openUpdateInvoice()"><i class="fas fa-edit me-1"></i>Register Invoice</button>` : ''}
+    </div>
+    <div class="row g-2">
+      <div class="col-md-4"><b>Invoice #:</b> ${_esc(h.AohInvoiceNr||'–')}</div>
+      <div class="col-md-4"><b>Invoice Date:</b> ${h.AohInvoiceDate?.slice(0,10)||'–'}</div>
+      <div class="col-md-4"><b>Invoice Amount:</b> ${h.AohInvoiceAmount!=null?parseFloat(h.AohInvoiceAmount).toFixed(2)+' XCG':'–'}</div>
+    </div>`;
+  } else if (h.AohStatus === 'CLOSED') {
+    invoiceSection = `
+    <hr/>
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <span class="fw-semibold"><i class="fas fa-lock me-1"></i>Invoice (Closed)</span>
+      <span class="badge" style="background:#1e293b;font-size:.7rem;"><i class="fas fa-lock me-1"></i>CLOSED by ${_esc(h.AohClosedByName||'–')}</span>
+    </div>
+    <div class="row g-2">
+      <div class="col-md-4"><b>Invoice #:</b> ${_esc(h.AohInvoiceNr||'–')}</div>
+      <div class="col-md-4"><b>Invoice Date:</b> ${h.AohInvoiceDate?.slice(0,10)||'–'}</div>
+      <div class="col-md-4"><b>Invoice Amount:</b> ${h.AohInvoiceAmount!=null?parseFloat(h.AohInvoiceAmount).toFixed(2)+' XCG':'–'}</div>
+    </div>`;
+  }
+
+  document.getElementById('modal-view-body').innerHTML = `
+    <div class="row g-3">
+      <div class="col-md-4"><b>Date:</b> ${h.AohOrderDate?.slice(0,10)||'–'}</div>
+      <div class="col-md-4"><b>Requestor:</b> ${h.AohRequestor||'–'}</div>
+      <div class="col-md-4"><b>Created By:</b> ${h.AohCreatedByName||'–'}</div>
+      <div class="col-md-6"><b>Vendor:</b> ${h.AohVendorName||'–'}</div>
+      <div class="col-md-6"><b>Address:</b> ${h.AohVendorAddress||'–'}</div>
+      <div class="col-md-4"><b>Department:</b> ${h.AohDepartment||'–'}</div>
+      <div class="col-md-4"><b>Cost Type:</b> ${h.AohCostType||'–'}</div>
+      <div class="col-md-4"><b>Amount:</b> ${h.AohAmount!=null?h.AohAmount.toFixed(2)+' XCG':'–'}</div>
+      ${h.AohVehicleLicense?`<div class="col-12"><b>Vehicle:</b> ${h.AohVehicleLicense} / ${h.AohVehicleType||''} / ${h.AohVehicleModel||''}</div>`:''}
+      <div class="col-md-6"><b>Quotation #:</b> ${h.AohQuotationNr||'–'}</div>
+      <div class="col-md-6"><b>Delivery:</b> ${delivery}</div>
+      <div class="col-md-6"><b>Quotation PDF:</b> ${h.AohQuotationPdfPath ? `<span class="text-success"><i class="fas fa-file-pdf me-1"></i>${_esc(h.AohQuotationPdfPath.split(/[\\/]/).pop())}</span>` : '<span class="text-muted">–</span>'}</div>
+      ${h.AohReceiverName?`<div class="col-md-6"><b>Receiver:</b> ${_esc(h.AohReceiverName)} (ID: ${_esc(h.AohReceiverIdDoc||'–')})</div>`:''}
+      <div class="col-12"><b>Remarks:</b> ${_esc(h.AohRemarks||'–')}</div>
+      ${h.AohStatus==='APPROVED'?`<div class="col-12 text-success"><b>Approved by:</b> ${h.AohApprovedByName} on ${h.AohApprovedAt?.slice(0,10)}</div>`:''}
+      ${h.AohStatus==='REJECTED'?`<div class="col-12 text-danger"><b>Rejected by:</b> ${h.AohRejectedByName} — <i>${_esc(h.AohRejectionReason||'')}</i></div>`:''}
+      ${h.AohStatus==='CLOSED'?`<div class="col-12"><span style="color:#1e293b;font-weight:600;"><i class="fas fa-lock me-1"></i>Closed by:</span> ${_esc(h.AohClosedByName||'–')} on ${h.AohClosedAt?.slice(0,10)||'–'}</div>`:''}
+    </div>
+    <hr/>
+    <table class="table table-sm table-bordered mb-0">
+      <thead class="table-light"><tr><th>#</th><th>Code</th><th>Description</th><th>Aanv. Description</th><th>Cost Type</th><th>Qty</th><th>Unit</th></tr></thead>
+      <tbody>${(h.Details||[]).map((d,i)=>`<tr><td>${i+1}</td><td>${d.AodProductCode||'–'}</td><td>${_esc(d.AodProductDesc)}</td><td>${_esc(d.AodAdditionalDesc||'–')}</td><td>${_esc(d.AodCostType||'–')}</td><td>${d.AodQuantity}</td><td>${d.AodUnit||'–'}</td></tr>`).join('')}</tbody>
+    </table>
+    ${invoiceSection}`;
+
+  let footer = `<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>`;
+  if (hasPdf)
+    footer += ` <button class="btn btn-outline-danger" onclick="previewPdf(${h.AohId})" title="Preview quotation PDF"><i class="fas fa-file-pdf me-1"></i>Preview PDF</button>`;
+  else
+    footer += ` <button class="btn btn-outline-secondary" disabled title="No quotation PDF attached"><i class="fas fa-file-pdf me-1"></i>No PDF</button>`;
+  if (h.AohStatus === 'APPROVED')
+    footer += ` <button class="btn btn-outline-dark" onclick="printBon(${h.AohId})"><i class="fas fa-print me-1"></i>Print</button>`;
+  if (h.AohStatus === 'PENDING' && _isAdmin) {
+    footer += ` <button class="btn btn-warning" onclick="openReturnToDraft(${h.AohId})"><i class="fas fa-undo me-1"></i>Return to Draft</button>`;
+    footer += ` <button class="btn btn-danger" onclick="openReject(${h.AohId})"><i class="fas fa-times me-1"></i>Reject</button>`;
+    footer += ` <button class="btn btn-success" onclick="approveBon(${h.AohId})"><i class="fas fa-check me-1"></i>Approve</button>`;
+  }
+  document.getElementById('modal-view-footer').innerHTML = footer;
+  new bootstrap.Modal(document.getElementById('modal-view')).show();
+}
+
+// ── Preview local PDF (before upload) ────────────────────────────────────
+function onPdfFileSelected(input) {
+  const btn = document.getElementById('btn-pdf-preview-local');
+  btn.style.display = input.files?.[0] ? 'inline-flex' : 'none';
+}
+
+function previewLocalPdf() {
+  const file = document.getElementById('f-quotation-pdf').files?.[0];
+  if (!file) return;
+  const url = URL.createObjectURL(file);
+  window.open(url, '_blank');
+}
+
+async function previewExistingPdf() {
+  const id = document.getElementById('f-pdf-current').dataset.bonId;
+  if (!id) return;
+  await previewPdf(parseInt(id));
+}
+
+// ── Preview PDF ───────────────────────────────────────────────────────────
+async function previewPdf(id) {
+  try {
+    const response = await fetch(`${BASE}/api/aankoopbon/orders/${id}/quotation-pdf`, {
+      headers: { 'Authorization': `Bearer ${Auth.getToken()}` }
+    });
+    if (!response.ok) { showToast('No quotation PDF found.', 'danger'); return; }
+    const blob = await response.blob();
+    const url  = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+  } catch { showToast('Error loading PDF.', 'danger'); }
+}
+
+// ── Invoice Update ────────────────────────────────────────────────────────
+function openUpdateInvoice() {
+  const h = _viewData; if (!h) return;
+  _invoiceId = h.AohId;
+  document.getElementById('f-invoice-nr').value     = h.AohInvoiceNr     || '';
+  document.getElementById('f-invoice-date').value   = h.AohInvoiceDate?.slice(0,10) || '';
+  document.getElementById('f-invoice-amount').value = h.AohInvoiceAmount != null ? h.AohInvoiceAmount : '';
+  new bootstrap.Modal(document.getElementById('modal-invoice')).show();
+}
+
+async function quickInvoice(id) {
+  const res = await API.get(`/api/aankoopbon/orders/${id}`);
+  const h = res?.Data; if (!h) return;
+  _viewData  = h;
+  _invoiceId = h.AohId;
+  document.getElementById('f-invoice-nr').value     = h.AohInvoiceNr     || '';
+  document.getElementById('f-invoice-date').value   = h.AohInvoiceDate?.slice(0,10) || '';
+  document.getElementById('f-invoice-amount').value = h.AohInvoiceAmount != null ? h.AohInvoiceAmount : '';
+  new bootstrap.Modal(document.getElementById('modal-invoice')).show();
+}
+
+async function saveInvoice() {
+  const nr     = document.getElementById('f-invoice-nr').value.trim();
+  const date   = document.getElementById('f-invoice-date').value;
+  const amount = parseFloat(document.getElementById('f-invoice-amount').value);
+
+  if (!nr)           return showToast('Invoice number is required.', 'warning');
+  if (!date)         return showToast('Invoice date is required.', 'warning');
+  if (!amount || amount <= 0) return showToast('Invoice amount must be greater than 0.', 'warning');
+
+  const dto = { InvoiceNr: nr, InvoiceDate: date, InvoiceAmount: amount };
+  const res = await API.patch(`/api/aankoopbon/orders/${_invoiceId}/invoice`, dto);
+  if (res?.Success) {
+    bootstrap.Modal.getInstance(document.getElementById('modal-invoice')).hide();
+    showToast('Invoice saved. Aankoopbon is now CLOSED.', 'success');
+    load();
+  } else {
+    showToast(res?.Message || 'Error saving invoice.', 'danger');
+  }
+}
+
+// ── Print ─────────────────────────────────────────────────────────────────
+async function printBon(id) {
+  const res = await API.get(`/api/aankoopbon/orders/${id}`);
+  const h = res?.Data; if (!h) return;
+
+  const delivery = h.AohMeegeven ? '☑ Wilt u meegeven &nbsp; ☐ Hierbij ontvangt u &nbsp; ☐ Wilt u zenden &nbsp; ☐ Andere'
+                 : h.AohOntvangen? '☐ Wilt u meegeven &nbsp; ☑ Hierbij ontvangt u &nbsp; ☐ Wilt u zenden &nbsp; ☐ Andere'
+                 : h.AohZenden   ? '☐ Wilt u meegeven &nbsp; ☐ Hierbij ontvangt u &nbsp; ☑ Wilt u zenden &nbsp; ☐ Andere'
+                 :                 '☐ Wilt u meegeven &nbsp; ☐ Hierbij ontvangt u &nbsp; ☐ Wilt u zenden &nbsp; ☑ Andere';
+
+  const lines = (h.Details||[]).map((d,i) =>
+    `<tr><td>${i+1}</td><td>${_esc(d.AodProductCode||'')}</td><td>${_esc(d.AodProductDesc)}</td><td>${d.AodQuantity}</td><td>${d.AodUnit||''}</td></tr>`).join('');
+
+  const rejected = h.AohStatus === 'REJECTED';
+  const statusLabel = h.AohStatus === 'APPROVED' ? 'APROBADO'
+                    : h.AohStatus === 'REJECTED' ? 'RECHAZADO'
+                    : h.AohStatus === 'CLOSED'   ? 'CERRADO'
+                    : h.AohStatus === 'PENDING'  ? 'PENDIENTE'
+                    : 'BORRADOR';
+  const statusColor = h.AohStatus === 'APPROVED' ? '#16a34a'
+                    : h.AohStatus === 'REJECTED' ? '#dc3545'
+                    : h.AohStatus === 'CLOSED'   ? '#1e293b'
+                    : '#f59e0b';
+
+  const _buildBonPage = (copyLabel, copyColor) => `
+<div class="print-page">
+
+  <!-- ── Header ── -->
+  <div class="print-header">
+    <div class="print-header-left">
+      <img src="../../img/LogoLicores.png" alt="Licores Maduro" onerror="this.style.display='none'"/>
+      <div>
+        <div class="print-company-name">LICORES MADURO</div>
+        <div class="print-company-sub">Dokweg z.n., Willemstad, Curaçao</div>
+      </div>
+    </div>
+    <div class="print-header-right">
+      <div class="print-copy-label" style="background:${copyColor};">${copyLabel}</div>
+      <div class="print-doc-title">AANKOOPBON</div>
+      <div class="print-bon-nr"># ${_esc(h.AohBonNr||'')}</div>
+      <div style="font-size:10px;color:#666;margin-top:2px;">${h.AohOrderDate?.slice(0,10)||''}</div>
+      <div><span class="print-status-badge" style="background:${statusColor};">${statusLabel}</span></div>
+    </div>
+  </div>
+
+  ${rejected ? `
+  <div class="print-rejection-box">
+    <div class="rej-title">&#9888; Rechazado / Rejected</div>
+    ${h.AohRejectionReason ? `<div class="rej-reason"><b>Motivo:</b> ${_esc(h.AohRejectionReason)}</div>` : ''}
+    ${h.AohRejectedByName  ? `<div class="rej-reason"><b>Por:</b> ${_esc(h.AohRejectedByName)}</div>` : ''}
+  </div>` : ''}
+
+  <!-- ── Info grid ── -->
+  <div class="print-info-grid">
+    <div class="print-info-cell"><span class="print-info-label">Aan (To):</span><span class="print-info-value">${_esc(h.AohVendorName||'–')}</span></div>
+    <div class="print-info-cell"><span class="print-info-label">Dirección:</span><span class="print-info-value">${_esc(h.AohVendorAddress||'–')}</span></div>
+    <div class="print-info-cell"><span class="print-info-label">Van (From):</span><span class="print-info-value">Licores Maduro, Dokweg z.n.</span></div>
+    <div class="print-info-cell"><span class="print-info-label">Afdeling:</span><span class="print-info-value">${_esc(h.AohDepartment||'–')}</span></div>
+    ${h.AohRemarks ? `<div class="print-info-cell print-delivery-row" style="grid-column:1/-1;"><span class="print-info-label">Betreft:</span><span class="print-info-value">${_esc(h.AohRemarks)}</span></div>` : ''}
+    ${h.AohAmount != null ? `<div class="print-info-cell"><span class="print-info-label">Bedrag:</span><span class="print-info-value"><b>${Number(h.AohAmount).toFixed(2)} XCG</b></span></div>` : '<div class="print-info-cell"></div>'}
+    ${h.AohQuotationNr ? `<div class="print-info-cell"><span class="print-info-label">Offerte #:</span><span class="print-info-value">${_esc(h.AohQuotationNr)}</span></div>` : '<div class="print-info-cell"></div>'}
+    ${h.AohReceiverName ? `<div class="print-info-cell"><span class="print-info-label">Ontvanger:</span><span class="print-info-value">${_esc(h.AohReceiverName)}${h.AohReceiverIdDoc?' &nbsp; ID# '+_esc(h.AohReceiverIdDoc):''}</span></div>` : ''}
+    ${h.AohVehicleLicense ? `<div class="print-info-cell"><span class="print-info-label">Voertuig:</span><span class="print-info-value">${_esc(h.AohVehicleLicense)} ${h.AohVehicleType?'/ '+_esc(h.AohVehicleType):''} ${h.AohVehicleModel?'/ '+_esc(h.AohVehicleModel):''}</span></div>` : ''}
+
+    <!-- Delivery options -->
+    <div class="print-info-cell print-delivery-row" style="grid-column:1/-1;">
+      <span class="print-info-label">Entrega:</span>
+      <div class="delivery-options">
+        <span class="delivery-opt ${h.AohMeegeven?'selected':''}"><span style="font-size:13px;">${h.AohMeegeven?'☑':'☐'}</span> Wilt u meegeven</span>
+        <span class="delivery-opt ${h.AohOntvangen?'selected':''}"><span style="font-size:13px;">${h.AohOntvangen?'☑':'☐'}</span> Hierbij ontvangt u</span>
+        <span class="delivery-opt ${h.AohZenden?'selected':''}"><span style="font-size:13px;">${h.AohZenden?'☑':'☐'}</span> Wilt u zenden</span>
+        <span class="delivery-opt ${!h.AohMeegeven&&!h.AohOntvangen&&!h.AohZenden?'selected':''}"><span style="font-size:13px;">${!h.AohMeegeven&&!h.AohOntvangen&&!h.AohZenden?'☑':'☐'}</span> Andere</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Line items ── -->
+  <table class="print-table">
+    <thead>
+      <tr>
+        <th style="width:30px;">#</th>
+        <th style="width:100px;">Código</th>
+        <th>Descripción</th>
+        <th style="width:50px;">Cant.</th>
+        <th style="width:60px;">Unidad</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${(h.Details||[]).map((d,i) => `
+        <tr>
+          <td style="text-align:center;">${i+1}</td>
+          <td>${_esc(d.AodProductCode||'')}</td>
+          <td>${_esc(d.AodProductDesc||'')}</td>
+          <td style="text-align:center;">${d.AodQuantity}</td>
+          <td style="text-align:center;">${_esc(d.AodUnit||'')}</td>
+        </tr>`).join('')}
+    </tbody>
+  </table>
+
+  <!-- ── Invoice info (if CLOSED) ── -->
+  ${h.AohStatus === 'CLOSED' && h.AohInvoiceNr ? `
+  <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:6px;padding:10px 14px;margin-bottom:20px;">
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#16a34a;margin-bottom:4px;">Datos de Factura</div>
+    <div style="display:flex;gap:24px;font-size:11px;">
+      <span><b>Invoice #:</b> ${_esc(h.AohInvoiceNr)}</span>
+      ${h.AohInvoiceDate ? `<span><b>Fecha:</b> ${h.AohInvoiceDate.slice(0,10)}</span>` : ''}
+      ${h.AohInvoiceAmount != null ? `<span><b>Monto:</b> ${Number(h.AohInvoiceAmount).toFixed(2)} XCG</span>` : ''}
+    </div>
+  </div>` : ''}
+
+  <!-- ── Footer ── -->
+  <div class="print-footer">
+    <span>Creado por: ${_esc(h.AohCreatedByName||'–')}</span>
+    <span>Impreso: ${new Date().toLocaleString('es-CW')}</span>
+    <span>Licores Maduro &copy; ${new Date().getFullYear()}</span>
+  </div>
+
+</div>`;
+
+  const pa = document.getElementById('print-area');
+  pa.style.display = 'block';
+  pa.innerHTML = `
+<style>
+  @media print {
+    body > *:not(#print-area) { display: none !important; }
+    #print-area { display: block !important; }
+    .print-page { box-shadow: none !important; margin: 0 !important; page-break-after: always; }
+    .print-page:last-child { page-break-after: avoid; }
+  }
+  .print-copy-label {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #fff;
+    padding: 3px 10px;
+    border-radius: 4px;
+    margin-bottom: 4px;
+  }
+  .print-page {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    font-size: 11px;
+    color: #1a1a1a;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 32px;
+    background: #fff;
+    box-shadow: 0 4px 24px rgba(0,0,0,.12);
+  }
+  .print-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 3px solid #A52535;
+    padding-bottom: 14px;
+    margin-bottom: 18px;
+  }
+  .print-header-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .print-header-left img {
+    height: 60px;
+    width: auto;
+  }
+  .print-company-name {
+    font-size: 20px;
+    font-weight: 700;
+    color: #A52535;
+    letter-spacing: .5px;
+  }
+  .print-company-sub {
+    font-size: 10px;
+    color: #666;
+    margin-top: 2px;
+  }
+  .print-header-right {
+    text-align: right;
+  }
+  .print-doc-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: #A52535;
+    letter-spacing: 2px;
+  }
+  .print-bon-nr {
+    font-size: 13px;
+    font-weight: 600;
+    color: #333;
+    margin-top: 2px;
+  }
+  .print-status-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #fff;
+    margin-top: 4px;
+  }
+  .print-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    border: 1.5px solid #ddd;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 18px;
+  }
+  .print-info-cell {
+    padding: 8px 12px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    gap: 6px;
+    align-items: baseline;
+  }
+  .print-info-cell:nth-child(odd) { border-right: 1px solid #eee; }
+  .print-info-cell:last-child,
+  .print-info-cell:nth-last-child(2):nth-child(odd) { border-bottom: none; }
+  .print-info-label {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #A52535;
+    white-space: nowrap;
+    min-width: 80px;
+  }
+  .print-info-value {
+    font-size: 11px;
+    color: #1a1a1a;
+  }
+  .print-delivery-row {
+    grid-column: 1 / -1;
+    background: #fdf8f8;
+    border-bottom: 1px solid #eee;
+  }
+  .delivery-options {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+  }
+  .delivery-opt { font-size: 11px; }
+  .delivery-opt.selected { font-weight: 700; color: #A52535; }
+  .print-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+    font-size: 11px;
+  }
+  .print-table thead tr {
+    background: #A52535;
+    color: #fff;
+  }
+  .print-table thead th {
+    padding: 7px 10px;
+    text-align: left;
+    font-weight: 600;
+    letter-spacing: .3px;
+    font-size: 10px;
+    text-transform: uppercase;
+  }
+  .print-table thead th:last-child,
+  .print-table thead th:nth-child(4) { text-align: center; }
+  .print-table tbody tr:nth-child(even) { background: #fef2f2; }
+  .print-table tbody tr:nth-child(odd)  { background: #fff; }
+  .print-table tbody td {
+    padding: 6px 10px;
+    border-bottom: 1px solid #f0e0e0;
+    vertical-align: top;
+  }
+  .print-table tbody td:nth-child(4),
+  .print-table tbody td:nth-child(5) { text-align: center; }
+  .print-signatures {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 24px;
+    margin-top: 32px;
+    padding-top: 12px;
+    border-top: 1.5px solid #ddd;
+  }
+  .sig-block { text-align: center; }
+  .sig-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 28px;
+    min-height: 16px;
+  }
+  .sig-line {
+    border-top: 1.5px solid #A52535;
+    margin: 0 10px;
+  }
+  .sig-role {
+    font-size: 9px;
+    text-transform: uppercase;
+    color: #A52535;
+    font-weight: 700;
+    letter-spacing: .5px;
+    margin-top: 4px;
+  }
+  .print-rejection-box {
+    border: 2px solid #dc3545;
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    background: #fff5f5;
+  }
+  .print-rejection-box .rej-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #dc3545;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+  .print-rejection-box .rej-reason {
+    font-size: 11px;
+    color: #555;
+    margin-top: 4px;
+  }
+  .print-footer {
+    margin-top: 24px;
+    padding-top: 10px;
+    border-top: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    color: #aaa;
+  }
+</style>
+
+${_buildBonPage('REPRINT',     '#1e40af')}`;
+
+  const reprintLabel = pa.querySelector('.print-copy-label');
+  if (reprintLabel && reprintLabel.textContent === 'REPRINT') {
+    reprintLabel.style.fontSize = '14px';
+    reprintLabel.style.padding = '4px 12px';
+  }
+
+  window.print();
+  setTimeout(() => { pa.style.display='none'; pa.innerHTML=''; }, 1000);
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────
+function _setVal(id, val) { const el = document.getElementById(id); if (el && val != null) el.value = val; }
+function _esc(s) { return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function _debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(()=>fn(...a), ms); }; }
+
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.className = `toast align-items-center text-bg-${type} border-0`;
+  document.getElementById('toast-msg').textContent = msg;
+  new bootstrap.Toast(t, { delay:3000 }).show();
+}
 </script>
 </body>
 </html>
