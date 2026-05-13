@@ -8,6 +8,17 @@
         "ASPNETCORE_ENVIRONMENT": "Development"
       },
       "applicationUrl": "https://localhost:54928;http://localhost:54929"
+    },
+    "LicoresMaduro.API (Dev Tunnel)": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "launchUrl": "",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:54928;http://localhost:54929",
+      "devTunnelEnabled": true,
+      "devTunnelAccess": "public"
     }
   }
 }

@@ -92,12 +92,12 @@ public sealed class FreightQuotesController : ControllerBase
         }
     }
 
-    /// <summary>Returns the next available quote number (MAX + 1, minimum 1).</summary>
     [HttpGet("next-number")]
-    public async Task<IActionResult> GetNextNumber(CancellationToken ct)
+    public async Task<IActionResult> GetNextNumber([FromQuery] string? freightType, CancellationToken ct)
     {
-        var max  = await _db.FreightQuoteHeaders.AsNoTracking()
-                            .MaxAsync(x => (int?)x.FqhQuoteNumber, ct) ?? 0;
+        var max = await _db.FreightQuoteHeaders.AsNoTracking()
+                           .Where(x => x.FqhFreightType == freightType)
+                           .MaxAsync(x => (int?)x.FqhQuoteNumber, ct) ?? 0;
         return Ok(ApiResponse<int>.Ok(max + 1));
     }
 
@@ -105,51 +105,156 @@ public sealed class FreightQuotesController : ControllerBase
     [Authorize(Roles = "SuperAdmin,Admin")]
     public async Task<IActionResult> CreateQuote([FromBody] FreightQuoteHeaderDto dto, CancellationToken ct)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ApiResponse.Fail(ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage))));
-
-        // Quote number is assigned server-side (MAX+1) inside the transaction to prevent collisions
-        var max = await _db.FreightQuoteHeaders
-                           .MaxAsync(x => (int?)x.FqhQuoteNumber, ct) ?? 0;
-
-        var entity = new FreightQuoteHeader
+        try
         {
-            FqhQuoteNumber = max + 1,
-            FqhForwarder   = dto.Forwarder,
-            FqhFreightType = dto.FreightType,
-            FqhPort        = dto.Port,
-            FqhRoute       = dto.Route,
-            FqhTransitDays = dto.TransitDays,
-            FqhStartDate   = dto.StartDate,
-            FqhEndDate     = dto.EndDate
-        };
-        _db.FreightQuoteHeaders.Add(entity);
-        await _db.SaveChangesAsync(ct);
-        return CreatedAtAction(nameof(GetQuote), new { id = entity.FqhId },
-            ApiResponse<FreightQuoteHeader>.Ok(entity, "Quote created."));
+            if (!ModelState.IsValid)
+                return BadRequest(ApiResponse.Fail(ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage))));
+
+            // Quote number is per FreightType
+            var max = await _db.FreightQuoteHeaders
+                               .Where(x => x.FqhFreightType == dto.FreightType)
+                               .MaxAsync(x => (int?)x.FqhQuoteNumber, ct) ?? 0;
+
+            var entity = new FreightQuoteHeader
+            {
+                FqhQuoteNumber = max + 1,
+                FqhForwarder   = dto.Forwarder,
+                FqhFreightType = dto.FreightType,
+                FqhPort        = dto.Port,
+                FqhRoute       = dto.Route,
+                FqhTransitDays = dto.TransitDays,
+                FqhStartDate   = dto.StartDate.HasValue ? DateOnly.FromDateTime(dto.StartDate.Value) : null,
+                FqhEndDate     = dto.EndDate.HasValue ? DateOnly.FromDateTime(dto.EndDate.Value) : null
+            };
+
+            // Server-side Deep Clone logic
+            if (dto.CloneFromId.HasValue)
+            {
+                var source = await _db.FreightQuoteHeaders
+                    .Include(h => h.OceanPorts).ThenInclude(p => p.ShippingLines).ThenInclude(s => s.Charges)
+                    .Include(h => h.InlandRegions).ThenInclude(r => r.RegionTypes).ThenInclude(rt => rt.Details)
+                    .Include(h => h.InlandPortAdds)
+                    .Include(h => h.LclPorts).ThenInclude(p => p.PortTypes).ThenInclude(pt => pt.Details)
+                    .FirstOrDefaultAsync(h => h.FqhId == dto.CloneFromId.Value, ct);
+
+                if (source != null)
+                {
+                    if (dto.FreightType == "ocean")
+                    {
+                        foreach (var sp in source.OceanPorts)
+                        {
+                            var np = new FreightQuoteOceanPort { FqopPort = sp.FqopPort, FqopRemarks = sp.FqopRemarks };
+                            foreach (var sl in sp.ShippingLines)
+                            {
+                                var nsl = new FreightQuoteOceanPortSLine { FqopsShippingLine = sl.FqopsShippingLine, FqopsRoute = sl.FqopsRoute, FqopsDays = sl.FqopsDays };
+                                foreach (var sc in sl.Charges)
+                                {
+                                    nsl.Charges.Add(new FreightQuoteOceanCharge { FqocChargeType = sc.FqocChargeType, FqocContainerType = sc.FqocContainerType, FqocAmount = sc.FqocAmount, FqocCurrency = sc.FqocCurrency });
+                                }
+                                np.ShippingLines.Add(nsl);
+                            }
+                            entity.OceanPorts.Add(np);
+                        }
+                    }
+                    else if (dto.FreightType == "inland")
+                    {
+                        foreach (var sr in source.InlandRegions)
+                        {
+                            var nr = new FreightQuoteInlRegion { FqerRegion = sr.FqerRegion };
+                            foreach (var rt in sr.RegionTypes)
+                            {
+                                var nrt = new FreightQuoteInlRegionType { FqertChargeType = rt.FqertChargeType, FqertAmountMin = rt.FqertAmountMin, FqertAmountMax = rt.FqertAmountMax, FqertCurrency = rt.FqertCurrency };
+                                foreach (var det in rt.Details)
+                                {
+                                    nrt.Details.Add(new FreightQuoteInlRegionTypeDet { FqertdFrom = det.FqertdFrom, FqertdTo = det.FqertdTo, FqertdPrice = det.FqertdPrice, FqertdPriceType = det.FqertdPriceType, FqertdAmountMin = det.FqertdAmountMin, FqertdAmountMax = det.FqertdAmountMax });
+                                }
+                                nr.RegionTypes.Add(nrt);
+                            }
+                            entity.InlandRegions.Add(nr);
+                        }
+                    }
+                    else if (dto.FreightType == "portadd")
+                    {
+                        foreach (var pa in source.InlandPortAdds)
+                        {
+                            entity.InlandPortAdds.Add(new FreightQuoteInlPortAdd
+                            {
+                                FqipaChargeType = pa.FqipaChargeType,
+                                FqipaLoadType   = pa.FqipaLoadType,
+                                FqipaAmount     = pa.FqipaAmount,
+                                FqipaCurrency   = pa.FqipaCurrency,
+                                FqipaAction     = pa.FqipaAction,
+                                FqipaChargeOver = pa.FqipaChargeOver,
+                                FqipaChargePer  = pa.FqipaChargePer,
+                                FqipaFrom       = pa.FqipaFrom,
+                                FqipaTo         = pa.FqipaTo,
+                                FqipaAmountMin  = pa.FqipaAmountMin,
+                                FqipaAmountMax  = pa.FqipaAmountMax
+                            });
+                        }
+                    }
+                    else if (dto.FreightType == "lcl")
+                    {
+                        foreach (var sp in source.LclPorts)
+                        {
+                            var np = new FreightQuoteLclPort { FqlcpPort = sp.FqlcpPort, FqlcpRemarks = sp.FqlcpRemarks };
+                            foreach (var pt in sp.PortTypes)
+                            {
+                                var npt = new FreightQuoteLclPortType { FqlcptChargeType = pt.FqlcptChargeType, FqlcptAmountMin = pt.FqlcptAmountMin, FqlcptAmountMax = pt.FqlcptAmountMax, FqlcptCurrency = pt.FqlcptCurrency };
+                                foreach (var det in pt.Details)
+                                {
+                                    npt.Details.Add(new FreightQuoteLclPortTypeDet { FqlcptdFrom = det.FqlcptdFrom, FqlcptdTo = det.FqlcptdTo, FqlcptdPrice = det.FqlcptdPrice, FqlcptdOver = det.FqlcptdOver, FqlcptdPriceType = det.FqlcptdPriceType, FqlcptdAmountMin = det.FqlcptdAmountMin, FqlcptdAmountMax = det.FqlcptdAmountMax });
+                                }
+                                np.PortTypes.Add(npt);
+                            }
+                            entity.LclPorts.Add(np);
+                        }
+                    }
+                }
+            }
+
+            _db.FreightQuoteHeaders.Add(entity);
+            await _db.SaveChangesAsync(ct);
+            return CreatedAtAction(nameof(GetQuote), new { id = entity.FqhId },
+                ApiResponse<FreightQuoteHeader>.Ok(entity, "Quote created."));
+        }
+        catch (Exception ex)
+        {
+            var msg = ex.InnerException?.Message ?? ex.Message;
+            return StatusCode(500, ApiResponse.Fail($"Error creating quote: {msg}"));
+        }
     }
 
     [HttpPut("{id:int}")]
     [Authorize(Roles = "SuperAdmin,Admin")]
     public async Task<IActionResult> UpdateQuote(int id, [FromBody] FreightQuoteHeaderDto dto, CancellationToken ct)
     {
-        var entity = await _db.FreightQuoteHeaders.FindAsync([id], ct);
-        if (entity is null) return NotFound(ApiResponse.Fail($"Quote {id} not found."));
+        try
+        {
+            var entity = await _db.FreightQuoteHeaders.FindAsync([id], ct);
+            if (entity is null) return NotFound(ApiResponse.Fail($"Quote {id} not found."));
 
-        // Allow changing quote number only if it doesn't collide with another record
-        if (dto.QuoteNumber != entity.FqhQuoteNumber &&
-            await _db.FreightQuoteHeaders.AnyAsync(x => x.FqhQuoteNumber == dto.QuoteNumber && x.FqhId != id, ct))
-            return Conflict(ApiResponse.Fail($"Quote number {dto.QuoteNumber} already exists."));
+            // Allow changing quote number only if it doesn't collide within the same FreightType
+            if (dto.QuoteNumber != entity.FqhQuoteNumber &&
+                await _db.FreightQuoteHeaders.AnyAsync(x => x.FqhQuoteNumber == dto.QuoteNumber && x.FqhFreightType == entity.FqhFreightType && x.FqhId != id, ct))
+                return Conflict(ApiResponse.Fail($"Quote number {dto.QuoteNumber} already exists for type {entity.FqhFreightType}."));
 
-        entity.FqhQuoteNumber = dto.QuoteNumber;
-        entity.FqhForwarder   = dto.Forwarder;
-        entity.FqhPort        = dto.Port;
-        entity.FqhRoute       = dto.Route;
-        entity.FqhTransitDays = dto.TransitDays;
-        entity.FqhStartDate   = dto.StartDate;
-        entity.FqhEndDate     = dto.EndDate;
-        await _db.SaveChangesAsync(ct);
-        return Ok(ApiResponse<FreightQuoteHeader>.Ok(entity, "Quote updated."));
+            entity.FqhQuoteNumber = dto.QuoteNumber;
+            entity.FqhForwarder   = dto.Forwarder;
+            entity.FqhPort        = dto.Port;
+            entity.FqhRoute       = dto.Route;
+            entity.FqhTransitDays = dto.TransitDays;
+            entity.FqhStartDate   = dto.StartDate.HasValue ? DateOnly.FromDateTime(dto.StartDate.Value) : null;
+            entity.FqhEndDate     = dto.EndDate.HasValue ? DateOnly.FromDateTime(dto.EndDate.Value) : null;
+
+            await _db.SaveChangesAsync(ct);
+            return Ok(ApiResponse<FreightQuoteHeader>.Ok(entity, "Quote updated."));
+        }
+        catch (Exception ex)
+        {
+            var msg = ex.InnerException?.Message ?? ex.Message;
+            return StatusCode(500, ApiResponse.Fail($"Error updating quote: {msg}"));
+        }
     }
 
     [HttpDelete("{id:int}")]
@@ -210,42 +315,66 @@ public sealed class FreightQuotesController : ControllerBase
     [Authorize(Roles = "SuperAdmin,Admin")]
     public async Task<IActionResult> AddOceanSLine(int portId, [FromBody] FreightQuoteOceanSLineDto dto, CancellationToken ct)
     {
-        if (!await _db.FreightQuoteOceanPorts.AnyAsync(x => x.FqopId == portId, ct))
-            return NotFound(ApiResponse.Fail($"Ocean port {portId} not found."));
-        var entity = new FreightQuoteOceanPortSLine
+        try
         {
-            FqopsPortId       = portId,
-            FqopsShippingLine = dto.ShippingLine,
-            FqopsRoute        = dto.Route,
-            FqopsDays         = dto.Days
-        };
-        _db.FreightQuoteOceanPortSLines.Add(entity);
-        await _db.SaveChangesAsync(ct);
-        return Ok(ApiResponse<FreightQuoteOceanPortSLine>.Ok(entity, "Shipping line added."));
+            if (!await _db.FreightQuoteOceanPorts.AnyAsync(x => x.FqopId == portId, ct))
+                return NotFound(ApiResponse.Fail($"Ocean port {portId} not found."));
+            var entity = new FreightQuoteOceanPortSLine
+            {
+                FqopsPortId       = portId,
+                FqopsShippingLine = dto.ShippingLine,
+                FqopsRoute        = dto.Route,
+                FqopsDays         = dto.Days
+            };
+            _db.FreightQuoteOceanPortSLines.Add(entity);
+            await _db.SaveChangesAsync(ct);
+            return Ok(ApiResponse<FreightQuoteOceanPortSLine>.Ok(entity, "Shipping line added."));
+        }
+        catch (Exception ex)
+        {
+            var msg = ex.InnerException?.Message ?? ex.Message;
+            return StatusCode(500, ApiResponse.Fail($"Error adding shipping line: {msg}"));
+        }
     }
 
     [HttpPut("ocean-slines/{id:int}")]
     [Authorize(Roles = "SuperAdmin,Admin")]
     public async Task<IActionResult> UpdateOceanSLine(int id, [FromBody] FreightQuoteOceanSLineDto dto, CancellationToken ct)
     {
-        var entity = await _db.FreightQuoteOceanPortSLines.FindAsync([id], ct);
-        if (entity is null) return NotFound(ApiResponse.Fail($"Shipping line {id} not found."));
-        entity.FqopsShippingLine = dto.ShippingLine;
-        entity.FqopsRoute        = dto.Route;
-        entity.FqopsDays         = dto.Days;
-        await _db.SaveChangesAsync(ct);
-        return Ok(ApiResponse<FreightQuoteOceanPortSLine>.Ok(entity, "Shipping line updated."));
+        try
+        {
+            var entity = await _db.FreightQuoteOceanPortSLines.FindAsync([id], ct);
+            if (entity is null) return NotFound(ApiResponse.Fail($"Shipping line {id} not found."));
+            entity.FqopsShippingLine = dto.ShippingLine;
+            entity.FqopsRoute        = dto.Route;
+            entity.FqopsDays         = dto.Days;
+            await _db.SaveChangesAsync(ct);
+            return Ok(ApiResponse<FreightQuoteOceanPortSLine>.Ok(entity, "Shipping line updated."));
+        }
+        catch (Exception ex)
+        {
+            var msg = ex.InnerException?.Message ?? ex.Message;
+            return StatusCode(500, ApiResponse.Fail($"Error updating shipping line: {msg}"));
+        }
     }
 
     [HttpDelete("ocean-slines/{id:int}")]
     [Authorize(Roles = "SuperAdmin,Admin")]
     public async Task<IActionResult> DeleteOceanSLine(int id, CancellationToken ct)
     {
-        var entity = await _db.FreightQuoteOceanPortSLines.FindAsync([id], ct);
-        if (entity is null) return NotFound(ApiResponse.Fail($"Shipping line {id} not found."));
-        _db.FreightQuoteOceanPortSLines.Remove(entity);
-        await _db.SaveChangesAsync(ct);
-        return Ok(ApiResponse.Ok("Shipping line deleted."));
+        try
+        {
+            var entity = await _db.FreightQuoteOceanPortSLines.FindAsync([id], ct);
+            if (entity is null) return NotFound(ApiResponse.Fail($"Shipping line {id} not found."));
+            _db.FreightQuoteOceanPortSLines.Remove(entity);
+            await _db.SaveChangesAsync(ct);
+            return Ok(ApiResponse.Ok("Shipping line deleted."));
+        }
+        catch (Exception ex)
+        {
+            var msg = ex.InnerException?.Message ?? ex.Message;
+            return StatusCode(500, ApiResponse.Fail($"Error deleting shipping line: {msg}"));
+        }
     }
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -256,44 +385,68 @@ public sealed class FreightQuotesController : ControllerBase
     [Authorize(Roles = "SuperAdmin,Admin")]
     public async Task<IActionResult> AddOceanCharge(int slineId, [FromBody] FreightQuoteOceanChargeDto dto, CancellationToken ct)
     {
-        if (!await _db.FreightQuoteOceanPortSLines.AnyAsync(x => x.FqopsId == slineId, ct))
-            return NotFound(ApiResponse.Fail($"Shipping line {slineId} not found."));
-        var entity = new FreightQuoteOceanCharge
+        try
         {
-            FqocSLineId       = slineId,
-            FqocChargeType    = dto.ChargeType,
-            FqocContainerType = dto.ContainerType,
-            FqocAmount        = dto.Amount,
-            FqocCurrency      = dto.Currency
-        };
-        _db.FreightQuoteOceanCharges.Add(entity);
-        await _db.SaveChangesAsync(ct);
-        return Ok(ApiResponse<FreightQuoteOceanCharge>.Ok(entity, "Ocean charge added."));
+            if (!await _db.FreightQuoteOceanPortSLines.AnyAsync(x => x.FqopsId == slineId, ct))
+                return NotFound(ApiResponse.Fail($"Shipping line {slineId} not found."));
+            var entity = new FreightQuoteOceanCharge
+            {
+                FqocSLineId       = slineId,
+                FqocChargeType    = dto.ChargeType,
+                FqocContainerType = dto.ContainerType,
+                FqocAmount        = dto.Amount,
+                FqocCurrency      = dto.Currency
+            };
+            _db.FreightQuoteOceanCharges.Add(entity);
+            await _db.SaveChangesAsync(ct);
+            return Ok(ApiResponse<FreightQuoteOceanCharge>.Ok(entity, "Ocean charge added."));
+        }
+        catch (Exception ex)
+        {
+            var msg = ex.InnerException?.Message ?? ex.Message;
+            return StatusCode(500, ApiResponse.Fail($"Error adding ocean charge: {msg}"));
+        }
     }
 
     [HttpPut("ocean-charges/{id:int}")]
     [Authorize(Roles = "SuperAdmin,Admin")]
     public async Task<IActionResult> UpdateOceanCharge(int id, [FromBody] FreightQuoteOceanChargeDto dto, CancellationToken ct)
     {
-        var entity = await _db.FreightQuoteOceanCharges.FindAsync([id], ct);
-        if (entity is null) return NotFound(ApiResponse.Fail($"Ocean charge {id} not found."));
-        entity.FqocChargeType    = dto.ChargeType;
-        entity.FqocContainerType = dto.ContainerType;
-        entity.FqocAmount        = dto.Amount;
-        entity.FqocCurrency      = dto.Currency;
-        await _db.SaveChangesAsync(ct);
-        return Ok(ApiResponse<FreightQuoteOceanCharge>.Ok(entity, "Ocean charge updated."));
+        try
+        {
+            var entity = await _db.FreightQuoteOceanCharges.FindAsync([id], ct);
+            if (entity is null) return NotFound(ApiResponse.Fail($"Ocean charge {id} not found."));
+            entity.FqocChargeType    = dto.ChargeType;
+            entity.FqocContainerType = dto.ContainerType;
+            entity.FqocAmount        = dto.Amount;
+            entity.FqocCurrency      = dto.Currency;
+            await _db.SaveChangesAsync(ct);
+            return Ok(ApiResponse<FreightQuoteOceanCharge>.Ok(entity, "Ocean charge updated."));
+        }
+        catch (Exception ex)
+        {
+            var msg = ex.InnerException?.Message ?? ex.Message;
+            return StatusCode(500, ApiResponse.Fail($"Error updating ocean charge: {msg}"));
+        }
     }
 
     [HttpDelete("ocean-charges/{id:int}")]
     [Authorize(Roles = "SuperAdmin,Admin")]
     public async Task<IActionResult> DeleteOceanCharge(int id, CancellationToken ct)
     {
-        var entity = await _db.FreightQuoteOceanCharges.FindAsync([id], ct);
-        if (entity is null) return NotFound(ApiResponse.Fail($"Ocean charge {id} not found."));
-        _db.FreightQuoteOceanCharges.Remove(entity);
-        await _db.SaveChangesAsync(ct);
-        return Ok(ApiResponse.Ok("Ocean charge deleted."));
+        try
+        {
+            var entity = await _db.FreightQuoteOceanCharges.FindAsync([id], ct);
+            if (entity is null) return NotFound(ApiResponse.Fail($"Ocean charge {id} not found."));
+            _db.FreightQuoteOceanCharges.Remove(entity);
+            await _db.SaveChangesAsync(ct);
+            return Ok(ApiResponse.Ok("Ocean charge deleted."));
+        }
+        catch (Exception ex)
+        {
+            var msg = ex.InnerException?.Message ?? ex.Message;
+            return StatusCode(500, ApiResponse.Fail($"Error deleting ocean charge: {msg}"));
+        }
     }
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -633,20 +786,239 @@ public sealed class FreightQuotesController : ControllerBase
         await _db.SaveChangesAsync(ct);
         return Ok(ApiResponse.Ok("LCL detail deleted."));
     }
+
+    // ── Forwarders that have at least one quote ───────────────────────────────
+
+    [HttpGet("forwarders-with-quotes")]
+    public async Task<IActionResult> GetForwardersWithQuotes(CancellationToken ct)
+    {
+        var data = await _db.FreightQuoteHeaders
+            .AsNoTracking()
+            .GroupBy(x => x.FqhForwarder)
+            .Select(g => new { Code = g.Key, QuoteCount = g.Count() })
+            .OrderBy(x => x.Code)
+            .ToListAsync(ct);
+        return Ok(ApiResponse<object>.Ok(data));
+    }
+
+    // ── Pre-Calculation: latest Ocean + Inland rates for a Forwarder ──────────
+
+    [HttpGet("latest-rates/{forwarderCode}")]
+    public async Task<IActionResult> GetLatestRates(string forwarderCode, CancellationToken ct)
+    {
+        var oceanHeader = await _db.FreightQuoteHeaders
+            .AsNoTracking()
+            .Where(x => x.FqhForwarder == forwarderCode && x.FqhFreightType == "ocean")
+            .OrderByDescending(x => x.FqhQuoteNumber)
+            .Include(x => x.OceanPorts)
+                .ThenInclude(p => p.ShippingLines)
+                    .ThenInclude(sl => sl.Charges)
+            .FirstOrDefaultAsync(ct);
+
+        decimal? oceanTotal = null;
+        string?  oceanCurr  = null;
+        if (oceanHeader is not null)
+        {
+            var charges = oceanHeader.OceanPorts
+                .SelectMany(p => p.ShippingLines)
+                .SelectMany(sl => sl.Charges)
+                .Where(c => c.FqocAmount.HasValue)
+                .ToList();
+            if (charges.Count > 0)
+            {
+                oceanTotal = charges.Sum(c => c.FqocAmount!.Value);
+                oceanCurr  = charges.FirstOrDefault(c => c.FqocCurrency != null)?.FqocCurrency;
+            }
+        }
+
+        var inlandHeader = await _db.FreightQuoteHeaders
+            .AsNoTracking()
+            .Where(x => x.FqhForwarder == forwarderCode && x.FqhFreightType == "inland")
+            .OrderByDescending(x => x.FqhQuoteNumber)
+            .Include(x => x.InlandRegions)
+                .ThenInclude(r => r.RegionTypes)
+                    .ThenInclude(rt => rt.Details)
+            .FirstOrDefaultAsync(ct);
+
+        decimal? inlandAmount = null;
+        string?  inlandCurr   = null;
+        if (inlandHeader is not null)
+        {
+            var firstType = inlandHeader.InlandRegions
+                .SelectMany(r => r.RegionTypes)
+                .FirstOrDefault();
+            if (firstType is not null)
+            {
+                inlandCurr = firstType.FqertCurrency;
+                // Try AmountMin on the type, then fall back to first detail's AmountMin or Price
+                inlandAmount = firstType.FqertAmountMin
+                    ?? firstType.Details.FirstOrDefault()?.FqertdAmountMin
+                    ?? firstType.Details.FirstOrDefault()?.FqertdPrice;
+            }
+        }
+
+        return Ok(ApiResponse<object>.Ok(new
+        {
+            OceanFreight   = oceanTotal,
+            OceanCurrency  = oceanCurr,
+            OceanQuoteNo   = oceanHeader?.FqhQuoteNumber,
+            InlandFreight  = inlandAmount,
+            InlandCurrency = inlandCurr,
+            InlandQuoteNo  = inlandHeader?.FqhQuoteNumber
+        }));
+    }
+
+    // ── Clone Quote (copy-on-write versioning) ────────────────────────────────
+
+    [HttpPost("{id:int}/clone")]
+    public async Task<IActionResult> CloneQuote(int id, CancellationToken ct)
+    {
+        var src = await _db.FreightQuoteHeaders
+            .Include(x => x.OceanPorts)
+                .ThenInclude(p => p.ShippingLines)
+                    .ThenInclude(sl => sl.Charges)
+            .Include(x => x.InlandRegions)
+                .ThenInclude(r => r.RegionTypes)
+                    .ThenInclude(rt => rt.Details)
+            .Include(x => x.InlandPortAdds)
+            .Include(x => x.LclPorts)
+                .ThenInclude(p => p.PortTypes)
+                    .ThenInclude(pt => pt.Details)
+            .FirstOrDefaultAsync(x => x.FqhId == id, ct);
+
+        if (src is null)
+            return NotFound(ApiResponse<object>.Fail("Quote not found"));
+
+        var nextNo = (await _db.FreightQuoteHeaders
+            .Where(x => x.FqhForwarder == src.FqhForwarder && x.FqhFreightType == src.FqhFreightType)
+            .MaxAsync(x => (int?)x.FqhQuoteNumber, ct) ?? 0) + 1;
+
+        var clone = new FreightQuoteHeader
+        {
+            FqhQuoteNumber = nextNo,
+            FqhForwarder   = src.FqhForwarder,
+            FqhFreightType = src.FqhFreightType,
+            FqhPort        = src.FqhPort,
+            FqhRoute       = src.FqhRoute,
+            FqhTransitDays = src.FqhTransitDays,
+            FqhStartDate   = src.FqhStartDate,
+            FqhEndDate     = src.FqhEndDate,
+        };
+
+        foreach (var port in src.OceanPorts)
+        {
+            var np = new FreightQuoteOceanPort { FqopPort = port.FqopPort, FqopRemarks = port.FqopRemarks };
+            foreach (var sl in port.ShippingLines)
+            {
+                var nsl = new FreightQuoteOceanPortSLine
+                {
+                    FqopsShippingLine = sl.FqopsShippingLine,
+                    FqopsRoute        = sl.FqopsRoute,
+                    FqopsDays         = sl.FqopsDays,
+                };
+                foreach (var ch in sl.Charges)
+                    nsl.Charges.Add(new FreightQuoteOceanCharge
+                    {
+                        FqocChargeType    = ch.FqocChargeType,
+                        FqocContainerType = ch.FqocContainerType,
+                        FqocAmount        = ch.FqocAmount,
+                        FqocCurrency      = ch.FqocCurrency,
+                    });
+                np.ShippingLines.Add(nsl);
+            }
+            clone.OceanPorts.Add(np);
+        }
+
+        foreach (var reg in src.InlandRegions)
+        {
+            var nr = new FreightQuoteInlRegion { FqerRegion = reg.FqerRegion };
+            foreach (var rt in reg.RegionTypes)
+            {
+                var nrt = new FreightQuoteInlRegionType
+                {
+                    FqertChargeType = rt.FqertChargeType,
+                    FqertAmountMin  = rt.FqertAmountMin,
+                    FqertAmountMax  = rt.FqertAmountMax,
+                    FqertCurrency   = rt.FqertCurrency,
+                };
+                foreach (var det in rt.Details)
+                    nrt.Details.Add(new FreightQuoteInlRegionTypeDet
+                    {
+                        FqertdFrom      = det.FqertdFrom,
+                        FqertdTo        = det.FqertdTo,
+                        FqertdPrice     = det.FqertdPrice,
+                        FqertdPriceType = det.FqertdPriceType,
+                        FqertdAmountMin = det.FqertdAmountMin,
+                        FqertdAmountMax = det.FqertdAmountMax,
+                    });
+                nr.RegionTypes.Add(nrt);
+            }
+            clone.InlandRegions.Add(nr);
+        }
+
+        foreach (var pa in src.InlandPortAdds)
+            clone.InlandPortAdds.Add(new FreightQuoteInlPortAdd
+            {
+                FqipaChargeType = pa.FqipaChargeType,
+                FqipaLoadType   = pa.FqipaLoadType,
+                FqipaAmount     = pa.FqipaAmount,
+                FqipaAction     = pa.FqipaAction,
+                FqipaChargeOver = pa.FqipaChargeOver,
+                FqipaChargePer  = pa.FqipaChargePer,
+                FqipaFrom       = pa.FqipaFrom,
+                FqipaTo         = pa.FqipaTo,
+                FqipaAmountMin  = pa.FqipaAmountMin,
+                FqipaAmountMax  = pa.FqipaAmountMax,
+                FqipaCurrency   = pa.FqipaCurrency,
+            });
+
+        foreach (var lp in src.LclPorts)
+        {
+            var nlp = new FreightQuoteLclPort { FqlcpPort = lp.FqlcpPort, FqlcpRemarks = lp.FqlcpRemarks };
+            foreach (var pt in lp.PortTypes)
+            {
+                var npt = new FreightQuoteLclPortType
+                {
+                    FqlcptChargeType = pt.FqlcptChargeType,
+                    FqlcptAmountMin  = pt.FqlcptAmountMin,
+                    FqlcptAmountMax  = pt.FqlcptAmountMax,
+                    FqlcptCurrency   = pt.FqlcptCurrency,
+                };
+                foreach (var det in pt.Details)
+                    npt.Details.Add(new FreightQuoteLclPortTypeDet
+                    {
+                        FqlcptdFrom      = det.FqlcptdFrom,
+                        FqlcptdTo        = det.FqlcptdTo,
+                        FqlcptdPrice     = det.FqlcptdPrice,
+                        FqlcptdOver      = det.FqlcptdOver,
+                        FqlcptdPriceType = det.FqlcptdPriceType,
+                        FqlcptdAmountMin = det.FqlcptdAmountMin,
+                        FqlcptdAmountMax = det.FqlcptdAmountMax,
+                    });
+                nlp.PortTypes.Add(npt);
+            }
+            clone.LclPorts.Add(nlp);
+        }
+
+        _db.FreightQuoteHeaders.Add(clone);
+        await _db.SaveChangesAsync(ct);
+
+        return Ok(ApiResponse<object>.Ok(new { Id = clone.FqhId, QuoteNumber = clone.FqhQuoteNumber }));
+    }
 }
 
 // ── DTOs ──────────────────────────────────────────────────────────────────────
 
 public sealed record FreightQuoteHeaderDto(
-    int      QuoteNumber,
-    string   Forwarder,
-    string?  FreightType,
-    string?  Port,
-    string?  Route,
-    int?     TransitDays,
-    DateOnly? StartDate,
-    DateOnly? EndDate
-);
+    int QuoteNumber,
+    string Forwarder,
+    string FreightType,
+    string? Port,
+    string? Route,
+    int? TransitDays,
+    DateTime? StartDate,
+    DateTime? EndDate,
+    int? CloneFromId = null);
 
 public sealed record FreightQuoteOceanPortDto(string Port, string? Remarks);
 

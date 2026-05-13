@@ -142,6 +142,7 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<Requestor>                  Requestors                  => Set<Requestor>();
     public DbSet<RequestorVendor>            RequestorVendors            => Set<RequestorVendor>();
     public DbSet<VendorDepartment>           VendorDepartments           => Set<VendorDepartment>();
+    public DbSet<RequestorDepartment>        RequestorDepartments        => Set<RequestorDepartment>();
     public DbSet<DepartmentCostType>         DepartmentCostTypes         => Set<DepartmentCostType>();
     public DbSet<CostType>                   CostTypes                   => Set<CostType>();
     public DbSet<VehicleType>                VehicleTypes                => Set<VehicleType>();
@@ -155,9 +156,16 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<CcTariffItem>          CcTariffItems          => Set<CcTariffItem>();
     public DbSet<CcGoodsClassification> CcGoodsClassifications => Set<CcGoodsClassification>();
     public DbSet<CcItemWeight>          CcItemWeights          => Set<CcItemWeight>();
-    public DbSet<CcAllowedMargin>       CcAllowedMargins       => Set<CcAllowedMargin>();
-    public DbSet<CcInlandTariff>        CcInlandTariffs        => Set<CcInlandTariff>();
-    public DbSet<CcShipCharge>          CcShipCharges          => Set<CcShipCharge>();
+    public DbSet<CcAllowedMargin>      CcAllowedMargins      => Set<CcAllowedMargin>();
+    public DbSet<CcItemsOnAlcPerc>     CcItemsOnAlcPerc      => Set<CcItemsOnAlcPerc>();
+    public DbSet<CcItemLiterFactorCalcFin> CcItemLiterFactorCalcFin => Set<CcItemLiterFactorCalcFin>();
+    public DbSet<CcInlandTariff>      CcInlandTariffs       => Set<CcInlandTariff>();
+    public DbSet<CcForexHistory>      CcForexHistories      => Set<CcForexHistory>();
+
+    public DbSet<CcShipCharge>            CcShipCharges            => Set<CcShipCharge>();
+    public DbSet<CcItemFobPrice>          CcItemFobPrices          => Set<CcItemFobPrice>();
+    public DbSet<CcVendorCif>             CcVendorCifs             => Set<CcVendorCif>();
+    public DbSet<CcVendorFreightWeight>   CcVendorFreightWeights   => Set<CcVendorFreightWeight>();
 
     // ── MODULE 1: Tracking (Orders) ────────────────────────────────────────────
     public DbSet<TrackingOrder>         TrackingOrders          => Set<TrackingOrder>();
@@ -168,9 +176,10 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<RouteProductExt>  RouteProductExts  => Set<RouteProductExt>();
     public DbSet<RouteBudget>      RouteBudgets      => Set<RouteBudget>();
 
-    // ── SYSTEM: Company Settings & Module Approvers ───────────────────────────
+    // ── SYSTEM: Company Settings, System Table & Module Approvers ────────────
     public DbSet<CompanySettings>      CompanySettings      => Set<CompanySettings>();
     public DbSet<ModuleApproverEmail>  ModuleApproverEmails => Set<ModuleApproverEmail>();
+    public DbSet<SystemTable>          SystemTable          => Set<SystemTable>();
 
     // ── MODULE 5: Stock Analysis ───────────────────────────────────────────────
     public DbSet<StockIdealMonths>      StockIdealMonths      => Set<StockIdealMonths>();
@@ -1084,6 +1093,7 @@ public sealed class ApplicationDbContext : DbContext
         modelBuilder.Entity<Requestor>(e => { e.ToTable("REQUESTORS"); e.HasKey(x => x.ReqId); e.Property(x => x.ReqId).HasColumnName("REQ_Id"); e.Property(x => x.ReqName).HasColumnName("REQ_NAME").HasMaxLength(15); e.Property(x => x.ReqEmail).HasColumnName("REQ_EMAIL").HasMaxLength(50); e.Property(x => x.IsActive).HasColumnName("IS_Active"); e.Property(x => x.CreatedAt).HasColumnName("Created_At"); });
         modelBuilder.Entity<RequestorVendor>(e => { e.ToTable("REQUESTORS_VENDOR"); e.HasKey(x => x.RvId); e.Property(x => x.RvId).HasColumnName("RV_Id"); e.Property(x => x.RsRequestor).HasColumnName("RS_REQUESTOR").HasMaxLength(15); e.Property(x => x.RsVendor).HasColumnName("RS_VENDOR").HasMaxLength(6); e.Property(x => x.IsActive).HasColumnName("IS_Active"); e.Property(x => x.CreatedAt).HasColumnName("Created_At"); });
         modelBuilder.Entity<VendorDepartment>(e => { e.ToTable("AB_VENDOR_DEPARTMENT"); e.HasKey(x => x.VdId); e.Property(x => x.VdId).HasColumnName("VD_Id"); e.Property(x => x.VdVendor).HasColumnName("VD_VENDOR").HasMaxLength(10); e.Property(x => x.VdDepartment).HasColumnName("VD_DEPARTMENT").HasMaxLength(50); e.Property(x => x.IsActive).HasColumnName("IS_Active"); e.Property(x => x.CreatedAt).HasColumnName("Created_At"); });
+        modelBuilder.Entity<RequestorDepartment>(e => { e.ToTable("AB_REQUESTOR_DEPARTMENT"); e.HasKey(x => x.RdId); e.Property(x => x.RdId).HasColumnName("RD_Id"); e.Property(x => x.RdRequestor).HasColumnName("RD_REQUESTOR").HasMaxLength(100); e.Property(x => x.RdDepartment).HasColumnName("RD_DEPARTMENT").HasMaxLength(50); e.Property(x => x.IsActive).HasColumnName("IS_Active"); e.Property(x => x.CreatedAt).HasColumnName("Created_At"); });
         modelBuilder.Entity<DepartmentCostType>(e => { e.ToTable("AB_DEPARTMENT_COST_TYPE"); e.HasKey(x => x.DctId); e.Property(x => x.DctId).HasColumnName("DCT_Id"); e.Property(x => x.DctDepartment).HasColumnName("DCT_DEPARTMENT").HasMaxLength(50); e.Property(x => x.DctCostType).HasColumnName("DCT_COST_TYPE").HasMaxLength(50); e.Property(x => x.IsActive).HasColumnName("IS_Active"); e.Property(x => x.CreatedAt).HasColumnName("Created_At"); });
         modelBuilder.Entity<CostType>(e => { e.ToTable("COST_TYPE"); e.HasKey(x => x.CtId); e.Property(x => x.CtId).HasColumnName("CT_Id"); e.Property(x => x.TcName).HasColumnName("TC_NAME").HasMaxLength(15); e.Property(x => x.IsActive).HasColumnName("IS_Active"); e.Property(x => x.CreatedAt).HasColumnName("Created_At"); });
         modelBuilder.Entity<VehicleType>(e => { e.ToTable("VEHICLE_TYPE"); e.HasKey(x => x.VtId); e.Property(x => x.VtId).HasColumnName("VT_Id"); e.Property(x => x.VtName).HasColumnName("VT_NAME").HasMaxLength(15); e.Property(x => x.IsActive).HasColumnName("IS_Active"); e.Property(x => x.CreatedAt).HasColumnName("Created_At"); });
@@ -1120,10 +1130,10 @@ public sealed class ApplicationDbContext : DbContext
             e.ToTable("COST_CALC_PO_HEAD_FIN");
             e.HasKey(x => new { x.CcphCalcNumber, x.CcphLmPoNo });
             e.Property(x => x.CcphCalcNumber).HasColumnName("CCPH_Calc_Number");
-            e.Property(x => x.CcphLmPoNo).HasColumnName("CCPH_LMPoNo").HasMaxLength(10);
-            e.Property(x => x.CcphVendNo).HasColumnName("CCPH_VendNo").HasMaxLength(6);
-            e.Property(x => x.CcphVendName).HasColumnName("CCPH_VendName").HasMaxLength(50);
-            e.Property(x => x.CcphWhse).HasColumnName("CCPH_WareHouse").HasMaxLength(3);
+            e.Property(x => x.CcphLmPoNo).HasColumnName("CCPH_LMPoNo").HasMaxLength(15);
+            e.Property(x => x.CcphVendNo).HasColumnName("CCPH_VendNo").HasMaxLength(20);
+            e.Property(x => x.CcphVendName).HasColumnName("CCPH_VendName").HasMaxLength(100);
+            e.Property(x => x.CcphWhse).HasColumnName("CCPH_WareHouse").HasMaxLength(10);
             e.Property(x => x.CcphCurrCode).HasColumnName("CCPH_CurrCode").HasMaxLength(3);
             e.Property(x => x.CcphCurrRate).HasColumnName("CCPH_CurrRate");
             e.Property(x => x.CcphCurrRateCust).HasColumnName("CCPH_CurrRate_Cust");
@@ -1141,9 +1151,12 @@ public sealed class ApplicationDbContext : DbContext
             e.Property(x => x.CcphTotQty).HasColumnName("CCPH_TotQty");
             e.Property(x => x.CcphTotAmountFC).HasColumnName("CCPH_TotAmount_FC");
             e.Property(x => x.CcphTotAmount).HasColumnName("CCPH_TotAmount");
+            e.Property(x => x.CcphTotLiters).HasColumnName("CCPH_TotLiters");
             e.Property(x => x.CcphInlandFreight).HasColumnName("CCPH_Inland_Freight_FF");
             e.Property(x => x.CcphShipCharges).HasColumnName("CCPH_Ship_Charges");
             e.Property(x => x.CcphInlandTariff).HasColumnName("CCPH_Inland_Tariff");
+            e.Property(x => x.CcphSelectedLines).HasColumnName("CCPH_SelectedLines");
+            e.Property(x => x.CcphDiscount).HasColumnName("CCPH_Discount");
             e.Property(x => x.CcphStatus).HasColumnName("CCPH_Status").HasMaxLength(2);
             e.Property(x => x.CcphCreatedBy).HasColumnName("CCPH_Created_By").HasMaxLength(50);
             e.Property(x => x.CcphConfirmedBy).HasColumnName("CCPH_Confirmed_By").HasMaxLength(50);
@@ -1156,11 +1169,14 @@ public sealed class ApplicationDbContext : DbContext
             e.ToTable("COST_CALC_PO_DET_FIN");
             e.HasKey(x => new { x.CcpdCalcNumber, x.CcpdLmPoNo, x.CcpdItemNo });
             e.Property(x => x.CcpdCalcNumber).HasColumnName("CCPD_Calc_Number");
-            e.Property(x => x.CcpdLmPoNo).HasColumnName("CCPD_LMPoNo").HasMaxLength(10);
+            e.Property(x => x.CcpdLmPoNo).HasColumnName("CCPD_LMPoNo").HasMaxLength(15);
             e.Property(x => x.CcpdItemNo).HasColumnName("CCPD_ItemNo").HasMaxLength(20);
             e.Property(x => x.CcpdItemDescr).HasColumnName("CCPD_Item_Descr").HasMaxLength(50);
             e.Property(x => x.CcpdUnitCase).HasColumnName("CCPD_UnitCase");
             e.Property(x => x.CcpdOrdQty).HasColumnName("CCPD_OrdQty");
+            e.Property(x => x.CcpdFreeQty).HasColumnName("CCPD_Free_Qty");
+            e.Property(x => x.CcpdLiters).HasColumnName("CCPD_Liters");
+            e.Property(x => x.CcpdFactor).HasColumnName("CCPD_Factor");
             e.Property(x => x.CcpdFobPrice).HasColumnName("CCPD_FOB_Price");
             e.Property(x => x.CcpdFobPriceTot).HasColumnName("CCPD_FOB_Price_Tot");
             e.Property(x => x.CcpdInlandFreight).HasColumnName("CCPD_Inland_Freight");
@@ -1187,11 +1203,21 @@ public sealed class ApplicationDbContext : DbContext
             e.ToTable("CC_TARIFF_ITEMS");
             e.HasKey(x => x.TiId);
             e.Property(x => x.TiId).HasColumnName("TI_Id");
-            e.Property(x => x.TiHsCode).HasColumnName("TI_HS_Code").HasMaxLength(20);
-            e.Property(x => x.TiDescription).HasColumnName("TI_Description").HasMaxLength(200);
-            e.Property(x => x.TiDutyRate).HasColumnName("TI_Duty_Rate");
-            e.Property(x => x.TiEconRate).HasColumnName("TI_Econ_Rate");
-            e.Property(x => x.TiObRate).HasColumnName("TI_OB_Rate");
+            e.Property(x => x.Hs6Cod).HasColumnName("HS6_COD").HasMaxLength(20);
+            e.Property(x => x.TarPr1).HasColumnName("TAR_PR1").HasMaxLength(10);
+            e.Property(x => x.TarDsc).HasColumnName("TAR_DSC").HasMaxLength(500);
+            e.Property(x => x.UomCod1).HasColumnName("UOM_COD1").HasMaxLength(10);
+            e.Property(x => x.UomCod2).HasColumnName("UOM_COD2").HasMaxLength(10);
+            e.Property(x => x.TarT01).HasColumnName("TAR_T01");
+            e.Property(x => x.TarT02).HasColumnName("TAR_T02");
+            e.Property(x => x.TarT04).HasColumnName("TAR_T04");
+            e.Property(x => x.TarT05).HasColumnName("TAR_T05");
+            e.Property(x => x.TarT06).HasColumnName("TAR_T06");
+            e.Property(x => x.TarT07).HasColumnName("TAR_T07");
+            e.Property(x => x.TarT08).HasColumnName("TAR_T08");
+            e.Property(x => x.TarT09).HasColumnName("TAR_T09");
+            e.Property(x => x.TarT10).HasColumnName("TAR_T10");
+            e.Property(x => x.TarT12).HasColumnName("TAR_T12");
             e.Property(x => x.IsActive).HasColumnName("IS_Active");
             e.Property(x => x.CreatedAt).HasColumnName("Created_At");
         });
@@ -1260,6 +1286,29 @@ public sealed class ApplicationDbContext : DbContext
             e.Property(x => x.ScCurrency).HasColumnName("SC_Currency").HasMaxLength(3);
             e.Property(x => x.ScRate).HasColumnName("SC_Rate");
             e.Property(x => x.CreatedAt).HasColumnName("Created_At");
+        });
+
+        modelBuilder.Entity<CcItemFobPrice>(e =>
+        {
+            e.ToTable("ITEM_FOB_PRICES");
+            e.HasKey(x => x.ItCode);
+            e.Property(x => x.ItCode).HasColumnName("IT_Code").HasMaxLength(20);
+            e.Property(x => x.ItPurchasePrice).HasColumnName("IT_Purchase_Price");
+            e.Property(x => x.ItCommodity).HasColumnName("IT_Commodity").HasMaxLength(20);
+        });
+
+        modelBuilder.Entity<CcVendorCif>(e =>
+        {
+            e.ToTable("CC_VENDOR_CIF");
+            e.HasKey(x => x.VcifVendor);
+            e.Property(x => x.VcifVendor).HasColumnName("VCIF_Vendor").HasMaxLength(20);
+        });
+
+        modelBuilder.Entity<CcVendorFreightWeight>(e =>
+        {
+            e.ToTable("CC_VENDOR_FREIGHT_WEIGHT");
+            e.HasKey(x => x.VfwVendor);
+            e.Property(x => x.VfwVendor).HasColumnName("VFW_Vendor").HasMaxLength(20);
         });
 
         // ── Tracking Orders ────────────────────────────────────────────────────
@@ -1556,6 +1605,86 @@ public sealed class ApplicationDbContext : DbContext
             e.Property(x => x.MaeUpdatedBy).HasColumnName("Mae_UpdatedBy").HasMaxLength(100);
         });
 
+        // ── System Table (Cost Calc config) ───────────────────────────────────
+        modelBuilder.Entity<SystemTable>(e =>
+        {
+            e.ToTable("System_Table");
+            e.HasKey(x => x.CompCode);
+            e.Property(x => x.CompCode).HasColumnName("COMP_CODE").HasMaxLength(10);
+            e.Property(x => x.CompName).HasColumnName("COMP_NAME").HasMaxLength(100);
+            e.Property(x => x.CompAddress).HasColumnName("COMP_ADDRESS").HasMaxLength(300);
+            e.Property(x => x.CompContact).HasColumnName("COMP_CONTACT").HasMaxLength(100);
+            e.Property(x => x.CompTel).HasColumnName("COMP_TEL").HasMaxLength(50);
+            e.Property(x => x.CompFax).HasColumnName("COMP_FAX").HasMaxLength(50);
+            e.Property(x => x.CompEmail).HasColumnName("COMP_EMAIL").HasMaxLength(200);
+            e.Property(x => x.CompCurrLocal).HasColumnName("COMP_CURR_LOCAL").HasMaxLength(3);
+            e.Property(x => x.CompCurrUsd).HasColumnName("COMP_CURR_USD").HasMaxLength(3);
+            e.Property(x => x.CompRateUsd).HasColumnName("COMP_RATE_USD");
+            e.Property(x => x.CompDocNumber).HasColumnName("COMP_DOC_NUMBER").HasMaxLength(50);
+            e.Property(x => x.CompDocEmail).HasColumnName("COMP_DOC_EMAIL").HasMaxLength(200);
+            e.Property(x => x.CompInsurance).HasColumnName("COMP_INSURANCE");
+            e.Property(x => x.CompTransport).HasColumnName("COMP_TRANSPORT");
+            e.Property(x => x.CompUnloading).HasColumnName("COMP_UNLOADING");
+            e.Property(x => x.CompLocalHandling).HasColumnName("COMP_LOCAL_HANDLING");
+            e.Property(x => x.CompFwCode).HasColumnName("COMP_FWCODE").HasMaxLength(10);
+            e.Property(x => x.CompFwName).HasColumnName("COMP_FWNAME").HasMaxLength(50);
+            e.Property(x => x.CompFwCurr).HasColumnName("COMP_FWCURR").HasMaxLength(3);
+            e.Property(x => x.CompSm01Code).HasColumnName("COMP_SM01_CODE").HasMaxLength(10);
+            e.Property(x => x.CompSm01Email).HasColumnName("COMP_SM01_EMAIL").HasMaxLength(200);
+            e.Property(x => x.CompSm02Code).HasColumnName("COMP_SM02_CODE").HasMaxLength(10);
+            e.Property(x => x.CompSm02Email).HasColumnName("COMP_SM02_EMAIL").HasMaxLength(200);
+            e.Property(x => x.CompSm03Code).HasColumnName("COMP_SM03_CODE").HasMaxLength(10);
+            e.Property(x => x.CompSm03Email).HasColumnName("COMP_SM03_EMAIL").HasMaxLength(200);
+            e.Property(x => x.CompPcEmail).HasColumnName("COMP_PC_EMAIL").HasMaxLength(200);
+            e.Property(x => x.CompOzFactor).HasColumnName("COMP_OZ_FACTOR");
+            e.Property(x => x.CompLiterMultiplier).HasColumnName("COMP_LITER_MULTIPLIER");
+            e.Property(x => x.CompPriceChangePerc).HasColumnName("COMP_PRICE_CHANGE_PERC");
+            e.Property(x => x.CompPriceChangeAmnt).HasColumnName("COMP_PRICE_CHANGE_AMNT");
+            e.Property(x => x.CompStoreRetailPerc).HasColumnName("COMP_STORE_RETAIL_PERC");
+            e.Property(x => x.CompStoreAlliancePerc).HasColumnName("COMP_STORE_ALLIANCE_PERC");
+            e.Property(x => x.CompStoreNorsaPerc).HasColumnName("COMP_STORE_NORSA_PERC");
+            e.Property(x => x.CompPriceChangeYear).HasColumnName("COMP_PRICE_CHANGE_YEAR");
+            e.Property(x => x.CompPriceChangeSeq).HasColumnName("COMP_PRICE_CHANGE_SEQ");
+            e.Property(x => x.CompEmailPurchDep).HasColumnName("COMP_EMAIL_PURCH_DEP").HasMaxLength(200);
+            e.Property(x => x.CompEmailApproval).HasColumnName("COMP_EMAIL_APPROVAL").HasMaxLength(200);
+            e.Property(x => x.CompPathCostChanges).HasColumnName("COMP_PATH_COST_CHANGES").HasMaxLength(500);
+            e.Property(x => x.CompPathPriceChanges).HasColumnName("COMP_PATH_PRICE_CHANGES").HasMaxLength(500);
+            e.Property(x => x.CompPathCostCalc).HasColumnName("COMP_PATH_COST_CALC").HasMaxLength(500);
+            e.Property(x => x.CompEmailCostChange).HasColumnName("COMP_EMAIL_COST_CHANGE").HasMaxLength(200);
+            e.Property(x => x.CompEmailConfirmMngr).HasColumnName("COMP_EMAIL_CONFIRM_MNGR").HasMaxLength(200);
+            e.Property(x => x.CompEmailPriceChangesFinance).HasColumnName("COMP_EMAIL_PRICE_CHANGES_FINANCE").HasMaxLength(200);
+        });
+
+        modelBuilder.Entity<CcItemsOnAlcPerc>(e =>
+        {
+            e.ToTable("cc_Items_On_Alc_Perc");
+            e.HasKey(x => x.IoapItemNo);
+            e.Property(x => x.IoapItemNo).HasColumnName("IOAP_ItemNo").HasMaxLength(20);
+        });
+
+        modelBuilder.Entity<CcItemLiterFactorCalcFin>(e =>
+        {
+            e.ToTable("cc_Item_Liter_Factor_Calc_Fin");
+            e.HasKey(x => new { x.CalcNumber, x.ItemNo });
+            e.Property(x => x.CalcNumber).HasColumnName("CalcNumber");
+            e.Property(x => x.ItemNo).HasColumnName("ItemNo").HasMaxLength(20);
+            e.Property(x => x.Factor).HasColumnName("Factor");
+        });
+
+        modelBuilder.Entity<CcForexHistory>(e =>
+        {
+            e.ToTable("cc_Forex_History");
+            e.HasKey(x => x.FxId);
+            e.Property(x => x.FxId).HasColumnName("Fx_Id");
+            e.Property(x => x.FxDate).HasColumnName("Fx_Date");
+            e.Property(x => x.FxCurrency).HasColumnName("Fx_Currency").HasMaxLength(10).IsRequired();
+            e.Property(x => x.FxDescription).HasColumnName("Fx_Description").HasMaxLength(50);
+            e.Property(x => x.FxBuyingCheck).HasColumnName("Fx_Buying_Check");
+            e.Property(x => x.FxBuyingCash).HasColumnName("Fx_Buying_Cash");
+            e.Property(x => x.FxSellingRate).HasColumnName("Fx_Selling_Rate");
+            e.Property(x => x.FxCreatedAt).HasColumnName("Fx_CreatedAt");
+        });
+
         // ── Company Settings ───────────────────────────────────────────────────
         modelBuilder.Entity<CompanySettings>(e =>
         {
@@ -1593,6 +1722,53 @@ public class ModuleApproverEmail
     public string   MaeEmails     { get; set; } = string.Empty;
     public DateTime? MaeUpdatedAt { get; set; }
     public string?  MaeUpdatedBy  { get; set; }
+}
+
+public class SystemTable
+{
+    public string   CompCode                      { get; set; } = string.Empty;
+    public string?  CompName                      { get; set; }
+    public string?  CompAddress                   { get; set; }
+    public string?  CompContact                   { get; set; }
+    public string?  CompTel                       { get; set; }
+    public string?  CompFax                       { get; set; }
+    public string?  CompEmail                     { get; set; }
+    public string?  CompCurrLocal                 { get; set; }
+    public string?  CompCurrUsd                   { get; set; }
+    public decimal? CompRateUsd                   { get; set; }
+    public string?  CompDocNumber                 { get; set; }
+    public string?  CompDocEmail                  { get; set; }
+    public decimal? CompInsurance                 { get; set; }
+    public decimal? CompTransport                 { get; set; }
+    public decimal? CompUnloading                 { get; set; }
+    public decimal? CompLocalHandling             { get; set; }
+    public string?  CompFwCode                    { get; set; }
+    public string?  CompFwName                    { get; set; }
+    public string?  CompFwCurr                    { get; set; }
+    public string?  CompSm01Code                  { get; set; }
+    public string?  CompSm01Email                 { get; set; }
+    public string?  CompSm02Code                  { get; set; }
+    public string?  CompSm02Email                 { get; set; }
+    public string?  CompSm03Code                  { get; set; }
+    public string?  CompSm03Email                 { get; set; }
+    public string?  CompPcEmail                   { get; set; }
+    public decimal? CompOzFactor                  { get; set; }
+    public decimal? CompLiterMultiplier           { get; set; }
+    public decimal? CompPriceChangePerc           { get; set; }
+    public decimal? CompPriceChangeAmnt           { get; set; }
+    public decimal? CompStoreRetailPerc           { get; set; }
+    public decimal? CompStoreAlliancePerc         { get; set; }
+    public decimal? CompStoreNorsaPerc            { get; set; }
+    public int?     CompPriceChangeYear           { get; set; }
+    public int?     CompPriceChangeSeq            { get; set; }
+    public string?  CompEmailPurchDep             { get; set; }
+    public string?  CompEmailApproval             { get; set; }
+    public string?  CompPathCostChanges           { get; set; }
+    public string?  CompPathPriceChanges          { get; set; }
+    public string?  CompPathCostCalc              { get; set; }
+    public string?  CompEmailCostChange           { get; set; }
+    public string?  CompEmailConfirmMngr          { get; set; }
+    public string?  CompEmailPriceChangesFinance  { get; set; }
 }
 
 public class CompanySettings
@@ -1829,6 +2005,7 @@ public class Receiver { public int RecId { get; set; } public string RecName { g
 public class Requestor { public int ReqId { get; set; } public string ReqName { get; set; } = string.Empty; public string? ReqEmail { get; set; } public bool IsActive { get; set; } = true; public DateTime CreatedAt { get; set; } = DateTime.UtcNow; }
 public class RequestorVendor  { public int RvId  { get; set; } public string RsRequestor { get; set; } = string.Empty; public string RsVendor     { get; set; } = string.Empty; public bool IsActive { get; set; } = true; public DateTime CreatedAt { get; set; } = DateTime.UtcNow; }
 public class VendorDepartment { public int VdId  { get; set; } public string VdVendor     { get; set; } = string.Empty; public string VdDepartment { get; set; } = string.Empty; public bool IsActive { get; set; } = true; public DateTime CreatedAt { get; set; } = DateTime.UtcNow; }
+public class RequestorDepartment { public int RdId { get; set; } public string RdRequestor { get; set; } = string.Empty; public string RdDepartment { get; set; } = string.Empty; public bool IsActive { get; set; } = true; public DateTime CreatedAt { get; set; } = DateTime.UtcNow; }
 public class DepartmentCostType { public int DctId { get; set; } public string DctDepartment { get; set; } = string.Empty; public string DctCostType  { get; set; } = string.Empty; public bool IsActive { get; set; } = true; public DateTime CreatedAt { get; set; } = DateTime.UtcNow; }
 public class CostType { public int CtId { get; set; } public string TcName { get; set; } = string.Empty; public bool IsActive { get; set; } = true; public DateTime CreatedAt { get; set; } = DateTime.UtcNow; }
 public class VehicleType { public int VtId { get; set; } public string VtName { get; set; } = string.Empty; public bool IsActive { get; set; } = true; public DateTime CreatedAt { get; set; } = DateTime.UtcNow; }
@@ -1948,13 +2125,16 @@ public class CcCalcPoHead
     public decimal? CcphTotQty      { get; set; }
     public decimal? CcphTotAmountFC { get; set; }
     public decimal? CcphTotAmount   { get; set; }
+    public decimal? CcphTotLiters   { get; set; }
     public decimal? CcphInlandFreight  { get; set; }
     public decimal? CcphShipCharges    { get; set; }
     public decimal? CcphInlandTariff   { get; set; }
+    public decimal? CcphDiscount       { get; set; }
     public string   CcphStatus         { get; set; } = "DR";
     public string?  CcphCreatedBy   { get; set; }
     public string?  CcphConfirmedBy { get; set; }
     public string?  CcphApprovedBy  { get; set; }
+    public string?  CcphSelectedLines { get; set; } // CSV of selected PdLine numbers (numeric)
     public CcCalcHeader? CalcHeader { get; set; }
     public ICollection<CcCalcPoDetail> Details { get; set; } = [];
 }
@@ -1967,6 +2147,9 @@ public class CcCalcPoDetail
     public string?  CcpdItemDescr   { get; set; }
     public int?     CcpdUnitCase    { get; set; }
     public decimal? CcpdOrdQty      { get; set; }
+    public decimal? CcpdFreeQty     { get; set; }
+    public decimal? CcpdLiters      { get; set; }
+    public decimal? CcpdFactor      { get; set; }
     public decimal? CcpdFobPrice    { get; set; }
     public decimal? CcpdFobPriceTot { get; set; }
     public decimal? CcpdInlandFreight { get; set; }
@@ -1992,11 +2175,21 @@ public class CcCalcPoDetail
 public class CcTariffItem
 {
     public int     TiId          { get; set; }
-    public string  TiHsCode      { get; set; } = string.Empty;
-    public string? TiDescription { get; set; }
-    public decimal TiDutyRate    { get; set; } = 0;
-    public decimal TiEconRate    { get; set; } = 0;
-    public decimal TiObRate      { get; set; } = 0;
+    public string  Hs6Cod        { get; set; } = string.Empty;
+    public string? TarPr1        { get; set; }
+    public string? TarDsc        { get; set; }
+    public string? UomCod1       { get; set; }
+    public string? UomCod2       { get; set; }
+    public decimal? TarT01        { get; set; }
+    public decimal? TarT02        { get; set; }
+    public decimal? TarT04        { get; set; }
+    public decimal? TarT05        { get; set; }
+    public decimal? TarT06        { get; set; }
+    public decimal? TarT07        { get; set; }
+    public decimal? TarT08        { get; set; }
+    public decimal? TarT09        { get; set; }
+    public decimal? TarT10        { get; set; }
+    public decimal? TarT12        { get; set; }
     public bool    IsActive      { get; set; } = true;
     public DateTime CreatedAt    { get; set; }
 }
@@ -2035,6 +2228,30 @@ public class CcAllowedMargin
     public DateTime CreatedAt     { get; set; }
 }
 
+public class CcItemsOnAlcPerc
+{
+    public string IoapItemNo { get; set; } = string.Empty;
+}
+
+public class CcItemLiterFactorCalcFin
+{
+    public int    CalcNumber { get; set; }
+    public string ItemNo     { get; set; } = string.Empty;
+    public decimal Factor    { get; set; }
+}
+
+public class CcForexHistory
+{
+    public int      FxId            { get; set; }
+    public DateTime FxDate          { get; set; }
+    public string   FxCurrency      { get; set; } = string.Empty;
+    public string?  FxDescription   { get; set; }
+    public decimal? FxBuyingCheck   { get; set; }
+    public decimal? FxBuyingCash    { get; set; }
+    public decimal? FxSellingRate   { get; set; }
+    public DateTime FxCreatedAt     { get; set; } = DateTime.UtcNow;
+}
+
 public class CcInlandTariff
 {
     public int      ItId          { get; set; }
@@ -2055,6 +2272,23 @@ public class CcShipCharge
     public string?  ScCurrency    { get; set; }
     public decimal? ScRate        { get; set; }
     public DateTime CreatedAt     { get; set; }
+}
+
+public class CcItemFobPrice
+{
+    public string   ItCode          { get; set; } = string.Empty;
+    public decimal? ItPurchasePrice { get; set; }
+    public string?  ItCommodity     { get; set; }
+}
+
+public class CcVendorCif
+{
+    public string VcifVendor { get; set; } = string.Empty;
+}
+
+public class CcVendorFreightWeight
+{
+    public string VfwVendor { get; set; } = string.Empty;
 }
 
 // ── Tracking ────────────────────────────────────────────────────────────────────

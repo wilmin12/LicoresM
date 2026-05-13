@@ -118,6 +118,8 @@ public sealed class TrackingOrdersController : ControllerBase
             var totalReceived = lines.Sum(l => l.PdRqty ?? 0);
             receiptSummary = ReceiptSummaryDto.Calculate(totalOrdered, totalReceived);
             // Override with DAMAGED if manually flagged
+
+
             if (t.TrReceiptStatus == "DAMAGED")
                 receiptSummary = new ReceiptSummaryDto
                 {

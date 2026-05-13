@@ -35,9 +35,9 @@ public static class AankoopbonPdfBuilder
                 page.Content().PaddingTop(10).Element(c => Content(c, h, copyLabel));
                 page.Footer().AlignCenter().Text(x =>
                 {
-                    x.Span("Pagina ").FontSize(8).FontColor(Colors.Grey.Medium);
+                    x.Span("Page ").FontSize(8).FontColor(Colors.Grey.Medium);
                     x.CurrentPageNumber().FontSize(8).FontColor(Colors.Grey.Medium);
-                    x.Span(" van ").FontSize(8).FontColor(Colors.Grey.Medium);
+                    x.Span(" of ").FontSize(8).FontColor(Colors.Grey.Medium);
                     x.TotalPages().FontSize(8).FontColor(Colors.Grey.Medium);
                 });
             });
@@ -75,14 +75,17 @@ public static class AankoopbonPdfBuilder
                 {
                     if (!string.IsNullOrWhiteSpace(copyLabel))
                     {
-                        var labelColor = copyLabel.Equals("Original", StringComparison.OrdinalIgnoreCase)
-                            ? "#1e40af"   // blue for Original
+                        var isReprint = copyLabel.Equals("Original", StringComparison.OrdinalIgnoreCase) || 
+                                        copyLabel.Equals("REPRINT",  StringComparison.OrdinalIgnoreCase);
+
+                        var labelColor = isReprint
+                            ? "#1e40af"   // blue for Original/REPRINT
                             : WineColor;  // wine/red for Office Copy
 
                         inner.Item().AlignRight()
                             .Background(labelColor)
                             .Padding(3).PaddingHorizontal(8)
-                            .Text(copyLabel.ToUpper())
+                            .Text(isReprint ? "REPRINT" : copyLabel.ToUpper())
                             .Bold().FontSize(8).FontColor(Colors.White);
                         inner.Item().Height(4); // spacer
                     }
@@ -103,152 +106,191 @@ public static class AankoopbonPdfBuilder
     // ── Page content ──────────────────────────────────────────────────────────
     private static void Content(IContainer c, AbOrderHeader h, string? copyLabel = null)
     {
-        c.Column(col =>
+        // 1. Watermark logic
+        var isOriginal = string.IsNullOrWhiteSpace(copyLabel) || copyLabel.Equals("Original", StringComparison.OrdinalIgnoreCase);
+        
+        c.Layers(layers =>
         {
-            col.Spacing(10);
-
-            // ── Info grid ──
-            col.Item().Table(tbl =>
+            // The watermark layer
+            if (!isOriginal)
             {
-                tbl.ColumnsDefinition(cd =>
-                {
-                    cd.ConstantColumn(80);  // label
-                    cd.RelativeColumn();    // value
-                    cd.ConstantColumn(80);  // label
-                    cd.RelativeColumn();    // value
-                });
+                layers.Layer().AlignCenter().AlignMiddle().Text("NOT FOR USE")
+                    .FontSize(80)
+                    .FontColor(Colors.Grey.Lighten3)
+                    .Bold();
+            }
 
-                Row2(tbl, "Bon Nr:",        h.AohBonNr,
-                          "Datum:",         h.AohOrderDate.ToString("yyyy-MM-dd"));
-                Row2(tbl, "Aanvrager:",     h.AohRequestor ?? "–",
-                          "Afdeling:",      h.AohDepartment ?? "–");
-                Row1(tbl, "Leverancier:",   h.AohVendorName ?? "–");
-
-                if (!string.IsNullOrWhiteSpace(h.AohVendorAddress))
-                    Row1(tbl, "Adres:", h.AohVendorAddress);
-
-                Row2(tbl, "Kostentype:", h.AohCostType ?? "–",
-                          "Offerte Nr:", h.AohQuotationNr ?? "–");
-
-                if (!string.IsNullOrWhiteSpace(h.AohRemarks))
-                    Row1(tbl, "Opmerkingen:", h.AohRemarks);
-
-                if (h.AohVehicleId.HasValue)
-                {
-                    var model = string.Join(" ",
-                        new[] { h.AohVehicleType, h.AohVehicleModel }
-                            .Where(s => !string.IsNullOrWhiteSpace(s)));
-                    Row2(tbl, "Voertuig:", h.AohVehicleLicense ?? "–",
-                              "Model:",    model);
-                }
-            });
-
-            // ── Delivery method ──
-            var delivery = h.AohMeegeven  ? "Wilt u meegeven"
-                         : h.AohOntvangen ? "Hierbij ontvangt u"
-                         : h.AohZenden    ? "Wilt u zenden"
-                         : h.AohAndere    ? "Andere"
-                         :                  "–";
-            col.Item().Text(t =>
+            // The main content layer
+            layers.PrimaryLayer().Column(col =>
             {
-                t.Span("Bezorging: ").Bold();
-                t.Span(delivery);
-            });
+                col.Spacing(10);
 
-            // ── Line items ──
-            if (h.Details is { Count: > 0 })
-            {
-                col.Item().Text("Bestelregels").Bold().FontSize(10);
+                // ── Info grid ──
                 col.Item().Table(tbl =>
                 {
                     tbl.ColumnsDefinition(cd =>
                     {
-                        cd.ConstantColumn(18);   // #
-                        cd.ConstantColumn(60);   // Code
-                        cd.RelativeColumn(2);    // Omschrijving
-                        cd.RelativeColumn(2);    // Aanv. Omschrijving
-                        cd.ConstantColumn(38);   // Aantal
-                        cd.ConstantColumn(38);   // Eenheid
+                        cd.ConstantColumn(80);  // label
+                        cd.RelativeColumn();    // value
+                        cd.ConstantColumn(80);  // label
+                        cd.RelativeColumn();    // value
                     });
 
-                    tbl.Header(hdr =>
-                    {
-                        static IContainer ThStyle(IContainer cell) =>
-                            cell.Background(Colors.Grey.Lighten3).Padding(4);
+                    Row2(tbl, "Bon Nr:",        h.AohBonNr,
+                              "Datum:",         h.AohOrderDate.ToString("yyyy-MM-dd"));
+                    Row2(tbl, "Aanvrager:",     h.AohRequestor ?? "–",
+                              "Afdeling:",      h.AohDepartment ?? "–");
+                    Row1(tbl, "Leverancier:",   h.AohVendorName ?? "–");
 
-                        hdr.Cell().Element(ThStyle).Text("#").Bold().FontSize(8);
-                        hdr.Cell().Element(ThStyle).Text("Code").Bold().FontSize(8);
-                        hdr.Cell().Element(ThStyle).Text("Omschrijving").Bold().FontSize(8);
-                        hdr.Cell().Element(ThStyle).Text("Aanv. Omschrijving").Bold().FontSize(8);
-                        hdr.Cell().Element(ThStyle).Text("Aantal").Bold().FontSize(8);
-                        hdr.Cell().Element(ThStyle).Text("Eenheid").Bold().FontSize(8);
-                    });
+                    if (!string.IsNullOrWhiteSpace(h.AohVendorAddress))
+                        Row1(tbl, "Adres:", h.AohVendorAddress); // Translated
 
-                    var i = 1;
-                    foreach (var d in h.Details)
+                    Row2(tbl, "Kostentype:", h.AohCostType ?? "–",
+                              "Offerte Nr:", h.AohQuotationNr ?? "–");
+
+                    if (!string.IsNullOrWhiteSpace(h.AohRemarks))
+                        Row1(tbl, "Opmerkingen:", h.AohRemarks);
+
+                    if (h.AohVehicleId.HasValue)
                     {
-                        var bg = i % 2 == 0 ? Colors.Grey.Lighten5 : Colors.White;
-                        tbl.Cell().Background(bg).Padding(3).Text($"{i}").FontSize(8);
-                        tbl.Cell().Background(bg).Padding(3).Text(d.AodProductCode ?? "").FontSize(8);
-                        tbl.Cell().Background(bg).Padding(3).Text(d.AodProductDesc).FontSize(8);
-                        tbl.Cell().Background(bg).Padding(3).Text(d.AodAdditionalDesc ?? "").FontSize(8);
-                        tbl.Cell().Background(bg).Padding(3).Text(d.AodQuantity.ToString("G29")).FontSize(8);
-                        tbl.Cell().Background(bg).Padding(3).Text(d.AodUnit ?? "").FontSize(8);
-                        i++;
+                        var model = string.Join(" ",
+                            new[] { h.AohVehicleType, h.AohVehicleModel }
+                                .Where(s => !string.IsNullOrWhiteSpace(s)));
+                        Row2(tbl, "Voertuig:", h.AohVehicleLicense ?? "–",
+                                  "Model:",    model);
                     }
                 });
-            }
 
-            // ── Amount + approval info ──
-            col.Item().Row(row =>
-            {
-                row.RelativeItem().Column(inner =>
+                // ── Delivery method (Entregar removed) ──
+                var delivery = h.AohMeegeven  ? "Wilt u meegeven"
+                             : h.AohAfleveren ? "Gelieve af te leveren"
+                             : h.AohOntvangen ? "Hierbij ontvangt u"
+                             : h.AohZenden    ? "Wilt u zenden"
+                             : h.AohAndere    ? "Andere"
+                             :                  null;
+                
+                if (delivery != null)
                 {
-                    inner.Item().Text(t =>
+                    col.Item().Background(Colors.Grey.Lighten4).Padding(4).Text(t =>
                     {
-                        t.Span("Goedgekeurd door: ").Bold();
-                        t.Span(h.AohApprovedByName ?? "–");
+                        t.Span("Levering: ").Bold().FontSize(9);
+                        t.Span(delivery).FontSize(9);
                     });
-                    inner.Item().Text(t =>
-                    {
-                        t.Span("Goedkeuringsdatum: ").Bold();
-                        t.Span(h.AohApprovedAt?.ToString("yyyy-MM-dd") ?? "–");
-                    });
-                });
-                row.ConstantItem(170).AlignRight().Column(inner =>
-                {
-                    inner.Item().Text(t =>
-                    {
-                        t.Span("Totaalbedrag: ").Bold().FontSize(11);
-                        t.Span($"{h.AohAmount:N2} NAF").Bold().FontSize(11).FontColor(WineColor);
-                    });
-                });
-            });
-
-            // ── Signature block ──
-            // Original: only Ontvangen door
-            // Office Copy: all three blocks
-            var isOriginal = "Original".Equals(copyLabel, StringComparison.OrdinalIgnoreCase);
-            var receiverLabel = string.IsNullOrWhiteSpace(h.AohReceiverIdDoc)
-                ? h.AohReceiverName
-                : $"{h.AohReceiverName} (ID: {h.AohReceiverIdDoc})";
-
-            col.Item().PaddingTop(25).Row(row =>
-            {
-                if (!isOriginal)
-                {
-                    SigBlock(row, "Aangevraagd door", h.AohRequestor);
-                    row.ConstantItem(25);
-                    SigBlock(row, "Goedgekeurd door", h.AohApprovedByName);
-                    row.ConstantItem(25);
                 }
-                SigBlock(row, "Ontvangen door", receiverLabel);
+
+                // ── Line items ──
+                if (h.Details is { Count: > 0 })
+                {
+                    col.Item().Text("Bestelregels").Bold().FontSize(10);
+                    col.Item().Table(tbl =>
+                    {
+                        tbl.ColumnsDefinition(cd =>
+                        {
+                            cd.ConstantColumn(18);   // #
+                            cd.ConstantColumn(60);   // Code
+                            cd.RelativeColumn(2);    // Omschrijving
+                            cd.RelativeColumn(2);    // Aanv. Omschrijving
+                            cd.ConstantColumn(38);   // Aantal
+                            cd.ConstantColumn(38);   // Eenheid
+                        });
+
+                        tbl.Header(hdr =>
+                        {
+                            static IContainer ThStyle(IContainer cell) =>
+                                cell.Background(Colors.Grey.Lighten3).Padding(4);
+
+                            hdr.Cell().Element(ThStyle).Text("#").Bold().FontSize(8);
+                            hdr.Cell().Element(ThStyle).Text("Product").Bold().FontSize(8);
+                            hdr.Cell().Element(ThStyle).Text("Omschrijving").Bold().FontSize(8);
+                            hdr.Cell().Element(ThStyle).Text("Aanv. Omschrijving").Bold().FontSize(8);
+                            hdr.Cell().Element(ThStyle).Text("Aantal").Bold().FontSize(8);
+                            hdr.Cell().Element(ThStyle).Text("Eenheid").Bold().FontSize(8);
+                        });
+
+                        var i = 1;
+                        foreach (var d in h.Details)
+                        {
+                            var bg = i % 2 == 0 ? Colors.Grey.Lighten5 : Colors.White;
+                            tbl.Cell().Background(bg).Padding(3).Text($"{i}").FontSize(8);
+                            tbl.Cell().Background(bg).Padding(3).Text(d.AodProductCode ?? "").FontSize(8);
+                            tbl.Cell().Background(bg).Padding(3).Text(d.AodProductDesc).FontSize(8);
+                            tbl.Cell().Background(bg).Padding(3).Text(d.AodAdditionalDesc ?? "").FontSize(8);
+                            tbl.Cell().Background(bg).Padding(3).Text(d.AodQuantity.ToString("G29")).FontSize(8);
+                            tbl.Cell().Background(bg).Padding(3).Text(d.AodUnit ?? "").FontSize(8);
+                            i++;
+                        }
+                    });
+                }
+
+                // ── Amount + approval info ──
+                col.Item().Row(row =>
+                {
+                    row.RelativeItem().Column(inner =>
+                    {
+                        inner.Item().Text(t =>
+                        {
+                            t.Span("Goedgekeurd door: ").Bold();
+                            t.Span(h.AohApprovedByName ?? "–");
+                        });
+                        inner.Item().Text(t =>
+                        {
+                            t.Span("Aanvrager: ").Bold();
+                            t.Span(h.AohRequestor ?? "–");
+                        });
+                        inner.Item().Text(t =>
+                        {
+                            t.Span("Goedkeuringsdatum: ").Bold();
+                            t.Span(h.AohApprovedAt?.ToString("yyyy-MM-dd") ?? "–");
+                        });
+                    });
+                    row.ConstantItem(170).AlignRight().Column(inner =>
+                    {
+                        inner.Item().Text(t =>
+                        {
+                            t.Span("Totaalbedrag: ").Bold().FontSize(11);
+                            t.Span($"{h.AohAmount:N2} NAF").Bold().FontSize(11).FontColor(WineColor);
+                        });
+                    });
+                });
+
+                // ── Signature block ──
+                var isOrigSignature = "Original".Equals(copyLabel, StringComparison.OrdinalIgnoreCase) || 
+                                      "REPRINT".Equals(copyLabel,  StringComparison.OrdinalIgnoreCase);
+                var receiverLabel = string.IsNullOrWhiteSpace(h.AohReceiverIdDoc)
+                    ? h.AohReceiverName
+                    : $"{h.AohReceiverName} (ID: {h.AohReceiverIdDoc})";
+
+                col.Item().PaddingTop(25).Row(row =>
+                {
+                    row.ConstantItem(180).Column(c => {
+                        c.Item().LineBottom(1).LineColor(Colors.Grey.Medium).PaddingBottom(2).Text(h.AohRequestor ?? "").FontSize(8);
+                        c.Item().Text("Aanvrager").FontSize(7).FontColor(Colors.Grey.Darken2);
+                    });
+                    row.RelativeItem();
+                    row.ConstantItem(180).Column(c => {
+                        c.Item().LineBottom(1).LineColor(Colors.Grey.Medium).PaddingBottom(2).Text(h.AohApprovedByName ?? "").FontSize(8);
+                        c.Item().Text("Goedgekeurd door").FontSize(7).FontColor(Colors.Grey.Darken2);
+                    });
+                });
+                
+                col.Item().PaddingTop(15).Row(row => {
+                    row.ConstantItem(180).Column(c => {
+                        c.Item().LineBottom(1).LineColor(Colors.Grey.Medium).PaddingBottom(2).Text(receiverLabel).FontSize(8);
+                        c.Item().Text("Ontvangen door").FontSize(7).FontColor(Colors.Grey.Darken2);
+                    });
+                });
+
+                // ── Print date ──
+                col.Item().PaddingTop(15).AlignRight().Text(t =>
+                {
+                    t.Span("Datum: ").FontSize(8).FontColor(Colors.Grey.Medium);
+                    t.Span(DateTime.Now.ToString("yyyy-MM-dd HH:mm")).FontSize(8).FontColor(Colors.Grey.Medium);
+                });
             });
         });
     }
 
     // ── Table row helpers ─────────────────────────────────────────────────────
-
     private static void Row2(TableDescriptor tbl,
         string lbl1, string val1, string lbl2, string val2)
     {

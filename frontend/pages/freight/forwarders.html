@@ -240,9 +240,21 @@
   const FIELDS=['code','name','addr1','addr2','city','country','currency','phone1','phone2','contact','email'];
   function clearForm() { FIELDS.forEach(f=>{ const el=document.getElementById('f-'+f); if(el){el.value='';el.classList.remove('is-invalid');} }); }
 
+  const READONLY_ON_EDIT = ['f-code','f-country','f-email','f-contact','f-currency'];
+
+  function _setEditReadonly(readonly) {
+    READONLY_ON_EDIT.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (readonly) { el.setAttribute('readonly', true); el.classList.add('bg-light'); }
+      else          { el.removeAttribute('readonly');    el.classList.remove('bg-light'); }
+    });
+  }
+
   function openCreate() {
     document.getElementById('edit-id').value='';
     clearForm();
+    _setEditReadonly(false);
     document.getElementById('modalTitle').innerHTML='<i class="fas fa-plus me-2"></i>New Freight Forwarder';
     new bootstrap.Modal('#itemModal').show();
   }
@@ -263,6 +275,7 @@
     document.getElementById('f-contact').value=r.FfContact||'';
     document.getElementById('f-email').value=r.FfEmail||'';
     FIELDS.forEach(f=>{ document.getElementById('f-'+f)?.classList.remove('is-invalid'); });
+    _setEditReadonly(true);
     document.getElementById('modalTitle').innerHTML='<i class="fas fa-edit me-2"></i>Edit Freight Forwarder';
     new bootstrap.Modal('#itemModal').show();
   }

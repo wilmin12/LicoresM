@@ -120,8 +120,11 @@ try
     builder.Services.AddSignalR();
 
     // ── Application Services ──────────────────────────────────────────────────
+    builder.Services.AddHttpClient();
     builder.Services.AddScoped<IAuthService, AuthService>();
     builder.Services.AddScoped<IPermissionService, PermissionService>();
+    builder.Services.AddScoped<IForexScraperService, ForexScraperService>();
+    builder.Services.AddHostedService<ForexBackgroundService>();
     builder.Services.AddHttpContextAccessor();
 
     // ── Controllers ───────────────────────────────────────────────────────────

@@ -43,7 +43,7 @@ public sealed class GoodsClassificationController : ControllerBase
         if (await _db.CcGoodsClassifications.AnyAsync(x => x.GcItemCode == dto.ItemCode, ct))
             return Conflict(ApiResponse.Fail($"Item code '{dto.ItemCode}' already classified."));
 
-        if (!await _db.CcTariffItems.AnyAsync(x => x.TiHsCode == dto.HsCode && x.IsActive, ct))
+        if (!await _db.CcTariffItems.AnyAsync(x => x.Hs6Cod == dto.HsCode && x.IsActive, ct))
             return BadRequest(ApiResponse.Fail($"HS Code '{dto.HsCode}' does not exist or is inactive."));
 
         var item = new CcGoodsClassification
@@ -68,7 +68,7 @@ public sealed class GoodsClassificationController : ControllerBase
         if (item.GcItemCode != dto.ItemCode && await _db.CcGoodsClassifications.AnyAsync(x => x.GcItemCode == dto.ItemCode, ct))
             return Conflict(ApiResponse.Fail($"Item code '{dto.ItemCode}' already classified."));
 
-        if (!await _db.CcTariffItems.AnyAsync(x => x.TiHsCode == dto.HsCode && x.IsActive, ct))
+        if (!await _db.CcTariffItems.AnyAsync(x => x.Hs6Cod == dto.HsCode && x.IsActive, ct))
             return BadRequest(ApiResponse.Fail($"HS Code '{dto.HsCode}' does not exist or is inactive."));
 
         item.GcItemCode  = dto.ItemCode;

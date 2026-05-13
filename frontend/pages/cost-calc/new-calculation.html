@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -6,6 +6,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
   <link rel="stylesheet" href="../../css/main.css"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css"/>
 </head>
 <body>
 <div id="sidebar-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;"></div>
@@ -41,72 +42,13 @@
           <li class="breadcrumb-item active">New Calculation</li>
         </ol>
       </nav>
-      <div class="page-title">New Cost Calculation</div>
-      <div class="page-subtitle">Set up container charges and select purchase orders, then calculate costs and selling prices.</div>
+      <div class="page-title" id="page-title">New Cost Calculation</div>
+      <div class="page-subtitle" id="page-subtitle">Select purchase orders, then set up container charges and calculate costs and selling prices.</div>
 
-      <!-- SECTION 1: Container / Header Info -->
-      <div class="card mb-4">
-        <div class="card-header"><i class="fas fa-ship me-2"></i>Section 1: Container &amp; Charges</div>
-        <div class="card-body">
-          <div class="row g-3">
-            <div class="col-md-3">
-              <label class="form-label">Forwarder Code</label>
-              <input type="text" id="f-fwd-code" class="form-control form-control-sm" placeholder="e.g. FW01"/>
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">Forwarder Name</label>
-              <input type="text" id="f-fwd-name" class="form-control form-control-sm" placeholder="Forwarder company name"/>
-            </div>
-            <div class="col-md-2">
-              <label class="form-label">Currency Code</label>
-              <input type="text" id="f-curr-code" class="form-control form-control-sm" placeholder="USD"/>
-            </div>
-            <div class="col-md-2">
-              <label class="form-label">Currency Rate</label>
-              <input type="number" id="f-curr-rate" class="form-control form-control-sm" step="0.0001" placeholder="1.0000"/>
-            </div>
-            <div class="col-md-2">
-              <label class="form-label">Warehouse</label>
-              <select id="f-warehouse" class="form-select form-select-sm">
-                <option value="">-- Select --</option>
-                <option value="DP">DP - Duty Paid</option>
-                <option value="DF">DF - Duty Free</option>
-                <option value="ST">ST - Store</option>
-              </select>
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">Ocean Freight <small class="text-muted">(foreign currency)</small></label>
-              <input type="number" id="f-ocean-freight" class="form-control form-control-sm" step="0.01" placeholder="0.00"/>
-            </div>
-            <div class="col-md-3">
-              <label class="form-label">Inland Freight <small class="text-muted">(foreign currency)</small></label>
-              <input type="number" id="f-inland-freight" class="form-control form-control-sm" step="0.01" placeholder="0.00"/>
-            </div>
-            <div class="col-md-2">
-              <label class="form-label">Transport <small class="text-muted text-info" title="Auto-filled from system config"><i class="fas fa-info-circle"></i></small></label>
-              <input type="number" id="f-transport" class="form-control form-control-sm" step="0.01" placeholder="0.00"/>
-            </div>
-            <div class="col-md-2">
-              <label class="form-label">Unloading</label>
-              <input type="number" id="f-unloading" class="form-control form-control-sm" step="0.01" placeholder="0.00"/>
-            </div>
-            <div class="col-md-2">
-              <label class="form-label">Local Handling</label>
-              <input type="number" id="f-local-handling" class="form-control form-control-sm" step="0.01" placeholder="0.00"/>
-            </div>
-            <div class="col-md-2">
-              <label class="form-label">Default Margin %</label>
-              <input type="number" id="f-margin" class="form-control form-control-sm" step="0.01" min="0" max="99.99" placeholder="0.00"/>
-            </div>
-          </div>
-          <div id="sys-config-badge" class="mt-2"></div>
-        </div>
-      </div>
-
-      <!-- SECTION 2: Select Purchase Orders -->
+      <!-- SECTION 1: Select Purchase Orders -->
       <div class="card mb-4">
         <div class="card-header d-flex align-items-center justify-content-between">
-          <span><i class="fas fa-file-alt me-2"></i>Section 2: Select Purchase Orders</span>
+          <span><i class="fas fa-file-alt me-2"></i>Section 1: Select Purchase Orders</span>
           <span class="badge" style="background:var(--primary);color:#fff;" id="selected-count">0 selected</span>
         </div>
         <div class="card-body">
@@ -122,10 +64,10 @@
                   <th style="width:40px;"><input type="checkbox" id="chk-all" title="Select/Deselect all visible"/></th>
                   <th>Warehouse</th><th>PO Number</th><th>Supplier</th>
                   <th>Order Date</th><th>Ship Date</th><th>Container</th>
-                  <th class="text-end">Qty</th><th class="text-end">Weight</th><th class="text-end">Amount</th><th>Status</th>
+                  <th class="text-end">Qty</th><th class="text-end">Weight</th><th class="text-end">Amount</th><th>Status</th><th>Forwarder</th><th></th>
                 </tr>
               </thead>
-              <tbody id="po-tbody"><tr><td colspan="11" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading purchase orders...</td></tr></tbody>
+              <tbody id="po-tbody"><tr><td colspan="13" class="text-center py-4 text-muted"><i class="fas fa-search me-2 opacity-50"></i>Ingresa un número de PO y presiona Search.</td></tr></tbody>
             </table>
           </div>
           <div class="d-flex justify-content-between align-items-center mt-2 flex-wrap gap-2">
@@ -139,34 +81,157 @@
         </div>
       </div>
 
-      <!-- Selected POs summary -->
+      <!-- SECTION 2: Container / Header Info -->
+      <div id="container-charges-card" class="card mb-4 d-none">
+        <div class="card-header"><i class="fas fa-ship me-2"></i>Section 2: Container &amp; Charges</div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-3">
+              <label class="form-label">Forwarder Code</label>
+              <select id="f-fwd-code" class="form-select form-select-sm"></select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Forwarder Name</label>
+              <input type="text" id="f-fwd-name" class="form-control form-control-sm" placeholder="Auto-filled on selection"/>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">Currency Code</label>
+              <input type="text" id="f-curr-code" class="form-control form-control-sm" placeholder="USD"/>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">Currency Rate</label>
+              <input type="text" id="f-curr-rate" class="form-control form-control-sm" inputmode="decimal" placeholder="1.8200" oninput="this.value = this.value.replace(/,/g, '.')"/>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Ocean Freight <small class="text-muted">(foreign currency)</small></label>
+              <input type="text" id="f-ocean-freight" class="form-control form-control-sm" inputmode="decimal" placeholder="0.00" oninput="this.value = this.value.replace(/,/g, '.')"/>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">Transport <small class="text-muted text-info" title="Auto-filled from system config"><i class="fas fa-info-circle"></i></small></label>
+              <input type="text" id="f-transport" class="form-control form-control-sm" inputmode="decimal" placeholder="0.00" oninput="this.value = this.value.replace(/,/g, '.')"/>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">Unloading</label>
+              <input type="text" id="f-unloading" class="form-control form-control-sm" inputmode="decimal" placeholder="0.00" oninput="this.value = this.value.replace(/,/g, '.')"/>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">Local Handling</label>
+              <input type="text" id="f-local-handling" class="form-control form-control-sm" inputmode="decimal" placeholder="0.00" oninput="this.value = this.value.replace(/,/g, '.')"/>
+            </div>
+          </div>
+          <div id="sys-config-badge" class="mt-2"></div>
+        </div>
+      </div>
+
+      <!-- Selected POs — inline editable table -->
       <div id="selected-pos-card" class="card mb-4 d-none">
-        <div class="card-header"><i class="fas fa-check-square me-2"></i>Selected Purchase Orders</div>
-        <div class="card-body p-2" id="selected-pos-list"></div>
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span><i class="fas fa-check-square me-2"></i>Selected Purchase Orders — Invoice &amp; Freight Details</span>
+          <span class="badge bg-secondary">Total Weight: <strong id="total-weight-display">0.00</strong></span>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-sm table-bordered mb-0" style="font-size:.8rem;">
+              <thead class="table-light">
+                <tr>
+                  <th class="text-nowrap">PO #</th>
+                  <th>WH</th>
+                  <th class="text-nowrap">Vendor</th>
+                  <th class="text-nowrap">Invoice Nr</th>
+                  <th class="text-nowrap">Invoice Date</th>
+                  <th>Currency</th>
+                  <th class="text-nowrap">Inv Rate</th>
+                  <th class="text-nowrap">Cust Rate</th>
+                  <th class="text-nowrap">Cases</th>
+                  <th class="text-nowrap">Amount</th>
+                  <th class="text-nowrap">Inl. Frght</th>
+                  <th class="text-nowrap">Discount FC</th>
+                  <th class="text-nowrap">Act Weight</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="po-selected-tbody"></tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       <!-- Action buttons -->
-      <div class="d-flex gap-2 justify-content-end mb-4">
+      <div id="action-buttons-card" class="d-flex gap-2 justify-content-end mb-4 d-none">
         <a href="index.html" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i>Cancel</a>
         <button id="btn-create-calc" class="btn btn-wine"><i class="fas fa-calculator me-1"></i>Create &amp; Calculate</button>
       </div>
     </main>
   </div>
 </div>
+<!-- PO Detail Modal -->
+<div class="modal fade" id="poDetailModal" tabindex="-1">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-list me-2"></i><span id="po-detail-title">Purchase Order Details</span></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="po-detail-header" class="row g-2 mb-3 p-2 rounded" style="background:#f8f9fa;font-size:.85rem;"></div>
+        <div class="table-responsive">
+          <table class="table table-sm table-hover mb-0" style="font-size:.82rem;">
+            <thead class="table-light">
+              <tr>
+                <th style="width:40px;"></th><th>#</th><th>Item Code</th><th class="text-end">U/C</th>
+                <th class="text-end">Ord Qty</th><th class="text-end">Weight</th><th class="text-end">Liters</th>
+                <th class="text-end">Price FC</th><th class="text-end">FOB Price</th><th>Commodity</th><th>B/W</th>
+              </tr>
+            </thead>
+            <tbody id="po-detail-tbody"><tr><td colspan="11" class="text-center py-3 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer d-flex justify-content-between align-items-center">
+        <div class="form-check mb-0">
+          <input class="form-check-input" type="checkbox" id="modal-sel-all" onchange="toggleModalAll(this)">
+          <label class="form-check-label small fw-bold" for="modal-sel-all">Select All Items</label>
+        </div>
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-wine" onclick="applyModalSelection()">Apply Selection</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index:9999;">
   <div id="toast" class="toast align-items-center text-white border-0" role="alert">
     <div class="d-flex"><div class="toast-body" id="toast-msg"></div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
   </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
 <script src="../../js/i18n.js"></script><script src="../../js/api.js"></script><script src="../../js/auth.js"></script><script src="../../js/sidebar.js"></script>
 <script>
   let poPage=1, poTotal=0, selectedPos=new Map(); // map: poNo -> row data
   const PO_PAGE_SIZE=20;
+  let _fwdTs=null, _poRows=[], _searchTimeout=null, _editId=null, _forexCurrencies=[];
 
   document.addEventListener('DOMContentLoaded',async()=>{
     if(!Auth.requireAuth())return;Auth.startExpiryWatcher();Auth.populateUserUI();Sidebar.init();
     document.getElementById('btn-logout').addEventListener('click',e=>{e.preventDefault();Auth.logout();});
+
+    // Detect Edit Mode
+    const params=new URLSearchParams(window.location.search);
+    _editId = params.get('editId');
+    if(_editId) {
+        document.getElementById('page-title').textContent = `Edit Cost Calculation #${_editId}`;
+        document.getElementById('page-subtitle').textContent = 'Modify POs or base charges for this calculation.';
+        document.getElementById('btn-create-calc').innerHTML = '<i class="fas fa-save me-1"></i>Update &amp; Calculate';
+    }
+
+    // Load forex currencies for select dropdowns
+    try {
+      const curr = await API.costCalc.costCalcForex.getCurrencies();
+      _forexCurrencies = Array.isArray(curr) ? curr : (curr?.Data || curr || []);
+    } catch { _forexCurrencies = []; }
 
     // Auto-fill system config
     try{
@@ -176,38 +241,242 @@
         setIfEmpty('f-transport',cfg.CompTransport);
         setIfEmpty('f-unloading',cfg.CompUnloading);
         setIfEmpty('f-local-handling',cfg.CompLocalHandling);
-        setIfEmpty('f-curr-code',cfg.CompCurrUsd);
-        setIfEmpty('f-fwd-code',cfg.CompFwCode);
-        setIfEmpty('f-fwd-name',cfg.CompFwName);
+        setIfEmpty('f-curr-code',cfg.CompCurrUsd||'USD');
+        const rate = (cfg.CompCurrUsd === 'USD' || !cfg.CompCurrUsd) ? 1.82 : (cfg.CompCurrRate ?? 1.0);
+        setIfEmpty('f-curr-rate', rate.toFixed(4));
         document.getElementById('sys-config-badge').innerHTML=
           `<span class="badge bg-info text-dark"><i class="fas fa-info-circle me-1"></i>Transport, Unloading &amp; Local Handling pre-filled from system config. Insurance rate: ${cfg.CompInsurance??0}</span>`;
+      } else {
+        // Fallback defaults
+        setIfEmpty('f-curr-code', 'USD');
+        setIfEmpty('f-curr-rate', '1.8200');
       }
-    }catch(e){ /* system config optional */ }
+    }catch(e){
+      setIfEmpty('f-curr-code', 'USD');
+      setIfEmpty('f-curr-rate', '1.8200');
+    }
+    await loadForwarders();
 
-    // Check for pre-selected PO from URL
-    const params=new URLSearchParams(window.location.search);
-    const prePo=params.get('po'), preWhse=params.get('whse');
-
-    // Load POs
-    await loadPos();
-
-    // If pre-selected PO, mark it
-    if(prePo){
-      document.getElementById('po-search').value=prePo;
-      await loadPos();
+    // If edit mode, load existing data
+    if(_editId) {
+        await loadExistingCalculation(_editId);
+    } else {
+        // Check for pre-selected PO from URL (only if not editing)
+        const prePo=params.get('po');
+        if(prePo){
+          document.getElementById('po-search').value=prePo;
+          await loadPos();
+        }
     }
 
     // Events
     document.getElementById('btn-search-po').addEventListener('click',()=>{poPage=1;loadPos();});
-    document.getElementById('po-search').addEventListener('keydown',e=>{if(e.key==='Enter'){poPage=1;loadPos();}});
-    document.getElementById('btn-clear-po-search').addEventListener('click',()=>{document.getElementById('po-search').value='';poPage=1;loadPos();});
+    document.getElementById('po-search').addEventListener('input',()=>{
+      clearTimeout(_searchTimeout);
+      _searchTimeout = setTimeout(() => { poPage=1; loadPos(); }, 400);
+    });
+    document.getElementById('po-search').addEventListener('keydown',e=>{if(e.key==='Enter'){clearTimeout(_searchTimeout); poPage=1;loadPos();}});
+    document.getElementById('btn-clear-po-search').addEventListener('click',()=>{
+      document.getElementById('po-search').value='';
+      poPage=1; poTotal=0;
+      document.getElementById('po-tbody').innerHTML='<tr><td colspan="13" class="text-center py-4 text-muted"><i class="fas fa-search me-2 opacity-50"></i>Ingresa un número de PO y presiona Search.</td></tr>';
+      document.getElementById('po-page-info').textContent='–';
+      document.getElementById('po-page-label').textContent='Page 1';
+      document.getElementById('po-btn-prev').disabled=true;
+      document.getElementById('po-btn-next').disabled=true;
+    });
     document.getElementById('po-btn-prev').addEventListener('click',()=>{if(poPage>1){poPage--;loadPos();}});
     document.getElementById('po-btn-next').addEventListener('click',()=>{const t=Math.ceil(poTotal/PO_PAGE_SIZE);if(poPage<t){poPage++;loadPos();}});
     document.getElementById('chk-all').addEventListener('change',toggleAll);
     document.getElementById('btn-create-calc').addEventListener('click',createAndCalculate);
+
+    // Update rate if USD is manually typed
+    document.getElementById('f-curr-code').addEventListener('blur', async (e) => {
+        const code = e.target.value.trim().toUpperCase();
+        const rateEl = document.getElementById('f-curr-rate');
+        if (!code) {
+           rateEl.value = '';
+           return;
+        }
+        
+        // Auto-fill from Forex History
+        try {
+          const res = await API.costCalc.costCalcForex.getLatestRate(code);
+          const rate = res?.sellingRate ?? res?.SellingRate;
+          if (rate != null) {
+              rateEl.value = parseFloat(rate).toFixed(4);
+              return; // Rate found, exit
+          }
+        } catch { /* Ignore error, fallback below */ }
+        
+        // Fallback for USD if not in database
+        if (code === 'USD' && !rateEl.value) {
+            rateEl.value = '1.8200';
+        }
+    });
+
+    // Auto-fill Inv Rate & Cust Rate when currency or invoice date changes per PO row
+    document.getElementById('po-selected-tbody').addEventListener('change', async (e) => {
+      const input = e.target;
+      const isCurr = input.classList.contains('f-po-curr');
+      const isDate = input.classList.contains('f-inv-date');
+      if (!isCurr && !isDate) return;
+      const row = input.closest('tr');
+      if (!row) return;
+      const invRateEl  = row.querySelector('.f-inv-rate');
+      const custRateEl = row.querySelector('.f-cust-rate');
+      const code = row.querySelector('.f-po-curr')?.value?.trim()?.toUpperCase();
+
+      // If currency cleared → readonly + empty
+      if (!code) {
+        if (invRateEl)  { invRateEl.value = '';  invRateEl.readOnly  = true; }
+        if (custRateEl) { custRateEl.value = ''; custRateEl.readOnly = true; }
+        return;
+      }
+
+      // Currency selected → unlock fields
+      if (invRateEl)  invRateEl.readOnly  = false;
+      if (custRateEl) custRateEl.readOnly = false;
+
+      const date = row.querySelector('.f-inv-date')?.value;
+      try {
+        let rate;
+        if (date) {
+          const res = await API.costCalc.costCalcForex.getRateByDate(code, date);
+          rate = res?.sellingRate ?? res?.SellingRate;
+        } else {
+          const res = await API.costCalc.costCalcForex.getLatestRate(code);
+          rate = res?.sellingRate ?? res?.SellingRate;
+        }
+        if (rate == null) return;
+        const rateStr = parseFloat(rate).toFixed(4);
+        if (invRateEl)  invRateEl.value  = rateStr;
+        if (custRateEl) custRateEl.value = rateStr;
+      } catch { /* currency/date not in table — fields unlocked but empty */ }
+    });
   });
 
+  async function loadExistingCalculation(id) {
+    try {
+        const res = await API.costCalc.getCalculation(id);
+        const c = res?.Data || res;
+        if(!c) return;
+
+        // Header fields
+        if(c.CcForwarderCode && _fwdTs) _fwdTs.setValue(c.CcForwarderCode);
+        if(c.CcForwarderName) document.getElementById('f-fwd-name').value = c.CcForwarderName;
+        if(c.CcCurrCode)      document.getElementById('f-curr-code').value = c.CcCurrCode;
+        if(c.CcCurrRate)      document.getElementById('f-curr-rate').value = Number(c.CcCurrRate).toFixed(4);
+        if(c.CcFreight)       document.getElementById('f-ocean-freight').value = c.CcFreight;
+        if(c.CcTransport)     document.getElementById('f-transport').value = c.CcTransport;
+        if(c.CcUnloading)     document.getElementById('f-unloading').value = c.CcUnloading;
+        if(c.CcLocalHandling) document.getElementById('f-local-handling').value = c.CcLocalHandling;
+
+        // POs
+        if(c.PoHeads && c.PoHeads.length) {
+            for(const ph of c.PoHeads) {
+                // First, add with existing data (fallback)
+                const entry = {
+                    PhPoNo: ph.CcphLmPoNo,
+                    PhWhse: ph.CcphWhse,
+                    PhOvrNo: ph.CcphVendNo,
+                    PhVendName: ph.CcphVendName || ph.CcphVendNo || '',
+                    PhOqt: ph.CcphTotQty,
+                    PhTotAmt: ph.CcphTotAmountFC,
+                    PhWeig: ph.CcphWeight,
+                    _edit_invNr:    ph.CcphInvNumber,
+                    _edit_invDate:  ph.CcphInvDate ? ph.CcphInvDate.split('T')[0] : '',
+                    _edit_curr:     ph.CcphCurrCode,
+                    _edit_invRate:  ph.CcphCurrRate,
+                    _edit_custRate: ph.CcphCurrRateCust,
+                    _edit_inland:   ph.CcphInlandFreight,
+                    _edit_discount: ph.CcphDiscount
+                };
+                selectedPos.set(ph.CcphLmPoNo, entry);
+
+                // Then, try to refresh from DHW to fix truncations
+                try {
+                    const poRes = await API.costCalc.getPurchaseOrder(ph.CcphWhse, ph.CcphLmPoNo);
+                    const dhw = poRes?.Data?.Header || poRes?.Header;
+                    const vName = poRes?.Data?.VendorName || poRes?.VendorName;
+                    if(dhw) {
+                        const refreshed = { 
+                            ...entry, 
+                            ...dhw, 
+                            PhVendName: vName || entry.PhVendName 
+                        };
+                        selectedPos.set(ph.CcphLmPoNo, refreshed);
+                    }
+                } catch(e) { 
+                    console.warn(`Could not refresh PO ${ph.CcphLmPoNo} from DHW. Using local data.`, e); 
+                }
+            }
+            updateSelectedBadge();
+        }
+    } catch(err) { showToast('Error loading calculation: ' + err.message, 'danger'); }
+  }
+
   function setIfEmpty(id,val){if(val!=null){const el=document.getElementById(id);if(el&&!el.value)el.value=val;}}
+
+  async function loadForwarders(){
+    try{
+      const res=await API.catalogs.freightForwarders.getAll({includeInactive:false});
+      const fwds=(res?.Data||res||[]).filter(f=>f.IsActive!==false);
+      const sel=document.getElementById('f-fwd-code');
+      sel.innerHTML='<option value="">— Select Forwarder —</option>'+
+        fwds.map(f=>`<option value="${esc(f.FfCode)}" data-name="${esc(f.FfName)}" data-curr="${esc(f.FfCurrency||'')}">${esc(f.FfCode)} — ${esc(f.FfName)}</option>`).join('');
+      if(_fwdTs){_fwdTs.destroy();}
+      _fwdTs=new TomSelect('#f-fwd-code',{
+        allowEmptyOption:true, maxOptions:null, plugins:[],
+        onChange: onForwarderChange
+      });
+    }catch(e){console.warn('Could not load forwarders',e);}
+  }
+
+  async function onForwarderChange(code){
+    document.getElementById('f-fwd-name').value='';
+    document.getElementById('f-curr-code').value='';
+    document.getElementById('f-curr-rate').value='';
+    document.getElementById('f-ocean-freight').value='';
+    if(!code)return;
+    
+    let currCodeToFetch = null;
+
+    // Fill name from catalog option
+    const opt=document.querySelector(`#f-fwd-code option[value="${code}"]`);
+    if(opt){
+      document.getElementById('f-fwd-name').value=opt.dataset.name||'';
+      if(opt.dataset.curr) {
+          currCodeToFetch = opt.dataset.curr;
+      }
+    }
+    // Auto-fill Ocean from latest Applied Quote for this forwarder
+    try{
+      const res=await API.appliedQuotes.getLatestRates(code);
+      const d=res?.Data||res;
+      if(d){
+        if(d.OceanCurrency) {
+            currCodeToFetch = d.OceanCurrency;
+        }
+      }
+    }catch(e){/* no quote found -- leave fields as-is */}
+
+    // Apply currency code and fetch latest rate
+    if (currCodeToFetch) {
+        document.getElementById('f-curr-code').value = currCodeToFetch;
+        try {
+            const rateRes = await API.costCalc.costCalcForex.getLatestRate(currCodeToFetch);
+            const rate = rateRes?.sellingRate ?? rateRes?.SellingRate;
+            if (rate != null) {
+                document.getElementById('f-curr-rate').value = parseFloat(rate).toFixed(4);
+            } else if (currCodeToFetch === 'USD') {
+                document.getElementById('f-curr-rate').value = '1.8200';
+            }
+        } catch {
+            if (currCodeToFetch === 'USD') document.getElementById('f-curr-rate').value = '1.8200';
+        }
+    }
+  }
 
   async function loadPos(){
     const search=document.getElementById('po-search').value.trim();
@@ -234,14 +503,15 @@
 
   function renderPoTable(data){
     const tbody=document.getElementById('po-tbody');
-    if(!data.length){tbody.innerHTML='<tr><td colspan="11" class="text-center py-3 text-muted">No purchase orders found.</td></tr>';return;}
-    tbody.innerHTML=data.map(r=>{
+    if(!data.length){tbody.innerHTML='<tr><td colspan="13" class="text-center py-3 text-muted">No purchase orders found.</td></tr>';return;}
+    _poRows=data;
+    tbody.innerHTML=data.map((r,i)=>{
       const checked=selectedPos.has(r.PhPoNo)?'checked':'';
       return`<tr>
-        <td><input type="checkbox" class="po-chk" data-pono="${esc(r.PhPoNo)}" data-whse="${esc(r.PhWhse)}" ${checked} onchange="togglePo(this,${JSON.stringify(r)})"/></td>
+        <td><input type="checkbox" class="po-chk" data-pono="${esc(r.PhPoNo)}" data-whse="${esc(r.PhWhse)}" data-vendname="${esc(r.PhVendName)}" data-idx="${i}" ${checked} onchange="togglePo(this)"/></td>
         <td><span class="badge bg-secondary">${esc(r.PhWhse||'')}</span></td>
         <td><strong>${esc(r.PhPoNo||'')}</strong></td>
-        <td>${esc(r.PhOvrNo||'')}</td>
+        <td>${esc(r.PhVendName || r.PhOvrNo || '')} <br/><small class="text-muted">${esc(r.PhOvrNo||'')}</small></td>
         <td>${fmtDate(r.PhOrdt)}</td>
         <td>${fmtDate(r.PhShdt)}</td>
         <td>${esc(r.PhConNo||'')}</td>
@@ -249,12 +519,16 @@
         <td class="text-end">${fmtNum(r.PhWeig,2)}</td>
         <td class="text-end">${fmtNum(r.PhTotAmt,2)}</td>
         <td><span class="badge ${r.PhStat==='CL'?'badge-inactive':'badge-active'}">${esc(r.PhStat||'')}</span></td>
+        <td><small class="text-muted">${esc(r.ForwarderName||r.ForwarderCode||'')}</small></td>
+        <td><button class="btn btn-outline-secondary btn-sm" title="View products" onclick="viewPoDetail('${esc(r.PhWhse)}','${esc(r.PhPoNo)}')"><i class="fas fa-eye"></i></button></td>
       </tr>`;
     }).join('');
   }
 
-  function togglePo(chk,row){
-    if(chk.checked)selectedPos.set(row.PhPoNo,row);
+  function togglePo(chk){
+    const row=_poRows[parseInt(chk.dataset.idx)];
+    if(!row)return;
+    if(chk.checked)selectedPos.set(row.PhPoNo,{...row, PhVendName: chk.dataset.vendname});
     else selectedPos.delete(row.PhPoNo);
     updateSelectedBadge();
   }
@@ -264,7 +538,7 @@
     document.querySelectorAll('.po-chk').forEach(chk=>{
       const poNo=chk.dataset.pono;
       chk.checked=checked;
-      if(checked){/* need row data – just store the po number */selectedPos.set(poNo,{PhPoNo:poNo,PhWhse:chk.dataset.whse});}
+      if(checked){const fullRow=_poRows[parseInt(chk.dataset.idx)]||{PhPoNo:poNo,PhWhse:chk.dataset.whse,PhVendName:chk.dataset.vendname};selectedPos.set(poNo,fullRow);}
       else selectedPos.delete(poNo);
     });
     updateSelectedBadge();
@@ -274,12 +548,76 @@
     const count=selectedPos.size;
     document.getElementById('selected-count').textContent=count+' selected';
     const card=document.getElementById('selected-pos-card');
-    const list=document.getElementById('selected-pos-list');
-    if(count===0){card.classList.add('d-none');return;}
+    const containerCard=document.getElementById('container-charges-card');
+    const actionBtns=document.getElementById('action-buttons-card');
+    
+    if(count===0){
+      card.classList.add('d-none');
+      if (containerCard) containerCard.classList.add('d-none');
+      if (actionBtns) actionBtns.classList.add('d-none');
+      return;
+    }
+    
     card.classList.remove('d-none');
-    list.innerHTML=[...selectedPos.values()].map(r=>
-      `<span class="badge bg-secondary me-1 mb-1"><i class="fas fa-times ms-1" style="cursor:pointer;" onclick="removePo('${esc(r.PhPoNo)}')"></i> ${esc(r.PhPoNo)}</span>`
-    ).join('');
+    if (containerCard) containerCard.classList.remove('d-none');
+    if (actionBtns) actionBtns.classList.remove('d-none');
+    
+    const tbody=document.getElementById('po-selected-tbody');
+    // Preserve existing field values before rebuild
+    const existing={};
+    tbody.querySelectorAll('tr[data-pono]').forEach(tr=>{
+      const pono=tr.dataset.pono;
+      existing[pono]={
+        invNr:   tr.querySelector('.f-inv-nr')?.value||'',
+        invDate: tr.querySelector('.f-inv-date')?.value||'',
+        curr:    tr.querySelector('.f-po-curr')?.value||'',
+        invRate: tr.querySelector('.f-inv-rate')?.value||'',
+        custRate:tr.querySelector('.f-cust-rate')?.value||'',
+        inland:  tr.querySelector('.f-po-inland')?.value||'',
+        discount:tr.querySelector('.f-po-discount')?.value||''
+      };
+    });
+    const totalWeight=[...selectedPos.values()].reduce((s,r)=>s+(parseFloat(r.PhWeig)||0),0);
+    const twEl=document.getElementById('total-weight-display');
+    if(twEl)twEl.textContent=fmtNum(totalWeight,2);
+    const globalCurr=document.getElementById('f-curr-code').value||'';
+    const globalRate=document.getElementById('f-curr-rate').value||'';
+    const num=(cls,val,ph)=>`<input type="text" class="form-control form-control-sm ${cls}" inputmode="decimal" placeholder="${esc(ph)}" value="${esc(val||'')}" oninput="this.value = this.value.replace(/,/g, '.')" style="min-width:70px;"/>`;
+    const rateInput=(cls,val,hasCurr)=>`<input type="text" class="form-control form-control-sm ${cls}" inputmode="decimal" value="${esc(val||'')}" oninput="this.value = this.value.replace(/,/g, '.')" style="min-width:70px;" ${hasCurr?'':'readonly'}/>`;
+    tbody.innerHTML=[...selectedPos.values()].map(r=>{
+      const pono=esc(r.PhPoNo||'');
+      const prev=existing[r.PhPoNo]||{
+          invNr:    r._edit_invNr || '',
+          invDate:  r._edit_invDate || '',
+          curr:     r._edit_curr || '',
+          invRate:  r._edit_invRate || '',
+          custRate: r._edit_custRate || '',
+          inland:   r._edit_inland || '',
+          discount: r._edit_discount || ''
+      };
+      const hasCurr = !!(prev.curr);
+      const selLabel = r.selectedLines ? `<span class="badge bg-info text-dark" style="font-size:0.7rem;">${r.selectedLines.length} items</span>` : '<span class="badge bg-light text-muted" style="font-size:0.7rem;">All items</span>';
+
+      return`<tr data-pono="${pono}">
+        <td class="fw-bold text-nowrap">${pono}<br/>${selLabel}</td>
+        <td><span class="badge bg-secondary">${esc(r.PhWhse||'')}</span></td>
+        <td class="text-nowrap">${esc(r.PhVendName || r.PhOvrNo || '')}</td>
+        <td><input type="text"   class="form-control form-control-sm f-inv-nr"   placeholder="Invoice Nr"  value="${esc(prev.invNr||'')}"   style="min-width:90px;"/></td>
+        <td><input type="date"   class="form-control form-control-sm f-inv-date"                            value="${esc(prev.invDate||'')}"  style="min-width:120px;"/></td>
+        <td><select class="form-select form-select-sm f-po-curr" style="min-width:80px;">
+          <option value="">–</option>
+          ${_forexCurrencies.map(c=>`<option value="${esc(c)}"${prev.curr===c?' selected':''}>${esc(c)}</option>`).join('')}
+        </select></td>
+        <td>${rateInput('f-inv-rate', prev.invRate, hasCurr)}</td>
+        <td>${rateInput('f-cust-rate',prev.custRate,hasCurr)}</td>
+        <td class="text-end text-nowrap">${fmtNum(r.PhOqt,0)}</td>
+        <td class="text-end text-nowrap">${fmtNum(r.PhTotAmt,2)}</td>
+        <td>${num('f-po-inland',prev.inland,   '0.00')}</td>
+        <td>${num('f-po-discount',prev.discount,'0.00')}</td>
+        <td class="text-end text-nowrap">${fmtNum(r.PhWeig,2)}</td>
+        <td><button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" onclick="removePo('${pono}')" title="Quitar"><i class="fas fa-times"></i></button></td>
+      </tr>`;
+    }).join('');
   }
 
   function removePo(poNo){
@@ -290,45 +628,170 @@
 
   async function createAndCalculate(){
     if(selectedPos.size===0){showToast('Please select at least one purchase order.','danger');return;}
-    const poNumbers=[...selectedPos.keys()];
+    const poEntries=[...selectedPos.keys()].map(poNo=>{
+      const row=document.querySelector(`#po-selected-tbody tr[data-pono="${poNo}"]`);
+      const fv=cls=>row?.querySelector(cls)?.value||'';
+      const fn=cls=>{const v=fv(cls);const n=parseFloat(v);return isNaN(n)?null:n;};
+      const poData = selectedPos.get(poNo);
+      return{
+        PoNumber:    poNo,
+        VendorName:  poData?.PhVendName || null,
+        InvoiceNr:   fv('.f-inv-nr')||null,
+        InvoiceDate: fv('.f-inv-date')||null,
+        CurrCode:    fv('.f-po-curr')||null,
+        InvRate:     fn('.f-inv-rate'),
+        CustRate:    fn('.f-cust-rate'),
+        InlandFreight: fn('.f-po-inland'),
+        Discount:    fn('.f-po-discount'),
+        SelectedLines: poData?.selectedLines || null
+      };
+    });
     const dto={
-      ForwarderCode:document.getElementById('f-fwd-code').value.trim()||null,
+      ForwarderCode:(_fwdTs?_fwdTs.getValue():document.getElementById('f-fwd-code').value)||null,
       ForwarderName:document.getElementById('f-fwd-name').value.trim()||null,
       CurrCode:document.getElementById('f-curr-code').value.trim()||null,
       CurrRate:parseFloatOrNull('f-curr-rate'),
       OceanFreight:parseFloatOrNull('f-ocean-freight'),
-      InlandFreight:parseFloatOrNull('f-inland-freight'),
+      InlandFreight:null, // Removed from UI
       Transport:parseFloatOrNull('f-transport'),
       Unloading:parseFloatOrNull('f-unloading'),
       LocalHandling:parseFloatOrNull('f-local-handling'),
-      Warehouse:document.getElementById('f-warehouse').value||null,
-      PoNumbers:poNumbers
+      Warehouse:null, // Removed from UI
+      PoEntries:poEntries
     };
     const chargesDto={
       OceanFreight:dto.OceanFreight,
-      InlandFreight:dto.InlandFreight,
+      InlandFreight:null, // Removed from UI
       Transport:dto.Transport,
       Unloading:dto.Unloading,
       LocalHandling:dto.LocalHandling,
       CurrRate:dto.CurrRate,
-      MarginPerc:parseFloatOrNull('f-margin')
+      MarginPerc:null // Removed from UI
     };
     const btn=document.getElementById('btn-create-calc');
     btn.disabled=true;btn.innerHTML='<i class="fas fa-spinner fa-spin me-1"></i>Processing...';
     try{
-      // Step 1: Create
-      const createRes=await API.costCalc.createCalculation(dto);
-      const calcId=createRes?.Data?.CcCalcNumber;
-      if(!calcId)throw new Error('Failed to create calculation – no ID returned.');
-      showToast(`Calculation #${calcId} created. Running calculation...`,'success');
+      let calcId = _editId;
+      if(_editId) {
+          // Update
+          await API.costCalc.updateCalculation(_editId, dto);
+          showToast(`Calculation #${_editId} updated. Running calculation...`,'success');
+      } else {
+          // Create
+          const createRes=await API.costCalc.createCalculation(dto);
+          calcId=createRes?.Data?.CcCalcNumber;
+          if(!calcId)throw new Error('Failed to create calculation – no ID returned.');
+          showToast(`Calculation #${calcId} created. Running calculation...`,'success');
+      }
+      
       // Step 2: Calculate
       await API.costCalc.runCalculation(calcId,chargesDto);
       showToast(`Calculation #${calcId} complete! Redirecting...`,'success');
       setTimeout(()=>window.location.href=`calculation.html?id=${calcId}`,1000);
     }catch(err){
       showToast(err.message,'danger');
-      btn.disabled=false;btn.innerHTML='<i class="fas fa-calculator me-1"></i>Create &amp; Calculate';
+      btn.disabled=false;btn.innerHTML= _editId ? '<i class="fas fa-save me-1"></i>Update &amp; Calculate' : '<i class="fas fa-calculator me-1"></i>Create &amp; Calculate';
     }
+  }
+
+  let _activePoWhse=null, _activePoNo=null, _activePoLines=[];
+
+  async function viewPoDetail(warehouse, poNo){
+    _activePoWhse=warehouse; _activePoNo=poNo;
+    document.getElementById('po-detail-title').textContent=`PO ${poNo} — ${warehouse}`;
+    document.getElementById('po-detail-header').innerHTML='';
+    document.getElementById('po-detail-tbody').innerHTML='<tr><td colspan="11" class="text-center py-3 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading...</td></tr>';
+    document.getElementById('modal-sel-all').checked = true;
+    
+    new bootstrap.Modal(document.getElementById('poDetailModal')).show();
+    try{
+      const res=await API.costCalc.getPurchaseOrder(warehouse,poNo);
+      const d=res?.Data||res;
+      const h=d?.Header||{};
+      const lines=d?.Lines||[];
+      _activePoLines = lines;
+
+      document.getElementById('po-detail-header').innerHTML=`
+        <div class="col-auto"><strong>Warehouse:</strong> ${esc(h.PhWhse||'')}</div>
+        <div class="col-auto"><strong>PO #:</strong> ${esc(h.PhPoNo||'')}</div>
+        <div class="col-auto"><strong>Supplier:</strong> ${esc(d.VendorName || h.PhOvrNo || '')}</div>
+        <div class="col-auto"><strong>Order Date:</strong> ${fmtDate(h.PhOrdt)}</div>
+        <div class="col-auto"><strong>Ship Date:</strong> ${fmtDate(h.PhShdt)}</div>
+        <div class="col-auto"><strong>Container:</strong> ${esc(h.PhConNo||'')}</div>
+        <div class="col-auto"><strong>Total Qty:</strong> ${fmtNum(h.PhOqt,0)}</div>
+        <div class="col-auto"><strong>Total Weight:</strong> ${fmtNum(h.PhWeig,2)}</div>
+        <div class="col-auto"><strong>Total Amount:</strong> ${fmtNum(h.PhTotAmt,2)}</div>`;
+      
+      const activeLines=lines.filter(l=>(l.PdOqty??0)>0);
+      if(!activeLines.length){
+        document.getElementById('po-detail-tbody').innerHTML='<tr><td colspan="11" class="text-center py-3 text-muted">No lines found.</td></tr>';
+        return;
+      }
+
+      // Check current selection
+      const poData = selectedPos.get(poNo);
+      const selectedLines = poData?.selectedLines || null; // null means all
+      
+      document.getElementById('po-detail-tbody').innerHTML=activeLines.map(l=>{
+        const isChecked = !selectedLines || selectedLines.includes(l.PdLine);
+        return `
+        <tr>
+          <td><input type="checkbox" class="modal-item-chk" data-line="${l.PdLine}" ${isChecked?'checked':''} onchange="updateModalSelAll()"/></td>
+          <td>${esc(l.PdLine??'')}</td>
+          <td><strong>${esc(l.PdItem||'')}</strong></td>
+          <td class="text-end">${esc(l.PdUnit??'')}</td>
+          <td class="text-end">${fmtNum(l.PdOqty,0)}</td>
+          <td class="text-end">${fmtNum(l.PdWeig,2)}</td>
+          <td class="text-end">${fmtNum(l.PdLtrs,2)}</td>
+          <td class="text-end">${fmtNum(l.PdCstAmt,2)}</td>
+          <td class="text-end">${l.FobPrice!=null?fmtNum(l.FobPrice,2):'<span class="text-muted">—</span>'}</td>
+          <td>${esc(l.Commodity||'')}</td>
+          <td>${esc(l.PdBsw||'')}</td>
+        </tr>`;
+      }).join('');
+      updateModalSelAll();
+    }catch(err){
+      document.getElementById('po-detail-tbody').innerHTML=`<tr><td colspan="11" class="text-center py-3 text-danger">${esc(err.message)}</td></tr>`;
+    }
+  }
+
+  function toggleModalAll(chk){
+      document.querySelectorAll('.modal-item-chk').forEach(c => c.checked = chk.checked);
+  }
+
+  function updateModalSelAll(){
+      const chks = document.querySelectorAll('.modal-item-chk');
+      const checked = document.querySelectorAll('.modal-item-chk:checked');
+      document.getElementById('modal-sel-all').checked = chks.length > 0 && chks.length === checked.length;
+  }
+
+  async function applyModalSelection(){
+      const checked = [...document.querySelectorAll('.modal-item-chk:checked')].map(c => parseFloat(c.dataset.line));
+      const allChks = document.querySelectorAll('.modal-item-chk');
+      
+      if(checked.length === 0){
+          showToast('Please select at least one product or remove the PO from the list.', 'danger');
+          return;
+      }
+
+      // If PO not selected, select it
+      let poData = selectedPos.get(_activePoNo);
+      if(!poData) {
+          // Find row in search results or create dummy
+          const row = _poRows.find(r => r.PhPoNo === _activePoNo) || { PhPoNo: _activePoNo, PhWhse: _activePoWhse };
+          poData = { ...row };
+      }
+
+      // If all checked, selectedLines is null (shorthand for all)
+      poData.selectedLines = (checked.length === allChks.length) ? null : checked;
+      selectedPos.set(_activePoNo, poData);
+      
+      // Update main table checkbox
+      document.querySelectorAll(`.po-chk[data-pono="${_activePoNo}"]`).forEach(c => c.checked = true);
+      
+      updateSelectedBadge();
+      bootstrap.Modal.getInstance(document.getElementById('poDetailModal')).hide();
+      showToast(`Items updated for PO ${_activePoNo}.`, 'success');
   }
 
   function parseFloatOrNull(id){const v=document.getElementById(id).value;const n=parseFloat(v);return isNaN(n)?null:n;}
@@ -340,6 +803,7 @@
     new bootstrap.Toast(el,{delay:4000}).show();
   }
   function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+  function safeId(s){return String(s??'').replace(/[^a-zA-Z0-9]/g,'_');}
 </script>
 </body>
 </html>

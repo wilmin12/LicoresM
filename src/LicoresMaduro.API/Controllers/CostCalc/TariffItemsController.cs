@@ -20,7 +20,7 @@ public sealed class TariffItemsController : ControllerBase
     {
         var q = _db.CcTariffItems.AsNoTracking();
         if (activeOnly) q = q.Where(x => x.IsActive);
-        var data = await q.OrderBy(x => x.TiHsCode).ToListAsync(ct);
+        var data = await q.OrderBy(x => x.Hs6Cod).ToListAsync(ct);
         return Ok(ApiResponse<List<CcTariffItem>>.Ok(data));
     }
 
@@ -38,18 +38,28 @@ public sealed class TariffItemsController : ControllerBase
         if (!ModelState.IsValid)
             return BadRequest(ApiResponse.Fail(ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage))));
 
-        if (await _db.CcTariffItems.AnyAsync(x => x.TiHsCode == dto.HsCode, ct))
-            return Conflict(ApiResponse.Fail($"HS Code '{dto.HsCode}' already exists."));
+        if (await _db.CcTariffItems.AnyAsync(x => x.Hs6Cod == dto.Hs6Cod, ct))
+            return Conflict(ApiResponse.Fail($"HS Code '{dto.Hs6Cod}' already exists."));
 
         var item = new CcTariffItem
         {
-            TiHsCode      = dto.HsCode,
-            TiDescription = dto.Description,
-            TiDutyRate    = dto.DutyRate,
-            TiEconRate    = dto.EconRate,
-            TiObRate      = dto.ObRate,
-            IsActive      = dto.IsActive ?? true,
-            CreatedAt     = DateTime.UtcNow
+            Hs6Cod    = dto.Hs6Cod,
+            TarPr1    = dto.TarPr1,
+            TarDsc    = dto.TarDsc,
+            UomCod1   = dto.UomCod1,
+            UomCod2   = dto.UomCod2,
+            TarT01    = dto.TarT01,
+            TarT02    = dto.TarT02,
+            TarT04    = dto.TarT04,
+            TarT05    = dto.TarT05,
+            TarT06    = dto.TarT06,
+            TarT07    = dto.TarT07,
+            TarT08    = dto.TarT08,
+            TarT09    = dto.TarT09,
+            TarT10    = dto.TarT10,
+            TarT12    = dto.TarT12,
+            IsActive  = dto.IsActive ?? true,
+            CreatedAt = DateTime.UtcNow
         };
         _db.CcTariffItems.Add(item);
         await _db.SaveChangesAsync(ct);
@@ -62,14 +72,24 @@ public sealed class TariffItemsController : ControllerBase
         var item = await _db.CcTariffItems.FirstOrDefaultAsync(x => x.TiId == id, ct);
         if (item is null) return NotFound(ApiResponse.Fail($"Tariff item {id} not found."));
 
-        if (item.TiHsCode != dto.HsCode && await _db.CcTariffItems.AnyAsync(x => x.TiHsCode == dto.HsCode, ct))
-            return Conflict(ApiResponse.Fail($"HS Code '{dto.HsCode}' already exists."));
+        if (item.Hs6Cod != dto.Hs6Cod && await _db.CcTariffItems.AnyAsync(x => x.Hs6Cod == dto.Hs6Cod, ct))
+            return Conflict(ApiResponse.Fail($"HS Code '{dto.Hs6Cod}' already exists."));
 
-        item.TiHsCode      = dto.HsCode;
-        item.TiDescription = dto.Description;
-        item.TiDutyRate    = dto.DutyRate;
-        item.TiEconRate    = dto.EconRate;
-        item.TiObRate      = dto.ObRate;
+        item.Hs6Cod   = dto.Hs6Cod;
+        item.TarPr1   = dto.TarPr1;
+        item.TarDsc   = dto.TarDsc;
+        item.UomCod1  = dto.UomCod1;
+        item.UomCod2  = dto.UomCod2;
+        item.TarT01   = dto.TarT01;
+        item.TarT02   = dto.TarT02;
+        item.TarT04   = dto.TarT04;
+        item.TarT05   = dto.TarT05;
+        item.TarT06   = dto.TarT06;
+        item.TarT07   = dto.TarT07;
+        item.TarT08   = dto.TarT08;
+        item.TarT09   = dto.TarT09;
+        item.TarT10   = dto.TarT10;
+        item.TarT12   = dto.TarT12;
         if (dto.IsActive.HasValue) item.IsActive = dto.IsActive.Value;
         await _db.SaveChangesAsync(ct);
         return Ok(ApiResponse<CcTariffItem>.Ok(item, "Updated."));
@@ -87,10 +107,20 @@ public sealed class TariffItemsController : ControllerBase
 }
 
 public record TariffItemDto(
-    string  HsCode,
-    string? Description,
-    decimal DutyRate,
-    decimal EconRate,
-    decimal ObRate,
+    string  Hs6Cod,
+    string? TarPr1,
+    string? TarDsc,
+    string? UomCod1,
+    string? UomCod2,
+    decimal? TarT01,
+    decimal? TarT02,
+    decimal? TarT04,
+    decimal? TarT05,
+    decimal? TarT06,
+    decimal? TarT07,
+    decimal? TarT08,
+    decimal? TarT09,
+    decimal? TarT10,
+    decimal? TarT12,
     bool?   IsActive
 );

@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Price Confirmation - Licores Maduro</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="../../css/main.css"/>
+  <style>
+    .price-table th { font-size:.75rem; white-space:nowrap; }
+    .price-table td { font-size:.82rem; white-space:nowrap; vertical-align:middle; }
+    .po-header { background:var(--wine,#6b2929); color:#fff; font-size:.85rem; font-weight:600; padding:6px 12px; border-radius:4px; margin-bottom:4px; }
+    .selling-input { width:100px; text-align:right; font-size:.82rem; }
+    .selling-input.changed { border-color:#198754; box-shadow:0 0 0 .15rem rgba(25,135,84,.25); }
+    .col-readonly { color:#6c757d; }
+    .calc-badge { font-size:.75rem; }
+    .summary-bar { background:#f8f9fa; border:1px solid #dee2e6; border-radius:6px; padding:12px 20px; }
+  </style>
+</head>
+<body>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <div class="app-wrapper">
+  <nav id="sidebar" class="sidebar">
+    <div class="sidebar-header"><img src="../../img/LogoLicores.png" alt="Licores Maduro" class="sidebar-logo-img"/><span class="sidebar-logo-text">LICORES MADURO</span></div>
+    <div id="sidebar-nav" class="sidebar-nav"></div>
+    <div class="sidebar-footer"><div class="sidebar-user"><div class="sidebar-avatar" id="sidebar-user-initials">LM</div><div class="sidebar-text"><div id="sidebar-user-name" style="font-weight:600;">–</div></div></div></div>
+  </nav>
+  <div class="main-area">
+    <header class="topbar">
+      <button id="btn-sidebar-toggle" class="btn-sidebar-toggle"><i class="fas fa-bars"></i></button>
+      <span class="topbar-title"><i class="fas fa-tags me-2 text-wine"></i>Price Confirmation</span>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown">
+            <span class="sidebar-avatar" id="topbar-user-initials" style="width:28px;height:28px;font-size:.75rem;">LM</span>
+            <span id="topbar-user-name" class="d-none d-md-inline">–</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item text-danger" href="#" id="btn-logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+          </ul>
+        </div>
+      </div>
+    </header>
+
+    <main class="content-area px-4 py-3">
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="index.html">Calculations</a></li>
+          <li class="breadcrumb-item active" id="bc-calc">Price Confirmation</li>
+        </ol>
+      </nav>
+
+      <!-- Header card -->
+      <div class="card mb-3" id="header-card">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <span><i class="fas fa-info-circle me-2"></i>Calculation Info</span>
+          <div class="d-flex gap-2" id="action-buttons"></div>
+        </div>
+        <div class="card-body" id="header-body">
+          <div class="text-center py-3 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading...</div>
+        </div>
+      </div>
+
+      <!-- Items table -->
+      <div class="card mb-3" id="items-card" style="display:none;">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <span><i class="fas fa-list me-2"></i>Products — Review &amp; Confirm Selling Prices</span>
+          <small class="text-muted">Edit the <strong>Selling Price</strong> column to adjust before confirming.</small>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-sm table-hover price-table mb-0" id="items-table">
+              <thead class="table-light">
+                <tr>
+                  <th>PO #</th>
+                  <th>Item</th>
+                  <th>Description</th>
+                  <th class="text-end">Qty</th>
+                  <th class="text-end">Unit/Case</th>
+                  <th class="text-end">Liters</th>
+                  <th class="text-end col-readonly">Final Cost</th>
+                  <th class="text-end col-readonly">Margin %</th>
+                  <th class="text-end">Selling Price</th>
+                </tr>
+              </thead>
+              <tbody id="items-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Summary + confirm button -->
+      <div id="summary-bar" class="summary-bar mb-3" style="display:none;">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+          <div class="d-flex gap-4 flex-wrap">
+            <div><small class="text-muted d-block">Total Items</small><strong id="s-items">–</strong></div>
+            <div><small class="text-muted d-block">Total Final Cost</small><strong id="s-final">–</strong></div>
+            <div><small class="text-muted d-block">Total Selling Price</small><strong id="s-sell">–</strong></div>
+          </div>
+          <button class="btn btn-success px-4" id="btn-confirm" onclick="confirmPrices()">
+            <i class="fas fa-check-circle me-2"></i>Confirm Prices
+          </button>
+        </div>
+      </div>
+    </main>
+  </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="toast" class="toast text-white" role="alert">
+      <div class="d-flex"><div class="toast-body" id="toast-msg"></div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../../js/auth.js"></script>
+  <script src="../../js/api.js"></script>
+  <script src="../../js/sidebar.js"></script>
+  <script>
+    const params   = new URLSearchParams(location.search);
+    const calcId   = parseInt(params.get('id') || '0', 10);
+    let   calcData = null;
+    let   toast    = null;
+
+    const fmt = v => v != null ? Number(v).toLocaleString('en-US', { minimumFractionDigits:2, maximumFractionDigits:2 }) : '–';
+    const esc = s => (s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+    function showToast(msg, type = 'success') {
+      const el = document.getElementById('toast');
+      el.className = `toast text-white bg-${type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'danger'}`;
+      document.getElementById('toast-msg').textContent = msg;
+      toast.show();
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (!Auth.requireAuth()) return;
+      Auth.startExpiryWatcher();
+      Auth.populateUserUI();
+      Sidebar.init();
+      toast = new bootstrap.Toast(document.getElementById('toast'), { delay: 3500 });
+      document.getElementById('btn-logout').addEventListener('click', e => { e.preventDefault(); Auth.logout(); });
+      await loadCalc();
+    });
+
+    async function loadApprovedList() {
+      document.getElementById('header-card').querySelector('.card-header span').innerHTML =
+        '<i class="fas fa-list me-2"></i>Select an Approved Calculation';
+      document.getElementById('header-body').innerHTML =
+        '<div class="text-center py-3 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading approved calculations...</div>';
+      try {
+        const res  = await API.costCalc.getCalculations({ status: 'AP', pageSize: 50 });
+        const list = res?.Data?.Items || res?.Data || res?.Items || res || [];
+        const items = Array.isArray(list) ? list : [];
+        if (!items.length) {
+          document.getElementById('header-body').innerHTML =
+            '<div class="alert alert-info mb-0"><i class="fas fa-info-circle me-2"></i>No approved calculations found.</div>';
+          return;
+        }
+        document.getElementById('header-body').innerHTML = `
+          <p class="text-muted mb-2">Click a calculation to confirm its selling prices.</p>
+          <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+              <thead class="table-light">
+                <tr><th>#</th><th>Date</th><th>Forwarder</th><th>Warehouse</th><th>Currency</th><th>POs</th><th></th></tr>
+              </thead>
+              <tbody>
+                ${items.map(c => `<tr>
+                  <td><strong>#${c.CcCalcNumber}</strong></td>
+                  <td>${c.CcCalcDate ? c.CcCalcDate.split('T')[0] : '–'}</td>
+                  <td>${esc(c.CcForwarderName || c.CcForwarderCode || '–')}</td>
+                  <td>${esc(c.CcWarehouse || '–')}</td>
+                  <td>${esc(c.CcCurrCode || '–')}</td>
+                  <td>${c.CcTotOrd ?? 0}</td>
+                  <td><a href="price-confirmation.html?id=${c.CcCalcNumber}" class="btn btn-success btn-sm">
+                    <i class="fas fa-tags me-1"></i>Confirm Prices
+                  </a></td>
+                </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>`;
+      } catch (e) {
+        document.getElementById('header-body').innerHTML =
+          `<div class="alert alert-danger mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Error loading calculations: ${esc(e?.message ?? '')}</div>`;
+      }
+    }
+
+    async function loadCalc() {
+      if (!calcId) {
+        await loadApprovedList();
+        return;
+      }
+      try {
+        const res = await API.costCalc.getCalculation(calcId);
+        calcData  = res?.Data || res;
+        renderHeader(calcData);
+        renderItems(calcData);
+      } catch (e) {
+        renderError('Could not load calculation. ' + (e?.message ?? ''));
+      }
+    }
+
+    function renderError(msg) {
+      document.getElementById('header-body').innerHTML =
+        `<div class="alert alert-danger mb-0"><i class="fas fa-exclamation-triangle me-2"></i>${esc(msg)}</div>`;
+    }
+
+    const STATUS_CLASS = { DR:'badge bg-secondary', CF:'badge bg-primary', AP:'badge bg-success' };
+    const STATUS_LABEL = { DR:'Draft', CF:'Confirmed', AP:'Approved' };
+
+    function renderHeader(c) {
+      const stClass = STATUS_CLASS[c.CcStatus] || 'badge bg-secondary';
+      const stLabel = STATUS_LABEL[c.CcStatus] || c.CcStatus;
+      const dt = c.CcCalcDate ? c.CcCalcDate.split('T')[0] : '';
+
+      document.getElementById('bc-calc').textContent = `Calc #${c.CcCalcNumber} — Price Confirmation`;
+      document.getElementById('header-body').innerHTML = `
+        <div class="row g-3">
+          <div class="col-md-2"><small class="text-muted d-block">Calc No.</small><strong>#${c.CcCalcNumber}</strong></div>
+          <div class="col-md-2"><small class="text-muted d-block">Date</small>${dt}</div>
+          <div class="col-md-2"><small class="text-muted d-block">Status</small><span class="${stClass}">${stLabel}</span></div>
+          <div class="col-md-2"><small class="text-muted d-block">Warehouse</small>${esc(c.CcWarehouse||'–')}</div>
+          <div class="col-md-2"><small class="text-muted d-block">Forwarder</small>${esc(c.CcForwarderName||c.CcForwarderCode||'–')}</div>
+          <div class="col-md-2"><small class="text-muted d-block">Currency</small>${esc(c.CcCurrCode||'–')} ${c.CcCurrRate?'('+Number(c.CcCurrRate).toFixed(4)+')':''}</div>
+        </div>`;
+
+      const btns = `<a href="index.html" class="btn btn-outline-secondary btn-sm"><i class="fas fa-arrow-left me-1"></i>Back to List</a>
+        <a href="calculation.html?id=${c.CcCalcNumber}" class="btn btn-outline-primary btn-sm"><i class="fas fa-eye me-1"></i>View Calculation</a>`;
+      document.getElementById('action-buttons').innerHTML = btns;
+    }
+
+    function renderItems(c) {
+      if (!c.PoHeads || !c.PoHeads.length) return;
+
+      const rows = [];
+      for (const po of c.PoHeads) {
+        const details = (po.Details || []).filter(d => (d.CcpdOrdQty ?? 0) > 0);
+        if (!details.length) continue;
+        for (const d of details) {
+          rows.push({ po: po.CcphLmPoNo, d });
+        }
+      }
+
+      document.getElementById('items-tbody').innerHTML = rows.map(({ po, d }) => {
+        const margin = d.CcpdMarginPerc != null ? (Number(d.CcpdMarginPerc) * 100).toFixed(2) + '%' : '–';
+        const sell   = d.CcpdSellingPrice != null ? Number(d.CcpdSellingPrice).toFixed(2) : '';
+        return `<tr>
+          <td><span class="badge bg-secondary">${esc(po)}</span></td>
+          <td><strong>${esc(d.CcpdItemNo)}</strong></td>
+          <td>${esc(d.CcpdItemDescr||'')}</td>
+          <td class="text-end">${fmt(d.CcpdOrdQty)}</td>
+          <td class="text-end">${d.CcpdUnitCase ?? '–'}</td>
+          <td class="text-end">${fmt(d.CcpdLiters)}</td>
+          <td class="text-end col-readonly">${fmt(d.CcpdFinalCost)}</td>
+          <td class="text-end col-readonly">${margin}</td>
+          <td class="text-end">
+            <input type="number" step="0.01" min="0"
+              class="form-control form-control-sm selling-input"
+              data-po="${esc(po)}" data-item="${esc(d.CcpdItemNo)}"
+              data-original="${sell}"
+              value="${sell}"
+              oninput="onSellChange(this)"/>
+          </td>
+        </tr>`;
+      }).join('');
+
+      document.getElementById('items-card').style.display = '';
+      document.getElementById('summary-bar').style.display = '';
+      updateSummary();
+    }
+
+    function onSellChange(input) {
+      const orig = parseFloat(input.dataset.original || '0');
+      const cur  = parseFloat(input.value || '0');
+      input.classList.toggle('changed', Math.abs(cur - orig) > 0.001);
+      updateSummary();
+    }
+
+    function updateSummary() {
+      const inputs = document.querySelectorAll('.selling-input');
+      let totalSell = 0;
+      inputs.forEach(i => { totalSell += parseFloat(i.value || '0'); });
+
+      const allDetails = (calcData?.PoHeads || [])
+        .flatMap(p => (p.Details || []).filter(d => (d.CcpdOrdQty ?? 0) > 0));
+      const totalFinal = allDetails.reduce((s, d) => s + (d.CcpdFinalCost ?? 0), 0);
+
+      document.getElementById('s-items').textContent = inputs.length;
+      document.getElementById('s-final').textContent = fmt(totalFinal);
+      document.getElementById('s-sell').textContent  = fmt(totalSell);
+    }
+
+    async function confirmPrices() {
+      const inputs = document.querySelectorAll('.selling-input');
+      const items  = [];
+      inputs.forEach(inp => {
+        items.push({
+          poNo:         inp.dataset.po,
+          itemNo:       inp.dataset.item,
+          sellingPrice: parseFloat(inp.value || '0')
+        });
+      });
+
+      if (!items.length) { showToast('No items to confirm.', 'warning'); return; }
+
+      const btn = document.getElementById('btn-confirm');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
+      try {
+        await API.costCalc.confirmPrices(calcId, items);
+        // Update originals so changed highlights reset
+        inputs.forEach(inp => {
+          inp.dataset.original = inp.value;
+          inp.classList.remove('changed');
+        });
+        showToast('Prices confirmed successfully.', 'success');
+      } catch (e) {
+        showToast('Error confirming prices: ' + (e?.message ?? 'Unknown error'), 'danger');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-check-circle me-2"></i>Confirm Prices';
+      }
+    }
+
+  </script>
+</body>
+</html>

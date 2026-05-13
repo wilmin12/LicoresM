@@ -611,9 +611,9 @@ public sealed class AankoopbonController : ControllerBase
             // Display name per email type
             var displayName = type switch
             {
-                "approved" => "Aankoopbon: Request for approval",
-                "rejected" => "Request for Reject",
-                "returned" => "Request to returned to Draft",
+                "approved" => "Aankoopbon: Approved Confirmation",
+                "rejected" => "Aankoopbon: Rejected",
+                "returned" => "Aankoopbon: Returned to Draft",
                 _          => cfg.SenderName   // "pending" keeps the configured sender name
             };
 
@@ -648,37 +648,37 @@ public sealed class AankoopbonController : ControllerBase
 
                 subject = $"[Aankoopbon] {header.AohBonNr} — Approved ✔";
 
-                // ── Send "Original" to requestor ──────────────────────────────
+                using var clientAppr = new SmtpClient();
+                var sslOptionApproved = cfg.SmtpPort == 465 ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTls;
+                await clientAppr.ConnectAsync(cfg.SmtpHost, cfg.SmtpPort, sslOptionApproved, ct);
+                await clientAppr.AuthenticateAsync(cfg.SenderEmail, cfg.SenderPassword, ct);
+
+                // ── Send "REPRINT" to requestor ──────────────────────────────
                 if (!string.IsNullOrEmpty(requestorEmail))
                 {
                     try
                     {
-                        var originalPdf = AankoopbonPdfBuilder.Generate(header, logoPath, "Original");
+                        var originalPdf = AankoopbonPdfBuilder.Generate(header, logoPath, "REPRINT");
                         var bbOrig = new BodyBuilder
                         {
                             HtmlBody = $@"<p>The aankoopbon below has been <b style='color:green;'>approved</b> by {header.AohApprovedByName}.</p>
 {orderTable}
-<p>Your copy (Original) is attached.</p>"
+<p>Your copy (REPRINT) is attached.</p>"
                         };
-                        bbOrig.Attachments.Add($"Aankoopbon_{safeName}_Original.pdf", originalPdf,
+                        bbOrig.Attachments.Add($"Aankoopbon_{safeName}_REPRINT.pdf", originalPdf,
                             new MimeKit.ContentType("application", "pdf"));
 
-                        using var clientOrig = new SmtpClient();
-                        var sslOpt = cfg.SmtpPort == 465 ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTls;
-                        await clientOrig.ConnectAsync(cfg.SmtpHost, cfg.SmtpPort, sslOpt, ct);
-                        await clientOrig.AuthenticateAsync(cfg.SenderEmail, cfg.SenderPassword, ct);
                         var msgOrig = new MimeMessage();
                         msgOrig.From.Add(new MailboxAddress(displayName, cfg.SenderEmail));
                         msgOrig.To.Add(MailboxAddress.Parse(requestorEmail));
                         msgOrig.Subject = subject;
                         msgOrig.Body    = bbOrig.ToMessageBody();
-                        await clientOrig.SendAsync(msgOrig, ct);
-                        await clientOrig.DisconnectAsync(true, ct);
-                        _log.LogInformation("Aankoopbon {BonNr} — Original sent to requestor {To}", header.AohBonNr, requestorEmail);
+                        await clientAppr.SendAsync(msgOrig, ct);
+                        _log.LogInformation("Aankoopbon {BonNr} — REPRINT sent to requestor {To}", header.AohBonNr, requestorEmail);
                     }
                     catch (Exception ex)
                     {
-                        _log.LogWarning(ex, "Could not send Original PDF for {BonNr}", header.AohBonNr);
+                        _log.LogWarning(ex, "Could not send REPRINT PDF for {BonNr}", header.AohBonNr);
                     }
                 }
 
@@ -697,17 +697,12 @@ public sealed class AankoopbonController : ControllerBase
                         bbOffice.Attachments.Add($"Aankoopbon_{safeName}_OfficeCopy.pdf", officePdf,
                             new MimeKit.ContentType("application", "pdf"));
 
-                        using var clientOffice = new SmtpClient();
-                        var sslOpt = cfg.SmtpPort == 465 ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTls;
-                        await clientOffice.ConnectAsync(cfg.SmtpHost, cfg.SmtpPort, sslOpt, ct);
-                        await clientOffice.AuthenticateAsync(cfg.SenderEmail, cfg.SenderPassword, ct);
                         var msgOffice = new MimeMessage();
                         msgOffice.From.Add(new MailboxAddress(displayName, cfg.SenderEmail));
                         msgOffice.To.Add(MailboxAddress.Parse(creatorEmail));
                         msgOffice.Subject = subject;
                         msgOffice.Body    = bbOffice.ToMessageBody();
-                        await clientOffice.SendAsync(msgOffice, ct);
-                        await clientOffice.DisconnectAsync(true, ct);
+                        await clientAppr.SendAsync(msgOffice, ct);
                         _log.LogInformation("Aankoopbon {BonNr} — Office Copy sent to creator {To}", header.AohBonNr, creatorEmail);
                     }
                     catch (Exception ex)
@@ -716,6 +711,7 @@ public sealed class AankoopbonController : ControllerBase
                     }
                 }
 
+                await clientAppr.DisconnectAsync(true, ct);
                 // Skip the generic send loop below — emails already sent above
                 return;
             }
@@ -803,12 +799,12 @@ public sealed class AankoopbonController : ControllerBase
             var messageBody = bb.ToMessageBody();
 
             // ── Open one SMTP connection and send to all recipients ─────────
-            using var client = new SmtpClient();
+            using var clientMain = new SmtpClient();
             var sslOption = cfg.SmtpPort == 465
                 ? SecureSocketOptions.SslOnConnect
                 : SecureSocketOptions.StartTls;
-            await client.ConnectAsync(cfg.SmtpHost, cfg.SmtpPort, sslOption, ct);
-            await client.AuthenticateAsync(cfg.SenderEmail, cfg.SenderPassword, ct);
+            await clientMain.ConnectAsync(cfg.SmtpHost, cfg.SmtpPort, sslOption, ct);
+            await clientMain.AuthenticateAsync(cfg.SenderEmail, cfg.SenderPassword, ct);
 
             foreach (var to in recipients)
             {
@@ -817,11 +813,11 @@ public sealed class AankoopbonController : ControllerBase
                 message.To.Add(MailboxAddress.Parse(to));
                 message.Subject = subject;
                 message.Body    = messageBody;
-                await client.SendAsync(message, ct);
+                await clientMain.SendAsync(message, ct);
                 _log.LogInformation("Aankoopbon {BonNr} — email '{Type}' sent to {To}", header.AohBonNr, type, to);
             }
 
-            await client.DisconnectAsync(true, ct);
+            await clientMain.DisconnectAsync(true, ct);
         }
         catch (Exception ex)
         {

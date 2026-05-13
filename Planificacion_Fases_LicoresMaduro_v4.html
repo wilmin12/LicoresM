@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<style>
+  body {
+    font-family: Calibri, Arial, sans-serif;
+    font-size: 11pt;
+    color: #000000;
+    margin: 2.54cm 2.54cm 2.54cm 2.54cm;
+    line-height: 1.4;
+  }
+  h1 {
+    font-size: 18pt;
+    font-weight: bold;
+    color: #722F37;
+    border-bottom: 3px solid #722F37;
+    padding-bottom: 6px;
+    margin-top: 0;
+    margin-bottom: 12px;
+  }
+  h2 {
+    font-size: 14pt;
+    font-weight: bold;
+    color: #722F37;
+    margin-top: 24px;
+    margin-bottom: 8px;
+    border-left: 5px solid #722F37;
+    padding-left: 8px;
+  }
+  h3 {
+    font-size: 12pt;
+    font-weight: bold;
+    color: #4A4A4A;
+    margin-top: 16px;
+    margin-bottom: 6px;
+  }
+  p { margin: 4px 0 8px 0; }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 10px 0 16px 0;
+    font-size: 10.5pt;
+  }
+  th {
+    background-color: #722F37;
+    color: #FFFFFF;
+    padding: 7px 10px;
+    text-align: left;
+    font-weight: bold;
+    font-size: 10pt;
+  }
+  td {
+    border: 1px solid #D0D0D0;
+    padding: 6px 10px;
+    vertical-align: top;
+  }
+  tr:nth-child(even) td { background-color: #F9F2F2; }
+  .badge-done {
+    background-color: #198754; color: white;
+    padding: 2px 8px; border-radius: 4px; font-size: 9pt; font-weight: bold;
+  }
+  .badge-pending {
+    background-color: #DC3545; color: white;
+    padding: 2px 8px; border-radius: 4px; font-size: 9pt; font-weight: bold;
+  }
+  .badge-optional {
+    background-color: #6C757D; color: white;
+    padding: 2px 8px; border-radius: 4px; font-size: 9pt; font-weight: bold;
+  }
+  .resumen-box {
+    background-color: #FDF6F6;
+    border: 2px solid #722F37;
+    border-radius: 6px;
+    padding: 14px 18px;
+    margin: 16px 0;
+  }
+  .resumen-box table { margin: 0; }
+  .cronograma-box {
+    background-color: #F8F8F8;
+    border: 1px solid #CCCCCC;
+    border-radius: 4px;
+    padding: 12px 16px;
+    font-family: 'Courier New', monospace;
+    font-size: 9.5pt;
+    margin: 10px 0 16px 0;
+    white-space: pre;
+    line-height: 1.6;
+  }
+  .fase-header {
+    background-color: #722F37;
+    color: white;
+    padding: 10px 16px;
+    border-radius: 4px;
+    margin: 28px 0 12px 0;
+  }
+  .fase-header h2 {
+    color: white; margin: 0; border-left: none;
+    padding-left: 0; font-size: 14pt;
+  }
+  .fase-header p { color: #F0D0D0; margin: 2px 0 0 0; font-size: 10pt; }
+  .page-break { page-break-before: always; }
+  .portada { text-align: center; margin-top: 80px; margin-bottom: 60px; }
+  .portada h1 { font-size: 24pt; border: none; text-align: center; color: #722F37; }
+  .portada .subtitulo { font-size: 14pt; color: #555; margin-top: 8px; }
+  .portada .fecha { font-size: 11pt; color: #777; margin-top: 30px; }
+  .portada .linea { border-top: 2px solid #722F37; width: 60%; margin: 20px auto; }
+  .nota {
+    background-color: #FFF8E1;
+    border-left: 4px solid #FFC107;
+    padding: 8px 12px;
+    margin: 10px 0;
+    font-size: 10pt;
+  }
+  ul { margin: 4px 0 8px 0; padding-left: 20px; }
+  li { margin-bottom: 3px; }
+</style>
+</head>
+<body>
+
+<!-- PORTADA -->
+<div class="portada">
+  <h1>Licores Maduro</h1>
+  <div class="subtitulo">Sistema de Gestión Interna</div>
+  <div class="linea"></div>
+  <div style="font-size:16pt; font-weight:bold; color:#333;">Planificación de Entrega por Fases</div>
+  <div class="fecha">
+    <br>
+    Fecha de elaboración: 1 de abril de 2026<br>
+    Fecha límite de entrega: <strong>30 de junio de 2026</strong><br><br>
+    Versión 1.1
+  </div>
+</div>
+
+<div class="page-break"></div>
+
+<!-- INTRODUCCIÓN -->
+<h1>Introducción</h1>
+<p>
+  El presente documento describe la planificación de entrega del Sistema de Gestión Interna de
+  <strong>Licores Maduro</strong>, organizado en cuatro fases de desarrollo. Cada fase agrupa módulos
+  funcionales relacionados y define su estado actual, el cronograma de ejecución y la fecha
+  proyectada de entrega.
+</p>
+<p>
+  El proyecto tiene como fecha límite el <strong>30 de junio de 2026</strong>, con aproximadamente
+  <strong>65 días hábiles</strong> de trabajo activo a partir del 1 de abril de 2026.
+  Al inicio de este período, el módulo <strong>M00 – Platform Base</strong> se encuentra
+  completamente finalizado. Todos los demás módulos están distribuidos en el cronograma para
+  concluir dentro del plazo establecido.
+</p>
+
+<h3>Convenciones de estado</h3>
+<table>
+  <tr><th>Indicador</th><th>Significado</th></tr>
+  <tr><td><span class="badge-done">COMPLETADO</span></td><td>Módulo funcional al 100%, sin trabajo pendiente.</td></tr>
+  <tr><td><span class="badge-pending">PENDIENTE</span></td><td>Módulo con trabajo por completar.</td></tr>
+  <tr><td><span class="badge-optional">OPCIONAL</span></td><td>Fase de alcance opcional, sujeta a disponibilidad.</td></tr>
+</table>
+
+<div class="page-break"></div>
+
+<!-- RESUMEN GENERAL -->
+<h1>Resumen General del Proyecto</h1>
+
+<table>
+  <tr>
+    <th>Fase</th>
+    <th>Módulos</th>
+    <th>Estado</th>
+    <th>Período de ejecución</th>
+    <th>Fecha de entrega</th>
+  </tr>
+  <tr>
+    <td><strong>Fase 1</strong> – Base + Núcleo Financiero</td>
+    <td>M00, M01, M04, M03</td>
+    <td><span class="badge-pending">PENDIENTE</span></td>
+    <td>1 Abr – 12 May 2026</td>
+    <td><strong>12 de Mayo de 2026</strong></td>
+  </tr>
+  <tr>
+    <td><strong>Fase 2</strong> – Operaciones</td>
+    <td>M07, M06</td>
+    <td><span class="badge-pending">PENDIENTE</span></td>
+    <td>13 May – 10 Jun 2026</td>
+    <td><strong>10 de Junio de 2026</strong></td>
+  </tr>
+  <tr>
+    <td><strong>Fase 3</strong> – Analítica</td>
+    <td>M05</td>
+    <td><span class="badge-pending">PENDIENTE</span></td>
+    <td>10 Jun – 26 Jun 2026</td>
+    <td><strong>26 de Junio de 2026</strong></td>
+  </tr>
+  <tr>
+    <td><strong>Fase 4</strong> – Marketing (Opcional)</td>
+    <td>M02</td>
+    <td><span class="badge-optional">OPCIONAL</span></td>
+    <td>29 Jun – 30 Jun 2026</td>
+    <td><strong>30 de Junio de 2026</strong></td>
+  </tr>
+</table>
+
+<div class="resumen-box">
+  <table style="border:none; margin:0;">
+    <tr>
+      <td style="border:none; font-weight:bold; width:50%; background:none;">Inicio de trabajo activo:</td>
+      <td style="border:none; background:none;">1 de Abril de 2026</td>
+    </tr>
+    <tr>
+      <td style="border:none; font-weight:bold; background:none;">Fecha límite del proyecto:</td>
+      <td style="border:none; background:none;"><strong>30 de Junio de 2026</strong></td>
+    </tr>
+    <tr>
+      <td style="border:none; font-weight:bold; background:none;">Días hábiles disponibles totales:</td>
+      <td style="border:none; background:none;">~65 días hábiles</td>
+    </tr>
+    <tr>
+      <td style="border:none; font-weight:bold; background:none;">Módulo completado al 1 de abril:</td>
+      <td style="border:none; background:none;">M00 – Platform Base (100%)</td>
+    </tr>
+    <tr>
+      <td style="border:none; font-weight:bold; background:none;">Módulos con trabajo pendiente:</td>
+      <td style="border:none; background:none;">M01, M04, M03, M07, M06, M05, M02</td>
+    </tr>
+  </table>
+</div>
+
+<div class="page-break"></div>
+
+<!-- ======================== FASE 1 ======================== -->
+<div class="fase-header">
+  <h2>Fase 1 – Base + Núcleo Financiero</h2>
+  <p>Módulos: M00 – Platform Base &nbsp;|&nbsp; M01 – Aankoopbonnen &nbsp;|&nbsp; M04 – Freight Forwarders &nbsp;|&nbsp; M03 – Cost Calculation</p>
+</div>
+
+<h3>Descripción general</h3>
+<p>
+  Esta fase establece los cimientos del sistema. <strong>M00 – Platform Base</strong> ya está completamente
+  funcional con autenticación JWT, gestión de usuarios, roles y permisos. Los módulos restantes cubren
+  las órdenes de compra internas (M01), la gestión de agentes de carga y cotizaciones marítimas (M04),
+  y el cálculo de costos de importación con landed cost (M03). El trabajo de esta fase se ejecuta
+  durante el mes de abril y la primera quincena de mayo de 2026.
+</p>
+
+<h3>Estado por módulo</h3>
+<table>
+  <tr>
+    <th>Módulo</th>
+    <th>Descripción</th>
+    <th>Estado</th>
+    <th>Entrega estimada</th>
+  </tr>
+  <tr>
+    <td><strong>M00 – Platform Base</strong></td>
+    <td>Login, usuarios, roles y permisos</td>
+    <td><span class="badge-done">COMPLETADO</span></td>
+    <td>—</td>
+  </tr>
+  <tr>
+    <td><strong>M01 – Aankoopbonnen</strong></td>
+    <td>Órdenes de compra internas (flujo, PDF, notificaciones)</td>
+    <td><span class="badge-pending">PENDIENTE</span></td>
+    <td>10 de Abril de 2026</td>
+  </tr>
+  <tr>
+    <td><strong>M04 – Freight Forwarders</strong></td>
+    <td>Catálogos de agentes, rutas, fletes y cotizaciones</td>
+    <td><span class="badge-pending">PENDIENTE</span></td>
+    <td>24 de Abril de 2026</td>
+  </tr>
+  <tr>
+    <td><strong>M03 – Cost Calculation</strong></td>
+    <td>Cálculo landed cost, distribución de cargos y márgenes</td>
+    <td><span class="badge-pending">PENDIENTE</span></td>
+    <td>7 de Mayo de 2026</td>
+  </tr>
+</table>
+
+<h3>Cronograma – Fase 1</h3>
+<div class="cronograma-box">SEMANA 1  |  1 – 3 de Abril de 2026
+──────────────────────────────────────────────────────────────
+  Mié  1 Abr   M01 – Flujo de órdenes (BORRADOR → APROBADO/RECHAZADO)
+  Jue  2 Abr   M01 – Catálogos y gestión de proveedores
+  Vie  3 Abr   M01 – Generación de PDF (inicio)
+
+SEMANA 2  |  6 – 10 de Abril de 2026
+──────────────────────────────────────────────────────────────
+  Lun  6 Abr   M01 – Generación de PDF (finalización)
+  Mar  7 Abr   M01 – Notificaciones por correo
+  Mié  8 Abr   M01 – Pruebas end-to-end (inicio)
+  Jue  9 Abr   M01 – Pruebas end-to-end (finalización)
+  Vie 10 Abr   M01 – Validación final                               ✅ M01 ENTREGADO
+
+SEMANA 3  |  13 – 17 de Abril de 2026
+──────────────────────────────────────────────────────────────
+  Lun 13 Abr   M04 – Catálogos agentes, puertos y líneas navieras
+  Mar 14 Abr   M04 – Rutas, tipos de contenedor y monedas
+  Mié 15 Abr   M04 – Precios de flete oceánico y LCL
+  Jue 16 Abr   M04 – Módulo de cotizaciones (inicio)
+  Vie 17 Abr   M04 – Cotizaciones: Forwarder Info Card
+
+SEMANA 4  |  20 – 24 de Abril de 2026
+──────────────────────────────────────────────────────────────
+  Lun 20 Abr   M04 – Cotizaciones: Based on Quote + Save Ocean
+  Mar 21 Abr   M04 – Control de acceso por roles
+  Mié 22 Abr   M04 – Pruebas end-to-end (inicio)
+  Jue 23 Abr   M04 – Pruebas end-to-end (finalización)
+  Vie 24 Abr   M04 – Validación final                               ✅ M04 ENTREGADO
+
+SEMANA 5  |  27 – 30 de Abril y 1 de Mayo de 2026
+──────────────────────────────────────────────────────────────
+  Lun 27 Abr   M03 – Catálogos de cálculo y aranceles
+  Mar 28 Abr   M03 – Algoritmo distribución de cargos (inicio)
+  Mié 29 Abr   M03 – Algoritmo distribución (finalización)
+  Jue 30 Abr   M03 – Validación de márgenes (backend + UI)
+  Vie  1 May   M03 – Pruebas cálculo landed cost (inicio)
+
+SEMANA 6  |  4 – 8 de Mayo de 2026
+──────────────────────────────────────────────────────────────
+  Lun  4 May   M03 – Pruebas cálculo (continuación)
+  Mar  5 May   M03 – Pruebas end-to-end
+  Mié  6 May   M03 – Ajustes y correcciones
+  Jue  7 May   M03 – Validación final                               ✅ M03 ENTREGADO
+  Vie  8 May   QA integrado Fase 1 (inicio)
+
+SEMANA 7  |  11 – 12 de Mayo de 2026
+──────────────────────────────────────────────────────────────
+  Lun 11 May   QA integrado Fase 1 (finalización)
+  Mar 12 May   Corrección de errores y cierre de fase
+
+                     ✅ FASE 1 COMPLETADA: 12 de Mayo de 2026</div>
+
+<div class="resumen-box">
+  <strong>Resumen Fase 1</strong>
+  <table style="border:none; margin:6px 0 0 0;">
+    <tr><td style="border:none; width:50%; background:none; font-weight:bold;">Período:</td><td style="border:none; background:none;">1 de Abril – 12 de Mayo de 2026</td></tr>
+    <tr><td style="border:none; background:none; font-weight:bold;">Fecha de entrega:</td><td style="border:none; background:none;"><strong>12 de Mayo de 2026</strong></td></tr>
+    <tr><td style="border:none; background:none; font-weight:bold;">Días hábiles de trabajo:</td><td style="border:none; background:none;">28 días</td></tr>
+    <tr><td style="border:none; background:none; font-weight:bold;">Módulo completado:</td><td style="border:none; background:none;">M00 (sin trabajo adicional)</td></tr>
+    <tr><td style="border:none; background:none; font-weight:bold;">Entregas:</td><td style="border:none; background:none;">M01 (10 Abr) · M04 (24 Abr) · M03 (7 May)</td></tr>
+  </table>
+</div>
+
+<div class="page-break"></div>
+
+<!-- ======================== FASE 2 ======================== -->
+<div class="fase-header">
+  <h2>Fase 2 – Operaciones</h2>
+  <p>Módulos: M07 – Tracking &nbsp;|&nbsp; M06 – Stock Analysis</p>
+</div>
+
+<h3>Descripción general</h3>
+<p>
+  Esta fase cubre los módulos operativos del sistema. <strong>M07 – Tracking</strong> permite el
+  seguimiento del estado de cada pedido a lo largo de su ciclo de vida, incluyendo historial de
+  cambios y tipos de contenedor. <strong>M06 – Stock Analysis</strong> calcula niveles ideales
+  de inventario a partir de datos de ventas, con carga de archivos, procesamiento automático y
+  visualización de resultados. Su desarrollo está planificado para la segunda mitad de mayo y
+  primera semana de junio de 2026.
+</p>
+
+<h3>Estado por módulo</h3>
+<table>
+  <tr>
+    <th>Módulo</th>
+    <th>Descripción</th>
+    <th>Estado</th>
+    <th>Entrega estimada</th>
+  </tr>
+  <tr>
+    <td><strong>M07 – Tracking</strong></td>
+    <td>Seguimiento de estados de órdenes e historial</td>
+    <td><span class="badge-pending">PENDIENTE</span></td>
+    <td>22 de Mayo de 2026</td>
+  </tr>
+  <tr>
+    <td><strong>M06 – Stock Analysis</strong></td>
+    <td>Cálculo de inventario ideal, carga y visualización</td>
+    <td><span class="badge-pending">PENDIENTE</span></td>
+    <td>5 de Junio de 2026</td>
+  </tr>
+</table>
+
+<h3>Cronograma – Fase 2</h3>
+<div class="cronograma-box">SEMANA 7 (continuación)  |  13 – 15 de Mayo de 2026
+──────────────────────────────────────────────────────────────
+  Mié 13 May   M07 – Flujo de estados y ciclo de vida de órdenes (inicio)
+  Jue 14 May   M07 – Historial de cambios y vista de detalle
+  Vie 15 May   M07 – Tipos de contenedor y campos de rastreo
+
+SEMANA 8  |  18 – 22 de Mayo de 2026
+──────────────────────────────────────────────────────────────
+  Lun 18 May   M07 – Integración con módulos existentes
+  Mar 19 May   M07 – Pruebas end-to-end (inicio)
+  Mié 20 May   M07 – Pruebas end-to-end (finalización)
+  Jue 21 May   M07 – Ajustes y correcciones
+  Vie 22 May   M07 – Validación final                               ✅ M07 ENTREGADO
+
+SEMANA 9  |  25 – 29 de Mayo de 2026
+──────────────────────────────────────────────────────────────
+  Lun 25 May   M06 – Servicio de cálculo de análisis (inicio)
+  Mar 26 May   M06 – Servicio de cálculo (continuación)
+  Mié 27 May   M06 – Servicio de cálculo (finalización)
+  Jue 28 May   M06 – Pipeline de carga y procesamiento (inicio)
+  Vie 29 May   M06 – Pipeline (finalización)
+
+SEMANA 10  |  1 – 5 de Junio de 2026
+──────────────────────────────────────────────────────────────
+  Lun  1 Jun   M06 – Visualización de resultados (inicio)
+  Mar  2 Jun   M06 – Visualización (finalización)
+  Mié  3 Jun   M06 – Pruebas end-to-end
+  Jue  4 Jun   M06 – Ajustes y correcciones
+  Vie  5 Jun   M06 – Validación final                               ✅ M06 ENTREGADO
+
+SEMANA 11  |  8 – 10 de Junio de 2026
+──────────────────────────────────────────────────────────────
+  Lun  8 Jun   QA integrado Fase 2
+  Mar  9 Jun   Corrección de errores
+  Mié 10 Jun   Cierre de fase
+
+                     ✅ FASE 2 COMPLETADA: 10 de Junio de 2026</div>
+
+<div class="resumen-box">
+  <strong>Resumen Fase 2</strong>
+  <table style="border:none; margin:6px 0 0 0;">
+    <tr><td style="border:none; width:50%; background:none; font-weight:bold;">Período:</td><td style="border:none; background:none;">13 de Mayo – 10 de Junio de 2026</td></tr>
+    <tr><td style="border:none; background:none; font-weight:bold;">Fecha de entrega:</td><td style="border:none; background:none;"><strong>10 de Junio de 2026</strong></td></tr>
+    <tr><td style="border:none; background:none; font-weight:bold;">Días hábiles de trabajo:</td><td style="border:none; background:none;">21 días</td></tr>
+    <tr><td style="border:none; background:none; font-weight:bold;">Entregas:</td><td style="border:none; background:none;">M07 (22 May) · M06 (5 Jun)</td></tr>
+  </table>
+</div>
+
+<div class="page-break"></div>
+
+<!-- ======================== FASE 3 ======================== -->
+<div class="fase-header">
+  <h2>Fase 3 – Analítica</h2>
+  <p>Módulos: M05 – Datawarehouse / Analytics</p>
+</div>
+
+<h3>Descripción general</h3>
+<p>
+  Esta fase implementa la capa de inteligencia de negocios del sistema. <strong>M05</strong> construye
+  un Data Mart en la base de datos separada <em>DHW_DATABASE</em> bajo esquema estrella con
+  patrón SCD Tipo 2. Utiliza <strong>Pentaho PDI</strong> como herramienta ETL para la extracción
+  y carga de datos, y <strong>Power BI</strong> para los reportes y dashboards ejecutivos.
+  Es el módulo de mayor complejidad técnica del proyecto. La carpeta <em>datawarehouse/</em>
+  contiene los scripts base de partida.
+</p>
+
+<h3>Estado por módulo</h3>
+<table>
+  <tr>
+    <th>Módulo</th>
+    <th>Descripción</th>
+    <th>Estado</th>
+    <th>Entrega estimada</th>
+  </tr>
+  <tr>
+    <td><strong>M05 – Datawarehouse / Analytics</strong></td>
+    <td>Data Mart (estrella SCD2), ETL Pentaho PDI, reportes Power BI</td>
+    <td><span class="badge-pending">PENDIENTE</span></td>
+    <td>26 de Junio de 2026</td>
+  </tr>
+</table>
+
+<h3>Cronograma – Fase 3</h3>
+<div class="cronograma-box">SEMANA 11 (continuación)  |  10 – 13 de Junio de 2026
+──────────────────────────────────────────────────────────────
+  Mié 10 Jun   M05 – Diseño esquema estrella (tablas de hechos y dimensiones)
+  Jue 11 Jun   M05 – Creación de tablas en DHW_DATABASE
+  Vie 12 Jun   M05 – ETL Pentaho: jobs de dimensiones (inicio)
+
+SEMANA 12  |  15 – 19 de Junio de 2026
+──────────────────────────────────────────────────────────────
+  Lun 15 Jun   M05 – ETL Pentaho: dimensiones (continuación)
+  Mar 16 Jun   M05 – ETL Pentaho: jobs de hechos (inicio)
+  Mié 17 Jun   M05 – ETL Pentaho: jobs de hechos (continuación)
+  Jue 18 Jun   M05 – Carga histórica inicial de datos
+  Vie 19 Jun   M05 – Power BI: reportes de ventas y costos (inicio)
+
+SEMANA 13  |  22 – 26 de Junio de 2026
+──────────────────────────────────────────────────────────────
+  Lun 22 Jun   M05 – Power BI: reportes de inventario
+  Mar 23 Jun   M05 – Power BI: dashboard ejecutivo
+  Mié 24 Jun   M05 – Validación de consistencia de datos
+  Jue 25 Jun   M05 – QA y ajustes finales
+  Vie 26 Jun   M05 – Cierre                                         ✅ M05 ENTREGADO
+
+                     ✅ FASE 3 COMPLETADA: 26 de Junio de 2026</div>
+
+<div class="resumen-box">
+  <strong>Resumen Fase 3</strong>
+  <table style="border:none; margin:6px 0 0 0;">
+    <tr><td style="border:none; width:50%; background:none; font-weight:bold;">Período:</td><td style="border:none; background:none;">10 de Junio – 26 de Junio de 2026</td></tr>
+    <tr><td style="border:none; background:none; font-weight:bold;">Fecha de entrega:</td><td style="border:none; background:none;"><strong>26 de Junio de 2026</strong></td></tr>
+    <tr><td style="border:none; background:none; font-weight:bold;">Días hábiles de trabajo:</td><td style="border:none; background:none;">13 días</td></tr>
+    <tr><td style="border:none; background:none; font-weight:bold;">Entrega:</td><td style="border:none; background:none;">M05 (26 Jun)</td></tr>
+  </table>
+</div>
+
+<div class="page-break"></div>
+
+<!-- ======================== FASE 4 ======================== -->
+<div class="fase-header" style="background-color:#6C757D;">
+  <h2>Fase 4 – Marketing (Opcional)</h2>
+  <p>Módulos: M02 – Activity Request / POS Materials / Marketing Calendar</p>
+</div>
+
+<h3>Descripción general</h3>
+<p>
+  Esta fase es de alcance opcional. Cubre el módulo de gestión de actividades de marketing (M02),
+  que incluye solicitudes de actividades con flujo de aprobación, inventario y préstamo de materiales
+  POS, calendario de marketing, notificaciones y órdenes de trabajo (Job Orders). Su ejecución
+  depende del cumplimiento del cronograma de las fases anteriores.
+</p>
+
+<div class="nota">
+  <strong>Opcional:</strong> Esta fase no es bloqueante para la operación del sistema. Se ejecuta
+  únicamente si el cronograma de las fases anteriores se cumple según lo planificado.
+</div>
+
+<h3>Estado por módulo</h3>
+<table>
+  <tr>
+    <th>Módulo</th>
+    <th>Descripción</th>
+    <th>Estado</th>
+    <th>Entrega estimada</th>
+  </tr>
+  <tr>
+    <td><strong>M02 – Activity / POS / Calendar</strong></td>
+    <td>Actividades de marketing, POS, calendario, notificaciones y Job Orders</td>
+    <td><span class="badge-optional">OPCIONAL</span></td>
+    <td>30 de Junio de 2026</td>
+  </tr>
+</table>
+
+<h3>Cronograma – Fase 4 (tentativo)</h3>
+<div class="cronograma-box">SEMANA 14  |  29 – 30 de Junio de 2026
+──────────────────────────────────────────────────────────────
+  Lun 29 Jun   M02 – QA de Activity Request, POS Materials y Calendario
+                     Integración de notificaciones
+  Mar 30 Jun   M02 – Job Orders (backend + frontend) + cierre definitivo
+
+                     ✅ FASE 4 COMPLETADA: 30 de Junio de 2026
+                     ✅ PROYECTO COMPLETADO: 30 de Junio de 2026</div>
+
+<div class="resumen-box">
+  <strong>Resumen Fase 4</strong>
+  <table style="border:none; margin:6px 0 0 0;">
+    <tr><td style="border:none; width:50%; background:none; font-weight:bold;">Período:</td><td style="border:none; background:none;">29 de Junio – 30 de Junio de 2026</td></tr>
+    <tr><td style="border:none; background:none; font-weight:bold;">Fecha de entrega:</td><td style="border:none; background:none;"><strong>30 de Junio de 2026</strong></td></tr>
+    <tr><td style="border:none; background:none; font-weight:bold;">Días hábiles de trabajo:</td><td style="border:none; background:none;">2 días (módulo con trabajo previo acumulado)</td></tr>
+    <tr><td style="border:none; background:none; font-weight:bold;">Entrega:</td><td style="border:none; background:none;">M02 (30 Jun)</td></tr>
+  </table>
+</div>
+
+<div class="page-break"></div>
+
+<!-- ======================== RESUMEN FINAL ======================== -->
+<h1>Resumen Ejecutivo del Proyecto</h1>
+
+<table>
+  <tr>
+    <th>Fase</th>
+    <th>Módulos</th>
+    <th>Período de ejecución</th>
+    <th>Días hábiles</th>
+    <th>Fecha de entrega</th>
+  </tr>
+  <tr>
+    <td><strong>Fase 1</strong> – Base + Núcleo Financiero</td>
+    <td>M00* · M01 · M04 · M03</td>
+    <td>1 Abr – 12 May 2026</td>
+    <td>28 días</td>
+    <td><strong>12 Mayo 2026</strong></td>
+  </tr>
+  <tr>
+    <td><strong>Fase 2</strong> – Operaciones</td>
+    <td>M07 · M06</td>
+    <td>13 May – 10 Jun 2026</td>
+    <td>21 días</td>
+    <td><strong>10 Junio 2026</strong></td>
+  </tr>
+  <tr>
+    <td><strong>Fase 3</strong> – Analítica</td>
+    <td>M05</td>
+    <td>10 Jun – 26 Jun 2026</td>
+    <td>13 días</td>
+    <td><strong>26 Junio 2026</strong></td>
+  </tr>
+  <tr>
+    <td><strong>Fase 4</strong> – Marketing (Opcional)</td>
+    <td>M02</td>
+    <td>29 Jun – 30 Jun 2026</td>
+    <td>2 días</td>
+    <td><strong>30 Junio 2026</strong></td>
+  </tr>
+</table>
+
+<p style="font-size:9pt; color:#666;">* M00 – Platform Base completado al 100% previo al inicio del período.</p>
+
+<div class="resumen-box">
+  <table style="border:none; margin:0;">
+    <tr>
+      <td style="border:none; font-weight:bold; width:55%; background:none;">Inicio:</td>
+      <td style="border:none; background:none;">1 de Abril de 2026</td>
+    </tr>
+    <tr>
+      <td style="border:none; font-weight:bold; background:none;">Cierre del proyecto:</td>
+      <td style="border:none; background:none;"><strong>30 de Junio de 2026</strong></td>
+    </tr>
+    <tr>
+      <td style="border:none; font-weight:bold; background:none;">Total días hábiles:</td>
+      <td style="border:none; background:none;">~65 días hábiles</td>
+    </tr>
+    <tr>
+      <td style="border:none; font-weight:bold; background:none;">Módulos requeridos completados:</td>
+      <td style="border:none; background:none;">M00, M01, M04, M03, M07, M06, M05 → <strong>26 Jun 2026</strong></td>
+    </tr>
+    <tr>
+      <td style="border:none; font-weight:bold; background:none;">Módulo opcional:</td>
+      <td style="border:none; background:none;">M02 → <strong>30 Jun 2026</strong></td>
+    </tr>
+  </table>
+</div>
+
+</body>
+</html>

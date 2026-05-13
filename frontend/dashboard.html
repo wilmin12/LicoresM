@@ -56,6 +56,12 @@
       </span>
 
       <div class="topbar-actions ms-auto">
+        <!-- Forex Sync Button -->
+        <button id="btn-sync-forex" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-2" title="Sync Exchange Rates">
+          <i class="fas fa-sync-alt"></i>
+          <span class="d-none d-md-inline">Sync Rates</span>
+        </button>
+
         <!-- User dropdown -->
         <div class="dropdown">
           <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-2"
@@ -185,6 +191,22 @@
     // Build sidebar
     Sidebar.init();
 
+    // Forex Sync
+    const btnSync = document.getElementById('btn-sync-forex');
+    if (btnSync) {
+      btnSync.addEventListener('click', async () => {
+        try {
+          BtnLoader.start(btnSync);
+          const res = await API.forexSync();
+          showToast(res.Message || 'Exchange rates synchronized successfully.', 'success');
+        } catch (err) {
+          showToast('Error syncing rates: ' + err.message, 'danger');
+        } finally {
+          BtnLoader.stop(btnSync);
+        }
+      });
+    }
+
     // Logout
     document.getElementById('btn-logout').addEventListener('click', async (e) => {
       e.preventDefault();
@@ -197,6 +219,17 @@
     // Load live stats
     await loadStats();
   });
+
+  // ── Utilities ────────────────────────────────────────────────────────────────
+  function showToast(msg, type = 'success') {
+    const el = document.getElementById('toast');
+    const msgEl = document.getElementById('toast-msg');
+    if (!el || !msgEl) return;
+    
+    el.className = `toast align-items-center text-white border-0 bg-${type === 'success' ? 'success' : 'danger'}`;
+    msgEl.textContent = msg;
+    new bootstrap.Toast(el, { delay: 3500 }).show();
+  }
 
   // ── Module card definitions ──────────────────────────────────────────────────
   const MODULE_CARDS = [
@@ -264,5 +297,16 @@
     } catch { /* ignore */ }
   }
 </script>
+
+<!-- Toast Container -->
+<div class="toast-container">
+  <div id="toast" class="toast align-items-center text-white border-0" role="alert" aria-live="assertive" aria-atomic="true">
+    <div class="d-flex">
+      <div class="toast-body" id="toast-msg"></div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>

@@ -660,6 +660,56 @@ label .required {
   gap: .75rem;
 }
 
+/* ── Forex Ticker (Stock Market Style) ─────────────────────────────────── */
+.topbar-stock-ticker {
+  background-color: var(--primary-pale); /* Integrado con el tema de Licores Maduro */
+  border: 1px solid rgba(123, 26, 46, 0.1);
+  border-radius: 20px;
+  padding: 0 16px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  margin: 0 1rem;
+  min-width: 160px;
+  justify-content: center;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.03);
+  flex: 0 0 auto;
+}
+
+.stock-ticker-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.9rem;
+}
+
+.stock-flag {
+  border-radius: 2px;
+  object-fit: cover;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+.stock-currency {
+  color: var(--primary-dark);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.stock-rate {
+  color: #15803D; /* Forest Green, elegante y legible sobre fondo claro */
+  font-weight: 700;
+}
+
+.fade-in {
+  animation: fadeInTicker 0.4s ease-in-out;
+}
+
+@keyframes fadeInTicker {
+  0% { opacity: 0; transform: translateY(-3px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
 .topbar-user {
   display: flex;
   align-items: center;

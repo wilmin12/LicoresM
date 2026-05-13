@@ -29,6 +29,11 @@ const Sidebar = (() => {
       label:      'Freight Forwarder',
       icon:       'fa-ship',
       children: [
+        { code: 'FF_QUOTES',               label: 'Applied Quotes',           href: 'pages/freight/quotes.html' },
+        { code: 'FF_OCEAN_FREIGHT_CHARGE', label: 'Ocean Freight Charges',    href: 'pages/freight/charge-types.html?tab=ocean' },
+        { code: 'FF_INLAND_FREIGHT_CHARGE',label: 'Inland Freight Charges',   href: 'pages/freight/charge-types.html?tab=inland' },
+        { code: 'FF_LCL_CHARGE',           label: 'LCL Charge Types',         href: 'pages/freight/charge-types.html?tab=lcl' },
+        { code: 'FF_FORWARDERS',           label: 'Freight Forwarders',       href: 'pages/freight/forwarders.html' },
         { code: 'FF_CURRENCIES',           label: 'Currencies',               href: 'pages/freight/currencies.html' },
         { code: 'FF_COUNTRIES',            label: 'Countries',                href: 'pages/freight/countries.html' },
         { code: 'FF_SUPPLIERS',            label: 'Suppliers',                href: 'pages/freight/suppliers.html' },
@@ -41,20 +46,11 @@ const Sidebar = (() => {
         { code: 'FF_CONTAINER_TYPES',      label: 'Container Types',          href: 'pages/freight/container-types.html' },
         { code: 'FF_ROUTES_BY_SA',         label: 'Routes by Shipping Agent', href: 'pages/freight/routes-by-agents.html' },
         { code: 'FF_REGIONS',              label: 'Regions',                  href: 'pages/freight/regions.html' },
-        { code: 'FF_OCEAN_FREIGHT_CHARGE', label: 'Ocean Freight Charges',    href: 'pages/freight/charge-types.html' },
-        { code: 'FF_INLAND_FREIGHT_CHARGE',label: 'Inland Freight Charges',   href: 'pages/freight/charge-types.html' },
-        { code: 'FF_LCL_CHARGE',           label: 'LCL Charge Types',         href: 'pages/freight/charge-types.html' },
-        { code: 'FF_PRICE_TYPE',           label: 'Price Types',              href: 'pages/freight/charge-types.html' },
-        { code: 'FF_AMOUNT_TYPE',          label: 'Amount Types',             href: 'pages/freight/charge-types.html' },
-        { code: 'FF_CHARGE_ACTION',        label: 'Charge Actions',           href: 'pages/freight/charge-types.html' },
-        { code: 'FF_CHARGE_OVER',          label: 'Charge Over',              href: 'pages/freight/charge-types.html' },
-        { code: 'FF_CHARGE_PER',           label: 'Charge Per',               href: 'pages/freight/charge-types.html' },
-        { code: 'FF_FORWARDERS',           label: 'Freight Forwarders',       href: 'pages/freight/forwarders.html' },
-        { code: 'FF_OCEAN_QUOTES',         label: 'Ocean Freight Quotes',     href: 'pages/freight/ocean-freight.html' },
-        { code: 'FF_INLAND_QUOTES',        label: 'Inland Freight Quotes',    href: 'pages/freight/inland-freight.html' },
-        { code: 'FF_LCL_QUOTES',           label: 'LCL Quotes',               href: 'pages/freight/lcl.html' },
-        { code: 'FF_INLAND_ADD_CHARGES',   label: 'Inland Additional Charges',href: 'pages/freight/inland-additional-charges.html' },
-        { code: 'FF_QUOTES',               label: 'Applied Quotes',            href: 'pages/freight/quotes.html' },
+        { code: 'FF_PRICE_TYPE',           label: 'Price Types',              href: 'pages/freight/charge-types.html?tab=price' },
+        { code: 'FF_AMOUNT_TYPE',          label: 'Amount Types',             href: 'pages/freight/charge-types.html?tab=amount' },
+        { code: 'FF_CHARGE_ACTION',        label: 'Charge Actions',           href: 'pages/freight/charge-types.html?tab=action' },
+        { code: 'FF_CHARGE_OVER',          label: 'Charge Over',              href: 'pages/freight/charge-types.html?tab=over' },
+        { code: 'FF_CHARGE_PER',           label: 'Charge Per',               href: 'pages/freight/charge-types.html?tab=per' },
       ]
     },
     {
@@ -70,6 +66,8 @@ const Sidebar = (() => {
         { code: 'COST_ITEM_WEIGHTS',      label: 'Item Weights',         href: 'pages/cost-calc/item-weights.html' },
         { code: 'COST_ALLOWED_MARGINS',   label: 'Allowed Margins',      href: 'pages/cost-calc/allowed-margins.html' },
         { code: 'COST_INLAND_TARIFFS',    label: 'Inland Tariffs',       href: 'pages/cost-calc/inland-tariffs.html' },
+        { code: 'COST_ITEM_FOB_PRICES',   label: 'Item FOB Prices',      href: 'pages/cost-calc/item-fob-prices.html' },
+        { code: 'COST_PRICE_CONFIRM',     label: 'Price Confirmation',   href: 'pages/cost-calc/price-confirmation.html' },
       ],
     },
     {
@@ -157,7 +155,7 @@ const Sidebar = (() => {
         { code: 'AB_RECEIVERS',         label: 'Receivers',           href: 'pages/aankoopbon/catalogs.html#receivers' },
         { code: 'AB_REQUESTORS',        label: 'Requestors',          href: 'pages/aankoopbon/catalogs.html#requestors' },
         { code: 'AB_REQUESTORS_VENDOR',  label: 'Requestors / Vendor',    href: 'pages/aankoopbon/catalogs.html#requestors-vendor' },
-        { code: 'AB_VENDOR_DEPARTMENT',  label: 'Vendor / Department',    href: 'pages/aankoopbon/catalogs.html#vendor-department' },
+        { code: 'AB_REQUESTOR_DEPARTMENT',  label: 'Requestor / Department',    href: 'pages/aankoopbon/catalogs.html#requestor-department' },
         { code: 'AB_DEPT_COST_TYPE',     label: 'Department / Cost Type', href: 'pages/aankoopbon/catalogs.html#department-cost-type' },
         { code: 'AB_COST_TYPE',         label: 'Cost Types',          href: 'pages/aankoopbon/catalogs.html#cost-types' },
         { code: 'AB_VEHICLE_TYPE',      label: 'Vehicle Types',       href: 'pages/aankoopbon/catalogs.html#vehicle-types' },
@@ -375,6 +373,9 @@ const Sidebar = (() => {
     // Load notification bell (Admin/SuperAdmin only — guard is inside notifications.js)
     _initNotifications();
 
+    // Initialize Forex Ticker
+    _initForexTicker();
+
     // Load company name + logo dynamically
     loadBranding();
 
@@ -474,6 +475,61 @@ const Sidebar = (() => {
     }
     _tick();
     setInterval(_tick, 1000);
+  }
+
+  // ── Forex Ticker ─────────────────────────────────────────────────────────────
+  // Windows no renderiza los emojis de banderas correctamente, usamos flagcdn.com
+  const FLAG_CODES = {
+    'USD': 'us', 'EUR': 'eu', 'GBP': 'gb', 'ANG': 'cw', 'SRD': 'sr',
+    'AWG': 'aw', 'CAD': 'ca', 'CHF': 'ch', 'JPY': 'jp', 'CNY': 'cn',
+    'MXN': 'mx', 'BRL': 'br', 'ARS': 'ar', 'COP': 'co'
+  };
+
+  async function _initForexTicker() {
+    if (!window.API) return;
+    if (document.getElementById('topbar-ticker-wrap')) return;
+
+    const titleEl = document.querySelector('.topbar-title');
+    if (!titleEl) return;
+
+    try {
+      const rates = await window.API.costCalc.costCalcForex.getLatestRates();
+      if (!rates || rates.length === 0) return;
+
+      const container = document.createElement('div');
+      container.id = 'topbar-ticker-wrap';
+      container.className = 'topbar-stock-ticker d-none d-md-flex';
+      
+      let currentIndex = 0;
+
+      function renderCurrentTicker() {
+        const r = rates[currentIndex];
+        const code = FLAG_CODES[r.Currency] || 'un'; // 'un' fallback if unknown
+        const rate = Number(r.SellingRate).toFixed(4);
+        const dateStr = new Date(r.Date).toLocaleDateString();
+
+        container.innerHTML = `
+          <div class="stock-ticker-item fade-in" title="Date: ${dateStr}">
+            <img src="https://flagcdn.com/20x15/${code}.png" class="stock-flag" alt="${r.Currency}" onerror="this.style.display='none'">
+            <span class="stock-currency">${r.Currency}</span>
+            <span class="stock-rate">▲ ${rate}</span>
+          </div>
+        `;
+
+        currentIndex = (currentIndex + 1) % rates.length;
+      }
+
+      // Initial render
+      renderCurrentTicker();
+      // Rotate every 4 seconds
+      setInterval(renderCurrentTicker, 4000);
+
+      // Insert right after the title
+      titleEl.parentNode.insertBefore(container, titleEl.nextSibling);
+
+    } catch (e) {
+      console.warn('[Sidebar] Failed to load forex ticker:', e);
+    }
   }
 
   function toggle() {

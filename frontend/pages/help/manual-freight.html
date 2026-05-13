@@ -15,16 +15,23 @@
     .toc-card { position:sticky; top:1.5rem; }
     .toc-card a { color:#198754; text-decoration:none; display:block; padding:.25rem 0; font-size:.9rem; }
     .toc-card a:hover { text-decoration:underline; }
+    .toc-card .toc-group { font-weight:700; font-size:.8rem; color:#6c757d; text-transform:uppercase; letter-spacing:.05em; margin-top:.75rem; padding-top:.5rem; border-top:1px solid #dee2e6; }
     .section-title { color:#198754; font-weight:700; font-size:1.2rem; border-left:4px solid #198754; padding-left:.75rem; margin-bottom:1.25rem; }
     .step-box { background:#fff; border:1px solid #dee2e6; border-radius:.5rem; padding:1.25rem 1.5rem; margin-bottom:1rem; }
     .step-num { background:#198754; color:#fff; border-radius:50%; width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; font-weight:700; font-size:.85rem; margin-right:.6rem; flex-shrink:0; }
     .note-box  { background:#fff8e1; border-left:4px solid #ffc107; padding:1rem 1.25rem; border-radius:0 .5rem .5rem 0; font-size:.9rem; }
     .info-box  { background:#e8f4fd; border-left:4px solid #0dcaf0; padding:1rem 1.25rem; border-radius:0 .5rem .5rem 0; font-size:.9rem; }
     .warn-box  { background:#f8d7da; border-left:4px solid #dc3545; padding:1rem 1.25rem; border-radius:0 .5rem .5rem 0; font-size:.9rem; }
+    .success-box { background:#d1e7dd; border-left:4px solid #198754; padding:1rem 1.25rem; border-radius:0 .5rem .5rem 0; font-size:.9rem; }
     .field-table th { background:#f8f9fa; font-size:.83rem; }
     .field-table td { font-size:.88rem; vertical-align:top; }
     .charge-type-card { border:1px solid #dee2e6; border-radius:.5rem; padding:1rem; margin-bottom:.75rem; background:#fff; }
     .charge-type-card h6 { color:#198754; font-weight:700; margin-bottom:.5rem; }
+    .tab-badge { display:inline-block; background:#198754; color:#fff; border-radius:4px; font-size:.75rem; padding:.15rem .5rem; font-weight:600; }
+    .tab-badge.inland { background:#6c757d; }
+    .tab-badge.portadd { background:#ffc107; color:#212529; }
+    .tab-badge.lcl { background:#0dcaf0; color:#212529; }
+    .layout-diagram { background:#f8f9fa; border:1px solid #dee2e6; border-radius:.5rem; padding:1rem; font-size:.82rem; font-family:monospace; }
     @media print { .toc-card { display:none; } }
   </style>
 </head>
@@ -66,8 +73,8 @@
     <h1><i class="fas fa-ship me-2"></i>Freight Forwarder</h1>
     <p>Módulo de Cotizaciones de Flete — Guía completa para gestionar tarifas y cotizaciones de agentes navieros.</p>
     <div class="mt-3 d-flex gap-2 flex-wrap">
-      <span class="badge bg-white text-dark">Versión 1.0</span>
-      <span class="badge bg-white text-dark">Fase 1</span>
+      <span class="badge bg-white text-dark">Versión 1.5</span>
+      <span class="badge bg-white text-dark">Applied Quotes v2</span>
       <span class="badge bg-white text-dark">Licores Maduro © 2026</span>
     </div>
   </div>
@@ -81,18 +88,24 @@
       <div class="card toc-card shadow-sm">
         <div class="card-header fw-bold" style="background:#e8f5ee;color:#198754;"><i class="fas fa-list me-2"></i>Contenido</div>
         <div class="card-body p-3">
+          <div class="toc-group">Introducción</div>
           <a href="#sec1">1. ¿Qué es Freight Forwarder?</a>
           <a href="#sec2">2. Roles y Permisos</a>
-          <a href="#sec3">3. Estructura del Módulo</a>
+          <a href="#sec3">3. Layout de Applied Quotes</a>
+          <div class="toc-group">Catálogos</div>
           <a href="#sec4">4. Catálogos Base</a>
           <a href="#sec5">5. Gestionar Forwarders</a>
-          <a href="#sec6">6. Cotizaciones Ocean Freight</a>
-          <a href="#sec7">7. Cotizaciones LCL</a>
-          <a href="#sec8">8. Cotizaciones Inland</a>
-          <a href="#sec9">9. Cargos Adicionales Inland</a>
-          <a href="#sec10">10. Applied Quotes</a>
-          <a href="#sec11">11. Tipos de Cargos</a>
-          <a href="#sec12">12. Preguntas Frecuentes</a>
+          <div class="toc-group">Cotizaciones</div>
+          <a href="#sec6">6. Navegar Applied Quotes</a>
+          <a href="#sec7">7. Crear / Editar un Quote</a>
+          <a href="#sec8">8. Tab Ocean Freight</a>
+          <a href="#sec9">9. Tab Inland</a>
+          <a href="#sec10">10. Tab Port Additional</a>
+          <a href="#sec11">11. Tab LCL Charges</a>
+          <a href="#sec12">12. Historial de Versiones</a>
+          <div class="toc-group">Referencia</div>
+          <a href="#sec13">13. Tipos de Cargos</a>
+          <a href="#sec14">14. Preguntas Frecuentes</a>
         </div>
       </div>
     </div>
@@ -103,11 +116,11 @@
       <!-- 1 -->
       <div id="sec1" class="card shadow-sm mb-4">
         <div class="card-body p-4">
-          <div class="section-title"><span data-i18n="What is Freight Forwarder?">¿Qué es Freight Forwarder?</span></div>
+          <div class="section-title">1. ¿Qué es el Módulo Freight Forwarder?</div>
           <p>El módulo <strong>Freight Forwarder</strong> centraliza todas las tarifas y cotizaciones de los agentes navieros (freight forwarders) que utiliza Licores Maduro para sus importaciones.</p>
-          <p>Permite registrar y comparar cotizaciones de <strong>flete marítimo completo (Ocean/FCL)</strong>, <strong>carga suelta (LCL)</strong> y <strong>flete terrestre (Inland)</strong>, sirviendo como base de datos de referencia para el módulo de Cost Calculation.</p>
+          <p>Permite registrar y comparar cotizaciones de <strong>flete marítimo completo (Ocean/FCL)</strong>, <strong>carga suelta (LCL)</strong>, <strong>flete terrestre (Inland)</strong> y <strong>cargos adicionales de puerto</strong>, todo en una sola vista organizada por forwarder.</p>
           <div class="info-box mt-3">
-            <strong><i class="fas fa-lightbulb me-1"></i>Flujo típico:</strong> Un agente naviero envía una nueva tarifa → se registra en el sistema → se usa como referencia al crear una calculación de costo.
+            <strong><i class="fas fa-lightbulb me-1"></i>Flujo típico:</strong> Un agente naviero envía nuevas tarifas → se registran en <em>Applied Quotes</em> → se usan como referencia al crear una calculación de costo en el módulo Cost Calculation.
           </div>
         </div>
       </div>
@@ -115,67 +128,77 @@
       <!-- 2 -->
       <div id="sec2" class="card shadow-sm mb-4">
         <div class="card-body p-4">
-          <div class="section-title"><span data-i18n="Roles and Permissions">Roles y Permisos</span></div>
+          <div class="section-title">2. Roles y Permisos</div>
           <table class="table table-bordered field-table">
             <thead><tr><th>Rol</th><th>Ver cotizaciones</th><th>Crear / Editar</th><th>Eliminar</th><th>Catálogos</th></tr></thead>
             <tbody>
-              <tr><td><strong>Usuario</strong></td><td class="text-success">✔</td><td class="text-danger">✖</td><td class="text-danger">✖</td><td class="text-danger">Solo lectura</td></tr>
+              <tr><td><strong>Usuario</strong></td><td class="text-success">✔ Solo lectura</td><td class="text-danger">✖</td><td class="text-danger">✖</td><td>Solo lectura</td></tr>
               <tr><td><strong>Admin</strong></td><td class="text-success">✔</td><td class="text-success">✔</td><td class="text-success">✔</td><td class="text-success">✔ Editar</td></tr>
               <tr><td><strong>SuperAdmin</strong></td><td class="text-success">✔</td><td class="text-success">✔</td><td class="text-success">✔</td><td class="text-success">✔ Editar</td></tr>
             </tbody>
           </table>
+          <div class="note-box mt-2">Los botones de edición (<em>New Port, New Shipping Line, Add Row, Save All</em>) solo son visibles para Admin y SuperAdmin. Los usuarios con rol <em>Usuario</em> pueden consultar pero no modificar.</div>
         </div>
       </div>
 
       <!-- 3 -->
       <div id="sec3" class="card shadow-sm mb-4">
         <div class="card-body p-4">
-          <div class="section-title"><span data-i18n="Module Structure">Estructura del Módulo</span></div>
-          <p>El módulo se divide en:</p>
-          <div class="row g-3">
-            <div class="col-md-6">
-              <div class="charge-type-card">
-                <h6><i class="fas fa-ship me-2"></i>Ocean Freight Quotes</h6>
-                <p class="mb-0 text-muted" style="font-size:.88rem;">Tarifas de contenedor completo (FCL) para rutas específicas. Incluye fletes por tipo de contenedor y cargos adicionales.</p>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="charge-type-card">
-                <h6><i class="fas fa-boxes me-2"></i>LCL Quotes</h6>
-                <p class="mb-0 text-muted" style="font-size:.88rem;">Tarifas para carga suelta (Less Container Load), calculadas por CBM o tonelada.</p>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="charge-type-card">
-                <h6><i class="fas fa-truck me-2"></i>Inland Freight Quotes</h6>
-                <p class="mb-0 text-muted" style="font-size:.88rem;">Tarifas de transporte terrestre desde el punto de origen hasta el puerto de embarque.</p>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="charge-type-card">
-                <h6><i class="fas fa-file-contract me-2"></i>Applied Quotes</h6>
-                <p class="mb-0 text-muted" style="font-size:.88rem;">Cotizaciones aplicadas a embarques reales, combinando los tres tipos de flete con sus cargos adicionales.</p>
-              </div>
-            </div>
+          <div class="section-title">3. Layout de Applied Quotes</div>
+          <p>La pantalla principal (<strong>Freight Forwarder → Applied Quotes</strong>) tiene dos paneles:</p>
+
+          <div class="layout-diagram mb-3">
+┌──────────────────────────────────────────────────────────────┐
+│  [+ New Quote]  [buscar forwarder…]                          │
+├─────────────────────┬────────────────────────────────────────┤
+│  PANEL IZQUIERDO    │  PANEL DERECHO                         │
+│                     │                                        │
+│  Lista de           │  ┌─ Forwarder Info ───────────────┐   │
+│  Freight            │  └────────────────────────────────┘   │
+│  Forwarders         │                                        │
+│  (con cotizaciones  │  [Ocean Freight][Inland][Port Add][LCL]│
+│  arriba,            │  ┌─ Tab activo ───────────────────┐   │
+│  sin cotizaciones   │  │  Mini-lista versiones (#15…)   │   │
+│  abajo con label    │  │  Header del quote              │   │
+│  "SIN COTIZACIONES")│  │  Contenido del tab             │   │
+│                     │  └────────────────────────────────┘   │
+└─────────────────────┴────────────────────────────────────────┘
           </div>
+
+          <ul>
+            <li><strong>Panel izquierdo</strong>: lista de todos los Freight Forwarders. Los que tienen cotizaciones aparecen primero. Los que no tienen aparecen en la sección "<em>SIN COTIZACIONES</em>".</li>
+            <li><strong>Panel derecho</strong>: al seleccionar un forwarder, muestra sus cotizaciones organizadas en 4 tabs.</li>
+          </ul>
+
+          <h6 class="mt-3 fw-bold">Los 4 tabs de cotización</h6>
+          <table class="table table-bordered field-table">
+            <thead><tr><th>Tab</th><th>Qué registra</th></tr></thead>
+            <tbody>
+              <tr><td><span class="tab-badge">Ocean Freight</span></td><td>Tarifas FCL (contenedor completo): puertos de origen, líneas navieras y cargos por tipo de contenedor.</td></tr>
+              <tr><td><span class="tab-badge inland">Inland</span></td><td>Tarifas de flete terrestre: regiones, tipos de cargo y escalas de precios.</td></tr>
+              <tr><td><span class="tab-badge portadd">Port Additional</span></td><td>Cargos adicionales de puerto: THC, handling, documentación, etc.</td></tr>
+              <tr><td><span class="tab-badge lcl">LCL Charges</span></td><td>Tarifas para carga suelta (Less Container Load): por CBM o tonelada.</td></tr>
+            </tbody>
+          </table>
+
+          <div class="info-box">Cada tab mantiene su propia versión de cotización de forma independiente. Puedes tener el Ocean Freight en la versión #15 mientras el Inland está en la versión #8 — ambas del mismo forwarder.</div>
         </div>
       </div>
 
       <!-- 4 -->
       <div id="sec4" class="card shadow-sm mb-4">
         <div class="card-body p-4">
-          <div class="section-title"><span data-i18n="Base Catalogs">Catálogos Base</span></div>
-          <p>Antes de registrar cotizaciones, asegúrate de que los catálogos base estén configurados:</p>
+          <div class="section-title">4. Catálogos Base</div>
+          <p>Antes de registrar cotizaciones, asegúrate de que los catálogos base estén configurados en <strong>Freight Forwarder → Settings</strong>:</p>
           <table class="table table-bordered field-table">
             <thead><tr><th>Catálogo</th><th>Descripción</th><th>Ejemplo</th></tr></thead>
             <tbody>
               <tr><td>Currencies</td><td>Monedas con tasas de cambio bancario y aduanal.</td><td>USD, EUR</td></tr>
               <tr><td>Ports of Loading</td><td>Puertos de origen de los embarques.</td><td>Rotterdam, Miami</td></tr>
               <tr><td>Shipping Lines</td><td>Líneas navieras (carriers).</td><td>Maersk, MSC</td></tr>
-              <tr><td>Shipping Agents</td><td>Agentes locales que gestionan el flete.</td><td>Maduro & Curiel's</td></tr>
               <tr><td>Routes</td><td>Rutas de transporte configuradas.</td><td>EUR-CUR, USA-CUR</td></tr>
               <tr><td>Container Types</td><td>Tipos y capacidades de contenedores.</td><td>20GP, 40HC</td></tr>
-              <tr><td>Regions</td><td>Regiones de origen/destino.</td><td>Europe, North America</td></tr>
+              <tr><td>Regions</td><td>Regiones de origen para flete terrestre.</td><td>Europe, North America</td></tr>
               <tr><td>Freight Forwarders</td><td>Empresas agentes de carga registradas.</td><td>DHL Freight, Panalpina</td></tr>
             </tbody>
           </table>
@@ -186,140 +209,241 @@
       <!-- 5 -->
       <div id="sec5" class="card shadow-sm mb-4">
         <div class="card-body p-4">
-          <div class="section-title"><span data-i18n="Manage Freight Forwarders">Gestionar Freight Forwarders</span></div>
-          <p>Los <strong>Freight Forwarders</strong> son los agentes navieros con los que Licores Maduro trabaja.</p>
+          <div class="section-title">5. Gestionar Freight Forwarders</div>
+          <p>Los <strong>Freight Forwarders</strong> son los agentes navieros con los que trabaja Licores Maduro.</p>
           <ol class="ps-3">
             <li class="mb-2">Ir a <strong>Freight Forwarder → Freight Forwarders</strong>.</li>
-            <li class="mb-2">Clic en <span class="badge bg-success">+ Nuevo</span> para agregar un forwarder.</li>
-            <li class="mb-2">Completar: código, nombre, país, contacto.</li>
-            <li class="mb-2">Guardar. El forwarder ya está disponible al crear cotizaciones.</li>
+            <li class="mb-2">Clic en <span class="badge" style="background:#7b1a2e;">+ New Forwarder</span> para agregar un agente.</li>
+            <li class="mb-2">Completar: código (máx. 10 caracteres), nombre, ciudad, país, moneda, contacto y email.</li>
+            <li class="mb-2">Guardar. El forwarder ya aparecerá en el panel izquierdo de Applied Quotes.</li>
           </ol>
+          <div class="info-box mt-2"><strong><i class="fas fa-sync-alt me-1"></i>Sync VIP:</strong> El botón <em>Sync VIP</em> importa automáticamente los forwarders que ya existen en el sistema contable VIP, evitando duplicar el registro manual.</div>
         </div>
       </div>
 
       <!-- 6 -->
       <div id="sec6" class="card shadow-sm mb-4">
         <div class="card-body p-4">
-          <div class="section-title"><span data-i18n="Ocean Freight Quotes (FCL)">Cotizaciones Ocean Freight (FCL)</span></div>
-          <p>Registra las tarifas de contenedor completo recibidas de los forwarders:</p>
+          <div class="section-title">6. Navegar Applied Quotes</div>
+
+          <h6 class="fw-bold mt-2">Seleccionar un Forwarder</h6>
           <ol class="ps-3">
-            <li class="mb-2">Ir a <strong>Freight Forwarder → Ocean Freight Quotes</strong>.</li>
-            <li class="mb-2">Clic en <span class="badge bg-success">+ Nueva Cotización</span>.</li>
-            <li class="mb-2">Completar los datos:
-              <ul class="mt-1">
-                <li><strong>Forwarder</strong>: agente que ofrece la tarifa</li>
-                <li><strong>Puerto de Origen</strong> y <strong>Shipping Line</strong></li>
-                <li><strong>Ruta</strong> y <strong>Tipo de Contenedor</strong></li>
-                <li><strong>Moneda</strong> y <strong>Tarifa Base</strong> por contenedor</li>
-                <li><strong>Validez</strong>: fecha desde/hasta de vigencia</li>
-              </ul>
-            </li>
-            <li class="mb-2">Agregar cargos adicionales (THC, B/L fee, etc.) si aplican.</li>
-            <li class="mb-2">Guardar la cotización.</li>
+            <li class="mb-2">En el panel izquierdo, haz clic en el nombre del Freight Forwarder.</li>
+            <li class="mb-2">El panel derecho carga automáticamente las cotizaciones de ese forwarder para todos los tabs.</li>
+            <li class="mb-2">Cada tab muestra la última versión activa y la selecciona automáticamente.</li>
           </ol>
-          <div class="info-box">Una cotización puede tener múltiples tipos de contenedor con tarifas distintas (20GP, 40GP, 40HC).</div>
+
+          <h6 class="fw-bold mt-3">Forwarder sin cotizaciones</h6>
+          <p>Si el forwarder seleccionado aún no tiene ninguna cotización registrada, el panel derecho mostrará un mensaje y el botón <strong>"New Quote"</strong> para comenzar.</p>
+
+          <h6 class="fw-bold mt-3">Buscar un Forwarder</h6>
+          <p>Usa el campo de búsqueda en la parte superior del panel izquierdo para filtrar por código o nombre.</p>
         </div>
       </div>
 
       <!-- 7 -->
       <div id="sec7" class="card shadow-sm mb-4">
         <div class="card-body p-4">
-          <div class="section-title"><span data-i18n="LCL Quotes">Cotizaciones LCL</span></div>
-          <p>Para embarques de carga suelta (compartida):</p>
+          <div class="section-title">7. Crear / Editar un Quote</div>
+
+          <h6 class="fw-bold">Crear un nuevo Quote</h6>
           <ol class="ps-3">
-            <li class="mb-2">Ir a <strong>Freight Forwarder → LCL Quotes</strong>.</li>
-            <li class="mb-2">Registrar: forwarder, ruta, tarifa por CBM y/o tonelada, mínimo de cobro, validez.</li>
-            <li class="mb-2">Agregar cargos LCL adicionales si aplican.</li>
+            <li class="mb-2">Clic en <span class="badge" style="background:#7b1a2e;">+ New Quote</span> (panel superior izquierdo).</li>
+            <li class="mb-2">Seleccionar el <strong>Forwarder</strong>.</li>
+            <li class="mb-2">Seleccionar el <strong>Tipo de Flete</strong> (Ocean Freight, Inland, Port Additional o LCL) — esto determina en qué tab aparecerá.</li>
+            <li class="mb-2">Completar campos opcionales: Puerto de Carga, Ruta, Días de Tránsito, Fecha de Inicio y Fin de Vigencia.</li>
+            <li class="mb-2">Opcionalmente, en <strong>"Based on Quote"</strong>: seleccionar un quote existente para clonar todos sus datos como punto de partida.</li>
+            <li class="mb-2">Clic en <strong>Save</strong>.</li>
           </ol>
+
+          <div class="note-box mt-2">
+            <strong>Nota sobre el número de quote:</strong> El sistema asigna automáticamente el siguiente número disponible por tipo de flete. No es necesario ingresarlo manualmente.
+          </div>
+
+          <h6 class="fw-bold mt-3">Editar el encabezado de un Quote</h6>
+          <p>Con un quote seleccionado, haz clic en el ícono <i class="fas fa-edit"></i> (lápiz) dentro del header del tab para modificar el forwarder, puerto, ruta, fechas de vigencia y días de tránsito.</p>
+
+          <h6 class="fw-bold mt-3">Eliminar un Quote</h6>
+          <p>Clic en el ícono <i class="fas fa-trash text-danger"></i> dentro del header del tab. Esta acción elimina el quote y todos sus cargos asociados. No se puede deshacer.</p>
         </div>
       </div>
 
       <!-- 8 -->
       <div id="sec8" class="card shadow-sm mb-4">
         <div class="card-body p-4">
-          <div class="section-title"><span data-i18n="Inland Freight Quotes">Cotizaciones Inland Freight</span></div>
-          <p>Tarifas de transporte terrestre (origen → puerto):</p>
+          <div class="section-title">8. Tab Ocean Freight <span class="tab-badge ms-2">Ocean Freight</span></div>
+          <p>Registra las tarifas de contenedor completo (FCL) organizadas por <strong>Puerto de Origen → Línea Naviera → Cargos</strong>.</p>
+
+          <h6 class="fw-bold mt-3">Estructura en 3 niveles</h6>
+          <div class="layout-diagram mb-3">
+Nivel 1: Puertos de Origen
+  └── Nivel 2: Shipping Lines (por puerto)
+        └── Nivel 3: Cargos (por shipping line)
+          </div>
+
+          <h6 class="fw-bold">Flujo para registrar tarifas Ocean</h6>
           <ol class="ps-3">
-            <li class="mb-2">Ir a <strong>Freight Forwarder → Inland Freight Quotes</strong>.</li>
-            <li class="mb-2">Registrar: forwarder, región de origen, tarifa, moneda, validez.</li>
+            <li class="mb-2">Con un quote de tipo <em>Ocean Freight</em> seleccionado en el mini-selector de versiones, el tab muestra el header del quote y la lista de puertos registrados.</li>
+            <li class="mb-2"><strong>Paso 1 — Agregar un Puerto de Origen:</strong> Clic en <span class="badge" style="background:#7b1a2e;">+ New Port</span>. Seleccionar el puerto y guardar. El puerto aparece como ítem seleccionable en la lista.
+              <div class="warn-box mt-1">Debes tener un quote de Ocean Freight seleccionado antes de poder agregar puertos. Si no hay quote activo, el sistema mostrará un mensaje de advertencia.</div>
+            </li>
+            <li class="mb-2"><strong>Paso 2 — Seleccionar un Puerto:</strong> Haz clic en el puerto de la lista para ver sus Shipping Lines.</li>
+            <li class="mb-2"><strong>Paso 3 — Agregar una Shipping Line:</strong> Clic en <span class="badge" style="background:#7b1a2e;">+ New Shipping Line</span>. Seleccionar la línea naviera, ruta y días de tránsito. La shipping line queda asociada al puerto activo.</li>
+            <li class="mb-2"><strong>Paso 4 — Agregar Cargos:</strong> Al seleccionar una shipping line, aparece la grilla de cargos. Llena cada fila con:
+              <ul class="mt-1">
+                <li><strong>Charge Type</strong>: tipo de cargo (THC, B/L fee, seal fee, etc.)</li>
+                <li><strong>Container Type</strong>: tipo de contenedor al que aplica (20GP, 40HC, etc.)</li>
+                <li><strong>Amount</strong>: tarifa</li>
+                <li><strong>Currency</strong>: moneda</li>
+              </ul>
+            </li>
+            <li class="mb-2"><strong>Paso 5 — Guardar:</strong> Clic en el ícono <i class="fas fa-save text-success"></i> de cada fila para guardar individualmente, o usa <span class="badge bg-success">Save All</span> para guardar todas las filas de una vez.</li>
           </ol>
+
+          <div class="info-box mt-2">
+            <strong><i class="fas fa-keyboard me-1"></i>Atajo de teclado:</strong> En la última columna de una fila de cargos, presiona <kbd>Enter</kbd> para agregar automáticamente una fila nueva debajo.
+          </div>
         </div>
       </div>
 
       <!-- 9 -->
       <div id="sec9" class="card shadow-sm mb-4">
         <div class="card-body p-4">
-          <div class="section-title"><span data-i18n="Inland Additional Charges">Cargos Adicionales Inland</span></div>
-          <p>Algunos forwarders cobran cargos adicionales en origen (documentación, inspecciones, etc.):</p>
+          <div class="section-title">9. Tab Inland <span class="tab-badge inland ms-2">Inland</span></div>
+          <p>Registra las tarifas de transporte terrestre desde el punto de origen hasta el puerto de embarque, organizadas en <strong>Región → Tipo de Cargo → Escala de Precios</strong>.</p>
+
+          <h6 class="fw-bold mt-3">Flujo para registrar tarifas Inland</h6>
           <ol class="ps-3">
-            <li class="mb-2">Ir a <strong>Freight Forwarder → Inland Additional Charges</strong>.</li>
-            <li class="mb-2">Registrar: descripción, monto, moneda y si aplica por contenedor o por embarque.</li>
+            <li class="mb-2"><strong>Agregar una Región:</strong> Clic en <span class="badge" style="background:#7b1a2e;">+ Add Region</span>. Seleccionar la región geográfica de origen (ej. Europe, North America).</li>
+            <li class="mb-2"><strong>Agregar un Tipo de Cargo:</strong> Dentro de la región, clic en <span class="badge bg-secondary">+ Type</span>. Seleccionar el tipo de cargo, monto mínimo/máximo y moneda.</li>
+            <li class="mb-2"><strong>Agregar filas de escala:</strong> Dentro del tipo de cargo, clic en <span class="badge bg-success">+ Row</span>. Completar la escala: rango (From/To), precio, tipo de precio, mínimo y máximo.</li>
+            <li class="mb-2">Guardar fila por fila con <i class="fas fa-save text-success"></i> o usar <span class="badge bg-success">Save All</span> para todas.</li>
           </ol>
+
+          <div class="note-box mt-2">Las regiones y sus tipos se pueden expandir o colapsar haciendo clic en el ícono <i class="fas fa-chevron-right"></i> al lado del título.</div>
         </div>
       </div>
 
       <!-- 10 -->
       <div id="sec10" class="card shadow-sm mb-4">
         <div class="card-body p-4">
-          <div class="section-title"><span data-i18n="Applied Quotes">Applied Quotes (Cotizaciones Aplicadas)</span></div>
-          <p>Un <strong>Applied Quote</strong> es la combinación de cotizaciones y cargos que se aplicaron a un embarque real específico:</p>
-          <ol class="ps-3">
-            <li class="mb-2">Ir a <strong>Freight Forwarder → Applied Quotes</strong>.</li>
-            <li class="mb-2">Clic en <span class="badge bg-success">+ Nueva</span>.</li>
-            <li class="mb-2">Completar la información del forwarder y del embarque.</li>
-            <li class="mb-2">En la tarjeta <strong>"Based on Quote"</strong>: seleccionar la cotización base (Ocean, LCL o Inland) de la que parte este applied quote.</li>
-            <li class="mb-2">Agregar o ajustar los cargos de Ocean y Inland que aplicaron para este embarque específico.</li>
-            <li class="mb-2">Guardar.</li>
-          </ol>
-          <div class="note-box">El Applied Quote sirve como el documento de referencia para los costos reales de un embarque y es el que se usa en Cost Calculation.</div>
+          <div class="section-title">10. Tab Port Additional <span class="tab-badge portadd ms-2">Port Additional</span></div>
+          <p>Registra cargos adicionales que aplican en el puerto de origen: manejo, documentación, inspecciones, etc.</p>
+
+          <h6 class="fw-bold mt-3">Columnas de la grilla</h6>
+          <table class="table table-bordered field-table">
+            <thead><tr><th>Campo</th><th>Descripción</th></tr></thead>
+            <tbody>
+              <tr><td>Charge Type</td><td>Tipo de cargo adicional de puerto.</td></tr>
+              <tr><td>Load Type</td><td>Aplica a FCL, LCL o ambos.</td></tr>
+              <tr><td>Amount / Currency</td><td>Monto y moneda del cargo.</td></tr>
+              <tr><td>Action</td><td>Cómo se aplica (sumar, multiplicar, etc.).</td></tr>
+              <tr><td>Over / Per</td><td>Base de cálculo y unidad de cobro.</td></tr>
+              <tr><td>From / To</td><td>Rango de cantidad para el que aplica.</td></tr>
+              <tr><td>Min / Max</td><td>Monto mínimo y máximo del cargo.</td></tr>
+            </tbody>
+          </table>
+
+          <p>Clic en <span class="badge" style="background:#7b1a2e;">+ Add Row</span> para agregar un nuevo cargo. Guardar con <i class="fas fa-save text-success"></i> al final de cada fila.</p>
         </div>
       </div>
 
       <!-- 11 -->
       <div id="sec11" class="card shadow-sm mb-4">
         <div class="card-body p-4">
-          <div class="section-title"><span data-i18n="Charge Types">Tipos de Cargos</span></div>
-          <p>El módulo usa varios catálogos de tipos de cargo que definen el comportamiento de cada cobro:</p>
-          <table class="table table-bordered field-table">
-            <thead><tr><th>Catálogo</th><th>Descripción</th></tr></thead>
-            <tbody>
-              <tr><td>Ocean Freight Charge Types</td><td>Tipos de cargos marítimos (THC, B/L, seal fee, etc.).</td></tr>
-              <tr><td>Inland Freight Charge Types</td><td>Tipos de cargos terrestres (pick-up, documentation, etc.).</td></tr>
-              <tr><td>LCL Charge Types</td><td>Tipos de cargos para carga suelta.</td></tr>
-              <tr><td>Price Types</td><td>Cómo se calcula el precio: por unidad, por caja, por contenedor, etc.</td></tr>
-              <tr><td>Amount Types</td><td>Tipo de monto: fijo, porcentaje, por peso, etc.</td></tr>
-              <tr><td>Charge Actions</td><td>Acción del cargo: incluir en costo, separar, etc.</td></tr>
-              <tr><td>Charge Over</td><td>Base sobre la que aplica el cargo: FOB, CIF, etc.</td></tr>
-              <tr><td>Charge Per</td><td>Unidad de cobro: per CBM, per TEU, per shipment.</td></tr>
-            </tbody>
-          </table>
+          <div class="section-title">11. Tab LCL Charges <span class="tab-badge lcl ms-2">LCL Charges</span></div>
+          <p>Registra las tarifas para carga suelta (Less Container Load), organizadas por <strong>Puerto → Tipo de Carga → Escala de Precios</strong>.</p>
+
+          <ol class="ps-3">
+            <li class="mb-2"><strong>Agregar un Puerto:</strong> Clic en <span class="badge" style="background:#7b1a2e;">+ New Port</span>.</li>
+            <li class="mb-2"><strong>Agregar un tipo de cargo (Shipping):</strong> Dentro del puerto, clic en el ícono de agregar. Completar tipo de cargo, mínimo/máximo y moneda.</li>
+            <li class="mb-2"><strong>Agregar filas de escala:</strong> Completar rango (From/To), precio, unidad "Over", tipo de precio, mínimo y máximo.</li>
+            <li class="mb-2">Guardar con los íconos <i class="fas fa-save text-success"></i> de cada fila.</li>
+          </ol>
         </div>
       </div>
 
       <!-- 12 -->
       <div id="sec12" class="card shadow-sm mb-4">
         <div class="card-body p-4">
-          <div class="section-title"><span data-i18n="Frequently Asked Questions">Preguntas Frecuentes</span></div>
+          <div class="section-title">12. Historial de Versiones (Clone-on-Save)</div>
+          <p>El sistema mantiene un <strong>historial de versiones</strong> por tab y por forwarder. Cada vez que guardas cargos sobre la última versión de un quote, el sistema <em>automáticamente clona</em> esa versión antes de guardar los cambios, preservando el historial.</p>
+
+          <h6 class="fw-bold mt-3">¿Cómo funciona?</h6>
+          <ol class="ps-3">
+            <li class="mb-2">El mini-selector en la parte superior de cada tab muestra las últimas versiones (ej. <strong>#15, #14, #13</strong>).</li>
+            <li class="mb-2">Al hacer clic en <em>Save All</em> sobre la versión más reciente, el sistema:
+              <ul class="mt-1">
+                <li>Clona el quote actual → crea una nueva versión con número mayor (ej. #16)</li>
+                <li>Guarda los nuevos cargos en la versión clonada</li>
+                <li>El mini-selector ahora muestra la nueva versión activa</li>
+              </ul>
+            </li>
+            <li class="mb-2">Si seleccionas una versión histórica (ej. #13) y guardas, <strong>no</strong> se clona — se guarda directamente sobre esa versión antigua (útil para correcciones).</li>
+          </ol>
+
+          <div class="success-box mt-2">
+            <strong><i class="fas fa-history me-1"></i>Ventaja del historial:</strong> Puedes consultar las tarifas que tenía el forwarder en fechas anteriores seleccionando la versión correspondiente del mini-selector.
+          </div>
+
+          <h6 class="fw-bold mt-3">Clonar un quote manualmente</h6>
+          <p>Dentro del formulario "New Quote", el campo <strong>"Based on Quote"</strong> permite crear un nuevo quote copiando todos los datos (puertos, shipping lines, cargos, regiones) de un quote existente como punto de partida.</p>
+        </div>
+      </div>
+
+      <!-- 13 -->
+      <div id="sec13" class="card shadow-sm mb-4">
+        <div class="card-body p-4">
+          <div class="section-title">13. Tipos de Cargos</div>
+          <p>Los siguientes catálogos definen el comportamiento de cada cobro:</p>
+          <table class="table table-bordered field-table">
+            <thead><tr><th>Catálogo</th><th>Descripción</th></tr></thead>
+            <tbody>
+              <tr><td>Ocean Freight Charge Types</td><td>Tipos de cargos marítimos (THC, B/L fee, seal fee, etc.).</td></tr>
+              <tr><td>Inland Freight Charge Types</td><td>Tipos de cargos terrestres (pick-up, documentation, etc.).</td></tr>
+              <tr><td>LCL Charge Types</td><td>Tipos de cargos para carga suelta.</td></tr>
+              <tr><td>Container Types</td><td>Tipos de contenedores: 20GP, 40GP, 40HC, etc.</td></tr>
+              <tr><td>Price Types</td><td>Cómo se calcula el precio: por unidad, por caja, por contenedor, etc.</td></tr>
+              <tr><td>Amount Types</td><td>Tipo de monto: fijo, porcentaje, por peso, etc.</td></tr>
+              <tr><td>Charge Actions</td><td>Acción del cargo: incluir en costo, separar, etc.</td></tr>
+              <tr><td>Charge Over</td><td>Base sobre la que aplica el cargo: FOB, CIF, etc.</td></tr>
+              <tr><td>Charge Per</td><td>Unidad de cobro: per CBM, per TEU, per shipment.</td></tr>
+              <tr><td>Load Types</td><td>Tipo de carga: FCL, LCL, ambos.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 14 -->
+      <div id="sec14" class="card shadow-sm mb-4">
+        <div class="card-body p-4">
+          <div class="section-title">14. Preguntas Frecuentes</div>
 
           <p><strong>¿Las cotizaciones tienen fecha de vencimiento?</strong><br/>
-          Sí, cada cotización tiene campos de vigencia (válido desde / hasta). Se recomienda actualizar las tarifas cada vez que el forwarder envíe nuevas.</p>
+          Sí, cada quote tiene campos de vigencia (Start Date / End Date). Se recomienda actualizar las tarifas cada vez que el forwarder envíe nuevas, usando el sistema de versiones.</p>
 
-          <p><strong>¿Puedo tener múltiples cotizaciones del mismo forwarder?</strong><br/>
-          Sí, puedes registrar varias versiones de cotizaciones del mismo agente (por ejemplo, diferentes rutas o diferentes períodos de vigencia).</p>
+          <p><strong>¿Puedo tener múltiples versiones del mismo forwarder?</strong><br/>
+          Sí. Cada tab mantiene su propio historial de versiones. Puedes ver versiones anteriores seleccionándolas en el mini-selector al tope del tab.</p>
 
           <p><strong>¿Cómo se usa una cotización en Cost Calculation?</strong><br/>
-          Al crear una nueva calculación, el usuario puede seleccionar un forwarder. Los valores de flete del Applied Quote sirven como referencia para llenar los campos de costo.</p>
+          Al crear una nueva calculación, se selecciona el forwarder. Los valores de flete del Applied Quote más reciente sirven como referencia para los campos de costo.</p>
 
           <p><strong>¿Quién puede agregar nuevos forwarders o tarifas?</strong><br/>
-          Solo Admin y SuperAdmin pueden crear, editar o eliminar registros en este módulo.</p>
+          Solo Admin y SuperAdmin pueden crear, editar o eliminar registros. Los botones de edición no son visibles para el rol Usuario.</p>
 
-          <p><strong>¿Qué son las "Routes by Shipping Agent"?</strong><br/>
-          Es un catálogo que mapea qué rutas ofrece cada agente naviero y el tiempo de tránsito estimado (en días) para cada una.</p>
+          <p><strong>¿Qué pasa si selecciono "New Port" sin tener un quote activo?</strong><br/>
+          El sistema mostrará un mensaje indicando que primero debes seleccionar o crear un quote de Ocean Freight para ese forwarder.</p>
+
+          <p><strong>¿Puedo agregar el mismo puerto dos veces en un quote?</strong><br/>
+          Sí, técnicamente es posible (por ejemplo, para diferentes vigencias o condiciones). Sin embargo, se recomienda usar una sola entrada por puerto dentro del mismo quote y gestionar las diferencias por shipping line.</p>
+
+          <p><strong>¿Qué significa el badge de color en el mini-selector de versiones?</strong><br/>
+          El badge muestra el tipo de flete del quote (ocean, inland, portadd, lcl). Asegura que el quote seleccionado corresponde al tab correcto.</p>
         </div>
       </div>
 
       <div class="text-center text-muted mt-3 mb-5" style="font-size:.82rem;">
-        Licores Maduro — Sistema de Gestión Interna &nbsp;|&nbsp; Manual Freight Forwarder v1.0 &nbsp;|&nbsp; 2026
+        Licores Maduro — Sistema de Gestión Interna &nbsp;|&nbsp; Manual Freight Forwarder v1.5 &nbsp;|&nbsp; 2026
       </div>
     </div>
   </div>

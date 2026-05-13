@@ -147,6 +147,14 @@
     document.getElementById('btn-save').addEventListener('click',saveItem);
     document.getElementById('btn-confirm-delete').addEventListener('click', deleteItem);
     document.getElementById('search-input').addEventListener('input',filterAndRender);
+    const urlTab = new URLSearchParams(location.search).get('tab');
+    if (urlTab && TABS[urlTab]) {
+      currentTab = urlTab;
+      document.querySelectorAll('#chargeTabs .nav-link').forEach(a => a.classList.remove('active'));
+      const tabLink = document.querySelector(`#chargeTabs a[onclick*="'${urlTab}'"]`);
+      if (tabLink) tabLink.classList.add('active');
+      document.getElementById('tab-title').textContent = TABS[urlTab].label;
+    }
     await loadData();
   });
 

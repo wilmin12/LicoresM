@@ -12,12 +12,13 @@ public sealed class DhwDbContext : DbContext
     public DbSet<DhwShipperMaster> ShipperMasters => Set<DhwShipperMaster>();
     public DbSet<DhwCountry>       Countries      => Set<DhwCountry>();
     public DbSet<DhwSupplier>      Suppliers      => Set<DhwSupplier>();
+    public DbSet<DhwRanker560>     Ranker560      => Set<DhwRanker560>();
+    public DbSet<DhwRanker562>     Ranker562      => Set<DhwRanker562>();
 
     // ── Scalar function: Description_Items_BEER ───────────────────────────────
     public static string? DescriptionItemsBeer(string itemCode)
         => throw new NotSupportedException("EF Core only — use in LINQ queries.");
-    public DbSet<DhwItemFob>     ItemFobPrices => Set<DhwItemFob>();
-    public DbSet<DhwSystemTable> SystemTable  => Set<DhwSystemTable>();
+    // SYSTEM_TABLE moved to ApplicationDbContext (LicoresMaduoDB)
 
     // ── Route Assignment VIP source tables ────────────────────────────────────
     // NOTE: VIP column names (AS/400 format) - verify against actual DHW_DATABASE schema
@@ -42,7 +43,7 @@ public sealed class DhwDbContext : DbContext
             e.ToTable("POHDRT");
             e.HasKey(x => new { x.PhWhse, x.PhPoNo });
             e.Property(x => x.PhWhse).HasColumnName("PHWHSE").HasMaxLength(3);
-            e.Property(x => x.PhPoNo).HasColumnName("PHPO#").HasMaxLength(10);
+            e.Property(x => x.PhPoNo).HasColumnName("PHPO#").HasMaxLength(15);
             e.Property(x => x.PhBorw).HasColumnName("PHBORW").HasMaxLength(1);
             e.Property(x => x.PhBrvr).HasColumnName("PHBRVR").HasMaxLength(6);
             e.Property(x => x.PhOrdt).HasColumnName("PHORDT");
@@ -96,6 +97,25 @@ public sealed class DhwDbContext : DbContext
             e.Property(x => x.DeleteFlag).HasColumnName("DELETE_FLAG").HasMaxLength(1);
         });
 
+        mb.Entity<DhwRanker560>(e =>
+        {
+            e.ToTable("RANKER_560");
+            e.HasKey(x => x.Field1);
+            e.Property(x => x.Field1).HasColumnName("ITEM").HasMaxLength(20);
+            e.Property(x => x.Field2).HasColumnName("ML_BOTTLE");
+            e.Property(x => x.Field3).HasColumnName("OZ_CASE");
+            e.Property(x => x.Field4).HasColumnName("PROOF");
+        });
+
+        mb.Entity<DhwRanker562>(e =>
+        {
+            e.ToTable("RANKER_562");
+            e.HasKey(x => x.Field1);
+            e.Property(x => x.Field1).HasColumnName("ITEM_CODE").HasMaxLength(20);
+            e.Property(x => x.Field2).HasColumnName("OZ_CASE");
+            e.Property(x => x.Field3).HasColumnName("ALCOHOL_PERCENT");
+        });
+
         mb.Entity<DhwPoDetail>(e =>
         {
             e.ToTable("PODTLT");
@@ -106,6 +126,7 @@ public sealed class DhwDbContext : DbContext
             e.Property(x => x.PdItem).HasColumnName("PDITEM").HasMaxLength(6);
             e.Property(x => x.PdOqty).HasColumnName("PDOQTY");
             e.Property(x => x.PdRqty).HasColumnName("PDRQTY");
+            e.Property(x => x.PdBqty).HasColumnName("PDBQTY");
             e.Property(x => x.PdWeig).HasColumnName("PDWEIG");
             e.Property(x => x.PdLtrs).HasColumnName("PDLTRS");
             e.Property(x => x.PdCstAmt).HasColumnName("PDCST$");
@@ -118,15 +139,6 @@ public sealed class DhwDbContext : DbContext
             e.Property(x => x.PdStat).HasColumnName("PDSTAT").HasMaxLength(1);
             e.Property(x => x.PdCdAt).HasColumnName("PDCDAT");
             e.Property(x => x.PdRdAt).HasColumnName("PDRDAT");
-        });
-
-        mb.Entity<DhwItemFob>(e =>
-        {
-            e.ToTable("ITEM_FOB_PRICES");
-            e.HasKey(x => x.ItCode);
-            e.Property(x => x.ItCode).HasColumnName("IT_Code").HasMaxLength(20);
-            e.Property(x => x.ItPurchasePrice).HasColumnName("IT_Purchase_Price");
-            e.Property(x => x.ItCommodity).HasColumnName("IT_Commodity").HasMaxLength(20);
         });
 
         mb.Entity<DhwSystemTable>(e =>
@@ -260,12 +272,28 @@ public sealed class DhwDbContext : DbContext
 
 public class DhwSupplier
 {
-    public long     Identity     { get; set; }
-    public string?  Supplier     { get; set; }
-    public string?  SupplierName { get; set; }
+    public long    Identity    { get; set; }
+    public string? Supplier     { get; set; }
+    public string? SupplierName { get; set; }
     public decimal? ApVendor     { get; set; }
     public string?  DeleteFlag   { get; set; }
 }
+
+public class DhwRanker560
+{
+    public string   Field1 { get; set; } = string.Empty; // ITEM
+    public string?  Field2 { get; set; } // Milliliters per bottle (varchar)
+    public string?  Field3 { get; set; } // Ounces per bottle (varchar)
+    public string?  Field4 { get; set; } // Proof Amount (varchar)
+}
+
+public class DhwRanker562
+{
+    public string   Field1 { get; set; } = string.Empty; // ITEM
+    public decimal? Field2 { get; set; } // Ounces per Case
+    public decimal? Field3 { get; set; } // Alcohol %
+}
+
 
 public class DhwCountry
 {
@@ -317,6 +345,7 @@ public class DhwPoDetail
     public string?  PdItem   { get; set; }
     public decimal? PdOqty   { get; set; }
     public decimal? PdRqty   { get; set; }
+    public decimal? PdBqty   { get; set; }
     public decimal? PdWeig   { get; set; }
     public decimal? PdLtrs   { get; set; }
     public decimal? PdCstAmt { get; set; }
@@ -329,13 +358,6 @@ public class DhwPoDetail
     public string?  PdStat   { get; set; }
     public decimal? PdCdAt   { get; set; }  // numeric(8,0) – commitment date YYYYMMDD
     public decimal? PdRdAt   { get; set; }  // numeric(8,0) – receipt date YYYYMMDD
-}
-
-public class DhwItemFob
-{
-    public string   ItCode          { get; set; } = string.Empty;
-    public decimal? ItPurchasePrice { get; set; }
-    public string?  ItCommodity     { get; set; }
 }
 
 public class DhwSystemTable

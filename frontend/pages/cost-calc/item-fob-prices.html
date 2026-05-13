@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Item FOB Prices - Licores Maduro</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="../../css/main.css"/>
+</head>
+<body>
+<div id="sidebar-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;"></div>
+<div class="app-wrapper">
+  <nav id="sidebar" class="sidebar">
+    <div class="sidebar-header"><img src="../../img/LogoLicores.png" alt="Licores Maduro" class="sidebar-logo-img"/><span class="sidebar-logo-text">LICORES MADURO</span></div>
+    <div id="sidebar-nav" class="sidebar-nav"></div>
+    <div class="sidebar-footer"><div class="sidebar-user"><div class="sidebar-avatar" id="sidebar-user-initials">LM</div><div class="sidebar-text"><div id="sidebar-user-name" style="font-weight:600;">–</div></div></div></div>
+  </nav>
+  <div class="main-area">
+    <header class="topbar">
+      <button id="btn-sidebar-toggle" class="btn-sidebar-toggle"><i class="fas fa-bars"></i></button>
+      <span class="topbar-title"><i class="fas fa-dollar-sign me-2 text-wine"></i>Item FOB Prices</span>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown">
+            <span class="sidebar-avatar" id="topbar-user-initials" style="width:28px;height:28px;font-size:.75rem;">LM</span>
+            <span id="topbar-user-name" class="d-none d-md-inline">–</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+            <li><div class="dropdown-header"><strong id="topbar-user-fullname">User</strong><br/><small class="text-muted" id="topbar-user-role">Role</small></div></li>
+            <li><hr class="dropdown-divider"/></li>
+            <li><a class="dropdown-item text-danger" href="#" id="btn-logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+          </ul>
+        </div>
+      </div>
+    </header>
+    <main class="page-content">
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="../../dashboard.html"><i class="fas fa-home me-1"></i>Home</a></li>
+          <li class="breadcrumb-item"><a href="index.html">Cost Calculations</a></li>
+          <li class="breadcrumb-item active">Item FOB Prices</li>
+        </ol>
+      </nav>
+      <div class="page-title">Item FOB Prices</div>
+      <div class="page-subtitle">FOB purchase price and customs commodity code per item, used as the base cost in landed cost calculations.</div>
+
+      <!-- Filter bar -->
+      <div class="card mb-3">
+        <div class="card-body d-flex flex-wrap align-items-center gap-2 py-2">
+          <div class="search-wrapper" style="min-width:200px;flex:1;">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" id="search-input" class="form-control form-control-sm" placeholder="Search by item code or description..."/>
+          </div>
+          <select id="filter-supplier" class="form-select form-select-sm" style="max-width:160px;">
+            <option value="">All Suppliers</option>
+          </select>
+          <select id="filter-brand" class="form-select form-select-sm" style="max-width:180px;">
+            <option value="">All Order Vendors</option>
+          </select>
+          <button id="btn-clear-filters" class="btn btn-outline-secondary btn-sm" title="Clear filters">
+            <i class="fas fa-times me-1"></i>Clear
+          </button>
+          <button id="btn-new" class="btn btn-wine btn-sm ms-auto"><i class="fas fa-plus me-1"></i>New FOB Price</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header d-flex align-items-center justify-content-between">
+          <span><i class="fas fa-table me-2"></i>Item FOB Prices</span>
+          <span class="badge" style="background:var(--primary);color:#fff;" id="total-count">0 records</span>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Item Code</th>
+                  <th>Description</th>
+                  <th>Supplier</th>
+                  <th>Order Vendor</th>
+                  <th class="text-end">FOB Price</th>
+                  <th>Commodity Code</th>
+                  <th class="text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="data-tbody"><tr><td colspan="8" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading...</td></tr></tbody>
+            </table>
+          </div>
+          <div id="pagination-bar" class="d-flex align-items-center justify-content-between flex-wrap gap-2 px-3 py-2 border-top" style="display:none">
+            <span id="pagination-info" class="text-muted small"></span>
+            <nav><ul id="pagination-pages" class="pagination pagination-sm mb-0"></ul></nav>
+            <div class="d-flex align-items-center gap-2">
+              <label class="text-muted small mb-0">Rows:</label>
+              <select id="page-size-select" class="form-select form-select-sm" style="width:80px;">
+                <option value="25" selected>25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Maintenance / New FOB Price Modal -->
+<div class="modal fade" id="editModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modal-title">New FOB Price</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="f-original-code"/>
+
+        <!-- Product info (read-only, visible only on edit) -->
+        <div id="product-info-section" style="display:none;" class="mb-3 p-3 bg-light rounded border">
+          <div class="row g-2">
+            <div class="col-md-3">
+              <label class="form-label small text-muted mb-1">Item Code</label>
+              <div id="info-item-code" class="fw-semibold"></div>
+            </div>
+            <div class="col-md-9">
+              <label class="form-label small text-muted mb-1">Description</label>
+              <div id="info-description" class="fw-semibold"></div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small text-muted mb-1">Supplier</label>
+              <div id="info-supplier"></div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small text-muted mb-1">Order Vendor</label>
+              <div id="info-brand"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Item code (only visible on create) -->
+        <div id="item-code-section" class="mb-3">
+          <label class="form-label">Item Code <span class="text-danger">*</span></label>
+          <input type="text" id="f-item-code" class="form-control form-control-sm" maxlength="20" placeholder="e.g. 00112"/>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">FOB Purchase Price</label>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text">$</span>
+              <input type="text" id="f-price" class="form-control form-control-sm" inputmode="decimal" placeholder="0.0000" oninput="this.value = this.value.replace(/,/g, '.')"/>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Commodity (Customs Code)</label>
+            <input type="text" id="f-commodity" class="form-control form-control-sm" maxlength="20" placeholder="e.g. 22030090"/>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-wine" id="btn-save"><i class="fas fa-save me-1"></i>Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index:9999;">
+  <div id="toast" class="toast align-items-center text-white border-0" role="alert">
+    <div class="d-flex"><div class="toast-body" id="toast-msg"></div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../../js/i18n.js"></script><script src="../../js/api.js"></script><script src="../../js/auth.js"></script><script src="../../js/sidebar.js"></script>
+<script>
+  let allItems = [], filtered = [];
+  let currentPage = 1, pageSize = 25;
+  let editModal;
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    if (!Auth.requireAuth()) return;
+    Auth.startExpiryWatcher(); Auth.populateUserUI(); Sidebar.init();
+    document.getElementById('btn-logout').addEventListener('click', e => { e.preventDefault(); Auth.logout(); });
+    editModal = new bootstrap.Modal(document.getElementById('editModal'));
+
+    document.getElementById('search-input').addEventListener('input',    () => { currentPage = 1; filterAndRender(); });
+    document.getElementById('filter-supplier').addEventListener('change', () => { currentPage = 1; filterAndRender(); });
+    document.getElementById('filter-brand').addEventListener('change',    () => { currentPage = 1; filterAndRender(); });
+    document.getElementById('btn-clear-filters').addEventListener('click', clearFilters);
+    document.getElementById('btn-new').addEventListener('click', openCreate);
+    document.getElementById('btn-save').addEventListener('click', save);
+    document.getElementById('page-size-select').addEventListener('change', e => {
+      pageSize = parseInt(e.target.value); currentPage = 1; renderTable();
+    });
+    await loadData();
+  });
+
+  async function loadData() {
+    document.getElementById('data-tbody').innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading...</td></tr>';
+    try {
+      const res = await API.costCalc.getItemFobPrices();
+      allItems = res?.Data || res || [];
+      populateFilterDropdowns();
+      filterAndRender();
+    } catch (err) { showToast(err.message, 'danger'); }
+  }
+
+  function populateFilterDropdowns() {
+    // Supplier: unique by code, show name as label, filter by code
+    const supMap = {};
+    allItems.forEach(r => { if (r.SupplierCode) supMap[r.SupplierCode] = r.SupplierName || r.SupplierCode; });
+    const brands = [...new Set(allItems.map(r => r.BrandCode).filter(Boolean))].sort();
+    const supSel = document.getElementById('filter-supplier');
+    const bndSel = document.getElementById('filter-brand');
+    const curSup = supSel.value, curBnd = bndSel.value;
+    supSel.innerHTML = '<option value="">All Suppliers</option>' +
+      Object.entries(supMap).sort((a,b) => a[1].localeCompare(b[1]))
+        .map(([code, name]) => `<option value="${esc(code)}">${esc(name)}</option>`).join('');
+    bndSel.innerHTML = '<option value="">All Order Vendors</option>' + brands.map(b => `<option value="${esc(b)}">${esc(b)}</option>`).join('');
+    supSel.value = curSup; bndSel.value = curBnd;
+  }
+
+  function clearFilters() {
+    document.getElementById('search-input').value = '';
+    document.getElementById('filter-supplier').value = '';
+    document.getElementById('filter-brand').value = '';
+    currentPage = 1; filterAndRender();
+  }
+
+  function filterAndRender() {
+    const q   = document.getElementById('search-input').value.toLowerCase();
+    const sup = document.getElementById('filter-supplier').value;
+    const bnd = document.getElementById('filter-brand').value;
+    filtered = allItems.filter(r => {
+      if (q && !(
+        (r.ItemCode   || '').toLowerCase().includes(q) ||
+        (r.Description|| '').toLowerCase().includes(q) ||
+        (r.Commodity  || '').toLowerCase().includes(q)
+      )) return false;
+      if (sup && r.SupplierCode !== sup) return false;
+      if (bnd && r.BrandCode    !== bnd) return false;
+      return true;
+    });
+    renderTable();
+  }
+
+  function renderTable() {
+    const tbody   = document.getElementById('data-tbody');
+    const total   = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+    if (currentPage > totalPages) currentPage = totalPages;
+    const start = (currentPage - 1) * pageSize;
+    const page  = filtered.slice(start, start + pageSize);
+
+    document.getElementById('total-count').textContent = total + ' records';
+
+    if (!total) {
+      tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">No records found.</td></tr>';
+      document.getElementById('pagination-bar').style.display = 'none';
+      return;
+    }
+
+    tbody.innerHTML = page.map((r, i) => `<tr>
+      <td>${start + i + 1}</td>
+      <td><strong>${esc(r.ItemCode)}</strong></td>
+      <td>${esc(r.Description || '')}</td>
+      <td>${esc(r.SupplierName || r.SupplierCode || '')}</td>
+      <td>${esc(r.BrandCode || '')}</td>
+      <td class="text-end" style="width: 140px;">
+        <div class="input-group input-group-sm">
+          <span class="input-group-text border-0 bg-transparent px-1">$</span>
+          <input type="text" class="form-control form-control-sm text-end border-0 shadow-none bg-transparent px-1" 
+                 value="${r.FobPrice != null ? Number(r.FobPrice).toFixed(4) : ''}" 
+                 placeholder="0.0000" inputmode="decimal"
+                 onfocus="this.dataset.orig=this.value; this.classList.remove('border-0','bg-transparent'); this.classList.add('border')"
+                 oninput="this.value = this.value.replace(/,/g, '.')"
+                 onblur="this.classList.add('border-0','bg-transparent'); this.classList.remove('border'); if(this.value!==this.dataset.orig) updateInline('${esc(r.ItemCode)}', this.value, '${esc(r.Commodity || '')}', this)"
+                 onkeydown="if(event.key==='Enter'){ this.blur(); } else if(event.key==='Escape'){ this.value=this.dataset.orig; this.blur(); }" />
+        </div>
+      </td>
+      <td style="width: 150px;">
+        <input type="text" class="form-control form-control-sm border-0 shadow-none bg-transparent px-1" 
+               value="${esc(r.Commodity || '')}" maxlength="20" placeholder="—"
+               onfocus="this.dataset.orig=this.value; this.classList.remove('border-0','bg-transparent'); this.classList.add('border')"
+               onblur="this.classList.add('border-0','bg-transparent'); this.classList.remove('border'); if(this.value!==this.dataset.orig) updateInline('${esc(r.ItemCode)}', '${r.FobPrice != null ? r.FobPrice : ''}', this.value, this)"
+               onkeydown="if(event.key==='Enter'){ this.blur(); } else if(event.key==='Escape'){ this.value=this.dataset.orig; this.blur(); }" />
+      </td>
+      <td class="text-center">
+        <button class="btn-action edit" onclick="openEdit('${esc(r.ItemCode)}')" title="Edit details"><i class="fas fa-edit"></i></button>
+      </td>
+    </tr>`).join('');
+
+    renderPagination(totalPages);
+    const end = Math.min(start + pageSize, total);
+    document.getElementById('pagination-info').textContent = `Showing ${start + 1}–${end} of ${total}`;
+    document.getElementById('pagination-bar').style.display = 'flex';
+  }
+
+  async function updateInline(itemCode, priceVal, commodityVal, inputEl) {
+    const dto = {
+      ItemCode: itemCode,
+      PurchasePrice: priceVal !== '' ? parseFloat(priceVal) : null,
+      Commodity: commodityVal.trim() || null
+    };
+    
+    const originalBg = inputEl.style.backgroundColor;
+    inputEl.style.backgroundColor = '#e9ecef'; // indicate loading
+    inputEl.disabled = true;
+
+    try {
+      await API.costCalc.updateItemFobPrice(itemCode, dto);
+      
+      // Update local memory to prevent full reload jumping
+      const r = allItems.find(x => x.ItemCode === itemCode);
+      if (r) {
+        r.FobPrice = dto.PurchasePrice;
+        r.Commodity = dto.Commodity;
+      }
+      
+      // Visual success indicator
+      inputEl.style.backgroundColor = '#d1e7dd'; 
+      setTimeout(() => { inputEl.style.backgroundColor = 'transparent'; }, 1000);
+      showToast('Actualizado', 'success');
+      
+      // Re-format price if it was the price input
+      if (inputEl.type === 'number' && dto.PurchasePrice != null) {
+        inputEl.value = Number(dto.PurchasePrice).toFixed(4);
+      }
+    } catch (err) {
+      inputEl.value = inputEl.dataset.orig; // Revert
+      inputEl.style.backgroundColor = '#f8d7da';
+      setTimeout(() => { inputEl.style.backgroundColor = 'transparent'; }, 1500);
+      showToast('Error actualizando: ' + err.message, 'danger');
+    } finally {
+      inputEl.disabled = false;
+    }
+  }
+
+  function renderPagination(totalPages) {
+    const ul = document.getElementById('pagination-pages');
+    const pages = buildPageRange(currentPage, totalPages);
+    ul.innerHTML = `<li class="page-item${currentPage === 1 ? ' disabled' : ''}"><a class="page-link" href="#" onclick="goPage(${currentPage - 1});return false;">&laquo;</a></li>` +
+      pages.map(p => p === '…'
+        ? `<li class="page-item disabled"><span class="page-link">…</span></li>`
+        : `<li class="page-item${p === currentPage ? ' active' : ''}"><a class="page-link" href="#" onclick="goPage(${p});return false;">${p}</a></li>`
+      ).join('') +
+      `<li class="page-item${currentPage === totalPages ? ' disabled' : ''}"><a class="page-link" href="#" onclick="goPage(${currentPage + 1});return false;">&raquo;</a></li>`;
+  }
+
+  function buildPageRange(cur, total) {
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+    if (cur <= 4)   return [1, 2, 3, 4, 5, '…', total];
+    if (cur >= total - 3) return [1, '…', total - 4, total - 3, total - 2, total - 1, total];
+    return [1, '…', cur - 1, cur, cur + 1, '…', total];
+  }
+
+  function goPage(p) {
+    const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+    if (p < 1 || p > totalPages) return;
+    currentPage = p; renderTable();
+  }
+
+  function openCreate() {
+    document.getElementById('modal-title').textContent = 'New FOB Price';
+    document.getElementById('f-original-code').value = '';
+    document.getElementById('f-item-code').value = '';
+    document.getElementById('f-price').value = '';
+    document.getElementById('f-commodity').value = '';
+    document.getElementById('product-info-section').style.display = 'none';
+    document.getElementById('item-code-section').style.display = '';
+    editModal.show();
+  }
+
+  function openEdit(code) {
+    const r = allItems.find(x => (x.ItemCode || '').trim() === (code || '').trim());
+    if (!r) { showToast('Item not found.', 'danger'); return; }
+
+    document.getElementById('modal-title').textContent = 'Maintenance Fob Price';
+    document.getElementById('f-original-code').value = r.ItemCode;
+    document.getElementById('f-price').value = r.FobPrice != null ? Number(r.FobPrice).toFixed(4) : '';
+    document.getElementById('f-commodity').value = r.Commodity || '';
+
+    // Populate read-only product info
+    document.getElementById('info-item-code').textContent   = r.ItemCode || '–';
+    document.getElementById('info-description').textContent = r.Description || '–';
+    document.getElementById('info-supplier').textContent    = r.SupplierName || r.SupplierCode || '–';
+    document.getElementById('info-brand').textContent       = r.BrandCode || '–';
+    document.getElementById('product-info-section').style.display = '';
+    document.getElementById('item-code-section').style.display = 'none';
+
+    editModal.show();
+  }
+
+  async function save() {
+    const originalCode = document.getElementById('f-original-code').value;
+    const itemCode = originalCode || document.getElementById('f-item-code').value.trim();
+    if (!itemCode) { showToast('Item Code is required.', 'danger'); return; }
+    const priceVal = document.getElementById('f-price').value.trim();
+    const dto = {
+      ItemCode:      itemCode,
+      PurchasePrice: priceVal !== '' ? parseFloat(priceVal) : null,
+      Commodity:     document.getElementById('f-commodity').value.trim() || null
+    };
+    const btn = document.getElementById('btn-save');
+    btn.disabled = true;
+    try {
+      if (originalCode) await API.costCalc.updateItemFobPrice(originalCode, dto);
+      else              await API.costCalc.createItemFobPrice(dto);
+      editModal.hide();
+      showToast('Saved successfully.', 'success');
+      await loadData();
+    } catch (err) { showToast(err.message, 'danger'); }
+    finally { btn.disabled = false; }
+  }
+
+  function showToast(msg, type = 'success') {
+    const el = document.getElementById('toast');
+    el.className = `toast align-items-center text-white border-0 bg-${type === 'success' ? 'success' : 'danger'}`;
+    document.getElementById('toast-msg').textContent = msg;
+    new bootstrap.Toast(el, { delay: 3500 }).show();
+  }
+  function esc(s) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+</script>
+</body>
+</html>

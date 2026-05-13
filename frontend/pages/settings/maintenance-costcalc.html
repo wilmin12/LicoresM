@@ -7,10 +7,12 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
   <link rel="stylesheet" href="../../css/main.css"/>
   <style>
-    .field-label    { font-weight: 600; font-size: .875rem; color: #343a40; margin-bottom: .25rem; }
-    .field-desc     { font-size: .775rem; color: #6c757d; margin-bottom: .4rem; }
-    .section-divider{ border-top: 1px solid #dee2e6; margin: 1.5rem 0; }
-    .last-saved-bar { font-size: .75rem; color: #aaa; margin-top: .75rem; }
+    .section-heading  { font-weight: 700; font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; color: var(--primary); margin-bottom: 1rem; }
+    .field-label      { font-weight: 600; font-size: .875rem; color: #343a40; margin-bottom: .2rem; }
+    .field-desc       { font-size: .775rem; color: #6c757d; margin-bottom: .35rem; }
+    .section-divider  { border-top: 1px solid #dee2e6; margin: 1.4rem 0; }
+    .last-saved-bar   { font-size: .75rem; color: #aaa; }
+    .source-badge     { font-size: .65rem; font-weight: 600; padding: 1px 6px; border-radius: 4px; vertical-align: middle; }
   </style>
 </head>
 <body>
@@ -47,33 +49,167 @@
         </ol>
       </nav>
       <div class="page-title">Maintenance Cost Calculation</div>
-      <div class="page-subtitle">Configure the email addresses for each Cost Calculation notification type. Separate multiple addresses with a comma.</div>
+      <div class="page-subtitle">Configure default values and email notifications for the Cost Calculation module.</div>
 
       <!-- Read-only alert -->
       <div id="readonly-alert" class="alert alert-warning d-none mt-3">
         <i class="fas fa-lock me-2"></i>Read-only — Admin or SuperAdmin access required to edit.
       </div>
 
-      <!-- Main form card -->
-      <div class="card mt-3" style="border-left: 3px solid var(--primary); max-width: 860px;">
-        <div class="card-header d-flex align-items-center gap-2" style="background:transparent; font-weight:700; color:var(--primary); font-size:.85rem; text-transform:uppercase; letter-spacing:.05em;">
-          <i class="fas fa-calculator"></i>
-          Cost Calculation — Email Notifications
+      <!-- ── SINGLE CARD ─────────────────────────────────────────── -->
+      <div class="card mt-3" style="border-left:3px solid var(--primary); max-width:960px;">
+        <div class="card-header d-flex align-items-center gap-2" style="background:transparent;font-weight:700;color:var(--primary);font-size:.85rem;text-transform:uppercase;letter-spacing:.05em;">
+          <i class="fas fa-cog"></i>Cost Calculation — Settings
         </div>
-        <div class="card-body" id="form-body">
-          <p class="text-muted small mb-4">
-            <i class="fas fa-info-circle me-1"></i>
-            Each field accepts one or more email addresses separated by a comma.
+        <div class="card-body">
+
+          <!-- ── Default Values ── -->
+          <div class="section-heading"><i class="fas fa-sliders me-1"></i>Default Values</div>
+
+          <div class="section-heading" style="font-size:.75rem;text-transform:none;font-weight:600;color:#666;margin-bottom:.4rem;"><i class="fas fa-dollar-sign me-1"></i>Currency</div>
+          <div class="row g-3 mb-3">
+            <div class="col-md-3">
+              <div class="field-label">USD Currency Code</div>
+              <input type="text" class="form-control form-control-sm" id="f-curr-usd" maxlength="3" placeholder="USD"/>
+            </div>
+            <div class="col-md-3">
+              <div class="field-label">Exchange Rate (USD)</div>
+              <input type="number" class="form-control form-control-sm" id="f-rate-usd" step="0.000001" min="0" placeholder="1.800000"/>
+            </div>
+          </div>
+
+          <div class="section-heading" style="font-size:.75rem;text-transform:none;font-weight:600;color:#666;margin-bottom:.4rem;"><i class="fas fa-calculator me-1"></i>Cost Defaults (pre-filled on new calculation)</div>
+          <div class="row g-3 mb-3">
+            <div class="col-md-3">
+              <div class="field-label">Insurance %</div>
+              <input type="number" class="form-control form-control-sm" id="f-insurance" step="0.000001" min="0" placeholder="0.005"/>
+            </div>
+            <div class="col-md-3">
+              <div class="field-label">Transport</div>
+              <input type="number" class="form-control form-control-sm" id="f-transport" step="0.0001" min="0" placeholder="0.00"/>
+            </div>
+            <div class="col-md-3">
+              <div class="field-label">Unloading</div>
+              <input type="number" class="form-control form-control-sm" id="f-unloading" step="0.0001" min="0" placeholder="0.00"/>
+            </div>
+            <div class="col-md-3">
+              <div class="field-label">Local Handling</div>
+              <input type="number" class="form-control form-control-sm" id="f-local-handling" step="0.0001" min="0" placeholder="0.00"/>
+            </div>
+          </div>
+
+          <div class="section-heading" style="font-size:.75rem;text-transform:none;font-weight:600;color:#666;margin-bottom:.4rem;"><i class="fas fa-flask me-1"></i>Conversion Factors</div>
+          <div class="row g-3 mb-3">
+            <div class="col-md-3">
+              <div class="field-label">Oz Factor</div>
+              <input type="number" class="form-control form-control-sm" id="f-oz-factor" step="0.000001" min="0" placeholder="0.000000"/>
+            </div>
+            <div class="col-md-3">
+              <div class="field-label">Liter Multiplier</div>
+              <input type="number" class="form-control form-control-sm" id="f-liter-multiplier" step="0.000001" min="0" placeholder="0.000000"/>
+            </div>
+          </div>
+
+          <div class="section-heading" style="font-size:.75rem;text-transform:none;font-weight:600;color:#666;margin-bottom:.4rem;"><i class="fas fa-store me-1"></i>Store Percentages</div>
+          <div class="row g-3 mb-3">
+            <div class="col-md-3">
+              <div class="field-label">Retail %</div>
+              <input type="number" class="form-control form-control-sm" id="f-store-retail" step="0.000001" min="0" placeholder="0.000000"/>
+            </div>
+            <div class="col-md-3">
+              <div class="field-label">Alliance %</div>
+              <input type="number" class="form-control form-control-sm" id="f-store-alliance" step="0.000001" min="0" placeholder="0.000000"/>
+            </div>
+            <div class="col-md-3">
+              <div class="field-label">Norsa %</div>
+              <input type="number" class="form-control form-control-sm" id="f-store-norsa" step="0.000001" min="0" placeholder="0.000000"/>
+            </div>
+          </div>
+
+          <div class="section-heading" style="font-size:.75rem;text-transform:none;font-weight:600;color:#666;margin-bottom:.4rem;"><i class="fas fa-folder-open me-1"></i>Document Paths</div>
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <div class="field-label">Cost Changes Path</div>
+              <input type="text" class="form-control form-control-sm" id="f-path-cost-changes" maxlength="500" placeholder="C:\Documents\CostChanges"/>
+            </div>
+            <div class="col-md-6">
+              <div class="field-label">Price Changes Path</div>
+              <input type="text" class="form-control form-control-sm" id="f-path-price-changes" maxlength="500" placeholder="C:\Documents\PriceChanges"/>
+            </div>
+            <div class="col-md-6">
+              <div class="field-label">Cost Calculation Path</div>
+              <input type="text" class="form-control form-control-sm" id="f-path-cost-calc" maxlength="500" placeholder="C:\Documents\CostCalc"/>
+            </div>
+          </div>
+
+          <div class="section-heading" style="font-size:.75rem;text-transform:none;font-weight:600;color:#666;margin-bottom:.4rem;"><i class="fas fa-ship me-1"></i>Default Freight Forwarder</div>
+          <div class="row g-3 mb-3">
+            <div class="col-md-3">
+              <div class="field-label">Forwarder Code</div>
+              <input type="text" class="form-control form-control-sm" id="f-fw-code" maxlength="10" placeholder="FW001"/>
+            </div>
+            <div class="col-md-5">
+              <div class="field-label">Forwarder Name</div>
+              <input type="text" class="form-control form-control-sm" id="f-fw-name" maxlength="50" placeholder="Forwarder Name"/>
+            </div>
+            <div class="col-md-2">
+              <div class="field-label">Currency</div>
+              <input type="text" class="form-control form-control-sm" id="f-fw-curr" maxlength="3" placeholder="USD"/>
+            </div>
+          </div>
+
+          <div class="section-divider"></div>
+
+          <!-- ── Email Notifications ── -->
+          <div class="section-heading"><i class="fas fa-envelope me-1"></i>Email Notifications</div>
+          <p class="text-muted small mb-3">
+            <i class="fas fa-info-circle me-1"></i>Each field accepts one or more email addresses separated by a comma.
           </p>
 
-          <!-- Fields rendered dynamically -->
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="field-label">Purchase Department</div>
+              <div class="field-desc">General purchase department email notifications.</div>
+              <textarea id="fe-purch-dep" class="form-control" rows="2" placeholder="correo1@empresa.com, correo2@empresa.com"></textarea>
+            </div>
+            <div class="col-md-6">
+              <div class="field-label">Approved by Sales Manager</div>
+              <div class="field-desc">Sent when a Sales Manager approves a calculation.</div>
+              <textarea id="fe-approved-sales" class="form-control" rows="2" placeholder="correo1@empresa.com, correo2@empresa.com"></textarea>
+            </div>
+            <div class="col-md-6">
+              <div class="field-label">Approved by Financial Manager</div>
+              <div class="field-desc">Sent when a Financial Manager approves a calculation.</div>
+              <textarea id="fe-approval" class="form-control" rows="2" placeholder="correo1@empresa.com, correo2@empresa.com"></textarea>
+            </div>
+            <div class="col-md-6">
+              <div class="field-label">Cost Price Calculations (To: Financials)</div>
+              <div class="field-desc">Notified when a calculation is confirmed and pending financial approval.</div>
+              <textarea id="fe-confirm-mngr" class="form-control" rows="2" placeholder="correo1@empresa.com, correo2@empresa.com"></textarea>
+            </div>
+            <div class="col-md-6">
+              <div class="field-label">Cost Price Change (To: Financials)</div>
+              <div class="field-desc">Sent when a confirmed cost price is changed.</div>
+              <textarea id="fe-cost-change" class="form-control" rows="2" placeholder="correo1@empresa.com, correo2@empresa.com"></textarea>
+            </div>
+            <div class="col-md-6">
+              <div class="field-label">Dollar Rate Edit — Calculations (PDF)</div>
+              <div class="field-desc">Notified when the dollar rate is edited on a calculation.</div>
+              <textarea id="fe-dollar-rate" class="form-control" rows="2" placeholder="correo1@empresa.com, correo2@empresa.com"></textarea>
+            </div>
+            <div class="col-md-6">
+              <div class="field-label">Dollar Rate Edit — Selling Prices</div>
+              <div class="field-desc">Notified when the dollar rate affects selling prices.</div>
+              <textarea id="fe-price-changes-finance" class="form-control" rows="2" placeholder="correo1@empresa.com, correo2@empresa.com"></textarea>
+            </div>
+          </div>
 
         </div>
         <div class="card-footer bg-transparent d-flex align-items-center justify-content-between">
-          <div class="last-saved-bar" id="last-saved-bar">–</div>
-          <div id="save-btn-wrapper">
-            <button class="btn btn-primary" id="btn-save" onclick="saveAll()">
-              <i class="fas fa-save me-2"></i>Save All
+          <div class="last-saved-bar" id="last-saved">–</div>
+          <div id="save-wrapper">
+            <button class="btn btn-primary btn-sm" id="btn-save" onclick="saveAll()">
+              <i class="fas fa-save me-2"></i>Save
             </button>
           </div>
         </div>
@@ -98,18 +234,11 @@
 <script src="../../js/auth.js"></script>
 <script src="../../js/sidebar.js"></script>
 <script>
-  const FIELDS = [
-    { key: 'COSTCALC_PURCHASE_DEPT',      label: 'Purchase Department',                      desc: 'General purchase department email notifications.' },
-    { key: 'COSTCALC_APPROVED_SALES',     label: 'Approved by Sales Manager',                desc: 'Sent when a Sales Manager approves a calculation.' },
-    { key: 'COSTCALC_APPROVED_FINANCIAL', label: 'Approved by Financial Manager',            desc: 'Sent when a Financial Manager approves a calculation.' },
-    { key: 'COSTCALC_PRICE_CALC',         label: 'Cost Price Calculations (To: Financials)', desc: 'Notified when a calculation is confirmed and pending financial approval.' },
-    { key: 'COSTCALC_PRICE_CHANGE',       label: 'Cost Price Change (To: Financials)',       desc: 'Sent when a confirmed cost price is changed.' },
-    { key: 'COSTCALC_DOLLAR_RATE',        label: 'Dollar Rate Edit — Calculations (PDF)',    desc: 'Notified when the dollar rate is edited on a calculation.' },
-    { key: 'COSTCALC_DOLLAR_SELLING',     label: 'Dollar Rate Edit — Selling Prices',        desc: 'Notified when the dollar rate affects selling prices (COST_PRICE_CURRENT).' },
-  ];
+  let _isAdmin        = false;
+  let _approverRows   = [];
+  let _cfg            = {};
 
-  let _isAdmin = false;
-  let _rows    = [];
+  const MODULE_APPROVER_KEYS = ['COSTCALC_APPROVED_SALES', 'COSTCALC_DOLLAR_RATE'];
 
   document.addEventListener('DOMContentLoaded', async () => {
     if (!Auth.requireAuth()) return;
@@ -123,7 +252,8 @@
 
     if (!_isAdmin) {
       document.getElementById('readonly-alert').classList.remove('d-none');
-      document.getElementById('save-btn-wrapper').classList.add('d-none');
+      document.getElementById('save-wrapper').classList.add('d-none');
+      document.querySelectorAll('input, textarea').forEach(el => el.disabled = true);
     }
 
     await load();
@@ -131,64 +261,72 @@
 
   async function load() {
     try {
-      const res = await API.system.getModuleApprovers();
-      _rows = res?.Data || res || [];
-      renderFields();
+      const [cfgRes, approversRes] = await Promise.all([
+        API.costCalc.getSystemConfig(),
+        API.system.getModuleApprovers()
+      ]);
+      _cfg          = cfgRes?.Data          || cfgRes          || {};
+      _approverRows = approversRes?.Data    || approversRes    || [];
+      fillForm();
     } catch (err) {
       showToast(err.message || 'Error loading configuration.', 'danger');
     }
   }
 
-  function renderFields() {
-    const body = document.getElementById('form-body');
-    let html = `<p class="text-muted small mb-4"><i class="fas fa-info-circle me-1"></i>Each field accepts one or more email addresses separated by a comma.</p>`;
-
-    FIELDS.forEach((f, idx) => {
-      const row    = _rows.find(r => r.MaeModuleKey === f.key);
-      const emails = row?.MaeEmails ?? '';
-      const divider = idx > 0 ? '<div class="section-divider"></div>' : '';
-
-      html += `
-        ${divider}
-        <div class="mb-1">
-          <div class="field-label">${f.label}</div>
-          <div class="field-desc">${f.desc}</div>
-          <textarea
-            id="field-${f.key}"
-            class="form-control"
-            rows="2"
-            placeholder="correo1@empresa.com, correo2@empresa.com"
-            ${_isAdmin ? '' : 'disabled'}
-          >${emails}</textarea>
-        </div>`;
-    });
-
-    body.innerHTML = html;
-    updateSavedBar();
+  function fillForm() {
+    setVal('f-curr-usd',        _cfg.CompCurrUsd);
+    setVal('f-rate-usd',        _cfg.CompRateUsd);
+    setVal('f-insurance',       _cfg.CompInsurance);
+    setVal('f-transport',       _cfg.CompTransport);
+    setVal('f-unloading',       _cfg.CompUnloading);
+    setVal('f-local-handling',  _cfg.CompLocalHandling);
+    setVal('f-oz-factor',       _cfg.CompOzFactor);
+    setVal('f-liter-multiplier',_cfg.CompLiterMultiplier);
+    setVal('f-fw-code',         _cfg.CompFwCode);
+    setVal('f-fw-name',         _cfg.CompFwName);
+    setVal('f-fw-curr',         _cfg.CompFwCurr);
+    setVal('fe-purch-dep',            _cfg.CompEmailPurchDep);
+    setVal('fe-approval',             _cfg.CompEmailApproval);
+    setVal('fe-confirm-mngr',         _cfg.CompEmailConfirmMngr);
+    setVal('fe-cost-change',          _cfg.CompEmailCostChange);
+    setVal('fe-price-changes-finance',_cfg.CompEmailPriceChangesFinance);
+    setVal('f-store-retail',    _cfg.CompStoreRetailPerc);
+    setVal('f-store-alliance',  _cfg.CompStoreAlliancePerc);
+    setVal('f-store-norsa',     _cfg.CompStoreNorsaPerc);
+    setVal('f-path-cost-changes',  _cfg.CompPathCostChanges);
+    setVal('f-path-price-changes', _cfg.CompPathPriceChanges);
+    setVal('f-path-cost-calc',     _cfg.CompPathCostCalc);
+    setApproverVal('fe-approved-sales', 'COSTCALC_APPROVED_SALES');
+    setApproverVal('fe-dollar-rate',    'COSTCALC_DOLLAR_RATE');
+    document.getElementById('last-saved').textContent = 'Loaded from system configuration.';
   }
 
-  function updateSavedBar() {
-    // Show the most recent save across all keys
-    const dates = _rows
-      .filter(r => FIELDS.some(f => f.key === r.MaeModuleKey) && r.MaeUpdatedAt)
-      .map(r => ({ date: new Date(r.MaeUpdatedAt), by: r.MaeUpdatedBy }));
+  function setVal(id, val) {
+    const el = document.getElementById(id);
+    if (el && val != null) el.value = val;
+  }
 
-    const bar = document.getElementById('last-saved-bar');
-    if (dates.length === 0) { bar.textContent = 'Not yet saved'; return; }
-
-    dates.sort((a, b) => b.date - a.date);
-    const latest = dates[0];
-    bar.textContent = `Last saved: ${latest.date.toLocaleDateString()} ${latest.date.toLocaleTimeString()}${latest.by ? ' by ' + latest.by : ''}`;
+  function setApproverVal(id, key) {
+    const row = _approverRows.find(r => r.MaeModuleKey === key);
+    setVal(id, row?.MaeEmails ?? '');
   }
 
   async function saveAll() {
-    // Validate all fields first
     const emailRx = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    for (const f of FIELDS) {
-      const val = document.getElementById(`field-${f.key}`)?.value?.trim() ?? '';
+    const emailFields = [
+      { id: 'fe-purch-dep',             label: 'Purchase Department' },
+      { id: 'fe-approval',              label: 'Approved by Financial Manager' },
+      { id: 'fe-confirm-mngr',          label: 'Cost Price Calculations' },
+      { id: 'fe-cost-change',           label: 'Cost Price Change' },
+      { id: 'fe-price-changes-finance', label: 'Dollar Rate — Selling Prices' },
+      { id: 'fe-approved-sales',        label: 'Approved by Sales Manager' },
+      { id: 'fe-dollar-rate',           label: 'Dollar Rate — Calculations' },
+    ];
+
+    for (const f of emailFields) {
+      const val = getVal(f.id);
       if (val) {
-        const parts   = val.split(',').map(e => e.trim()).filter(Boolean);
-        const invalid = parts.filter(e => !emailRx.test(e));
+        const invalid = val.split(',').map(e => e.trim()).filter(e => e && !emailRx.test(e));
         if (invalid.length > 0) {
           showToast(`"${f.label}" — invalid email(s): ${invalid.join(', ')}`, 'danger');
           return;
@@ -201,31 +339,54 @@
     btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving…';
 
     try {
-      // Save each key sequentially
-      let lastUpdated = null;
-      for (const f of FIELDS) {
-        const emails = document.getElementById(`field-${f.key}`)?.value?.trim() ?? '';
-        const res    = await API.system.updateModuleApprover(f.key, { Emails: emails });
-        const updated = res?.Data || res;
+      const dto = {
+        CompCode:                      'LM',
+        CompCurrUsd:                   getVal('f-curr-usd')                || null,
+        CompRateUsd:                   getNum('f-rate-usd'),
+        CompInsurance:                 getNum('f-insurance'),
+        CompTransport:                 getNum('f-transport'),
+        CompUnloading:                 getNum('f-unloading'),
+        CompLocalHandling:             getNum('f-local-handling'),
+        CompOzFactor:                  getNum('f-oz-factor'),
+        CompLiterMultiplier:           getNum('f-liter-multiplier'),
+        CompFwCode:                    getVal('f-fw-code')                 || null,
+        CompFwName:                    getVal('f-fw-name')                 || null,
+        CompFwCurr:                    getVal('f-fw-curr')                 || null,
+        CompEmailPurchDep:             getVal('fe-purch-dep')              || null,
+        CompEmailApproval:             getVal('fe-approval')               || null,
+        CompEmailConfirmMngr:          getVal('fe-confirm-mngr')           || null,
+        CompEmailCostChange:           getVal('fe-cost-change')            || null,
+        CompEmailPriceChangesFinance:  getVal('fe-price-changes-finance')  || null,
+        CompStoreRetailPerc:           getNum('f-store-retail'),
+        CompStoreAlliancePerc:         getNum('f-store-alliance'),
+        CompStoreNorsaPerc:            getNum('f-store-norsa'),
+        CompPathCostChanges:           getVal('f-path-cost-changes')   || null,
+        CompPathPriceChanges:          getVal('f-path-price-changes')  || null,
+        CompPathCostCalc:              getVal('f-path-cost-calc')      || null,
+      };
+      const res = await API.costCalc.saveSystemConfig(dto);
+      _cfg = res?.Data || res || _cfg;
 
-        // Update local cache
-        const row = _rows.find(r => r.MaeModuleKey === f.key);
-        if (row) {
-          row.MaeEmails    = emails;
-          row.MaeUpdatedAt = updated?.MaeUpdatedAt;
-          row.MaeUpdatedBy = updated?.MaeUpdatedBy;
-        }
-        if (updated?.MaeUpdatedAt) lastUpdated = updated;
-      }
+      await API.system.updateModuleApprover('COSTCALC_APPROVED_SALES', { Emails: getVal('fe-approved-sales') });
+      await API.system.updateModuleApprover('COSTCALC_DOLLAR_RATE',    { Emails: getVal('fe-dollar-rate') });
 
-      updateSavedBar();
-      showToast('All settings saved successfully.', 'success');
+      document.getElementById('last-saved').textContent = `Saved at ${new Date().toLocaleTimeString()}`;
+      showToast('Settings saved successfully.', 'success');
     } catch (err) {
       showToast(err.message || 'Error saving.', 'danger');
     } finally {
       btn.disabled = false;
-      btn.innerHTML = '<i class="fas fa-save me-2"></i>Save All';
+      btn.innerHTML = '<i class="fas fa-save me-2"></i>Save';
     }
+  }
+
+  function getVal(id) {
+    return document.getElementById(id)?.value?.trim() ?? '';
+  }
+
+  function getNum(id) {
+    const v = parseFloat(document.getElementById(id)?.value);
+    return isNaN(v) ? null : v;
   }
 
   function showToast(msg, type = 'success') {

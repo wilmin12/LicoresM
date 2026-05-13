@@ -80,6 +80,15 @@
               <tbody id="data-tbody"><tr><td colspan="9" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading...</td></tr></tbody>
             </table>
           </div>
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 px-3 py-2 border-top" id="pagination-bar" style="display:none">
+            <small class="text-muted" id="pag-info"></small>
+            <nav><ul class="pagination pagination-sm mb-0" id="pag-controls"></ul></nav>
+            <select class="form-select form-select-sm" style="width:auto;" id="page-size-select">
+              <option value="25">25 / page</option>
+              <option value="50">50 / page</option>
+              <option value="100">100 / page</option>
+            </select>
+          </div>
         </div>
       </div>
     </main>
@@ -133,14 +142,16 @@
 <script>
   let allItems = [], filtered = [], tariffItems = [];
   let editModal;
+  let currentPage = 1, pageSize = 25;
 
   document.addEventListener('DOMContentLoaded', async () => {
     if (!Auth.requireAuth()) return;
     Auth.startExpiryWatcher(); Auth.populateUserUI(); Sidebar.init();
     document.getElementById('btn-logout').addEventListener('click', e => { e.preventDefault(); Auth.logout(); });
     editModal = new bootstrap.Modal(document.getElementById('editModal'));
-    document.getElementById('search-input').addEventListener('input', filterAndRender);
-    document.getElementById('filter-active').addEventListener('change', filterAndRender);
+    document.getElementById('search-input').addEventListener('input', () => { currentPage = 1; filterAndRender(); });
+    document.getElementById('filter-active').addEventListener('change', () => { currentPage = 1; filterAndRender(); });
+    document.getElementById('page-size-select').addEventListener('change', e => { pageSize = parseInt(e.target.value); currentPage = 1; renderTable(); });
     document.getElementById('btn-new').addEventListener('click', openCreate);
     document.getElementById('btn-save').addEventListener('click', save);
     await Promise.all([loadData(), loadTariffItems()]);
@@ -181,13 +192,23 @@
 
   function renderTable() {
     const tbody = document.getElementById('data-tbody');
-    document.getElementById('total-count').textContent = filtered.length + ' records';
-    if (!filtered.length) { tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted">No records found.</td></tr>'; return; }
-    tbody.innerHTML = filtered.map((r, i) => {
+    const total = filtered.length;
+    document.getElementById('total-count').textContent = total + ' records';
+    if (!total) {
+      tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted">No records found.</td></tr>';
+      document.getElementById('pagination-bar').style.display = 'none';
+      return;
+    }
+    const totalPages = Math.ceil(total / pageSize);
+    currentPage = Math.max(1, Math.min(currentPage, totalPages));
+    const start = (currentPage - 1) * pageSize;
+    const page = filtered.slice(start, start + pageSize);
+
+    const fmtRate = v => v != null ? (Number(v) * 100).toFixed(2) + '%' : '–';
+    tbody.innerHTML = page.map((r, i) => {
       const tariff = tariffItems.find(t => t.TiHsCode === r.GcHsCode);
-      const fmtRate = v => v != null ? (Number(v) * 100).toFixed(2) + '%' : '–';
       return `<tr>
-        <td>${i + 1}</td>
+        <td>${start + i + 1}</td>
         <td><strong>${esc(r.GcItemCode)}</strong></td>
         <td>${esc(r.GcItemDescr || '')}</td>
         <td><span class="badge bg-secondary">${esc(r.GcHsCode)}</span></td>
@@ -201,7 +222,38 @@
         </td>
       </tr>`;
     }).join('');
+
+    const bar = document.getElementById('pagination-bar');
+    bar.style.display = 'flex';
+    document.getElementById('pag-info').textContent = `Showing ${start + 1}–${Math.min(start + pageSize, total)} of ${total}`;
+    renderPagination(totalPages);
   }
+
+  function renderPagination(totalPages) {
+    const ul = document.getElementById('pag-controls');
+    const pages = buildPageRange(currentPage, totalPages);
+    ul.innerHTML = `<li class="page-item${currentPage === 1 ? ' disabled' : ''}">
+      <a class="page-link" href="#" onclick="goPage(${currentPage - 1});return false;">&laquo;</a></li>` +
+      pages.map(p => p === '...'
+        ? `<li class="page-item disabled"><span class="page-link">…</span></li>`
+        : `<li class="page-item${p === currentPage ? ' active' : ''}">
+             <a class="page-link" href="#" onclick="goPage(${p});return false;">${p}</a></li>`
+      ).join('') +
+      `<li class="page-item${currentPage === totalPages ? ' disabled' : ''}">
+        <a class="page-link" href="#" onclick="goPage(${currentPage + 1});return false;">&raquo;</a></li>`;
+  }
+
+  function buildPageRange(cur, total) {
+    if (total <= 7) return Array.from({length: total}, (_, i) => i + 1);
+    const pages = [1];
+    if (cur > 3) pages.push('...');
+    for (let p = Math.max(2, cur - 1); p <= Math.min(total - 1, cur + 1); p++) pages.push(p);
+    if (cur < total - 2) pages.push('...');
+    pages.push(total);
+    return pages;
+  }
+
+  function goPage(p) { currentPage = p; renderTable(); }
 
   function openCreate() {
     document.getElementById('modal-title').textContent = 'New Classification';

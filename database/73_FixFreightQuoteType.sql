@@ -1,0 +1,11 @@
+-- Fix for missing FreightType column in FF_QUOTE_HEADER
+USE LicoresMaduoDB;
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.columns 
+               WHERE object_id = OBJECT_ID('FF_QUOTE_HEADER') AND name = 'FQH_FREIGHT_TYPE')
+BEGIN
+    ALTER TABLE FF_QUOTE_HEADER ADD FQH_FREIGHT_TYPE NVARCHAR(10) NULL;
+    PRINT 'Added FQH_FREIGHT_TYPE to FF_QUOTE_HEADER';
+END
+GO

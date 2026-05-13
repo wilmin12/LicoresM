@@ -105,25 +105,17 @@
       <div class="page-subtitle">Quotes per Forwarder + Port + Route combining ocean, inland and additional port charges.</div>
 
       <div class="quotes-layout mt-3">
-        <!-- ── LEFT: Quote list ── -->
+        <!-- ── LEFT: Fwd list ── -->
         <div class="quotes-list-panel">
           <div class="card shadow-sm">
-            <div class="card-body px-3 py-2 border-bottom">
-              <button class="btn btn-wine btn-sm w-100 mb-2" id="btn-new-quote"><i class="fas fa-plus me-1"></i>New Quote</button>
-              <select id="filter-forwarder" class="form-select form-select-sm"><option value="">— Select Forwarder —</option></select>
+            <div class="mb-2 px-3 pt-2 mt-2">
+              <input type="search" id="filter-search" class="form-control form-control-sm" placeholder="Search FF..." />
             </div>
-            <div class="mb-2 px-3 pt-2">
-              <input type="search" id="filter-search" class="form-control form-control-sm" placeholder="Search…" />
-            </div>
-            <div id="quote-list" style="max-height:calc(100vh - 280px);overflow-y:auto;">
-              <div class="text-center text-muted py-4" style="font-size:.82rem;"><i class="fas fa-arrow-up fa-sm mb-1 d-block opacity-50"></i>Select a forwarder to view quotes</div>
+            <div id="fwd-list" style="max-height:calc(100vh - 280px);overflow-y:auto;">
+              <div class="text-center text-muted py-4" style="font-size:.82rem;"><i class="fas fa-spinner fa-spin d-block mb-2 opacity-50"></i>Loading...</div>
             </div>
             <div class="card-footer d-flex justify-content-between align-items-center py-1 px-3" style="font-size:.78rem;">
               <span id="list-info">–</span>
-              <div class="d-flex gap-1">
-                <button class="btn btn-sm btn-outline-secondary py-0 px-2" id="btn-prev">‹</button>
-                <button class="btn btn-sm btn-outline-secondary py-0 px-2" id="btn-next">›</button>
-              </div>
             </div>
           </div>
         </div>
@@ -144,21 +136,24 @@
             </div>
           </div>
 
-          <!-- Header info bar — visible only when a quote is selected -->
-          <div id="quote-header-card" class="card shadow-sm mb-3" style="display:none;">
-            <div class="card-body py-2 px-3 d-flex flex-wrap align-items-center gap-3">
-              <div><span class="text-muted" style="font-size:.72rem;">QUOTE #</span><span id="dh-num" class="fw-bold ms-1 text-wine" style="font-size:1.1rem;"></span></div>
-              <div><span class="text-muted" style="font-size:.72rem;">FORWARDER</span><span id="dh-fwd" class="fw-600 ms-1" style="font-size:.85rem;"></span></div>
-              <div><span class="text-muted" style="font-size:.72rem;">PORT</span><span id="dh-port" class="ms-1" style="font-size:.85rem;"></span></div>
-              <div><span class="text-muted" style="font-size:.72rem;">ROUTE</span><span id="dh-route" class="ms-1" style="font-size:.85rem;"></span></div>
-              <div><span class="text-muted" style="font-size:.72rem;">TRANSIT</span><span id="dh-transit" class="ms-1" style="font-size:.85rem;"></span></div>
-              <div><span class="text-muted" style="font-size:.72rem;">VALIDITY</span><span id="dh-dates" class="ms-1" style="font-size:.85rem;"></span></div>
-              <div class="ms-auto d-flex gap-2">
-                <button class="btn btn-sm btn-outline-secondary" id="btn-edit-quote" title="Edit header"><i class="fas fa-edit"></i></button>
-                <button class="btn btn-sm btn-outline-danger" id="btn-delete-quote" title="Delete quote"><i class="fas fa-trash"></i></button>
+          <!-- Header info template — cloned into active tab -->
+          <template id="quote-header-template">
+            <div class="card shadow-sm mb-3 quote-header-card">
+              <div class="card-body py-2 px-3 d-flex flex-wrap align-items-center gap-3">
+                <div><span class="text-muted" style="font-size:.72rem;">QUOTE #</span><span class="fw-bold ms-1 text-wine dh-num" style="font-size:1.1rem;"></span></div>
+                <div><span class="text-muted" style="font-size:.72rem;">FORWARDER</span><span class="fw-600 ms-1 dh-fwd" style="font-size:.85rem;"></span></div>
+                <div><span class="text-muted" style="font-size:.72rem;">PORT</span><span class="ms-1 dh-port" style="font-size:.85rem;"></span></div>
+                <div><span class="text-muted" style="font-size:.72rem;">ROUTE</span><span class="ms-1 dh-route" style="font-size:.85rem;"></span></div>
+                <div><span class="text-muted" style="font-size:.72rem;">TRANSIT</span><span class="ms-1 dh-transit" style="font-size:.85rem;"></span></div>
+                <div><span class="text-muted" style="font-size:.72rem;">VALIDITY</span><span class="ms-1 dh-dates" style="font-size:.85rem;"></span></div>
+                <div class="ms-auto d-flex gap-2">
+                  <button class="btn btn-sm btn-outline-primary btn-clone-quote" title="Clone quote"><i class="fas fa-copy"></i></button>
+                  <button class="btn btn-sm btn-outline-secondary btn-edit-quote" title="Edit header"><i class="fas fa-edit"></i></button>
+                  <button class="btn btn-sm btn-outline-danger btn-delete-quote" title="Delete quote"><i class="fas fa-trash"></i></button>
+                </div>
               </div>
             </div>
-          </div>
+          </template>
 
           <!-- Tabs — always visible -->
           <ul class="nav nav-tabs mb-0" id="detail-tabs">
@@ -178,29 +173,91 @@
             <div class="tab-pane" id="tab-ocean">
               <div class="card shadow-sm border-top-0 rounded-top-0">
                 <div class="card-body p-3">
-                  <!-- Botones -->
-                  <div class="d-flex justify-content-end gap-2 mb-3">
-                    <button class="btn btn-wine btn-sm" id="btn-add-ocean-port"><i class="fas fa-plus me-1"></i>New Port</button>
-                    <button class="btn btn-outline-wine btn-sm" id="btn-add-ocean-sline"><i class="fas fa-plus me-1"></i>New Shipping Line</button>
-                    <button class="btn btn-success btn-sm" id="btn-save-all-ocean"><i class="fas fa-save me-1"></i>Save All</button>
+                  <div id="ocean-tab-quotes" class="mb-3"></div>
+                  
+                  <!-- Cascading Filters -->
+                  <div class="row gx-2 mb-3 align-items-end" id="ocean-cascade-controls">
+                    <div class="col-md-5">
+                      <label class="form-label text-muted mb-1" style="font-size:.75rem;font-weight:600;">Port</label>
+                      <div class="d-flex gap-1">
+                        <select id="ocean-cascade-port" class="form-select form-select-sm" onchange="onOceanCascadePortChange(this)">
+                          <option value="">— select port —</option>
+                        </select>
+                        <button class="btn btn-outline-secondary btn-sm" onclick="openNewOceanPort()" title="Add Port"><i class="fas fa-plus"></i></button>
+                        <button class="btn btn-outline-secondary btn-sm" id="btn-edit-ocean-port" onclick="editOceanPortBtn()" title="Edit Port" disabled><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-outline-danger btn-sm" id="btn-del-ocean-port" onclick="deleteOceanPortBtn()" title="Delete Port" disabled><i class="fas fa-trash"></i></button>
+                      </div>
+                    </div>
+                    <div class="col-md-5">
+                      <label class="form-label text-muted mb-1" style="font-size:.75rem;font-weight:600;">Shipping Line</label>
+                      <div class="d-flex gap-1">
+                        <select id="ocean-cascade-sline" class="form-select form-select-sm" onchange="onOceanCascadeSLineChange(this)" disabled>
+                          <option value="">— select shipping line —</option>
+                        </select>
+                        <button class="btn btn-outline-secondary btn-sm" id="btn-add-ocean-sline" onclick="openNewOceanSLineBtn()" title="Add Shipping Line" disabled><i class="fas fa-plus"></i></button>
+                        <button class="btn btn-outline-secondary btn-sm" id="btn-edit-ocean-sline" onclick="editOceanSLineBtn()" title="Edit Shipping Line" disabled><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-outline-danger btn-sm" id="btn-del-ocean-sline" onclick="deleteOceanSLineBtn()" title="Delete Shipping Line" disabled><i class="fas fa-trash"></i></button>
+                      </div>
+                    </div>
+                    <div class="col-md-2 d-flex justify-content-end gap-1">
+                       <button class="btn btn-outline-success btn-sm" id="btn-add-ocean-row" onclick="addOceanChargeRowBtn()" title="Add Row" style="display:none;"><i class="fas fa-plus"></i></button>
+                       <button class="btn btn-success btn-sm" id="btn-save-all-ocean" onclick="saveAllOcean()" style="display:none;"><i class="fas fa-save me-1"></i>Save All</button>
+                    </div>
                   </div>
-                  <!-- Lista de cabeceras Port + Shipping Line -->
-                  <div id="ocean-headers-list"></div>
-                  <!-- Grid de detalle (charges del SLine activo) -->
-                  <div id="ocean-tree"></div>
+
+                  <!-- Grid Container -->
+                  <div id="ocean-grid-container">
+                     <div class="text-center py-4 border rounded bg-light" id="ocean-empty-state">
+                       <i class="fas fa-ship fa-2x mb-2 opacity-25"></i>
+                       <div class="text-muted" style="font-size:.85rem;">Select a Port and Shipping Line to view charges.</div>
+                     </div>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <!-- ── Tab: Inland (tree) ── -->
+            <!-- ── Tab: Inland ── -->
             <div class="tab-pane" id="tab-inland" style="display:none;">
               <div class="card shadow-sm border-top-0 rounded-top-0">
                 <div class="card-body p-3">
-                  <div class="d-flex justify-content-end gap-2 mb-3">
-                    <button class="btn btn-wine btn-sm" id="btn-add-region"><i class="fas fa-plus me-1"></i>Add Region</button>
-                    <button class="btn btn-success btn-sm" id="btn-save-all-inland"><i class="fas fa-save me-1"></i>Save All</button>
+                  <div id="inland-tab-quotes" class="mb-3"></div>
+                  
+                  <!-- Cascading Filters -->
+                  <div class="row gx-2 mb-3 align-items-end" id="inland-cascade-controls">
+                    <div class="col-md-5">
+                      <label class="form-label text-muted mb-1" style="font-size:.75rem;font-weight:600;">Region</label>
+                      <div class="d-flex gap-1">
+                        <select id="inland-cascade-region" class="form-select form-select-sm" onchange="onInlandCascadeRegionChange(this)">
+                          <option value="">— select region —</option>
+                        </select>
+                        <button class="btn btn-outline-secondary btn-sm" id="btn-add-region" title="Add Region"><i class="fas fa-plus"></i></button>
+                        <button class="btn btn-outline-danger btn-sm" id="btn-del-inland-region" onclick="deleteInlandRegionBtn()" title="Delete Region" disabled><i class="fas fa-trash"></i></button>
+                      </div>
+                    </div>
+                    <div class="col-md-5">
+                      <label class="form-label text-muted mb-1" style="font-size:.75rem;font-weight:600;">Charge Type</label>
+                      <div class="d-flex gap-1">
+                        <select id="inland-cascade-type" class="form-select form-select-sm" onchange="onInlandCascadeTypeChange(this)" disabled>
+                          <option value="">— select charge type —</option>
+                        </select>
+                        <button class="btn btn-outline-secondary btn-sm" id="btn-add-inland-type" onclick="addRegionTypeBtn()" title="Add Charge Type" disabled><i class="fas fa-plus"></i></button>
+                        <button class="btn btn-outline-secondary btn-sm" id="btn-edit-inland-type" onclick="editRegionTypeBtn()" title="Edit Charge Type" disabled><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-outline-danger btn-sm" id="btn-del-inland-type" onclick="deleteRegionTypeBtn()" title="Delete Charge Type" disabled><i class="fas fa-trash"></i></button>
+                      </div>
+                    </div>
+                    <div class="col-md-2 d-flex justify-content-end gap-1">
+                       <button class="btn btn-outline-success btn-sm" id="btn-add-inland-row" onclick="addDetailRowBtn()" title="Add Row" style="display:none;"><i class="fas fa-plus"></i></button>
+                       <button class="btn btn-success btn-sm" id="btn-save-all-inland" style="display:none;"><i class="fas fa-save me-1"></i>Save All</button>
+                    </div>
                   </div>
-                  <div id="inland-tree"></div>
+
+                  <!-- Grid Container -->
+                  <div id="inland-grid-container">
+                     <div class="text-center py-4 border rounded bg-light" id="inland-empty-state">
+                       <i class="fas fa-truck fa-2x mb-2 opacity-25"></i>
+                       <div class="text-muted" style="font-size:.85rem;">Select a Region and Charge Type to view details.</div>
+                     </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -209,8 +266,10 @@
             <div class="tab-pane" id="tab-port-add" style="display:none;">
               <div class="card shadow-sm border-top-0 rounded-top-0">
                 <div class="card-body p-0">
-                  <div class="card-header d-flex justify-content-end py-2">
-                    <button class="btn btn-wine btn-sm" id="btn-add-portadd"><i class="fas fa-plus me-1"></i>Add Row</button>
+                  <div class="p-3 border-bottom"><div id="portadd-tab-quotes"></div></div>
+                  <div class="card-header d-flex justify-content-end py-2 gap-2">
+                    <button class="btn btn-outline-success btn-sm" id="btn-add-portadd"><i class="fas fa-plus me-1"></i>Add Row</button>
+                    <button class="btn btn-success btn-sm" id="btn-save-all-portadd" style="display:none;"><i class="fas fa-save me-1"></i>Save All</button>
                   </div>
                   <div class="table-responsive">
                     <table class="table table-sm table-bordered charges-grid mb-0">
@@ -243,10 +302,45 @@
             <div class="tab-pane" id="tab-lcl" style="display:none;">
               <div class="card shadow-sm border-top-0 rounded-top-0">
                 <div class="card-body p-3">
-                  <div class="d-flex justify-content-end mb-3">
-                    <button class="btn btn-wine btn-sm" id="btn-add-lcl-port"><i class="fas fa-plus me-1"></i>New Port</button>
+                  <div id="lcl-tab-quotes" class="mb-3"></div>
+                  
+                  <!-- Cascading Filters -->
+                  <div class="row gx-2 mb-3 align-items-end" id="lcl-cascade-controls">
+                    <div class="col-md-5">
+                      <label class="form-label text-muted mb-1" style="font-size:.75rem;font-weight:600;">Port</label>
+                      <div class="d-flex gap-1">
+                        <select id="lcl-cascade-port" class="form-select form-select-sm" onchange="onLclCascadePortChange(this)">
+                          <option value="">— select port —</option>
+                        </select>
+                        <button class="btn btn-outline-secondary btn-sm" id="btn-add-lcl-port" title="Add Port"><i class="fas fa-plus"></i></button>
+                        <button class="btn btn-outline-secondary btn-sm" id="btn-edit-lcl-port" onclick="editLclPortBtn()" title="Edit Port" disabled><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-outline-danger btn-sm" id="btn-del-lcl-port" onclick="deleteLclPortBtn()" title="Delete Port" disabled><i class="fas fa-trash"></i></button>
+                      </div>
+                    </div>
+                    <div class="col-md-5">
+                      <label class="form-label text-muted mb-1" style="font-size:.75rem;font-weight:600;">Charge Type</label>
+                      <div class="d-flex gap-1">
+                        <select id="lcl-cascade-type" class="form-select form-select-sm" onchange="onLclCascadeTypeChange(this)" disabled>
+                          <option value="">— select charge type —</option>
+                        </select>
+                        <button class="btn btn-outline-secondary btn-sm" id="btn-add-lcl-type" onclick="openNewLclShippingBtn()" title="Add Charge Type" disabled><i class="fas fa-plus"></i></button>
+                        <button class="btn btn-outline-secondary btn-sm" id="btn-edit-lcl-type" onclick="editLclShippingBtn()" title="Edit Charge Type" disabled><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-outline-danger btn-sm" id="btn-del-lcl-type" onclick="deleteLclShippingBtn()" title="Delete Charge Type" disabled><i class="fas fa-trash"></i></button>
+                      </div>
+                    </div>
+                    <div class="col-md-2 d-flex justify-content-end gap-1">
+                       <button class="btn btn-outline-success btn-sm" id="btn-add-lcl-row" onclick="addLclDetailRowBtn()" title="Add Row" style="display:none;"><i class="fas fa-plus"></i></button>
+                       <button class="btn btn-success btn-sm" id="btn-save-all-lcl" onclick="saveAllLcl()" style="display:none;"><i class="fas fa-save me-1"></i>Save All</button>
+                    </div>
                   </div>
-                  <div id="lcl-tree"></div>
+
+                  <!-- Grid Container -->
+                  <div id="lcl-grid-container">
+                     <div class="text-center py-4 border rounded bg-light" id="lcl-empty-state">
+                       <i class="fas fa-boxes fa-2x mb-2 opacity-25"></i>
+                       <div class="text-muted" style="font-size:.85rem;">Select a Port and Charge Type to view details.</div>
+                     </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -309,35 +403,7 @@
   </div></div>
 </div>
 
-<!-- Ocean Port Modal -->
-<div class="modal fade" id="modal-ocean-port" tabindex="-1">
-  <div class="modal-dialog modal-sm"><div class="modal-content">
-    <div class="modal-header"><h5 class="modal-title" id="modal-ocean-port-title">New Port</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-    <div class="modal-body">
-      <label class="form-label fw-600">Port of Loading<span class="text-danger">*</span></label>
-      <select id="op-port" class="form-select form-select-sm"><option value="">— select —</option></select>
-      <label class="form-label fw-600 mt-2">Remarks</label>
-      <input type="text" id="op-remarks" class="form-control form-control-sm" maxlength="200" />
-      <div id="ocean-port-error" class="alert alert-danger mt-2 d-none"></div>
-    </div>
-    <div class="modal-footer"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-wine btn-sm" id="btn-save-ocean-port">Save</button></div>
-  </div></div>
-</div>
 
-<!-- Ocean Shipping Line Modal -->
-<div class="modal fade" id="modal-ocean-sline" tabindex="-1">
-  <div class="modal-dialog"><div class="modal-content">
-    <div class="modal-header"><h5 class="modal-title" id="modal-ocean-sline-title">New Shipping Line</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-    <div class="modal-body row g-3">
-      <div class="col-12" id="osl-port-row"><label class="form-label fw-600">Port<span class="text-danger">*</span></label><select id="osl-port" class="form-select form-select-sm"><option value="">— select —</option></select></div>
-      <div class="col-12"><label class="form-label fw-600">Shipping Line<span class="text-danger">*</span></label><select id="osl-line" class="form-select form-select-sm"><option value="">— select —</option></select></div>
-      <div class="col-sm-8"><label class="form-label fw-600">Route</label><select id="osl-route" class="form-select form-select-sm"><option value="">— select —</option></select></div>
-      <div class="col-sm-4"><label class="form-label fw-600">Transit Days</label><input type="number" id="osl-days" class="form-control form-control-sm" min="0" /></div>
-      <div class="col-12"><div id="ocean-sline-error" class="alert alert-danger d-none"></div></div>
-    </div>
-    <div class="modal-footer"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-wine btn-sm" id="btn-save-ocean-sline">Save</button></div>
-  </div></div>
-</div>
 
 <!-- LCL Port Modal -->
 <div class="modal fade" id="modal-lcl-port" tabindex="-1">
@@ -366,6 +432,35 @@
       <div class="col-12"><div id="lcl-shipping-error" class="alert alert-danger d-none"></div></div>
     </div>
     <div class="modal-footer"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-wine btn-sm" id="btn-save-lcl-shipping">Save</button></div>
+  </div></div>
+</div>
+
+<!-- Ocean Port Modal -->
+<div class="modal fade" id="modal-ocean-port" tabindex="-1">
+  <div class="modal-dialog modal-sm"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title" id="modal-ocean-port-title">New Port</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+      <label class="form-label fw-600">Port<span class="text-danger">*</span></label>
+      <select id="op-port" class="form-select form-select-sm"><option value="">— select —</option></select>
+      <label class="form-label fw-600 mt-2">Remarks</label>
+      <input type="text" id="op-remarks" class="form-control form-control-sm" maxlength="200" />
+      <div id="ocean-port-error" class="alert alert-danger mt-2 d-none"></div>
+    </div>
+    <div class="modal-footer"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-wine btn-sm" id="btn-save-ocean-port">Save</button></div>
+  </div></div>
+</div>
+
+<!-- Ocean Shipping Line Modal -->
+<div class="modal fade" id="modal-ocean-sline" tabindex="-1">
+  <div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title" id="modal-ocean-sline-title">New Shipping Line</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body row g-3">
+      <div class="col-sm-6"><label class="form-label fw-600">Shipping Line<span class="text-danger">*</span></label><select id="os-line" class="form-select form-select-sm"><option value="">— select —</option></select></div>
+      <div class="col-sm-6"><label class="form-label fw-600">Route</label><select id="os-route" class="form-select form-select-sm"><option value="">— select —</option></select></div>
+      <div class="col-sm-6"><label class="form-label fw-600">Transit Days</label><input type="number" id="os-days" class="form-control form-control-sm" min="0" /></div>
+      <div class="col-12"><div id="ocean-sline-error" class="alert alert-danger d-none"></div></div>
+    </div>
+    <div class="modal-footer"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-wine btn-sm" id="btn-save-ocean-sline">Save</button></div>
   </div></div>
 </div>
 
@@ -405,12 +500,18 @@ const _isSuperAdmin = Auth.getCurrentUser()?.RoleName === 'SuperAdmin';
 let _page = 1, _pageSize = 20, _total = 0;
 let _activeQuoteId = null;
 let _activeQuote   = null;
-let _activeTab     = null;   // null = sin filtro de tab; se activa al hacer click en un tab
+let _activeTab     = 'ocean';   
 let _pendingDeleteFn = null;
 let _newQuoteSourceOceanPorts = null;
 let _newQuoteSourceInland     = null;
 let _newQuoteSourcePortAdd    = null;
 let _newQuoteSourceLcl        = null;
+
+let _selectedOceanPortId = null;
+let _selectedOceanSLineId = null;
+
+let _selectedInlandRegionId = null;
+let _selectedInlandTypeId = null;
 
 // catalog caches
 let _forwarders = [], _ports = [], _routes = [], _currencies = [];
@@ -434,10 +535,10 @@ function _tsSet(id, val) {
 
 // Bootstrap modal references
 const mQuote      = new bootstrap.Modal('#modal-quote');
-const mRegion     = new bootstrap.Modal('#modal-region');
-const mRtype      = new bootstrap.Modal('#modal-rtype');
 const mOceanPort  = new bootstrap.Modal('#modal-ocean-port');
 const mOceanSLine = new bootstrap.Modal('#modal-ocean-sline');
+const mRegion     = new bootstrap.Modal('#modal-region');
+const mRtype      = new bootstrap.Modal('#modal-rtype');
 const mLclPort    = new bootstrap.Modal('#modal-lcl-port');
 const mLclShip    = new bootstrap.Modal('#modal-lcl-shipping');
 const mConfirm    = new bootstrap.Modal('#modal-confirm');
@@ -445,9 +546,8 @@ const mConfirm    = new bootstrap.Modal('#modal-confirm');
 // ── Init ───────────────────────────────────────────────────────────────────
 (async () => {
   await _loadCatalogs();
-  _populateFilterForwarder();
+  _loadFwdList(); // Load the forwarder list using the new div-based renderer
   _wireEvents();
-  _loadList();
 })();
 
 // ── Catalog Loading ────────────────────────────────────────────────────────
@@ -488,15 +588,6 @@ async function _loadCatalogs() {
   _shippingLines    = (sls.Data   || []).filter(x => x.IsActive !== false);
 }
 
-function _populateFilterForwarder() {
-  const sel = document.getElementById('filter-forwarder');
-  _forwarders.forEach(f => {
-    const o = document.createElement('option');
-    o.value = f.FfCode; o.textContent = f.FfName || f.FfCode;
-    sel.appendChild(o);
-  });
-  _tsReinit('filter-forwarder');
-}
 
 function _fillSelect(selId, items, codeField, nameField, includeBlank = true) {
   const sel = document.getElementById(selId);
@@ -522,7 +613,6 @@ function _buildOptsOpt(items, codeField, selected = '') {  // with blank "–" (
     items.map(i => `<option value="${_esc(i[codeField])}"${i[codeField]===selected?' selected':''}>${_esc(i[codeField])}</option>`).join('');
 }
 
-function _oceanCtDesc(code)     { return _oceanChargeTypes.find(x=>x.OfctCode===code)?.OfctDescription||''; }
 function _amountTypeDesc(code)  { return _amountTypes.find(x=>x.AtCode===code)?.AtDescription||''; }
 function _regionName(code)      { const r = _regions.find(x=>x.RegCode===code); return r ? `${r.RegName}${r.RegCountry ? ' ('+r.RegCountry+')' : ''}` : code; }
 
@@ -553,85 +643,277 @@ function collapseSelectToCode(sel) {
   });
 }
 function _containerDesc(code) { return _containerTypes.find(x=>x.CtCode===code)?.CtDescription||''; }
-function _inlandCtDesc(code)  { return _inlandChargeTypes.find(x=>x.IfctCode===code)?.IfctDescription||''; }
+
 function _loadTypeDesc(code)  { return _loadTypes.find(x=>x.LtCode===code)?.LtDescription||''; }
 
-// ── List ───────────────────────────────────────────────────────────────────
-function _renderListEmpty() {
-  document.getElementById('quote-list').innerHTML =
-    '<div class="text-center text-muted py-4" style="font-size:.82rem;"><i class="fas fa-arrow-up fa-sm mb-1 d-block opacity-50"></i>Select a forwarder to view quotes</div>';
-  document.getElementById('list-info').textContent = '–';
-  document.getElementById('btn-prev').disabled = true;
-  document.getElementById('btn-next').disabled = true;
+let _activeFwdCode = null;
+let _fwdList = [];   // [{Code, QuoteCount}] from forwarders-with-quotes
+let _isLatestTabQuote = { ocean: false, inland: false, portadd: false, lcl: false };
+let _tabQuoteLists    = { ocean: [], inland: [], portadd: [], lcl: [] };
+let _activeTabQuoteId = { ocean: null, inland: null, portadd: null, lcl: null };
+let _activeTabQuote   = { ocean: null, inland: null, portadd: null, lcl: null };
+
+// ── Forwarder list (left panel) ────────────────────────────────────────────
+async function _loadFwdList() {
+  try {
+    const res = await API.appliedQuotes.getForwardersWithQuotes();
+    _fwdList = res?.Data || [];
+  } catch { _fwdList = []; }
+  _renderFwdList('');
 }
 
-async function _loadList() {
-  const fwd    = document.getElementById('filter-forwarder').value || null;
-  const search = document.getElementById('filter-search').value;
-  const res = await API.appliedQuotes.getQuotes({ forwarder: fwd, search, tab: _activeTab, page: _page, pageSize: _pageSize });
-  _total = res.TotalCount || 0;
-  _renderList(res.Data || []);
-  const start = (_page - 1) * _pageSize + 1;
-  const end   = Math.min(_page * _pageSize, _total);
-  document.getElementById('list-info').textContent = _total ? `${start}-${end} of ${_total}` : '0 quotes';
-  document.getElementById('btn-prev').disabled = _page <= 1;
-  document.getElementById('btn-next').disabled = end >= _total;
-}
-
-function _renderList(items) {
-  const el = document.getElementById('quote-list');
-  if (!items.length) {
-    el.innerHTML = '<div class="text-center text-muted py-4" style="font-size:.82rem;"><i class="fas fa-inbox d-block mb-2 opacity-25"></i>No quotes found</div>';
+function _renderFwdList(q) {
+  const el = document.getElementById('fwd-list');
+  q = (q || '').trim().toLowerCase();
+  
+  // Only show results if there is a search query or an active forwarder is selected
+  if (!q && !_activeFwdCode) {
+    el.innerHTML = '<div class="text-center text-muted py-4" style="font-size:.82rem;"><i class="fas fa-search d-block mb-2 opacity-50 fa-2x"></i>Type to search forwarders</div>';
+    document.getElementById('list-info').textContent = `0 results`;
     return;
   }
-  el.innerHTML = items.map(q => `
-    <div class="quote-item ${q.FqhId === _activeQuoteId ? 'active' : ''}" data-id="${q.FqhId}">
-      <div class="d-flex justify-content-between align-items-center">
-        <span class="quote-num">#${q.FqhQuoteNumber}</span>
-        <span class="badge bg-secondary" style="font-size:.68rem;">${q.FqhForwarder}</span>
+
+  // If there's an active forwarder but no search query, only show the active forwarder to keep the UI clean
+  const withQuotes = _fwdList.filter(f => 
+    (q && f.Code.toLowerCase().includes(q)) || (!q && f.Code === _activeFwdCode)
+  );
+  
+  const withoutQ = _forwarders.filter(f =>
+    !_fwdList.find(x => x.Code === f.FfCode) &&
+    ((q && (f.FfCode.toLowerCase().includes(q) || (f.FfName||'').toLowerCase().includes(q))) || (!q && f.FfCode === _activeFwdCode))
+  );
+
+  if (!withQuotes.length && !withoutQ.length) {
+    el.innerHTML = '<div class="text-center text-muted py-4" style="font-size:.82rem;">No forwarders found</div>';
+    document.getElementById('list-info').textContent = `0 results`;
+    return;
+  }
+  let html = '';
+  withQuotes.forEach(f => {
+    const fw = _forwarders.find(x => x.FfCode === f.Code);
+    const name = fw?.FfName || '';
+    const active = f.Code === _activeFwdCode ? 'active' : '';
+    html += `<div class="quote-item ${active}" data-code="${_esc(f.Code)}" onclick="_selectFwd('${_esc(f.Code)}')">
+      <div class="d-flex justify-content-between">
+         <span class="quote-num">${_esc(f.Code)}</span>
+         <span class="badge bg-secondary" style="font-size:.68rem;">${f.QuoteCount} Quotes</span>
       </div>
-      <div class="text-muted mt-1" style="font-size:.75rem;">
-        ${q.FqhPort || '—'} &rarr; ${q.FqhRoute || '—'}
-        ${q.FqhStartDate ? ' &bull; ' + _fmt(q.FqhStartDate) : ''}
-      </div>
-    </div>`).join('');
-  el.querySelectorAll('.quote-item').forEach(el => {
-    el.addEventListener('click', () => _selectQuote(+el.dataset.id));
+      <div class="text-muted mt-1" style="font-size:.75rem;">${_esc(name)}</div>
+    </div>`;
   });
+  if (withoutQ.length) {
+    html += `<div class="px-3 pt-2 pb-1 border-top mt-2" style="font-size:.72rem;font-weight:700;color:var(--text-secondary);letter-spacing:.04em;">SIN COTIZACIONES</div>`;
+    withoutQ.slice(0, 15).forEach(f => {
+      const active = f.FfCode === _activeFwdCode ? 'active' : '';
+      html += `<div class="quote-item ${active}" data-code="${_esc(f.FfCode)}" onclick="_selectFwd('${_esc(f.FfCode)}')">
+        <span class="quote-num">${_esc(f.FfCode)}</span>
+        <div class="text-muted mt-1" style="font-size:.75rem;">${_esc(f.FfName||'')}</div>
+      </div>`;
+    });
+  }
+  el.innerHTML = html;
+  
+  const totalShown = withQuotes.length + withoutQ.length;
+  document.getElementById('list-info').textContent = `${totalShown} FF(s) shown`;
 }
 
-// ── Select & Load Quote Detail ─────────────────────────────────────────────
-async function _selectQuote(id) {
-  _activeQuoteId = id;
-  document.querySelectorAll('.quote-item').forEach(el => el.classList.toggle('active', +el.dataset.id === id));
+async function _selectFwd(code) {
+  _activeFwdCode    = code;
+  _page             = 1;
+  _activeTabQuoteId = { ocean: null, inland: null, portadd: null, lcl: null };
+  _activeTabQuote   = { ocean: null, inland: null, portadd: null, lcl: null };
+  _isLatestTabQuote = { ocean: false, inland: false, portadd: false, lcl: false };
+  _tabQuoteLists    = { ocean: [], inland: [], portadd: [], lcl: [] };
+
+  document.querySelectorAll('#fwd-list .quote-item').forEach(el => el.classList.toggle('active', el.dataset.code === code));
+  // Keep filter-search text intact but run loadTabQuotes
+  
+  document.getElementById('detail-placeholder').style.display = 'none';
+  document.getElementById('detail-panel').style.display       = '';
+
+  // Clear trees
+  const oceanTree = document.getElementById('ocean-tree');
+  if (oceanTree) oceanTree.innerHTML = '';
+  const inlandTree = document.getElementById('inland-tree');
+  if (inlandTree) inlandTree.innerHTML = '';
+  const portaddTbody = document.getElementById('portadd-tbody');
+  if (portaddTbody) portaddTbody.innerHTML = '';
+  const lclTree = document.getElementById('lcl-tree');
+  if (lclTree) lclTree.innerHTML = '';
+
+  await _renderFwdInfoCard(code);
+
+  await Promise.all([
+    _loadTabQuotes('ocean',   code),
+    _loadTabQuotes('inland',  code),
+    _loadTabQuotes('portadd', code),
+    _loadTabQuotes('lcl',     code),
+  ]);
+
+  // Auto-seleccionar la última versión de cada tab o mostrar el header del FF
+  await Promise.all(
+    ['ocean','inland','portadd','lcl'].map(async t => {
+      if (_tabQuoteLists[t].length > 0) {
+        await _selectTabQuote(_tabQuoteLists[t][0].FqhId, t);
+      } else {
+        _renderTabDetail(null, t);
+      }
+    })
+  );
+}
+
+async function _loadTabQuotes(tabType, fwdCode) {
+  if (!fwdCode) return;
+  const divId = { ocean:'ocean-tab-quotes', inland:'inland-tab-quotes', portadd:'portadd-tab-quotes', lcl:'lcl-tab-quotes' }[tabType];
+  const el = document.getElementById(divId);
+  if (!el) return;
+  el.style.display = '';
+  el.innerHTML = `<div class="text-muted text-center py-2" style="font-size:.78rem;"><i class="fas fa-spinner fa-spin me-1"></i></div>`;
   try {
-    const res = await API.appliedQuotes.getQuote(id);
-    _activeQuote = res.Data;
-    _renderDetail(_activeQuote);
+    // Strictly filter by category and limit to 3
+    const params = { forwarder: fwdCode, tab: tabType, page: 1, pageSize: 3 };
+    const res = await API.appliedQuotes.getQuotes(params);
+    const quotes = res?.Data || [];
+    _tabQuoteLists[tabType] = quotes;
+    _renderTabQuotes(el, quotes, tabType);
   } catch(e) {
-    document.getElementById('quote-header-card').style.display = 'none';
-    document.getElementById('detail-placeholder').style.display = 'none';
-    document.getElementById('detail-panel').style.display = '';
-    document.getElementById('detail-panel').innerHTML =
-      `<div class="alert alert-danger m-3"><strong>Error cargando quote:</strong> ${e.message}</div>`;
+    el.innerHTML = `<div class="text-danger text-center py-2" style="font-size:.78rem;">${_esc(e.message)}</div>`;
   }
 }
 
-function _renderDetail(q) {
-  document.getElementById('quote-header-card').style.display = '';
-  document.getElementById('detail-placeholder').style.display = 'none';
-  document.getElementById('detail-panel').style.display = '';
-  document.getElementById('dh-num').textContent     = '#' + q.FqhQuoteNumber;
-  document.getElementById('dh-fwd').textContent     = q.FqhForwarder;
-  _renderFwdInfoCard(q.FqhForwarder);
-  document.getElementById('dh-port').textContent    = q.FqhPort    || '—';
-  document.getElementById('dh-route').textContent   = q.FqhRoute   || '—';
-  document.getElementById('dh-transit').textContent = q.FqhTransitDays != null ? q.FqhTransitDays + ' days' : '—';
-  document.getElementById('dh-dates').textContent   = (q.FqhStartDate ? _fmt(q.FqhStartDate) : '?') + ' → ' + (q.FqhEndDate ? _fmt(q.FqhEndDate) : '?');
-  _renderOceanTab(q.OceanPorts      || []);
-  _renderInlandTab(q.InlandRegions  || []);
-  _renderPortAddTab(q.InlandPortAdds || []);
-  _renderLclTab(q.LclPorts          || []);
+function _renderTabQuotes(el, quotes, tabType) {
+  if (!quotes.length) {
+    el.innerHTML = `<div class="text-center py-4 border rounded bg-light mb-2">
+      <div class="text-muted mb-3" style="font-size:.85rem;">No hay cotizaciones para este forwarder en esta categoría.</div>
+      ${_isSuperAdmin ? `<button class="btn btn-wine btn-sm" onclick="openNewQuote()"><i class="fas fa-plus me-1"></i>New Quote</button>` : ''}
+    </div>`;
+    return;
+  }
+  el.innerHTML = `<div class="border rounded overflow-hidden mb-2">` +
+    quotes.map(q => {
+      const isActive = q.FqhId === _activeTabQuoteId[tabType];
+      return `<div class="quote-item px-2 py-1 border-bottom ${isActive ? 'active' : ''}" style="cursor:pointer;" data-id="${q.FqhId}" onclick="_selectTabQuote(${q.FqhId},'${tabType}')">
+         <div class="d-flex justify-content-between align-items-center">
+            <span class="quote-num" style="font-size:.8rem;">#${q.FqhQuoteNumber}</span>
+            <span class="text-muted" style="font-size:.7rem;">${q.FqhStartDate ? _fmt(q.FqhStartDate) : ''}</span>
+         </div>
+      </div>`;
+    }).join('') +
+  `</div>`;
+}
+
+async function _selectTabQuote(id, tabType) {
+  _activeTabQuoteId[tabType] = id;
+  // Highlight
+  const divId = { ocean:'ocean-tab-quotes', inland:'inland-tab-quotes', portadd:'portadd-tab-quotes', lcl:'lcl-tab-quotes' }[tabType];
+  document.querySelectorAll(`#${divId} .quote-item`).forEach(el =>
+    el.classList.toggle('active', +el.dataset.id === id));
+  try {
+    const res = await API.appliedQuotes.getQuote(id);
+    const quote = res.Data || res;
+    _activeTabQuote[tabType] = quote;
+    const list = _tabQuoteLists[tabType];
+    _isLatestTabQuote[tabType] = list.length > 0 && list[0].FqhId === id;
+
+    // Update global state if this is the active tab
+    if (tabType === _curTab()) {
+      _activeQuoteId = id;
+      _activeQuote   = quote;
+    }
+
+    _renderTabDetail(quote, tabType);
+  } catch(e) {
+    _activeTabQuote[tabType] = null;
+    showToast('Error cargando quote: ' + e.message, 'danger');
+  }
+}
+
+function _renderTabDetail(q, tabType) {
+  // If no quote (q is null), we should hide the cascading controls and add buttons
+  const hasQuote = q !== null;
+  
+  if (tabType === 'ocean') {
+    const controls = document.getElementById('ocean-cascade-controls');
+    if (controls) controls.style.display = hasQuote ? '' : 'none';
+    _renderOceanTab(hasQuote ? (q.OceanPorts || []) : []);
+  }
+  if (tabType === 'inland') {
+    const controls = document.getElementById('inland-cascade-controls');
+    if (controls) controls.style.display = hasQuote ? '' : 'none';
+    _renderInlandTab(hasQuote ? (q.InlandRegions || []) : []);
+  }
+  if (tabType === 'portadd') {
+    const btnAdd = document.getElementById('btn-add-portadd');
+    if (btnAdd) btnAdd.style.display = hasQuote ? '' : 'none';
+    const btnSaveAll = document.getElementById('btn-save-all-portadd');
+    if (btnSaveAll) btnSaveAll.style.display = hasQuote ? '' : 'none';
+    _renderPortAddTab(hasQuote ? (q.InlandPortAdds || []) : []);
+  }
+  if (tabType === 'lcl') {
+    const controls = document.getElementById('lcl-cascade-controls');
+    if (controls) controls.style.display = hasQuote ? '' : 'none';
+    const btnAdd = document.getElementById('btn-add-lcl-port');
+    if (btnAdd) btnAdd.style.display = hasQuote ? '' : 'none';
+    _renderLclTab(hasQuote ? (q.LclPorts || []) : []);
+  }
+  _updateHeaderCard(q, tabType);
+}
+
+function _curTab() { return _activeTab || 'ocean'; }
+
+function _updateHeaderCard(q, tabType) {
+  if (!tabType) tabType = _curTab();
+  
+  const activeTabId = 'tab-' + (tabType === 'portadd' ? 'port-add' : tabType);
+  const activeTabPane = document.getElementById(activeTabId);
+  if (!activeTabPane) return;
+
+  // Remove existing header cards in THIS tab only
+  activeTabPane.querySelectorAll('.quote-header-card').forEach(el => el.remove());
+  
+  if (q) {
+    const template = document.getElementById('quote-header-template');
+    const clone = template.content.cloneNode(true);
+    
+    // Fill the cloned template with data
+    clone.querySelector('.dh-num').textContent     = '#' + q.FqhQuoteNumber;
+    clone.querySelector('.dh-fwd').textContent     = q.FqhForwarder;
+    clone.querySelector('.dh-port').textContent    = q.FqhPort    || '—';
+    clone.querySelector('.dh-route').textContent   = q.FqhRoute   || '—';
+    clone.querySelector('.dh-transit').textContent = q.FqhTransitDays != null ? q.FqhTransitDays + ' days' : '—';
+    clone.querySelector('.dh-dates').textContent   = (q.FqhStartDate ? _fmt(q.FqhStartDate) : '?') + ' → ' + (q.FqhEndDate ? _fmt(q.FqhEndDate) : '?');
+
+    // Add event listeners to the cloned buttons using 'q' from closure
+    clone.querySelector('.btn-clone-quote').addEventListener('click', () => quickCloneQuote(q));
+    clone.querySelector('.btn-edit-quote').addEventListener('click', () => openEditQuote(q));
+    clone.querySelector('.btn-delete-quote').addEventListener('click', () =>
+      confirmDelete(`Delete quote #${q?.FqhQuoteNumber}? This will remove all charges.`, () => {
+        // Set globals before deleting so deleteCurrentQuote works correctly
+        _activeQuoteId = q.FqhId; 
+        _activeQuote = q;
+        deleteCurrentQuote();
+      }));
+
+    // Insert the populated clone at the beginning of the tab pane
+    activeTabPane.insertBefore(clone, activeTabPane.firstChild);
+  } else if (_activeFwdCode) {
+    // Show a simplified Forwarder header when no quote is selected
+    const fw = _forwarders.find(x => x.FfCode === _activeFwdCode);
+    const fwName = fw?.FfName || '';
+    const html = `
+      <div class="card shadow-sm mb-3 quote-header-card" style="border-left: 4px solid var(--primary);">
+        <div class="card-body py-2 px-3 d-flex flex-wrap align-items-center gap-3">
+          <div><span class="text-muted" style="font-size:.72rem;">FORWARDER</span><span class="fw-bold ms-1 text-wine" style="font-size:1.1rem;">${_esc(_activeFwdCode)}</span></div>
+          <div class="flex-grow-1"><span class="fw-600 ms-1" style="font-size:.9rem;">${_esc(fwName)}</span></div>
+          <div class="ms-auto d-flex gap-2">
+            <span class="text-muted small italic"><i class="fas fa-info-circle me-1"></i>No active quote for this category</span>
+            ${_isSuperAdmin ? `<button class="btn btn-wine btn-sm ms-2" onclick="openNewQuote()"><i class="fas fa-plus me-1"></i>New Quote</button>` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+    activeTabPane.insertAdjacentHTML('afterbegin', html);
+  }
 }
 
 // ── Tab switching ──────────────────────────────────────────────────────────
@@ -643,252 +925,18 @@ function _wireTabEvents() {
       btn.classList.add('active');
       document.querySelectorAll('.tab-pane').forEach(p => p.style.display = 'none');
       document.getElementById('tab-' + btn.dataset.tab).style.display = '';
+      
       _activeTab = _tabMap[btn.dataset.tab] || 'ocean';
       _page = 1;
-      _loadList();
+      
+      // Update global quote references to match the selected quote in this tab
+      _activeQuoteId = _activeTabQuoteId[_activeTab];
+      _activeQuote   = _activeTabQuote[_activeTab];
+      _updateHeaderCard(_activeQuote);
     });
   });
 }
 
-// ── OCEAN TAB — Header (Port + SLine) → Detail (Charges grid) ──────────────
-let _oceanPortEditId  = null;
-let _oceanSLinePortId = null;
-let _oceanSLineEditId = null;
-let _selOceanSLineId  = null;   // slineId de la cabecera activa
-
-function _currencyDesc(code) { return _currencies.find(x => x.CurCode === code)?.CurDescription || ''; }
-
-// Renderiza la lista de cabeceras y el grid de detalle
-function _renderOceanTab(ports) {
-  _renderOceanHeaders(ports);
-  _renderOceanGrid(ports);
-}
-
-// Lista de cabeceras: Port — Shipping Line (clickeables)
-function _renderOceanHeaders(ports) {
-  const el = document.getElementById('ocean-headers-list');
-  const allSLines = [];
-  for (const p of (ports || [])) {
-    for (const sl of (p.ShippingLines || [])) {
-      allSLines.push({ port: p, sl });
-    }
-  }
-  if (!allSLines.length) {
-    el.innerHTML = '<div class="text-muted mb-3" style="font-size:.82rem;">Sin cabeceras — usa New Port y New Shipping Line.</div>';
-    _selOceanSLineId = null;
-    return;
-  }
-  // Auto-seleccionar el primero si no hay selección válida
-  if (!allSLines.find(x => x.sl.FqopsId === _selOceanSLineId)) {
-    _selOceanSLineId = allSLines[0].sl.FqopsId;
-  }
-  el.innerHTML = `<div class="ocean-header-list">` +
-    allSLines.map(({ port: p, sl }) => {
-      const active = sl.FqopsId === _selOceanSLineId ? 'active' : '';
-      const portLabel = _ports.find(x => x.PlCode === p.FqopPort)?.PlName || p.FqopPort;
-      const slLabel   = _shippingLines.find(x => x.SlCode === sl.FqopsShippingLine)?.SlName || sl.FqopsShippingLine;
-      return `<div class="ocean-header-item ${active}" onclick="selectOceanSLine(${sl.FqopsId})">
-        <span class="oc-hdr-label"><strong>${_esc(p.FqopPort)}</strong> <span class="text-muted">—</span> ${_esc(sl.FqopsShippingLine)}
-          <small class="text-muted ms-1">${_esc(portLabel)} / ${_esc(slLabel)}</small>
-        </span>
-        ${_isSuperAdmin ? `<button class="btn btn-sm btn-outline-secondary py-0 px-1" onclick="event.stopPropagation();openEditOceanSLine(${sl.FqopsId})" title="Editar"><i class="fas fa-edit" style="font-size:.7rem;"></i></button>` : ''}
-        ${_isSuperAdmin ? `<button class="btn btn-sm btn-outline-danger py-0 px-1" onclick="event.stopPropagation();confirmDelete('¿Eliminar ${_esc(p.FqopPort)} — ${_esc(sl.FqopsShippingLine)} y sus cargos?',()=>deleteOceanSLine(${sl.FqopsId}))" title="Eliminar"><i class="fas fa-trash" style="font-size:.7rem;"></i></button>` : ''}
-      </div>`;
-    }).join('') + `</div>`;
-}
-
-// Activa una cabecera y recarga el grid
-function selectOceanSLine(slineId) {
-  _selOceanSLineId = slineId;
-  _renderOceanHeaders(_activeQuote?.OceanPorts || []);
-  _renderOceanGrid(_activeQuote?.OceanPorts || []);
-}
-
-// Grid de charges para el slineId activo
-function _renderOceanGrid(ports) {
-  const el = document.getElementById('ocean-tree');
-  if (!_selOceanSLineId) { el.innerHTML = ''; return; }
-  let activeSLine = null, activePort = null;
-  for (const p of (ports || [])) {
-    const sl = (p.ShippingLines || []).find(s => s.FqopsId === _selOceanSLineId);
-    if (sl) { activeSLine = sl; activePort = p; break; }
-  }
-  const charges = activeSLine?.Charges || [];
-  const rows = charges.map(c =>
-    _oceanChargeRowHtml(c.FqocId, _selOceanSLineId,
-      c.FqocChargeType||'', c.FqocContainerType||'', c.FqocAmount, c.FqocCurrency||'')
-  ).join('');
-  const title = activePort && activeSLine
-    ? `${_esc(activePort.FqopPort)} — ${_esc(activeSLine.FqopsShippingLine)}`
-    : '';
-  el.innerHTML = `
-    <div class="ocean-detail-title">Charges: ${title}</div>
-    <div class="table-responsive">
-    <table class="table table-sm table-bordered charges-grid" id="oc-flat-tbl">
-      <thead><tr>
-        <th>Charge Type</th><th class="desc-cell">Description</th>
-        <th>Cont. Type</th><th class="desc-cell">Container Spec</th>
-        <th class="num-col">Amount</th>
-        <th class="cur-col">Currency</th><th class="desc-cell">Currency Desc</th>
-        <th class="act-col"></th>
-      </tr></thead>
-      <tbody id="oc-flat-tbody">${rows}</tbody>
-    </table>
-  </div>`;
-  const tbody = document.getElementById('oc-flat-tbody');
-  tbody.addEventListener('keydown', _onOceanTbodyKeydown);
-  if (_isSuperAdmin) _appendEmptyOceanRow(tbody);
-}
-
-function _oceanChargeRowHtml(id, slineId, ct, cont, amount, currency) {
-  return `<tr data-id="${id||''}" data-sline="${slineId||''}">
-    <td><select class="form-select oc-ct-sel" onmousedown="expandSelectDesc(this,_oceanChargeTypes,'OfctCode','OfctDescription')" onchange="onOceanCtChange(this)">${_buildOptsCodeDesc(_oceanChargeTypes,'OfctCode','OfctDescription',ct)}</select></td>
-    <td class="desc-cell oc-ct-desc">${_esc(_oceanCtDesc(ct))}</td>
-    <td><select class="form-select oc-cont-sel" onmousedown="expandSelectDesc(this,_containerTypes,'CtCode','CtDescription')" onchange="onOceanContChange(this)">${_buildOptsCodeDesc(_containerTypes,'CtCode','CtDescription',cont)}</select></td>
-    <td class="desc-cell oc-cont-desc">${_esc(_containerDesc(cont))}</td>
-    <td class="num-col"><input type="number" class="form-control oc-amount" step="0.01" value="${amount!=null?amount:''}" oninput="this.closest('tr').classList.add('row-dirty')" /></td>
-    <td class="cur-col"><select class="form-select oc-currency" onchange="onOceanCurChange(this)">${_buildOptsOpt(_currencies,'CurCode',currency)}</select></td>
-    <td class="desc-cell oc-cur-desc">${_esc(_currencyDesc(currency))}</td>
-    <td class="act-col">
-      ${_isSuperAdmin ? `<button class="btn-row-save" onclick="saveOceanChargeRow(this)" title="Save"><i class="fas fa-save"></i></button>` : ''}
-      ${_isSuperAdmin ? `<button class="btn-row-del"  onclick="deleteOceanChargeRow(this)" title="Delete"><i class="fas fa-trash"></i></button>` : ''}
-    </td>
-  </tr>`;
-}
-
-
-function onOceanCtChange(sel) {
-  collapseSelectToCode(sel);
-  sel.closest('tr').querySelector('.oc-ct-desc').textContent = _oceanCtDesc(sel.value);
-  sel.closest('tr').classList.add('row-dirty');
-}
-function onOceanContChange(sel) {
-  collapseSelectToCode(sel);
-  sel.closest('tr').querySelector('.oc-cont-desc').textContent = _containerDesc(sel.value);
-  sel.closest('tr').classList.add('row-dirty');
-}
-function onOceanCurChange(sel) {
-  sel.closest('tr').querySelector('.oc-cur-desc').textContent = _currencyDesc(sel.value);
-  sel.closest('tr').classList.add('row-dirty');
-}
-
-function _appendEmptyOceanRow(tbody) {
-  const tr = document.createElement('tr');
-  tr.dataset.id    = '';
-  tr.dataset.sline = _selOceanSLineId || '';
-  tr.innerHTML = `
-    <td><select class="form-select oc-ct-sel" onmousedown="expandSelectDesc(this,_oceanChargeTypes,'OfctCode','OfctDescription')" onchange="onOceanCtChange(this)">${_buildOptsCodeDesc(_oceanChargeTypes,'OfctCode','OfctDescription','')}</select></td>
-    <td class="desc-cell oc-ct-desc"></td>
-    <td><select class="form-select oc-cont-sel" onmousedown="expandSelectDesc(this,_containerTypes,'CtCode','CtDescription')" onchange="onOceanContChange(this)">${_buildOptsCodeDesc(_containerTypes,'CtCode','CtDescription','')}</select></td>
-    <td class="desc-cell oc-cont-desc"></td>
-    <td class="num-col"><input type="number" class="form-control oc-amount" step="0.01" value="" oninput="this.closest('tr').classList.add('row-dirty')" /></td>
-    <td class="cur-col"><select class="form-select oc-currency" onchange="onOceanCurChange(this)">${_buildOptsOpt(_currencies,'CurCode','')}</select></td>
-    <td class="desc-cell oc-cur-desc"></td>
-    <td class="act-col">
-      ${_isSuperAdmin ? `<button class="btn-row-save" onclick="saveOceanChargeRow(this)" title="Save"><i class="fas fa-save"></i></button>` : ''}
-      ${_isSuperAdmin ? `<button class="btn-row-del"  onclick="deleteOceanChargeRow(this)" title="Delete"><i class="fas fa-trash"></i></button>` : ''}
-    </td>`;
-  tbody.appendChild(tr);
-}
-
-function _onOceanTbodyKeydown(e) {
-  if (e.key !== 'Enter') return;
-  const el  = e.target;
-  const row = el.closest('tr');
-  if (!row) return;
-  // Solo disparar desde la última celda editable (oc-currency select)
-  if (!el.classList.contains('oc-currency')) return;
-  e.preventDefault();
-  addOceanChargeRow();
-}
-
-function addOceanChargeRow() {
-  const tbody = document.getElementById('oc-flat-tbody');
-  if (!tbody) return;
-  _appendEmptyOceanRow(tbody);
-  tbody.lastElementChild.querySelector('.oc-ct-sel').focus();
-}
-
-async function saveOceanChargeRow(btn) {
-  const row     = btn.closest('tr');
-  const id      = row.dataset.id;
-  const ct      = row.querySelector('.oc-ct-sel').value;
-  if (!ct) { showToast('Seleccione un Charge Type.', 'danger'); return; }
-  const dto = {
-    ChargeType:    ct,
-    ContainerType: row.querySelector('.oc-cont-sel').value || null,
-    Amount:        row.querySelector('.oc-amount').value ? +row.querySelector('.oc-amount').value : null,
-    Currency:      row.querySelector('.oc-currency').value || null
-  };
-  try {
-    if (id) {
-      await API.appliedQuotes.updateOceanCharge(+id, dto);
-    } else {
-      const slineId = row.dataset.sline || _selOceanSLineId;
-      if (!slineId) { showToast('Selecciona una cabecera (Port / Shipping Line) primero.', 'danger'); return; }
-      const res   = await API.appliedQuotes.addOceanCharge(+slineId, dto);
-      const saved = res?.Data || res;
-      if (saved?.FqocId) { row.dataset.id = saved.FqocId; row.dataset.sline = slineId; }
-    }
-    row.classList.remove('row-dirty');
-    _showRowOk(btn);
-  } catch(e) { showToast(e?.message || 'Error saving.', 'danger'); }
-}
-
-async function deleteOceanChargeRow(btn) {
-  const row = btn.closest('tr');
-  const id  = row.dataset.id;
-  if (id) {
-    if (!confirm('¿Eliminar este cargo?')) return;
-    try { await API.appliedQuotes.deleteOceanCharge(+id); } catch(e) { showToast(e?.message||'Error', 'danger'); return; }
-  }
-  row.remove();
-}
-
-// ── Save All ocean charges (todas las filas visibles del grid activo) ────────
-async function saveAllOceanCharges() {
-  const tbody = document.getElementById('oc-flat-tbody');
-  if (!tbody) { showToast('Selecciona un Port / Shipping Line primero.', 'danger'); return; }
-  const rows = Array.from(tbody.querySelectorAll('tr'));
-  if (!rows.length) { showToast('No hay cargos para guardar.', 'danger'); return; }
-  const btn = document.getElementById('btn-save-all-ocean');
-  btn.disabled = true;
-  btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Saving…';
-  let saved = 0, skipped = 0;
-  try {
-    for (const row of rows) {
-      const ct = row.querySelector('.oc-ct-sel')?.value;
-      if (!ct) { skipped++; continue; }
-      const dto = {
-        ChargeType:    ct,
-        ContainerType: row.querySelector('.oc-cont-sel')?.value  || null,
-        Amount:        row.querySelector('.oc-amount')?.value    ? +row.querySelector('.oc-amount').value : null,
-        Currency:      row.querySelector('.oc-currency')?.value  || null
-      };
-      const id     = row.dataset.id;
-      const slineId = row.dataset.sline || _selOceanSLineId;
-      if (id) {
-        await API.appliedQuotes.updateOceanCharge(+id, dto);
-      } else {
-        if (!slineId) { skipped++; continue; }
-        const res = await API.appliedQuotes.addOceanCharge(+slineId, dto);
-        const saved_ = res?.Data || res;
-        if (saved_?.FqocId) { row.dataset.id = saved_.FqocId; row.dataset.sline = slineId; }
-      }
-      row.classList.remove('row-dirty');
-      saved++;
-    }
-    const msg = skipped ? `Guardado. ${skipped} fila(s) sin Charge Type omitidas.` : `${saved} cargo(s) guardado(s) correctamente.`;
-    showToast(msg, skipped ? 'danger' : 'success');
-    const tb = document.getElementById('oc-flat-tbody');
-    if (tb) { tb.innerHTML = ''; if (_isSuperAdmin) _appendEmptyOceanRow(tb); }
-  } catch(e) {
-    showToast('Error guardando: ' + (e?.message || 'Error desconocido.'), 'danger');
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = '<i class="fas fa-save me-1"></i>Save All';
-  }
-}
 
 // ── Save All Inland detail rows ───────────────────────────────────────────────
 async function saveAllInland() {
@@ -929,7 +977,9 @@ async function saveAllInland() {
       ? `Guardado. ${skipped} fila(s) omitidas por falta de datos.`
       : `${saved} fila(s) guardada(s) correctamente.`;
     showToast(msg, skipped ? 'warning' : 'success');
-    document.querySelectorAll('[id^="det-tbody-"]').forEach(tb => { tb.innerHTML = ''; });
+    
+    // Refresh to update UI with latest data from DB (including new IDs)
+    await _refreshDetail();
   } catch(e) {
     showToast('Error guardando: ' + (e?.message || 'Error desconocido.'), 'danger');
   } finally {
@@ -939,23 +989,24 @@ async function saveAllInland() {
 }
 
 // ── Ocean Port modal ────────────────────────────────────────────────────────
+let _oceanPortTargetId = null;  // null = new, int = edit
+
 function openNewOceanPort() {
-  _oceanPortEditId = null;
+  _oceanPortTargetId = null;
   document.getElementById('modal-ocean-port-title').textContent = 'New Port';
   _fillSelect('op-port', _ports, 'PlCode', 'PlName');
-  document.getElementById('op-port').value    = '';
   document.getElementById('op-remarks').value = '';
   _hideErr('ocean-port-error');
   mOceanPort.show();
 }
 
-function openEditOceanPort(portId) {
-  const p = (_activeQuote?.OceanPorts || []).find(x => x.FqopId === portId);
+function editOceanPort(portId) {
+  const p = _activeQuote?.OceanPorts?.find(x => x.FqopId === portId);
   if (!p) return;
-  _oceanPortEditId = portId;
+  _oceanPortTargetId = portId;
   document.getElementById('modal-ocean-port-title').textContent = 'Edit Port';
   _fillSelect('op-port', _ports, 'PlCode', 'PlName');
-  document.getElementById('op-port').value    = p.FqopPort    || '';
+  document.getElementById('op-port').value    = p.FqopPort || '';
   document.getElementById('op-remarks').value = p.FqopRemarks || '';
   _hideErr('ocean-port-error');
   mOceanPort.show();
@@ -964,138 +1015,476 @@ function openEditOceanPort(portId) {
 async function saveOceanPort() {
   const portVal = document.getElementById('op-port').value;
   if (!portVal) { _showErr('ocean-port-error', 'Port is required.'); return; }
+  
+  if (!_oceanPortTargetId && !_activeQuoteId) {
+    _showErr('ocean-port-error', 'No active quote selected.'); 
+    return; 
+  }
+
   const dto = { Port: portVal, Remarks: document.getElementById('op-remarks').value || null };
   try {
-    if (_oceanPortEditId) { await API.appliedQuotes.updateOceanPort(_oceanPortEditId, dto); }
-    else                  { await API.appliedQuotes.addOceanPort(_activeQuoteId, dto); }
+    if (_oceanPortTargetId) { await API.appliedQuotes.updateOceanPort(_oceanPortTargetId, dto); }
+    else                    { await API.appliedQuotes.addOceanPort(_activeQuoteId, dto); }
     mOceanPort.hide();
-    await _refreshDetail();
+    await _selectTabQuote(_activeQuoteId, 'ocean');
   } catch(e) { _showErr('ocean-port-error', e?.message || 'Error.'); }
 }
 
 async function deleteOceanPort(id) {
-  try { await API.appliedQuotes.deleteOceanPort(id); await _refreshDetail(); }
-  catch(e) { showToast(e?.message || 'Error deleting port.', 'danger'); }
+  await API.appliedQuotes.deleteOceanPort(id);
+  await _selectTabQuote(_activeQuoteId, 'ocean');
 }
 
 // ── Ocean Shipping Line modal ───────────────────────────────────────────────
-function openNewOceanSLine() {
-  _oceanSLinePortId = null;
+let _oceanSLineTargetPortId = null;
+let _oceanSLineEditId = null;
+
+function openNewOceanSLine(portId) {
+  _oceanSLineTargetPortId = portId;
   _oceanSLineEditId = null;
   document.getElementById('modal-ocean-sline-title').textContent = 'New Shipping Line';
-  const ports = _activeQuote?.OceanPorts || [];
-  const sel = document.getElementById('osl-port');
-  sel.innerHTML = '<option value="">— select port —</option>' +
-    ports.map(p => `<option value="${p.FqopId}">${_esc(p.FqopPort)}</option>`).join('');
-  sel.value = '';
-  document.getElementById('osl-port-row').style.display = '';
-  _fillSelect('osl-line',  _shippingLines, 'SlCode', 'SlName');
-  _fillSelect('osl-route', _routes,        'RouCode','RouDescription');
-  document.getElementById('osl-line').value  = '';
-  document.getElementById('osl-route').value = '';
-  document.getElementById('osl-days').value  = '';
+  _fillSelect('os-line',  _shippingLines, 'SlCode', 'SlName');
+  _fillSelect('os-route', _routes,        'RouCode', 'RouDescription');
+  document.getElementById('os-days').value = '';
   _hideErr('ocean-sline-error');
   mOceanSLine.show();
 }
 
-function openEditOceanSLine(slineId) {
-  // Find the sline across all ports
-  let foundSl = null, foundPort = null;
-  for (const p of (_activeQuote?.OceanPorts || [])) {
-    const sl = (p.ShippingLines || []).find(x => x.FqopsId === slineId);
-    if (sl) { foundSl = sl; foundPort = p; break; }
-  }
-  if (!foundSl) return;
-  _oceanSLinePortId = foundPort.FqopId;
-  _oceanSLineEditId = slineId;
+function editOceanSLine(slId, portId) {
+  const p  = _activeQuote?.OceanPorts?.find(x => x.FqopId === portId);
+  const sl = p?.ShippingLines?.find(x => x.FqopsId === slId);
+  if (!sl) return;
+  _oceanSLineTargetPortId = portId;
+  _oceanSLineEditId = slId;
   document.getElementById('modal-ocean-sline-title').textContent = 'Edit Shipping Line';
-  // Show port selector in read-only mode
-  const ports = _activeQuote?.OceanPorts || [];
-  const portSel = document.getElementById('osl-port');
-  portSel.innerHTML = ports.map(p => `<option value="${p.FqopId}" ${p.FqopId===foundPort.FqopId?'selected':''}>${_esc(p.FqopPort)}</option>`).join('');
-  portSel.disabled = true;
-  document.getElementById('osl-port-row').style.display = '';
-  _fillSelect('osl-line',  _shippingLines, 'SlCode', 'SlName');
-  _fillSelect('osl-route', _routes,        'RouCode','RouDescription');
-  document.getElementById('osl-line').value  = foundSl.FqopsShippingLine || '';
-  document.getElementById('osl-route').value = foundSl.FqopsRoute        || '';
-  document.getElementById('osl-days').value  = foundSl.FqopsDays         ?? '';
+  _fillSelect('os-line',  _shippingLines, 'SlCode', 'SlName');
+  _fillSelect('os-route', _routes,        'RouCode', 'RouDescription');
+  document.getElementById('os-line').value  = sl.FqopsShippingLine || '';
+  document.getElementById('os-route').value = sl.FqopsRoute || '';
+  document.getElementById('os-days').value  = sl.FqopsDays ?? '';
   _hideErr('ocean-sline-error');
   mOceanSLine.show();
 }
 
 async function saveOceanSLine() {
-  const lineVal = document.getElementById('osl-line').value;
+  const lineVal = document.getElementById('os-line').value;
   if (!lineVal) { _showErr('ocean-sline-error', 'Shipping Line is required.'); return; }
-  // Resolve portId — either set when opened from port card, or from selector
-  const portId = _oceanSLinePortId || +document.getElementById('osl-port').value || null;
-  if (!_oceanSLineEditId && !portId) { _showErr('ocean-sline-error', 'Select a Port.'); return; }
   const dto = {
     ShippingLine: lineVal,
-    Route:        document.getElementById('osl-route').value || null,
-    Days:         document.getElementById('osl-days').value  ? +document.getElementById('osl-days').value : null
+    Route:        document.getElementById('os-route').value || null,
+    Days:         document.getElementById('os-days').value ? +document.getElementById('os-days').value : null
   };
   try {
     if (_oceanSLineEditId) { await API.appliedQuotes.updateOceanSLine(_oceanSLineEditId, dto); }
-    else                   { await API.appliedQuotes.addOceanSLine(portId, dto); }
-    document.getElementById('osl-port').disabled = false;
+    else                   { await API.appliedQuotes.addOceanSLine(_oceanSLineTargetPortId, dto); }
     mOceanSLine.hide();
-    await _refreshDetail();
+    await _selectTabQuote(_activeQuoteId, 'ocean');
   } catch(e) { _showErr('ocean-sline-error', e?.message || 'Error.'); }
 }
 
 async function deleteOceanSLine(id) {
-  try { await API.appliedQuotes.deleteOceanSLine(id); await _refreshDetail(); }
-  catch(e) { showToast(e?.message || 'Error deleting shipping line.', 'danger'); }
+  await API.appliedQuotes.deleteOceanSLine(id);
+  await _selectTabQuote(_activeQuoteId, 'ocean');
 }
 
-// ── INLAND TAB — tree with inline detail rows ──────────────────────────────
-function _renderInlandTab(regions) {
-  const el = document.getElementById('inland-tree');
-  if (!regions.length) {
-    el.innerHTML = `<div class="text-center py-4">
-      <i class="fas fa-truck fa-2x mb-2 opacity-25"></i>
-      <div class="text-muted mb-3" style="font-size:.85rem;">No inland regions defined for this quote.</div>
-      ${_isSuperAdmin ? `<button class="btn btn-wine btn-sm" onclick="openNewRegion()"><i class="fas fa-plus me-1"></i>Add Region</button>` : ''}
-    </div>`;
+// ── OCEAN TAB — tree with inline detail rows ──────────────────────────────
+function _oceanCtDesc(code) { return _oceanChargeTypes.find(x=>x.OfctCode===code)?.OfctDescription||''; }
+function _slineName(code) { return _shippingLines.find(x=>x.SlCode===code)?.SlName||''; }
+
+function _renderOceanTab(ports) {
+  // 1. Populate Port dropdown
+  const portSel = document.getElementById('ocean-cascade-port');
+  portSel.innerHTML = '<option value="">— select port —</option>';
+  ports.forEach(p => {
+    const portName = _ports.find(x => x.PlCode === p.FqopPort)?.PlName || p.FqopPort;
+    const opt = document.createElement('option');
+    opt.value = p.FqopId;
+    opt.textContent = `${p.FqopPort} — ${portName}`;
+    portSel.appendChild(opt);
+  });
+
+  // Restore selection if still valid, otherwise reset
+  if (_selectedOceanPortId && ports.find(p => p.FqopId == _selectedOceanPortId)) {
+    portSel.value = _selectedOceanPortId;
+  } else {
+    _selectedOceanPortId = null;
+    _selectedOceanSLineId = null;
+    portSel.value = '';
+  }
+
+  onOceanCascadePortChange(portSel);
+}
+
+function onOceanCascadePortChange(sel) {
+  _selectedOceanPortId = sel.value ? +sel.value : null;
+  const sLineSel = document.getElementById('ocean-cascade-sline');
+  
+  // Enable/Disable Port buttons
+  document.getElementById('btn-edit-ocean-port').disabled = !_selectedOceanPortId;
+  document.getElementById('btn-del-ocean-port').disabled = !_selectedOceanPortId;
+  document.getElementById('btn-add-ocean-sline').disabled = !_selectedOceanPortId;
+
+  // Clear SLine dropdown and grid
+  sLineSel.innerHTML = '<option value="">— select shipping line —</option>';
+  sLineSel.disabled = !_selectedOceanPortId;
+  
+  if (!_selectedOceanPortId) {
+    _selectedOceanSLineId = null;
+    onOceanCascadeSLineChange(sLineSel);
     return;
   }
-  el.innerHTML = regions.map(r => {
-    const hasTypes = (r.RegionTypes || []).length > 0;
-    return `
-    <div class="card level-card">
-      <div class="card-header d-flex align-items-center gap-2">
-        <button class="btn-tree" onclick="toggleSection('reg-${r.FqerId}')">
-          <i class="fas fa-chevron-right toggle-icon" id="ti-reg-${r.FqerId}" style="${hasTypes ? 'transform:rotate(90deg)' : ''}"></i>
-        </button>
-        <span class="flex-grow-1 fw-600">${_esc(_regionName(r.FqerRegion))}</span>
-        ${_isSuperAdmin ? `<button class="btn btn-sm btn-outline-secondary py-0 px-1" onclick="addRegionType(${r.FqerId})"><i class="fas fa-plus" style="font-size:.7rem;"></i> Type</button>` : ''}
-        ${_isSuperAdmin ? `<button class="btn btn-sm btn-outline-danger py-0 px-1 ms-1" onclick="confirmDelete('Delete region &ldquo;${_esc(r.FqerRegion)}&rdquo; and all its data?', () => deleteInlandRegion(${r.FqerId}))"><i class="fas fa-trash" style="font-size:.7rem;"></i></button>` : ''}
-      </div>
-      <div class="tree-section${hasTypes ? ' open' : ''}" id="reg-${r.FqerId}">
-        ${(r.RegionTypes || []).map(rt => {
-          const hasDets = (rt.Details||[]).length > 0;
-          return `
-          <div class="card level-card level-2 m-2">
-            <div class="card-header d-flex align-items-center gap-2">
-              <button class="btn-tree" onclick="toggleSection('rt-${rt.FqertId}')">
-                <i class="fas fa-chevron-right toggle-icon" id="ti-rt-${rt.FqertId}" style="${hasDets ? 'transform:rotate(90deg)' : ''}"></i>
-              </button>
-              <span class="flex-grow-1">${_esc(rt.FqertChargeType)}
-                ${rt.FqertAmountMin != null || rt.FqertAmountMax != null
-                  ? `<small class="text-muted ms-2">min:${rt.FqertAmountMin ?? '—'} max:${rt.FqertAmountMax ?? '—'} ${rt.FqertCurrency || ''}</small>` : ''}</span>
-              ${_isSuperAdmin ? `<button class="btn btn-sm btn-outline-secondary py-0 px-1" onclick="editRegionType(${rt.FqertId},${r.FqerId})"><i class="fas fa-edit" style="font-size:.7rem;"></i></button>` : ''}
-              ${_isSuperAdmin ? `<button class="btn btn-sm btn-outline-success py-0 px-1 ms-1" onclick="addDetailRow(${rt.FqertId})"><i class="fas fa-plus" style="font-size:.7rem;"></i> Row</button>` : ''}
-              ${_isSuperAdmin ? `<button class="btn btn-sm btn-outline-danger py-0 px-1 ms-1" onclick="confirmDelete('Delete charge type &ldquo;${_esc(rt.FqertChargeType)}&rdquo; and its details?', () => deleteRegionType(${rt.FqertId}))"><i class="fas fa-trash" style="font-size:.7rem;"></i></button>` : ''}
-            </div>
-            <div class="tree-section${hasDets ? ' open' : ''}" id="rt-${rt.FqertId}">
-              ${_renderDetailGrid(rt.Details || [], rt.FqertId)}
-            </div>
-          </div>`;
-        }).join('') || '<div class="p-2 text-muted" style="font-size:.8rem;">No charge types — click + Type</div>'}
-      </div>
-    </div>`;
-  }).join('');
+
+  // Populate SLine dropdown
+  const p = _activeQuote?.OceanPorts?.find(x => x.FqopId === _selectedOceanPortId);
+  const slines = p?.ShippingLines || [];
+  slines.forEach(sl => {
+    const opt = document.createElement('option');
+    opt.value = sl.FqopsId;
+    opt.textContent = `${sl.FqopsShippingLine} — ${_slineName(sl.FqopsShippingLine)}`;
+    sLineSel.appendChild(opt);
+  });
+
+  // Restore SLine selection
+  if (_selectedOceanSLineId && slines.find(sl => sl.FqopsId == _selectedOceanSLineId)) {
+    sLineSel.value = _selectedOceanSLineId;
+  } else {
+    _selectedOceanSLineId = null;
+    sLineSel.value = '';
+  }
+
+  onOceanCascadeSLineChange(sLineSel);
+}
+
+function onOceanCascadeSLineChange(sel) {
+  _selectedOceanSLineId = sel.value ? +sel.value : null;
+  const gridContainer = document.getElementById('ocean-grid-container');
+  
+  // Enable/Disable SLine buttons
+  document.getElementById('btn-edit-ocean-sline').disabled = !_selectedOceanSLineId;
+  document.getElementById('btn-del-ocean-sline').disabled = !_selectedOceanSLineId;
+  
+  // Show/Hide Grid Buttons
+  document.getElementById('btn-add-ocean-row').style.display = _selectedOceanSLineId ? '' : 'none';
+  document.getElementById('btn-save-all-ocean').style.display = _selectedOceanSLineId ? '' : 'none';
+
+  if (!_selectedOceanSLineId) {
+    gridContainer.innerHTML = `
+       <div class="text-center py-4 border rounded bg-light" id="ocean-empty-state">
+         <i class="fas fa-ship fa-2x mb-2 opacity-25"></i>
+         <div class="text-muted" style="font-size:.85rem;">Select a Port and Shipping Line to view charges.</div>
+       </div>`;
+    return;
+  }
+
+  // Render Grid
+  const p = _activeQuote?.OceanPorts?.find(x => x.FqopId === _selectedOceanPortId);
+  const sl = p?.ShippingLines?.find(x => x.FqopsId === _selectedOceanSLineId);
+  gridContainer.innerHTML = _renderOceanDetailGrid(sl?.Charges || [], _selectedOceanSLineId);
+}
+
+// ── Dropdown Action Button Handlers ──
+function editOceanPortBtn() {
+  if (_selectedOceanPortId) editOceanPort(_selectedOceanPortId);
+}
+function deleteOceanPortBtn() {
+  if (_selectedOceanPortId) {
+     const p = _activeQuote?.OceanPorts?.find(x => x.FqopId === _selectedOceanPortId);
+     confirmDelete(`Delete port "${p?.FqopPort}" and all its data?`, () => deleteOceanPort(_selectedOceanPortId));
+  }
+}
+function openNewOceanSLineBtn() {
+  if (_selectedOceanPortId) openNewOceanSLine(_selectedOceanPortId);
+}
+function editOceanSLineBtn() {
+  if (_selectedOceanSLineId && _selectedOceanPortId) editOceanSLine(_selectedOceanSLineId, _selectedOceanPortId);
+}
+function deleteOceanSLineBtn() {
+  if (_selectedOceanSLineId) {
+     const p = _activeQuote?.OceanPorts?.find(x => x.FqopId === _selectedOceanPortId);
+     const sl = p?.ShippingLines?.find(x => x.FqopsId === _selectedOceanSLineId);
+     confirmDelete(`Delete shipping line "${sl?.FqopsShippingLine}" and its charges?`, () => deleteOceanSLine(_selectedOceanSLineId));
+  }
+}
+function addOceanChargeRowBtn() {
+  if (_selectedOceanSLineId) addOceanChargeRow(_selectedOceanSLineId);
+}
+
+function _renderOceanDetailGrid(charges, slId) {
+  const rows = charges.map(c => _oceanDetailRowHtml(c.FqocId, slId, c)).join('');
+  return `<div class="table-responsive">
+    <table class="table table-sm table-bordered charges-grid mb-0" id="ocdet-tbl-${slId}">
+      <thead><tr>
+        <th>Charge Type</th><th class="desc-cell">Description</th>
+        <th>Container</th><th class="desc-cell">Description</th>
+        <th class="num-col">Amount</th><th class="cur-col">Currency</th>
+        <th class="act-col"></th>
+      </tr></thead>
+      <tbody id="ocdet-tbody-${slId}">${rows}</tbody>
+    </table>
+  </div>`;
+}
+
+function _oceanDetailRowHtml(id, slId, d = {}) {
+  const dirty = "this.closest('tr').classList.add('row-dirty')";
+  return `<tr data-id="${id||''}" data-type-id="${slId}">
+    <td><select class="form-select oc-ct-sel" onchange="onOceanCtChange(this)">${_buildOptsCodeDesc(_oceanChargeTypes,'OfctCode','OfctDescription',d.FqocChargeType||'')}</select></td>
+    <td class="desc-cell oc-ct-desc">${_esc(_oceanCtDesc(d.FqocChargeType||''))}</td>
+    <td><select class="form-select oc-cont-sel" onchange="onOceanContChange(this)">${_buildOptsCodeDesc(_containerTypes,'CtCode','CtDescription',d.FqocContainerType||'')}</select></td>
+    <td class="desc-cell oc-cont-desc">${_esc(_containerDesc(d.FqocContainerType||''))}</td>
+    <td class="num-col"><input type="number" class="form-control oc-amount" step="0.01" value="${d.FqocAmount!=null?d.FqocAmount:''}" oninput="${dirty}" /></td>
+    <td class="cur-col"><select class="form-select oc-currency" onchange="${dirty}">${_buildOptsOpt(_currencies,'CurCode',d.FqocCurrency||'')}</select></td>
+    <td class="act-col">
+      ${_isSuperAdmin ? `<button class="btn-row-save" onclick="saveOceanChargeRow(this)" title="Save"><i class="fas fa-save"></i></button>` : ''}
+      ${_isSuperAdmin ? `<button class="btn-row-del" onclick="deleteOceanChargeRow(this)" title="Delete"><i class="fas fa-trash"></i></button>` : ''}
+    </td>
+  </tr>`;
+}
+
+function onOceanCtChange(sel) {
+  collapseSelectToCode(sel);
+  sel.closest('tr').querySelector('.oc-ct-desc').textContent = _oceanCtDesc(sel.value);
+  sel.closest('tr').classList.add('row-dirty');
+}
+function onOceanContChange(sel) {
+  collapseSelectToCode(sel);
+  sel.closest('tr').querySelector('.oc-cont-desc').textContent = _containerDesc(sel.value);
+  sel.closest('tr').classList.add('row-dirty');
+}
+
+function addOceanChargeRow(slId) {
+  const sec = document.getElementById(`osl-${slId}`);
+  if (sec && !sec.classList.contains('open')) sec.classList.add('open');
+  const icon = document.getElementById(`ti-osl-${slId}`);
+  if (icon) icon.style.transform = 'rotate(90deg)';
+
+  let tbody = document.getElementById(`ocdet-tbody-${slId}`);
+  if (!tbody) {
+    sec.innerHTML = _renderOceanDetailGrid([], slId);
+    tbody = document.getElementById(`ocdet-tbody-${slId}`);
+  }
+  const dirty = "this.closest('tr').classList.add('row-dirty')";
+  const tr = document.createElement('tr');
+  tr.dataset.id = '';
+  tr.dataset.typeId = slId;
+  tr.innerHTML = `
+    <td><select class="form-select oc-ct-sel" onmousedown="expandSelectDesc(this,_oceanChargeTypes,'OfctCode','OfctDescription')" onchange="onOceanCtChange(this)">${_buildOptsCodeDesc(_oceanChargeTypes,'OfctCode','OfctDescription','')}</select></td>
+    <td class="desc-cell oc-ct-desc"></td>
+    <td><select class="form-select oc-cont-sel" onmousedown="expandSelectDesc(this,_containerTypes,'CtCode','CtDescription')" onchange="onOceanContChange(this)">${_buildOptsCodeDesc(_containerTypes,'CtCode','CtDescription','')}</select></td>
+    <td class="desc-cell oc-cont-desc"></td>
+    <td class="num-col"><input type="number" class="form-control oc-amount" step="0.01" value="" oninput="${dirty}" /></td>
+    <td class="cur-col"><select class="form-select oc-currency" onchange="${dirty}">${_buildOptsOpt(_currencies,'CurCode','')}</select></td>
+    <td class="act-col">
+      ${_isSuperAdmin ? `<button class="btn-row-save" onclick="saveOceanChargeRow(this)" title="Save"><i class="fas fa-save"></i></button>` : ''}
+      ${_isSuperAdmin ? `<button class="btn-row-del" onclick="deleteOceanChargeRow(this)" title="Delete"><i class="fas fa-trash"></i></button>` : ''}
+    </td>`;
+  tbody.appendChild(tr);
+  tr.querySelector('.oc-ct-sel').focus();
+}
+
+async function saveOceanChargeRow(btn) {
+  const row    = btn.closest('tr');
+  const id     = row.dataset.id;
+  const slId = row.dataset.typeId || row.closest('tbody')?.id?.replace('ocdet-tbody-','');
+  
+  const ct = row.querySelector('.oc-ct-sel').value;
+  if (!ct) { showToast('Charge type is required.', 'danger'); return; }
+
+  const dto = {
+    ChargeType:    ct,
+    ContainerType: row.querySelector('.oc-cont-sel').value || null,
+    Amount:        row.querySelector('.oc-amount').value ? +row.querySelector('.oc-amount').value : null,
+    Currency:      row.querySelector('.oc-currency').value || null
+  };
+
+  try {
+    if (id) {
+      await API.appliedQuotes.updateOceanCharge(+id, dto);
+    } else {
+      const res = await API.appliedQuotes.addOceanCharge(+slId, dto);
+      const saved = res?.Data || res;
+      if (saved?.FqocId) row.dataset.id = saved.FqocId;
+    }
+    row.classList.remove('row-dirty');
+    _showRowOk(btn);
+  } catch(e) { showToast(e?.message || 'Error saving.', 'danger'); }
+}
+
+async function deleteOceanChargeRow(btn) {
+  const row = btn.closest('tr');
+  const id  = row.dataset.id;
+  if (id) {
+    if (!confirm('Delete this ocean charge?')) return;
+    try { await API.appliedQuotes.deleteOceanCharge(+id); } catch(e) { showToast(e?.message||'Error', 'danger'); return; }
+  }
+  row.remove();
+}
+
+async function saveAllOcean() {
+  const allRows = Array.from(document.querySelectorAll('[id^="ocdet-tbody-"] tr'));
+  if (!allRows.length) { showToast('No hay cargos de ocean para guardar.', 'danger'); return; }
+
+  const btn = document.getElementById('btn-save-all-ocean');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Saving…';
+
+  let saved = 0, skipped = 0;
+  try {
+    for (const row of allRows) {
+      const id   = row.dataset.id;
+      const slId = row.dataset.typeId || row.closest('tbody')?.id?.replace('ocdet-tbody-', '');
+      const ct   = row.querySelector('.oc-ct-sel').value;
+      
+      if (!slId || !ct) { skipped++; continue; }
+
+      const dto = {
+        ChargeType:    ct,
+        ContainerType: row.querySelector('.oc-cont-sel').value || null,
+        Amount:        row.querySelector('.oc-amount').value ? +row.querySelector('.oc-amount').value : null,
+        Currency:      row.querySelector('.oc-currency').value || null
+      };
+
+      if (id) {
+        await API.appliedQuotes.updateOceanCharge(+id, dto);
+      } else {
+        const res   = await API.appliedQuotes.addOceanCharge(+slId, dto);
+        const saved_ = res?.Data || res;
+        if (saved_?.FqocId) row.dataset.id = saved_.FqocId;
+      }
+      row.classList.remove('row-dirty');
+      saved++;
+    }
+    const msg = skipped
+      ? `Guardado. ${skipped} fila(s) omitidas por falta de datos.`
+      : `${saved} fila(s) guardada(s) correctamente.`;
+    showToast(msg, skipped ? 'warning' : 'success');
+    // Refresh to ensure tree is up to date
+    if (_activeQuoteId) await _selectTabQuote(_activeQuoteId, 'ocean');
+  } catch(e) {
+    showToast('Error guardando: ' + (e?.message || 'Error desconocido.'), 'danger');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-save me-1"></i>Save All';
+  }
+}
+
+function _inlandCtDesc(code) { return _inlandChargeTypes.find(x=>x.IfctCode===code)?.IfctDescription||''; }
+
+function _renderInlandTab(regions) {
+  // 1. Populate Region dropdown
+  const regSel = document.getElementById('inland-cascade-region');
+  regSel.innerHTML = '<option value="">— select region —</option>';
+  regions.forEach(r => {
+    const opt = document.createElement('option');
+    opt.value = r.FqerId;
+    opt.textContent = _regionName(r.FqerRegion);
+    regSel.appendChild(opt);
+  });
+
+  // Restore selection if still valid
+  if (_selectedInlandRegionId && regions.find(r => r.FqerId == _selectedInlandRegionId)) {
+    regSel.value = _selectedInlandRegionId;
+  } else {
+    _selectedInlandRegionId = null;
+    _selectedInlandTypeId = null;
+    regSel.value = '';
+  }
+  onInlandCascadeRegionChange(regSel);
+}
+
+function onInlandCascadeRegionChange(sel) {
+  _selectedInlandRegionId = sel.value ? +sel.value : null;
+  const typeSel = document.getElementById('inland-cascade-type');
+
+  // Buttons
+  const btnDelReg = document.getElementById('btn-del-inland-region');
+  if (btnDelReg) btnDelReg.disabled = !_selectedInlandRegionId;
+  
+  const btnAddType = document.getElementById('btn-add-inland-type');
+  if (btnAddType) btnAddType.disabled = !_selectedInlandRegionId;
+
+  // Clear types and grid
+  typeSel.innerHTML = '<option value="">— select charge type —</option>';
+  typeSel.disabled = !_selectedInlandRegionId;
+
+  if (!_selectedInlandRegionId) {
+    _selectedInlandTypeId = null;
+    onInlandCascadeTypeChange(typeSel);
+    return;
+  }
+
+  // Populate Types
+  const r = _activeQuote?.InlandRegions?.find(x => x.FqerId === _selectedInlandRegionId);
+  const types = r?.RegionTypes || [];
+  types.forEach(t => {
+    const opt = document.createElement('option');
+    opt.value = t.FqertId;
+    opt.textContent = t.FqertChargeType;
+    typeSel.appendChild(opt);
+  });
+
+  if (_selectedInlandTypeId && types.find(t => t.FqertId == _selectedInlandTypeId)) {
+    typeSel.value = _selectedInlandTypeId;
+  } else {
+    _selectedInlandTypeId = null;
+    typeSel.value = '';
+  }
+  onInlandCascadeTypeChange(typeSel);
+}
+
+function onInlandCascadeTypeChange(sel) {
+  _selectedInlandTypeId = sel.value ? +sel.value : null;
+  const gridContainer = document.getElementById('inland-grid-container');
+
+  // Buttons
+  const btnEditType = document.getElementById('btn-edit-inland-type');
+  if (btnEditType) btnEditType.disabled = !_selectedInlandTypeId;
+  
+  const btnDelType = document.getElementById('btn-del-inland-type');
+  if (btnDelType) btnDelType.disabled = !_selectedInlandTypeId;
+  
+  const btnAddRow = document.getElementById('btn-add-inland-row');
+  if (btnAddRow) btnAddRow.style.display = _selectedInlandTypeId ? '' : 'none';
+  
+  const btnSaveAll = document.getElementById('btn-save-all-inland');
+  if (btnSaveAll) btnSaveAll.style.display = _selectedInlandTypeId ? '' : 'none';
+
+  if (!_selectedInlandTypeId) {
+    gridContainer.innerHTML = `
+       <div class="text-center py-4 border rounded bg-light" id="inland-empty-state">
+         <i class="fas fa-truck fa-2x mb-2 opacity-25"></i>
+         <div class="text-muted" style="font-size:.85rem;">Select a Region and Charge Type to view details.</div>
+       </div>`;
+    return;
+  }
+
+  // Render Grid
+  const r = _activeQuote?.InlandRegions?.find(x => x.FqerId === _selectedInlandRegionId);
+  const t = r?.RegionTypes?.find(x => x.FqertId === _selectedInlandTypeId);
+  gridContainer.innerHTML = _renderDetailGrid(t?.Details || [], _selectedInlandTypeId);
+}
+
+// ── Dropdown Action Button Handlers (Inland) ──
+function deleteInlandRegionBtn() {
+  if (_selectedInlandRegionId) {
+     const r = _activeQuote?.InlandRegions?.find(x => x.FqerId === _selectedInlandRegionId);
+     confirmDelete(`Delete region "${_regionName(r?.FqerRegion)}" and all its data?`, () => deleteInlandRegion(_selectedInlandRegionId));
+  }
+}
+function addRegionTypeBtn() {
+  if (_selectedInlandRegionId) addRegionType(_selectedInlandRegionId);
+}
+function editRegionTypeBtn() {
+  if (_selectedInlandTypeId && _selectedInlandRegionId) editRegionType(_selectedInlandTypeId, _selectedInlandRegionId);
+}
+function deleteRegionTypeBtn() {
+  if (_selectedInlandTypeId) {
+     const r = _activeQuote?.InlandRegions?.find(x => x.FqerId === _selectedInlandRegionId);
+     const t = r?.RegionTypes?.find(x => x.FqertId === _selectedInlandTypeId);
+     confirmDelete(`Delete charge type "${t?.FqertChargeType}" and its details?`, () => deleteRegionType(_selectedInlandTypeId));
+  }
+}
+function addDetailRowBtn() {
+  if (_selectedInlandTypeId) addDetailRow(_selectedInlandTypeId);
 }
 
 function _renderDetailGrid(details, typeId) {
@@ -1208,6 +1597,8 @@ async function deleteDetailRow(btn) {
 // ── PORT ADDITIONAL TAB — inline editable grid ─────────────────────────────
 function _renderPortAddTab(items) {
   const tb = document.getElementById('portadd-tbody');
+  const btnSaveAll = document.getElementById('btn-save-all-portadd');
+  if (btnSaveAll) btnSaveAll.style.display = items.length > 0 ? '' : 'none';
   if (!items.length) {
     tb.innerHTML = '<tr><td colspan="14" class="text-center text-muted py-3" style="font-size:.8rem;">No port additional charges — click Add Row</td></tr>';
     return;
@@ -1325,58 +1716,186 @@ async function deletePortAddRow(btn) {
   row.remove();
 }
 
-// ── LCL TAB — tree: Port → Shipping (PortType) → detail rows ──────────────
-function _lclCtDesc(code) { return _lclChargeTypes.find(x=>x.LctCode===code)?.LctDescription||''; }
+async function saveAllPortAdd() {
+  const allRows = Array.from(document.querySelectorAll('#portadd-tbody tr'));
+  // Ignore the empty state row
+  const dataRows = allRows.filter(r => !r.querySelector('td[colspan]'));
+  if (!dataRows.length) { showToast('No hay cargos adicionales para guardar.', 'danger'); return; }
 
-function _renderLclTab(ports) {
-  const el = document.getElementById('lcl-tree');
-  if (!ports.length) {
-    el.innerHTML = '<div class="text-center text-muted py-3" style="font-size:.82rem;">No LCL ports — click New Port</div>';
-    return;
+  const btn = document.getElementById('btn-save-all-portadd');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Saving…';
+
+  let saved = 0, skipped = 0;
+  try {
+    for (const row of dataRows) {
+      const id = row.dataset.id;
+      const ct = row.querySelector('.pa-ct-sel').value;
+      
+      if (!ct) { skipped++; continue; }
+
+      const g = cls => row.querySelector(cls).value;
+      const dto = {
+        ChargeType: ct,
+        LoadType:   g('.pa-lt-sel')   || null,
+        Amount:     g('.pa-amount')   ? +g('.pa-amount')   : null,
+        Currency:   g('.pa-currency') || null,
+        Action:     g('.pa-action')   || null,
+        ChargeOver: g('.pa-over')     || null,
+        ChargePer:  g('.pa-per')      || null,
+        From:       g('.pa-from')     ? +g('.pa-from')     : null,
+        To:         g('.pa-to')       ? +g('.pa-to')       : null,
+        AmountMin:  g('.pa-min')      ? +g('.pa-min')      : null,
+        AmountMax:  g('.pa-max')      ? +g('.pa-max')      : null
+      };
+
+      if (id) {
+        await API.appliedQuotes.updatePortAdd(+id, dto);
+      } else {
+        const res = await API.appliedQuotes.addPortAdd(_activeQuoteId, dto);
+        const saved_ = res?.Data || res;
+        if (saved_?.FqipaId) row.dataset.id = saved_.FqipaId;
+      }
+      row.classList.remove('row-dirty');
+      saved++;
+    }
+    const msg = skipped
+      ? `Guardado. ${skipped} fila(s) omitidas por falta de datos.`
+      : `${saved} fila(s) guardada(s) correctamente.`;
+    showToast(msg, skipped ? 'warning' : 'success');
+    await _refreshDetail();
+  } catch(e) {
+    showToast('Error guardando: ' + (e?.message || 'Error desconocido.'), 'danger');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-save me-1"></i>Save All';
   }
-  el.innerHTML = ports.map(p => {
-    const hasTypes = (p.PortTypes || []).length > 0;
-    const portName = _ports.find(x => x.PlCode === p.FqlcpPort)?.PlName || p.FqlcpPort;
-    return `
-    <div class="card level-card">
-      <div class="card-header d-flex align-items-center gap-2">
-        <button class="btn-tree" onclick="toggleSection('lclp-${p.FqlcpId}')">
-          <i class="fas fa-chevron-right toggle-icon" id="ti-lclp-${p.FqlcpId}" style="${hasTypes ? 'transform:rotate(90deg)' : ''}"></i>
-        </button>
-        <span class="flex-grow-1 fw-600">${_esc(p.FqlcpPort)} <small class="text-muted fw-normal">${_esc(portName !== p.FqlcpPort ? portName : '')}</small></span>
-        ${p.FqlcpRemarks ? `<small class="text-muted">${_esc(p.FqlcpRemarks)}</small>` : ''}
-        ${_isSuperAdmin ? `<button class="btn btn-sm btn-outline-secondary py-0 px-1" onclick="editLclPort(${p.FqlcpId})"><i class="fas fa-edit" style="font-size:.7rem;"></i></button>` : ''}
-        ${_isSuperAdmin ? `<button class="btn btn-sm btn-wine btn-sm py-0 px-1 ms-1" onclick="openNewLclShipping(${p.FqlcpId})"><i class="fas fa-plus" style="font-size:.7rem;"></i> Shipping</button>` : ''}
-        ${_isSuperAdmin ? `<button class="btn btn-sm btn-outline-danger py-0 px-1 ms-1" onclick="confirmDelete('Delete port &ldquo;${_esc(p.FqlcpPort)}&rdquo; and all its data?', () => deleteLclPort(${p.FqlcpId}))"><i class="fas fa-trash" style="font-size:.7rem;"></i></button>` : ''}
-      </div>
-      <div class="tree-section${hasTypes ? ' open' : ''}" id="lclp-${p.FqlcpId}">
-        ${(p.PortTypes || []).map(pt => {
-          const hasDets = (pt.Details||[]).length > 0;
-          return `
-          <div class="card level-card level-2 m-2">
-            <div class="card-header d-flex align-items-center gap-2">
-              <button class="btn-tree" onclick="toggleSection('lclpt-${pt.FqlcptId}')">
-                <i class="fas fa-chevron-right toggle-icon" id="ti-lclpt-${pt.FqlcptId}" style="${hasDets ? 'transform:rotate(90deg)' : ''}"></i>
-              </button>
-              <span class="flex-grow-1">${_esc(pt.FqlcptChargeType)}
-                <small class="text-muted ms-1">${_esc(_lclCtDesc(pt.FqlcptChargeType))}</small>
-                ${pt.FqlcptAmountMin != null || pt.FqlcptAmountMax != null
-                  ? `<small class="text-muted ms-2">min:${pt.FqlcptAmountMin ?? '—'} max:${pt.FqlcptAmountMax ?? '—'} ${pt.FqlcptCurrency || ''}</small>` : ''}</span>
-              ${_isSuperAdmin ? `<button class="btn btn-sm btn-outline-secondary py-0 px-1" onclick="editLclShipping(${pt.FqlcptId},${p.FqlcpId})"><i class="fas fa-edit" style="font-size:.7rem;"></i></button>` : ''}
-              ${_isSuperAdmin ? `<button class="btn btn-sm btn-outline-success py-0 px-1 ms-1" onclick="addLclDetailRow(${pt.FqlcptId})"><i class="fas fa-plus" style="font-size:.7rem;"></i> Row</button>` : ''}
-              ${_isSuperAdmin ? `<button class="btn btn-sm btn-outline-danger py-0 px-1 ms-1" onclick="confirmDelete('Delete shipping &ldquo;${_esc(pt.FqlcptChargeType)}&rdquo; and its details?', () => deleteLclShipping(${pt.FqlcptId}))"><i class="fas fa-trash" style="font-size:.7rem;"></i></button>` : ''}
-            </div>
-            <div class="tree-section${hasDets ? ' open' : ''}" id="lclpt-${pt.FqlcptId}">
-              ${_renderLclDetailGrid(pt.Details || [], pt.FqlcptId)}
-            </div>
-          </div>`;
-        }).join('') || '<div class="p-2 text-muted" style="font-size:.8rem;">No shipping types — click + Shipping</div>'}
-      </div>
-    </div>`;
-  }).join('');
 }
 
-function _renderLclDetailGrid(details, typeId) {
+// ── LCL TAB — cascade filters: Port → Shipping (PortType) → detail rows ──────────────
+function _lclCtDesc(code) { return _lclChargeTypes.find(x=>x.LctCode===code)?.LctDescription||''; }
+
+let _selectedLclPortId = null;
+let _selectedLclTypeId = null;
+
+function _renderLclTab(ports) {
+  // 1. Populate Port dropdown
+  const portSel = document.getElementById('lcl-cascade-port');
+  portSel.innerHTML = '<option value="">— select port —</option>';
+  ports.forEach(p => {
+    const portName = _ports.find(x => x.PlCode === p.FqlcpPort)?.PlName || p.FqlcpPort;
+    const opt = document.createElement('option');
+    opt.value = p.FqlcpId;
+    opt.textContent = `${p.FqlcpPort} — ${portName}`;
+    portSel.appendChild(opt);
+  });
+
+  // Restore selection if still valid
+  if (_selectedLclPortId && ports.find(p => p.FqlcpId == _selectedLclPortId)) {
+    portSel.value = _selectedLclPortId;
+  } else {
+    _selectedLclPortId = null;
+    _selectedLclTypeId = null;
+    portSel.value = '';
+  }
+  onLclCascadePortChange(portSel);
+}
+
+function onLclCascadePortChange(sel) {
+  _selectedLclPortId = sel.value ? +sel.value : null;
+  const typeSel = document.getElementById('lcl-cascade-type');
+
+  // Enable/Disable Port buttons
+  document.getElementById('btn-edit-lcl-port').disabled = !_selectedLclPortId;
+  document.getElementById('btn-del-lcl-port').disabled = !_selectedLclPortId;
+  document.getElementById('btn-add-lcl-type').disabled = !_selectedLclPortId;
+
+  // Clear types and grid
+  typeSel.innerHTML = '<option value="">— select charge type —</option>';
+  typeSel.disabled = !_selectedLclPortId;
+
+  if (!_selectedLclPortId) {
+    _selectedLclTypeId = null;
+    onLclCascadeTypeChange(typeSel);
+    return;
+  }
+
+  // Populate Types
+  const p = _activeQuote?.LclPorts?.find(x => x.FqlcpId === _selectedLclPortId);
+  const types = p?.PortTypes || [];
+  types.forEach(t => {
+    const opt = document.createElement('option');
+    opt.value = t.FqlcptId;
+    opt.textContent = `${t.FqlcptChargeType} — ${_lclCtDesc(t.FqlcptChargeType)}`;
+    typeSel.appendChild(opt);
+  });
+
+  if (_selectedLclTypeId && types.find(t => t.FqlcptId == _selectedLclTypeId)) {
+    typeSel.value = _selectedLclTypeId;
+  } else {
+    _selectedLclTypeId = null;
+    typeSel.value = '';
+  }
+  onLclCascadeTypeChange(typeSel);
+}
+
+function onLclCascadeTypeChange(sel) {
+  _selectedLclTypeId = sel.value ? +sel.value : null;
+  const gridContainer = document.getElementById('lcl-grid-container');
+
+  // Buttons
+  document.getElementById('btn-edit-lcl-type').disabled = !_selectedLclTypeId;
+  document.getElementById('btn-del-lcl-type').disabled = !_selectedLclTypeId;
+  
+  const btnAddRow = document.getElementById('btn-add-lcl-row');
+  if (btnAddRow) btnAddRow.style.display = _selectedLclTypeId ? '' : 'none';
+  
+  const btnSaveAll = document.getElementById('btn-save-all-lcl');
+  if (btnSaveAll) btnSaveAll.style.display = _selectedLclTypeId ? '' : 'none';
+
+  if (!_selectedLclTypeId) {
+    gridContainer.innerHTML = `
+       <div class="text-center py-4 border rounded bg-light" id="lcl-empty-state">
+         <i class="fas fa-boxes fa-2x mb-2 opacity-25"></i>
+         <div class="text-muted" style="font-size:.85rem;">Select a Port and Charge Type to view details.</div>
+       </div>`;
+    return;
+  }
+
+  // Render Grid
+  const p = _activeQuote?.LclPorts?.find(x => x.FqlcpId === _selectedLclPortId);
+  const t = p?.PortTypes?.find(x => x.FqlcptId === _selectedLclTypeId);
+  gridContainer.innerHTML = _renderLclDetailGridCascade(t?.Details || [], _selectedLclTypeId);
+}
+
+// ── Dropdown Action Button Handlers (LCL) ──
+function editLclPortBtn() {
+  if (_selectedLclPortId) editLclPort(_selectedLclPortId);
+}
+function deleteLclPortBtn() {
+  if (_selectedLclPortId) {
+     const p = _activeQuote?.LclPorts?.find(x => x.FqlcpId === _selectedLclPortId);
+     confirmDelete(`Delete port "${p?.FqlcpPort}" and all its data?`, () => deleteLclPort(_selectedLclPortId));
+  }
+}
+function openNewLclShippingBtn() {
+  if (_selectedLclPortId) openNewLclShipping(_selectedLclPortId);
+}
+function editLclShippingBtn() {
+  if (_selectedLclTypeId && _selectedLclPortId) editLclShipping(_selectedLclTypeId, _selectedLclPortId);
+}
+function deleteLclShippingBtn() {
+  if (_selectedLclTypeId) {
+     const p = _activeQuote?.LclPorts?.find(x => x.FqlcpId === _selectedLclPortId);
+     const t = p?.PortTypes?.find(x => x.FqlcptId === _selectedLclTypeId);
+     confirmDelete(`Delete charge type "${t?.FqlcptChargeType}" and its details?`, () => deleteLclShipping(_selectedLclTypeId));
+  }
+}
+function addLclDetailRowBtn() {
+  if (_selectedLclTypeId) addLclDetailRowCascade(_selectedLclTypeId);
+}
+
+function _renderLclDetailGridCascade(details, typeId) {
   const rows = details.map(d => _lclDetailRowHtml(d.FqlcptdId, typeId, d)).join('');
   return `<div class="table-responsive">
     <table class="table table-sm table-bordered charges-grid mb-0" id="lcldet-tbl-${typeId}">
@@ -1409,13 +1928,12 @@ function _lclDetailRowHtml(id, typeId, d = {}) {
   </tr>`;
 }
 
-function addLclDetailRow(typeId) {
-  const sec = document.getElementById(`lclpt-${typeId}`);
-  if (sec && !sec.classList.contains('open')) sec.classList.add('open');
-  const icon = document.getElementById(`ti-lclpt-${typeId}`);
-  if (icon) icon.style.transform = 'rotate(90deg)';
+function addLclDetailRowCascade(typeId) {
   let tbody = document.getElementById(`lcldet-tbody-${typeId}`);
-  if (!tbody) { sec.innerHTML = _renderLclDetailGrid([], typeId); tbody = document.getElementById(`lcldet-tbody-${typeId}`); }
+  if (!tbody) { 
+      document.getElementById('lcl-grid-container').innerHTML = _renderLclDetailGridCascade([], typeId); 
+      tbody = document.getElementById(`lcldet-tbody-${typeId}`); 
+  }
   const tr = document.createElement('tr');
   tr.dataset.id = ''; tr.dataset.typeId = typeId;
   tr.innerHTML = `
@@ -1457,6 +1975,55 @@ async function saveLclDetailRow(btn) {
     }
     row.classList.remove('row-dirty'); _showRowOk(btn);
   } catch(e) { showToast(e?.message || 'Error saving.', 'danger'); }
+}
+
+async function saveAllLcl() {
+  const allRows = Array.from(document.querySelectorAll('[id^="lcldet-tbody-"] tr'));
+  if (!allRows.length) { showToast('No hay detalles LCL para guardar.', 'danger'); return; }
+
+  const btn = document.getElementById('btn-save-all-lcl');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Saving…';
+
+  let saved = 0, skipped = 0;
+  try {
+    for (const row of allRows) {
+      const id     = row.dataset.id;
+      const typeId = row.dataset.typeId || row.closest('tbody')?.id?.replace('lcldet-tbody-', '');
+      if (!typeId) { skipped++; continue; }
+
+      const dto = {
+        From:      row.querySelector('.ld-from')?.value      ? +row.querySelector('.ld-from').value      : null,
+        To:        row.querySelector('.ld-to')?.value        ? +row.querySelector('.ld-to').value        : null,
+        Price:     row.querySelector('.ld-price')?.value     ? +row.querySelector('.ld-price').value     : null,
+        Over:      row.querySelector('.ld-over')?.value      ? +row.querySelector('.ld-over').value      : null,
+        PriceType: row.querySelector('.ld-pricetype')?.value || null,
+        AmountMin: row.querySelector('.ld-min')?.value       ? +row.querySelector('.ld-min').value       : null,
+        AmountMax: row.querySelector('.ld-max')?.value       ? +row.querySelector('.ld-max').value       : null
+      };
+
+      if (id) {
+        await API.appliedQuotes.updateLclDetail(+id, dto);
+      } else {
+        const res   = await API.appliedQuotes.addLclDetail(+typeId, dto);
+        const saved_ = res?.Data || res;
+        if (saved_?.FqlcptdId) row.dataset.id = saved_.FqlcptdId;
+      }
+      row.classList.remove('row-dirty');
+      saved++;
+    }
+    const msg = skipped
+      ? `Guardado. ${skipped} fila(s) omitidas por falta de datos.`
+      : `${saved} fila(s) guardada(s) correctamente.`;
+    showToast(msg, skipped ? 'warning' : 'success');
+    
+    await _refreshDetail();
+  } catch(e) {
+    showToast('Error guardando: ' + (e?.message || 'Error desconocido.'), 'danger');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-save me-1"></i>Save All';
+  }
 }
 
 async function deleteLclDetailRow(btn) {
@@ -1566,52 +2133,28 @@ async function deleteLclShipping(id) {
 }
 
 // ── Tree toggle ────────────────────────────────────────────────────────────
-function toggleSection(id) {
-  const sec  = document.getElementById(id);
-  const icon = document.getElementById('ti-' + id);
-  if (!sec) return;
-  sec.classList.toggle('open');
-  if (icon) icon.style.transform = sec.classList.contains('open') ? 'rotate(90deg)' : '';
-}
+// (Removed as tree view is replaced by cascading grid)
 
 // ── Wire Events ────────────────────────────────────────────────────────────
 function _wireEvents() {
   _wireTabEvents();
 
-  document.getElementById('filter-forwarder').addEventListener('change', () => {
-    _page = 1;
-    _activeQuoteId = null; _activeQuote = null;
-    document.getElementById('quote-header-card').style.display = 'none';
-    document.getElementById('detail-placeholder').style.display = '';
-    document.getElementById('detail-panel').style.display = 'none';
-    _loadList();
-    _renderFwdInfoCard();
-  });
   let _searchTimer;
-  document.getElementById('filter-search').addEventListener('input', () => {
+  document.getElementById('filter-search').addEventListener('input', (e) => {
     clearTimeout(_searchTimer);
-    _searchTimer = setTimeout(() => { _page = 1; _loadList(); }, 400);
+    _searchTimer = setTimeout(() => { _renderFwdList(e.target.value); }, 400);
   });
 
-  document.getElementById('btn-prev').addEventListener('click', () => { if (_page > 1) { _page--; _loadList(); } });
-  document.getElementById('btn-next').addEventListener('click', () => { _page++; _loadList(); });
-
-  document.getElementById('btn-new-quote').addEventListener('click', openNewQuote);
+  // Buttons with IDs (Singletons)
   document.getElementById('btn-save-quote').addEventListener('click', saveQuote);
-  document.getElementById('btn-edit-quote').addEventListener('click', () => openEditQuote(_activeQuote));
-  document.getElementById('btn-delete-quote').addEventListener('click', () =>
-    confirmDelete(`Delete quote #${_activeQuote?.FqhQuoteNumber}? This will remove all charges.`, deleteCurrentQuote));
-
-  document.getElementById('btn-save-all-ocean').addEventListener('click', saveAllOceanCharges);
   document.getElementById('btn-save-all-inland').addEventListener('click', saveAllInland);
-  document.getElementById('btn-add-ocean-port').addEventListener('click', openNewOceanPort);
-  document.getElementById('btn-add-ocean-sline').addEventListener('click', () => openNewOceanSLine(null));
   document.getElementById('btn-save-ocean-port').addEventListener('click', saveOceanPort);
   document.getElementById('btn-save-ocean-sline').addEventListener('click', saveOceanSLine);
   document.getElementById('btn-add-region').addEventListener('click', openNewRegion);
   document.getElementById('btn-save-region').addEventListener('click', saveRegion);
   document.getElementById('btn-save-rtype').addEventListener('click', saveRegionType);
   document.getElementById('btn-add-portadd').addEventListener('click', addPortAddRow);
+  document.getElementById('btn-save-all-portadd').addEventListener('click', saveAllPortAdd);
   document.getElementById('btn-add-lcl-port').addEventListener('click', openNewLclPort);
   document.getElementById('btn-save-lcl-port').addEventListener('click', saveLclPort);
   document.getElementById('btn-save-lcl-shipping').addEventListener('click', saveLclShipping);
@@ -1621,18 +2164,19 @@ function _wireEvents() {
 
   // Role-based: ocultar botones de edición para usuarios sin permiso
   if (!_isSuperAdmin) {
-    ['btn-new-quote','btn-edit-quote','btn-delete-quote',
-     'btn-add-ocean-port','btn-add-ocean-sline','btn-save-all-ocean',
-     'btn-add-region','btn-save-all-inland','btn-add-portadd','btn-add-lcl-port'].forEach(id => {
+    ['btn-new-quote','btn-save-all-ocean',
+     'btn-add-region','btn-save-all-inland','btn-add-portadd','btn-save-all-portadd','btn-add-lcl-port'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.style.display = 'none';
     });
+    // For ocean cascade controls (buttons without IDs in the d-flex)
+    document.querySelectorAll('#ocean-cascade-controls button').forEach(b => b.style.display = 'none');
   }
 }
 
 // ── Forwarder info card ────────────────────────────────────────────────────
 async function _renderFwdInfoCard(code) {
-  if (code === undefined) code = document.getElementById('filter-forwarder').value;
+  if (code === undefined) code = _activeFwdCode;
   const card = document.getElementById('fwd-info-card');
   if (!code) { card.style.display = 'none'; return; }
 
@@ -1759,6 +2303,7 @@ async function openNewQuote() {
 
   // Si hay un quote activo, pre-cargar la fuente según el tab activo
   if (_activeQuote) {
+    document.getElementById('modal-quote').dataset.cloneFromId = _activeQuote.FqhId;
     switch (_activeTab) {
       case 'ocean':
         _newQuoteSourceOceanPorts = _activeQuote.OceanPorts?.length    ? _activeQuote.OceanPorts    : null;
@@ -1773,14 +2318,16 @@ async function openNewQuote() {
         _newQuoteSourceLcl        = _activeQuote.LclPorts?.length       ? _activeQuote.LclPorts       : null;
         break;
     }
+  } else {
+    document.getElementById('modal-quote').dataset.cloneFromId = '';
   }
 
   _hideErr('quote-form-error');
   document.getElementById('modal-quote').dataset.editId = '';
-  // Si hay un Forwarder seleccionado en el filtro → pre-seleccionar y cargar sus quotes
-  const filterFwd = document.getElementById('filter-forwarder').value;
-  if (filterFwd) {
-    _tsSet('q-fwd', filterFwd);
+  // Force the forwarder to match the current view and lock it
+  if (_activeFwdCode) {
+    _tsSet('q-fwd', _activeFwdCode);
+    if (_ts['q-fwd']) _ts['q-fwd'].disable();
     await onModalFwdChange(document.getElementById('q-fwd'));
   }
   mQuote.show();
@@ -1795,6 +2342,7 @@ function openEditQuote(q) {
   document.getElementById('q-based-on-wrap').style.display = 'none';
   document.getElementById('q-num').value = q.FqhQuoteNumber;
   _tsSet('q-fwd',   q.FqhForwarder || '');
+  if (_ts['q-fwd']) _ts['q-fwd'].disable(); // Lock it
   _tsSet('q-port',  q.FqhPort      || '');
   _tsSet('q-route', q.FqhRoute     || '');
   document.getElementById('q-transit').value = q.FqhTransitDays ?? '';
@@ -1807,8 +2355,10 @@ function openEditQuote(q) {
 
 async function saveQuote() {
   const numVal = document.getElementById('q-num').value;
-  const fwdVal = document.getElementById('q-fwd').value;
+  const fwdVal = _activeFwdCode; // Always enforce the active forwarder
   const editId = document.getElementById('modal-quote').dataset.editId;
+  const cloneFromId = document.getElementById('modal-quote').dataset.cloneFromId;
+  
   if (!fwdVal) { _showErr('quote-form-error', 'Forwarder is required.'); return; }
   const dto = {
     QuoteNumber:  editId ? +numVal : 0,   // en create el servidor asigna el número
@@ -1818,107 +2368,37 @@ async function saveQuote() {
     Route:       document.getElementById('q-route').value   || null,
     TransitDays: document.getElementById('q-transit').value ? +document.getElementById('q-transit').value : null,
     StartDate:   document.getElementById('q-start').value   || null,
-    EndDate:     document.getElementById('q-end').value     || null
+    EndDate:     document.getElementById('q-end').value     || null,
+    CloneFromId: !editId && cloneFromId ? +cloneFromId : null
   };
   try {
     if (editId) { await API.appliedQuotes.updateQuote(+editId, dto); }
     else {
       const res = await API.appliedQuotes.createQuote(dto);
       _activeQuoteId = res.Data?.FqhId;
-      // Copy Ocean Freight data (ports → slines → charges) from source quote
-      if (_activeTab === 'ocean' && _activeQuoteId && _newQuoteSourceOceanPorts?.length) {
-        try {
-          for (const port of _newQuoteSourceOceanPorts) {
-            const pRes = await API.appliedQuotes.addOceanPort(_activeQuoteId, { Port: port.FqopPort, Remarks: port.FqopRemarks || null });
-            const newPortId = pRes?.Data?.FqopId;
-            if (!newPortId) continue;
-            for (const sl of (port.ShippingLines || [])) {
-              const slRes = await API.appliedQuotes.addOceanSLine(newPortId, { ShippingLine: sl.FqopsShippingLine, Route: sl.FqopsRoute || null, Days: sl.FqopsDays ?? null });
-              const newSlId = slRes?.Data?.FqopsId;
-              if (!newSlId) continue;
-              for (const ch of (sl.Charges || [])) {
-                await API.appliedQuotes.addOceanCharge(newSlId, { ChargeType: ch.FqocChargeType, ContainerType: ch.FqocContainerType || null, Amount: ch.FqocAmount ?? null, Currency: ch.FqocCurrency || null });
-              }
-            }
-          }
-        } catch (oceanErr) {
-          console.warn('Ocean Freight copy failed:', oceanErr?.message);
-        }
-      }
+      
+      // Reset all cloning sources as the backend has handled it
       _newQuoteSourceOceanPorts = null;
-
-      // Copy Inland data (regions → types → details)
-      if (_activeTab === 'inland' && _activeQuoteId && _newQuoteSourceInland?.length) {
-        try {
-          for (const region of _newQuoteSourceInland) {
-            const rRes = await API.appliedQuotes.addInlandRegion(_activeQuoteId, { Region: region.FqerRegion });
-            const newRegionId = rRes?.Data?.FqerId;
-            if (!newRegionId) continue;
-            for (const rt of (region.RegionTypes || [])) {
-              const rtRes = await API.appliedQuotes.addInlandRegionType(newRegionId, { ChargeType: rt.FqertChargeType });
-              const newRtId = rtRes?.Data?.FqertId;
-              if (!newRtId) continue;
-              for (const det of (rt.Details || [])) {
-                await API.appliedQuotes.addInlandDetail(newRtId, {
-                  From: det.FqertdFrom ?? null, To: det.FqertdTo ?? null,
-                  Price: det.FqertdPrice ?? null, PriceType: det.FqertdPriceType || null,
-                  AmountMin: det.FqertdAmountMin ?? null, AmountMax: det.FqertdAmountMax ?? null
-                });
-              }
-            }
-          }
-        } catch (inlandErr) { console.warn('Inland copy failed:', inlandErr?.message); }
-      }
-      _newQuoteSourceInland = null;
-
-      // Copy Port Additional data (flat list)
-      if (_activeTab === 'portadd' && _activeQuoteId && _newQuoteSourcePortAdd?.length) {
-        try {
-          for (const pa of _newQuoteSourcePortAdd) {
-            await API.appliedQuotes.addPortAdd(_activeQuoteId, {
-              ChargeType: pa.FqipaChargeType || null, LoadType: pa.FqipaLoadType || null,
-              Amount: pa.FqipaAmount ?? null, Currency: pa.FqipaCurrency || null,
-              Action: pa.FqipaAction || null, ChargeOver: pa.FqipaChargeOver || null,
-              ChargePer: pa.FqipaChargePer || null, From: pa.FqipaFrom ?? null,
-              To: pa.FqipaTo ?? null, AmountMin: pa.FqipaAmountMin ?? null,
-              AmountMax: pa.FqipaAmountMax ?? null
-            });
-          }
-        } catch (paErr) { console.warn('Port Additional copy failed:', paErr?.message); }
-      }
-      _newQuoteSourcePortAdd = null;
-
-      // Copy LCL data (ports → port types → details)
-      if (_activeTab === 'lcl' && _activeQuoteId && _newQuoteSourceLcl?.length) {
-        try {
-          for (const port of _newQuoteSourceLcl) {
-            const pRes = await API.appliedQuotes.addLclPort(_activeQuoteId, { Port: port.FqlcpPort, Remarks: port.FqlcpRemarks || null });
-            const newPortId = pRes?.Data?.FqlcpId;
-            if (!newPortId) continue;
-            for (const pt of (port.PortTypes || [])) {
-              const ptRes = await API.appliedQuotes.addLclPortType(newPortId, {
-                ChargeType: pt.FqlcptChargeType || null, AmountMin: pt.FqlcptAmountMin ?? null,
-                AmountMax: pt.FqlcptAmountMax ?? null, Currency: pt.FqlcptCurrency || null
-              });
-              const newPtId = ptRes?.Data?.FqlcptId;
-              if (!newPtId) continue;
-              for (const det of (pt.Details || [])) {
-                await API.appliedQuotes.addLclDetail(newPtId, {
-                  From: det.FqlcptdFrom ?? null, To: det.FqlcptdTo ?? null,
-                  Price: det.FqlcptdPrice ?? null, Over: det.FqlcptdOver ?? null,
-                  PriceType: det.FqlcptdPriceType || null,
-                  AmountMin: det.FqlcptdAmountMin ?? null, AmountMax: det.FqlcptdAmountMax ?? null
-                });
-              }
-            }
-          }
-        } catch (lclErr) { console.warn('LCL copy failed:', lclErr?.message); }
-      }
-      _newQuoteSourceLcl = null;
+      _newQuoteSourceInland     = null;
+      _newQuoteSourcePortAdd    = null;
+      _newQuoteSourceLcl        = null;
     }
     mQuote.hide();
-    await _loadList();
-    if (_activeQuoteId) await _selectQuote(_activeQuoteId);
+    _activeFwdCode = fwdVal;
+    
+    // Completely reload the FWD list and the active tab to fetch the deep-cloned rows from DB
+    await _loadFwdList();
+    if (_activeQuoteId) {
+      document.getElementById('detail-placeholder').style.display = 'none';
+      document.getElementById('detail-panel').style.display = '';
+      await _renderFwdInfoCard(_activeFwdCode);
+      const tab = _curTab();
+      await _loadTabQuotes(tab, _activeFwdCode);
+      
+      // Clear cache for the active quote to force a fresh fetch from the server
+      _activeTabQuoteId[tab] = null;
+      await _selectTabQuote(_activeQuoteId, tab);
+    }
   } catch (e) { _showErr('quote-form-error', e?.message || 'Error saving quote.'); }
 }
 
@@ -1926,13 +2406,58 @@ async function deleteCurrentQuote() {
   if (!_activeQuoteId) return;
   await API.appliedQuotes.deleteQuote(_activeQuoteId);
   _activeQuoteId = null; _activeQuote = null;
-  document.getElementById('quote-header-card').style.display = 'none';
   document.getElementById('detail-placeholder').style.display = '';
   document.getElementById('detail-panel').style.display = 'none';
-  await _loadList();
+  
+  await _loadFwdList();
+  
+  // Refresh current tab quotes
+  if (_activeFwdCode) {
+    const tab = _curTab();
+    await _loadTabQuotes(tab, _activeFwdCode);
+    if (_tabQuoteLists[tab] && _tabQuoteLists[tab].length > 0) {
+      // Auto-select the first available quote in the list after delete
+      await _selectTabQuote(_tabQuoteLists[tab][0].FqhId, tab);
+      document.getElementById('detail-placeholder').style.display = 'none';
+      document.getElementById('detail-panel').style.display = '';
+    } else {
+      // Show default header if no quotes left
+      _renderTabDetail(null, tab);
+      document.getElementById('detail-placeholder').style.display = 'none';
+      document.getElementById('detail-panel').style.display = '';
+    }
+  }
 }
 
-// ── INLAND REGION MODAL ────────────────────────────────────────────────────
+// ── QUOTE MODAL ────────────────────────────────────────────────────────────
+async function quickCloneQuote(q) {
+  if (!q) return;
+  document.getElementById('modal-quote-title').textContent = `New Quote (Cloning #${q.FqhQuoteNumber})`;
+  document.getElementById('q-num').value = '...';
+  const numRes = await API.appliedQuotes.getNextNumber().catch(() => ({ Data: '?' }));
+  document.getElementById('q-num').value = numRes.Data || '?';
+  
+  _fillSelect('q-fwd',   _forwarders, 'FfCode',  'FfName');
+  _fillSelect('q-port',  _ports,      'PlCode',  'PlName');
+  _fillSelect('q-route', _routes,     'RouCode', 'RouDescription');
+  _tsReinit('q-fwd'); _tsReinit('q-port'); _tsReinit('q-route');
+  
+  // Set clone source
+  document.getElementById('q-based-on-wrap').style.display = 'none';
+  document.getElementById('modal-quote').dataset.cloneFromId = q.FqhId;
+  document.getElementById('modal-quote').dataset.editId = '';
+  _hideErr('quote-form-error');
+
+  // Pre-fill fields
+  _tsSet('q-fwd',   q.FqhForwarder || '');
+  _tsSet('q-port',  q.FqhPort      || '');
+  _tsSet('q-route', q.FqhRoute     || '');
+  document.getElementById('q-transit').value = q.FqhTransitDays ?? '';
+  document.getElementById('q-start').value   = q.FqhStartDate ? q.FqhStartDate.substring(0,10) : '';
+  document.getElementById('q-end').value     = q.FqhEndDate   ? q.FqhEndDate.substring(0,10)   : '';
+
+  mQuote.show();
+}
 function openNewRegion() {
   _fillSelect('reg-code', _regions, 'RegCode', 'RegName');
   _tsReinit('reg-code');
@@ -2027,7 +2552,7 @@ async function _refreshDetail() {
   if (!_activeQuoteId) return;
   const res = await API.appliedQuotes.getQuote(_activeQuoteId);
   _activeQuote = res.Data;
-  _renderDetail(_activeQuote);
+  _renderTabDetail(_activeQuote, _curTab());
 }
 
 // ── Row OK flash ───────────────────────────────────────────────────────────

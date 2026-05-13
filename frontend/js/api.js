@@ -207,6 +207,10 @@ const API = (() => {
       ...catalog('/api/aankoopbon/vendor-department'),
       byVendor: (vendor) => get(`/api/aankoopbon/vendor-department/by-vendor/${encodeURIComponent(vendor)}`)
     },
+    requestorDepartment: {
+      ...catalog('/api/aankoopbon/requestor-department'),
+      byRequestor: (requestor) => get(`/api/aankoopbon/requestor-department/by-requestor/${encodeURIComponent(requestor)}`)
+    },
     departmentCostType: {
       ...catalog('/api/aankoopbon/department-cost-type'),
       byDepartment: (dept) => get(`/api/aankoopbon/department-cost-type/by-department/${encodeURIComponent(dept)}`)
@@ -241,7 +245,7 @@ const API = (() => {
     activityRequests:  catalog('/api/activity/requests'),
 
     // Cost Calculation
-    costCalcCalculations: catalog('/api/cost-calc/calculations'),
+    costCalcCalculations: catalog('/api/cost-calc/calculations')
   };
 
   // ── Freight Forwarder Quotes ─────────────────────────────────────────────────
@@ -338,6 +342,16 @@ const API = (() => {
     },
     getPurchaseOrder: (warehouse, poNo) => get(`/api/cost-calc/purchase-orders/${warehouse}/${poNo}`),
     getSystemConfig:  ()               => get('/api/cost-calc/system-config'),
+    saveSystemConfig: (dto)            => put('/api/cost-calc/system-config', dto),
+    // Forex
+    costCalcForex: {
+      getHistory:    (days = 30)          => get(`/api/cost-calc/forex/history?days=${days}`),
+      getLatestRate: (currency)           => get(`/api/cost-calc/forex/rate/${encodeURIComponent(currency)}`),
+      getLatestRates: ()                  => get('/api/cost-calc/forex/latest'),
+      getRateByDate: (currency, date)     => get(`/api/cost-calc/forex/rate/${encodeURIComponent(currency)}/${encodeURIComponent(date)}`),
+      getCurrencies: ()                   => get('/api/cost-calc/forex/currencies'),
+      sync:          ()                   => post('/api/cost-calc/forex/sync', {})
+    },
     // Calculations
     getCalculations:  (params = {}) => {
       const qs = new URLSearchParams(params).toString();
@@ -345,9 +359,13 @@ const API = (() => {
     },
     getCalculation:   (id)          => get(`/api/cost-calc/calculations/${id}`),
     createCalculation: (dto)        => post('/api/cost-calc/calculations', dto),
+    updateCalculation: (id, dto)    => put(`/api/cost-calc/calculations/${id}`, dto),
     runCalculation:   (id, dto)     => post(`/api/cost-calc/calculations/${id}/calculate`, dto),
-    confirmCalculation: (id)        => patch(`/api/cost-calc/calculations/${id}/confirm`, {}),
-    approveCalculation: (id)        => patch(`/api/cost-calc/calculations/${id}/approve`, {}),
+    getLastApprovedByForwarder: (code) => get(`/api/cost-calc/calculations/last-approved-forwarder?code=${encodeURIComponent(code)}`),
+    confirmCalculation:  (id) => patch(`/api/cost-calc/calculations/${id}/confirm`, {}),
+    returnToDraftCalc:   (id) => patch(`/api/cost-calc/calculations/${id}/return-to-draft`, {}),
+    approveCalculation:  (id) => patch(`/api/cost-calc/calculations/${id}/approve`, {}),
+    confirmPrices:       (id, items) => patch(`/api/cost-calc/calculations/${id}/confirm-prices`, items),
     deleteCalculation:  (id)        => del(`/api/cost-calc/calculations/${id}`),
     // Tariff Items (HS codes)
     getTariffItems:         (params = {}) => { const qs = new URLSearchParams(params).toString(); return get(`/api/cost-calc/tariff-items${qs ? '?' + qs : ''}`); },
@@ -374,6 +392,11 @@ const API = (() => {
     createInlandTariff: (dto)         => post('/api/cost-calc/inland-tariffs', dto),
     updateInlandTariff: (id, dto)     => put(`/api/cost-calc/inland-tariffs/${id}`, dto),
     deleteInlandTariff: (id)          => del(`/api/cost-calc/inland-tariffs/${id}`),
+    // Item FOB Prices
+    getItemFobPrices:    (params = {}) => { const qs = new URLSearchParams(params).toString(); return get(`/api/cost-calc/item-fob-prices${qs ? '?' + qs : ''}`); },
+    createItemFobPrice:  (dto)         => post('/api/cost-calc/item-fob-prices', dto),
+    updateItemFobPrice:  (code, dto)   => put(`/api/cost-calc/item-fob-prices/${encodeURIComponent(code)}`, dto),
+    deleteItemFobPrice:  (code)        => del(`/api/cost-calc/item-fob-prices/${encodeURIComponent(code)}`),
     // Ship Charges (nested under calculation)
     getShipCharges:   (calcId)        => get(`/api/cost-calc/calculations/${calcId}/ship-charges`),
     createShipCharge: (calcId, dto)   => post(`/api/cost-calc/calculations/${calcId}/ship-charges`, dto),
@@ -436,7 +459,10 @@ const API = (() => {
   const appliedQuotes = {
     getQuotes:       (params = {})   => { const clean = Object.fromEntries(Object.entries(params).filter(([,v]) => v != null && v !== '')); const qs = new URLSearchParams(clean).toString(); return get(`/api/freight/quotes${qs ? '?' + qs : ''}`); },
     getQuote:        (id)            => get(`/api/freight/quotes/${id}`),
-    getNextNumber:   ()              => get('/api/freight/quotes/next-number'),
+    getNextNumber:   (type)          => get(`/api/freight/quotes/next-number?freightType=${type||''}`),
+    getLatestRates:           (forwarderCode) => get(`/api/freight/quotes/latest-rates/${encodeURIComponent(forwarderCode)}`),
+    getForwardersWithQuotes:  ()              => get('/api/freight/quotes/forwarders-with-quotes'),
+    cloneQuote:               (id)            => post(`/api/freight/quotes/${id}/clone`, {}),
     createQuote:     (dto)           => post('/api/freight/quotes', dto),
     updateQuote:     (id, dto)       => put(`/api/freight/quotes/${id}`, dto),
     deleteQuote:     (id)            => del(`/api/freight/quotes/${id}`),
@@ -514,6 +540,8 @@ const API = (() => {
     // Resources
     users, roles, catalogs, catalog, costCalc, tracking, freightQuotes, appliedQuotes, routeAssignment, stockAnalysis,
     emailConfig, sessions, system,
+    // Forex (Explicit export for sync button)
+    forexSync: () => post('/api/cost-calc/forex/sync', {}),
     // Config
     BASE_URL
   };
