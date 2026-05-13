@@ -224,6 +224,7 @@
   let _provider = 'smtp';
   let _smtpHostBackup = '';
   let _smtpPortBackup = 587;
+  let _sslBackup = true;
 
   function setProvider(type) {
     _provider = type;
@@ -245,9 +246,14 @@
     const pwdHint   = document.getElementById('hint-password');
     const guideEl   = document.getElementById('o365-setup-guide');
 
+    const subtitle = document.querySelector('.page-subtitle');
+    if (subtitle) subtitle.textContent = isO365
+      ? 'Configure Office 365 SMTP AUTH for automatic notifications.'
+      : 'Configure the SMTP server used for automatic notifications.';
+
     if (isO365) {
       hostEl.value    = 'smtp.office365.com';
-      portEl.value    = '587';
+      portEl.value    = 587;
       sslEl.checked   = true;
       hostEl.readOnly = true;
       portEl.readOnly = true;
@@ -259,6 +265,7 @@
     } else {
       hostEl.value    = _smtpHostBackup;
       portEl.value    = _smtpPortBackup;
+      sslEl.checked   = _sslBackup;
       hostEl.readOnly = false;
       portEl.readOnly = false;
       hostEl.classList.remove('bg-light');
@@ -324,6 +331,7 @@
       updateEnabledBadge(!!c.IsEnabled);
       _smtpHostBackup = c.SmtpHost || '';
       _smtpPortBackup = c.SmtpPort || 587;
+      _sslBackup      = c.UseSsl !== false;
       detectProvider(c.SmtpHost || '');
     } catch (err) {
       showStatus('danger', `Error loading configuration: ${err.message}`);
