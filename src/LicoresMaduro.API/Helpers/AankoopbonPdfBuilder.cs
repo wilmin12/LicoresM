@@ -163,7 +163,6 @@ public static class AankoopbonPdfBuilder
 
                 // ── Delivery method (Entregar removed) ──
                 var delivery = h.AohMeegeven  ? "Wilt u meegeven"
-                             : h.AohAfleveren ? "Gelieve af te leveren"
                              : h.AohOntvangen ? "Hierbij ontvangt u"
                              : h.AohZenden    ? "Wilt u zenden"
                              : h.AohAndere    ? "Andere"
@@ -262,22 +261,16 @@ public static class AankoopbonPdfBuilder
 
                 col.Item().PaddingTop(25).Row(row =>
                 {
-                    row.ConstantItem(180).Column(c => {
-                        c.Item().LineBottom(1).LineColor(Colors.Grey.Medium).PaddingBottom(2).Text(h.AohRequestor ?? "").FontSize(8);
-                        c.Item().Text("Aanvrager").FontSize(7).FontColor(Colors.Grey.Darken2);
-                    });
-                    row.RelativeItem();
-                    row.ConstantItem(180).Column(c => {
-                        c.Item().LineBottom(1).LineColor(Colors.Grey.Medium).PaddingBottom(2).Text(h.AohApprovedByName ?? "").FontSize(8);
-                        c.Item().Text("Goedgekeurd door").FontSize(7).FontColor(Colors.Grey.Darken2);
-                    });
-                });
-                
-                col.Item().PaddingTop(15).Row(row => {
-                    row.ConstantItem(180).Column(c => {
-                        c.Item().LineBottom(1).LineColor(Colors.Grey.Medium).PaddingBottom(2).Text(receiverLabel).FontSize(8);
-                        c.Item().Text("Ontvangen door").FontSize(7).FontColor(Colors.Grey.Darken2);
-                    });
+                    // This block should only appear if NOT original
+                    if (!isOrigSignature) 
+                    {
+                        SigBlock(row, "Aanvrager", h.AohRequestor); 
+                        row.ConstantItem(25); // Spacer
+                        SigBlock(row, "Goedgekeurd door", h.AohApprovedByName); 
+                        row.ConstantItem(25); // Spacer
+                    }
+                    // This block always appears
+                    SigBlock(row, "Ontvangen door", receiverLabel); 
                 });
 
                 // ── Print date ──
