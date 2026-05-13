@@ -62,6 +62,18 @@
             </div>
             <div class="card-body">
 
+              <!-- Provider selector -->
+              <div class="d-flex gap-2 mb-4">
+                <button type="button" id="pill-smtp" class="btn btn-sm btn-outline-secondary active"
+                        onclick="setProvider('smtp')" aria-pressed="true">
+                  <i class="fas fa-server me-1"></i>SMTP genérico
+                </button>
+                <button type="button" id="pill-o365" class="btn btn-sm btn-outline-primary"
+                        onclick="setProvider('office365')" aria-pressed="false">
+                  <i class="fab fa-microsoft me-1"></i>Office 365
+                </button>
+              </div>
+
               <!-- Enable toggle -->
               <div class="d-flex align-items-center gap-3 mb-4 p-3 rounded" style="background:#f8f9fa;">
                 <div class="form-check form-switch mb-0">
@@ -102,7 +114,7 @@
                 </div>
               </div>
               <div class="mb-4">
-                <label class="form-label">
+                <label class="form-label" id="lbl-password">
                   App Password
                   <span id="password-status" class="badge bg-secondary ms-2" style="font-size:.7rem;">Not set</span>
                 </label>
@@ -112,9 +124,23 @@
                     <i class="fas fa-eye" id="pwd-eye-icon"></i>
                   </button>
                 </div>
-                <div class="form-text">
+                <div class="form-text" id="hint-password">
                   For Gmail, use an <strong>App Password</strong> (not your regular password).
                   <a href="#" onclick="return false;" title="Google Account → Security → 2-Step Verification → App passwords">How?</a>
+                </div>
+
+                <!-- Office 365 Setup Guide -->
+                <div id="o365-setup-guide" class="d-none mt-3">
+                  <div class="alert alert-info py-2 px-3 mb-0 small">
+                    <strong><i class="fab fa-microsoft me-1"></i>Cómo habilitar SMTP AUTH en Office 365</strong>
+                    <ol class="mb-0 mt-2 ps-3">
+                      <li>Inicia sesión en <strong>Microsoft 365 Admin Center</strong> (<a href="https://admin.microsoft.com" target="_blank" rel="noopener">admin.microsoft.com</a>)</li>
+                      <li>Ve a <strong>Usuarios → Usuarios activos</strong> y selecciona el buzón remitente</li>
+                      <li>Abre la pestaña <strong>Correo</strong> → haz clic en <strong>Administrar aplicaciones de correo</strong></li>
+                      <li>Activa <strong>SMTP autenticado</strong> y guarda</li>
+                      <li>Usa ese email y contraseña en este formulario</li>
+                    </ol>
+                  </div>
                 </div>
               </div>
 
@@ -194,6 +220,63 @@
 <script src="../js/auth.js"></script>
 <script src="../js/sidebar.js"></script>
 <script>
+  // ── Provider selector ────────────────────────────────────────────────────────
+  let _provider = 'smtp';
+  let _smtpHostBackup = '';
+  let _smtpPortBackup = 587;
+
+  function setProvider(type) {
+    _provider = type;
+
+    const isO365 = type === 'office365';
+
+    // Update pill active states and aria-pressed
+    const pillSmtp = document.getElementById('pill-smtp');
+    const pillO365 = document.getElementById('pill-o365');
+    pillSmtp.classList.toggle('active', !isO365);
+    pillO365.classList.toggle('active', isO365);
+    pillSmtp.setAttribute('aria-pressed', String(!isO365));
+    pillO365.setAttribute('aria-pressed', String(isO365));
+
+    const hostEl    = document.getElementById('f-smtp-host');
+    const portEl    = document.getElementById('f-smtp-port');
+    const sslEl     = document.getElementById('f-use-ssl');
+    const pwdLabel  = document.getElementById('lbl-password');
+    const pwdHint   = document.getElementById('hint-password');
+    const guideEl   = document.getElementById('o365-setup-guide');
+
+    if (isO365) {
+      hostEl.value    = 'smtp.office365.com';
+      portEl.value    = '587';
+      sslEl.checked   = true;
+      hostEl.readOnly = true;
+      portEl.readOnly = true;
+      hostEl.classList.add('bg-light');
+      portEl.classList.add('bg-light');
+      pwdLabel.childNodes[0].textContent = 'Office 365 Password ';
+      pwdHint.innerHTML = 'Enter the password for the Office 365 mailbox used as sender.';
+      guideEl.classList.remove('d-none');
+    } else {
+      hostEl.value    = _smtpHostBackup;
+      portEl.value    = _smtpPortBackup;
+      hostEl.readOnly = false;
+      portEl.readOnly = false;
+      hostEl.classList.remove('bg-light');
+      portEl.classList.remove('bg-light');
+      pwdLabel.childNodes[0].textContent = 'App Password ';
+      pwdHint.innerHTML = 'For Gmail, use an <strong>App Password</strong> (not your regular password). <a href="#" onclick="return false;" title="Google Account → Security → 2-Step Verification → App passwords">How?</a>';
+      guideEl.classList.add('d-none');
+    }
+  }
+
+  function detectProvider(host) {
+    if (host && (host.toLowerCase().includes('office365.com') || host.toLowerCase().includes('outlook.office365.com'))) {
+      setProvider('office365');
+    } else {
+      setProvider('smtp');
+    }
+  }
+
   // ── Auth guard ───────────────────────────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', async () => {
     if (!Auth.requireAuth()) return;
@@ -239,6 +322,9 @@
       pwdBadge.style.fontSize = '.7rem';
 
       updateEnabledBadge(!!c.IsEnabled);
+      _smtpHostBackup = c.SmtpHost || '';
+      _smtpPortBackup = c.SmtpPort || 587;
+      detectProvider(c.SmtpHost || '');
     } catch (err) {
       showStatus('danger', `Error loading configuration: ${err.message}`);
     }
