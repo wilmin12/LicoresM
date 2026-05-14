@@ -107,7 +107,8 @@ public class ForexController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { Error = ex.Message });
+            var inner = ex.InnerException?.Message ?? "";
+            return StatusCode(500, new { Error = ex.Message, Detail = inner });
         }
     }
 }
