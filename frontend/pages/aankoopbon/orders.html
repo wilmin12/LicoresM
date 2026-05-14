@@ -1449,6 +1449,7 @@ async function printBon(id) {
 
   const _buildBonPage = (copyLabel, copyColor) => `
 <div class="print-page">
+  ${(copyLabel === 'REPRINT' || copyLabel.toUpperCase().includes('OFFICE')) ? '<div style="text-align:center;font-size:42px;font-weight:900;color:#dc3545;letter-spacing:8px;padding:10px 0;border:3px solid #dc3545;border-radius:6px;margin-bottom:16px;">NOT FOR USE</div>' : ''}
 
   <!-- ── Header ── -->
   <div class="print-header">
@@ -1478,7 +1479,7 @@ async function printBon(id) {
   <!-- ── Info grid ── -->
   <div class="print-info-grid">
     <div class="print-info-cell"><span class="print-info-label">Aan (To):</span><span class="print-info-value">${_esc(h.AohVendorName||'–')}</span></div>
-    <div class="print-info-cell"><span class="print-info-label">Dirección:</span><span class="print-info-value">${_esc(h.AohVendorAddress||'–')}</span></div>
+    <div class="print-info-cell"><span class="print-info-label">Adres:</span><span class="print-info-value">${_esc(h.AohVendorAddress||'–')}</span></div>
     <div class="print-info-cell"><span class="print-info-label">Van (From):</span><span class="print-info-value">Licores Maduro, Dokweg z.n.</span></div>
     <div class="print-info-cell"><span class="print-info-label">Afdeling:</span><span class="print-info-value">${_esc(h.AohDepartment||'–')}</span></div>
     ${h.AohRemarks ? `<div class="print-info-cell print-delivery-row" style="grid-column:1/-1;"><span class="print-info-label">Betreft:</span><span class="print-info-value">${_esc(h.AohRemarks)}</span></div>` : ''}
@@ -1487,16 +1488,6 @@ async function printBon(id) {
     ${h.AohReceiverName ? `<div class="print-info-cell"><span class="print-info-label">Ontvanger:</span><span class="print-info-value">${_esc(h.AohReceiverName)}${h.AohReceiverIdDoc?' &nbsp; ID# '+_esc(h.AohReceiverIdDoc):''}</span></div>` : ''}
     ${h.AohVehicleLicense ? `<div class="print-info-cell"><span class="print-info-label">Voertuig:</span><span class="print-info-value">${_esc(h.AohVehicleLicense)} ${h.AohVehicleType?'/ '+_esc(h.AohVehicleType):''} ${h.AohVehicleModel?'/ '+_esc(h.AohVehicleModel):''}</span></div>` : ''}
 
-    <!-- Delivery options -->
-    <div class="print-info-cell print-delivery-row" style="grid-column:1/-1;">
-      <span class="print-info-label">Entrega:</span>
-      <div class="delivery-options">
-        <span class="delivery-opt ${h.AohMeegeven?'selected':''}"><span style="font-size:13px;">${h.AohMeegeven?'☑':'☐'}</span> Wilt u meegeven</span>
-        <span class="delivery-opt ${h.AohOntvangen?'selected':''}"><span style="font-size:13px;">${h.AohOntvangen?'☑':'☐'}</span> Hierbij ontvangt u</span>
-        <span class="delivery-opt ${h.AohZenden?'selected':''}"><span style="font-size:13px;">${h.AohZenden?'☑':'☐'}</span> Wilt u zenden</span>
-        <span class="delivery-opt ${!h.AohMeegeven&&!h.AohOntvangen&&!h.AohZenden?'selected':''}"><span style="font-size:13px;">${!h.AohMeegeven&&!h.AohOntvangen&&!h.AohZenden?'☑':'☐'}</span> Andere</span>
-      </div>
-    </div>
   </div>
 
   <!-- ── Line items ── -->
@@ -1504,9 +1495,9 @@ async function printBon(id) {
     <thead>
       <tr>
         <th style="width:30px;">#</th>
-        <th style="width:100px;">Código</th>
-        <th>Descripción</th>
-        <th style="width:50px;">Cant.</th>
+        <th style="width:100px;">Product</th>
+        <th>Omschrijving</th>
+        <th style="width:50px;">Aantal</th>
         <th style="width:60px;">Unidad</th>
       </tr>
     </thead>
@@ -1535,8 +1526,9 @@ async function printBon(id) {
 
   <!-- ── Footer ── -->
   <div class="print-footer">
-    <span>Creado por: ${_esc(h.AohCreatedByName||'–')}</span>
-    <span>Impreso: ${new Date().toLocaleString('es-CW')}</span>
+    <span><b>Goedgekeurd door:</b> ${_esc(h.AohApprovedByName||'–')}</span>
+    <span><b>Aanvrager:</b> ${_esc(h.AohRequestor||'–')}</span>
+    <span>Datum: ${new Date().toLocaleString('es-CW')}</span>
     <span>Licores Maduro &copy; ${new Date().getFullYear()}</span>
   </div>
 
