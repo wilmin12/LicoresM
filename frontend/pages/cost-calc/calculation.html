@@ -855,7 +855,7 @@
       const bg=i%2?'#f9fafb':'#fff';
       let row=`<tr style="background:${bg};">
         <td style="padding:3px 6px;font-family:monospace;font-size:8px;font-weight:600;color:#374151;border:1px solid #d1d5db;">${esc(d.itemNo)}</td>
-        <td style="padding:3px 6px;font-size:8px;color:#334155;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:1px solid #d1d5db;" title="${esc(d.description)}">${esc(d.description)}</td>
+        <td style="padding:3px 6px;font-size:8px;color:#334155;word-break:break-word;white-space:normal;border:1px solid #d1d5db;" title="${esc(d.description)}">${esc(d.description)}</td>
         ${ITEM_COLS.map(c=>c.diff?DC(d[c.key]):NC(d[c.key],c.dec??2,!!c.bold,!!c.accent)).join('')}
       </tr>`;
       if(d.vip){const v=d.vip;
@@ -922,7 +922,7 @@
       <!-- Item Detail -->
       <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.09em;color:#6b7280;border-bottom:1px solid #d1d5db;padding-bottom:2px;margin-top:8px;margin-bottom:3px;">Item Detail — Cost per Case in XCG</div>
       <table style="table-layout:fixed;font-size:8px;margin-bottom:8px;">
-        <colgroup><col style="width:4.5%"/><col style="width:10%"/>${ITEM_COLS.map(function(){return '<col style="width:'+(85.5/ITEM_COLS.length)+'%"/>';}).join('')}</colgroup>
+        <colgroup><col style="width:3%"/><col style="width:15%"/>${ITEM_COLS.map(function(){return '<col style="width:'+(82/ITEM_COLS.length)+'%"/>';}).join('')}</colgroup>
         <thead>
           <tr>
             <th colspan="2" style="background:#e5e7eb;font-size:7.5px;font-weight:700;text-transform:uppercase;color:#1f2937;padding:2px 5px;text-align:left;border:1px solid #d1d5db;"></th>
