@@ -454,11 +454,11 @@
         <td>${esc(d.CcpdItemDescr||'')}</td>
         <td class="text-end">${fmt(d.CcpdUnitCase,0)}</td>
         <td>${esc(d.CcpdUm||'')}</td>
-        <td class="text-end">${fmt(d.CcpdFobPriceUsd,4)}</td>
+        <td class="text-end">${fmt(d.CcpdFobPriceUsd,2)}</td>
         <td class="text-end">${fmt((d.CcpdFobPriceUsd??0)*eq)}</td>
         <td class="text-end">${fmt(eq,0)}</td>
         <td class="text-end">${fmt(d.CcpdFreeQty,0)}</td>
-        <td class="text-end">${fmt(d.CcpdFobPrice,4)}</td>
+        <td class="text-end">${fmt(d.CcpdFobPrice,2)}</td>
         <td class="text-end">${fmt(eq>0?d.CcpdInlandFreight/eq:0)}</td>
         <td class="text-end">${fmt(eq>0?d.CcpdFreight/eq:0)}</td>
         <td class="text-end">${fmt(eq>0?d.CcpdLocalHandl/eq:0)}</td>
@@ -813,8 +813,8 @@
       {key:'unloading',label:'Unloading'},{key:'realCost',label:'Real Cost',accent:true},
     ];
     const ITEM_COLS = [
-      {key:'uc',label:'U/C',dec:0,g:'order'},{key:'up',label:'U/P',dec:4,g:'order'},{key:'ord',label:'Ord.',dec:0,g:'order'},
-      {key:'fcPrice',label:'F/C Price',dec:4,g:'order'},{key:'totalInvP',label:'Total Inv/P',dec:2,g:'order'},
+      {key:'uc',label:'U/C',dec:0,g:'order'},{key:'up',label:'U/P',dec:2,g:'order'},{key:'ord',label:'Ord.',dec:0,g:'order'},
+      {key:'fcPrice',label:'F/C Price',dec:2,g:'order'},{key:'totalInvP',label:'Total Inv/P',dec:2,g:'order'},
       {key:'fobPrice',label:'FOB Price',dec:2,g:'cost'},{key:'inlandFrt',label:'Inland Frt.',dec:2,g:'cost'},
       {key:'freight',label:'Freight',dec:2,g:'cost'},{key:'localHdl',label:'Local Hdl.',dec:2,g:'cost'},
       {key:'duties',label:'Duties',dec:2,g:'cost'},{key:'econSrch',label:'Econ. Srch.',dec:2,g:'cost'},
