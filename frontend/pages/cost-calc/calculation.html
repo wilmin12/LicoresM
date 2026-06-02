@@ -86,24 +86,6 @@
           <strong style="font-size:1.3rem;letter-spacing:.05em;">LICORES MADURO</strong><br/>
           <span style="font-size:1rem;">Cost Calculation Report</span>
         </div>
-        <table style="width:100%;font-size:.75rem;border-collapse:collapse;">
-          <tr>
-            <td><strong>Calc #:</strong> <span id="ph-calc-no">–</span></td>
-            <td><strong>Date:</strong> <span id="ph-date">–</span></td>
-            <td><strong>Status:</strong> <span id="ph-status">–</span></td>
-            <td><strong>Warehouse:</strong> <span id="ph-warehouse">–</span></td>
-            <td><strong>Forwarder:</strong> <span id="ph-forwarder">–</span></td>
-            <td><strong>Currency:</strong> <span id="ph-currency">–</span></td>
-          </tr>
-          <tr>
-            <td><strong>Ocean Frt:</strong> <span id="ph-ocean">–</span></td>
-            <td><strong>Transport:</strong> <span id="ph-transport">–</span></td>
-            <td><strong>Unloading:</strong> <span id="ph-unloading">–</span></td>
-            <td><strong>Local Hdl:</strong> <span id="ph-lh">–</span></td>
-            <td></td>
-            <td><strong>Printed:</strong> <span id="ph-printed">–</span></td>
-          </tr>
-        </table>
         <hr style="margin:.3rem 0 .5rem;"/>
       </div>
 
@@ -262,7 +244,7 @@
 <script>
   const STATUS_LABELS = { DR:'Draft', CF:'Confirmed', AP:'Approved' };
   const STATUS_CLASS  = { DR:'badge-inactive', CF:'badge bg-warning text-dark', AP:'badge-active' };
-  let calcId=null, calcData=null, scModal=null, shipCharges=[];
+  let calcId=null, calcData=null, ranker952Data={}, scModal=null, shipCharges=[];
 
   document.addEventListener('DOMContentLoaded',async()=>{
     if(!Auth.requireAuth())return;Auth.startExpiryWatcher();Auth.populateUserUI();Sidebar.init();
@@ -385,7 +367,9 @@
   async function loadCalc(){
     try{
       const res=await API.costCalc.getCalculation(calcId);
-      calcData=res?.Data||res;
+      const data=res?.Data||res;
+      calcData      = data?.Calc ?? data;
+      ranker952Data = data?.Ranker952 ?? {};
       renderHeader(calcData);
       renderAccordion(calcData);
       renderSummary(calcData);
@@ -453,7 +437,7 @@
       // Calculate subtotals
       const totFob=details.reduce((s,d)=>s+(d.CcpdFobPriceTot??0),0);
       const totFinal=details.reduce((s,d)=>s+(d.CcpdFinalCost??0),0);
-      const totSelling=details.reduce((s,d)=>s+(d.CcpdSellingPrice??0),0);
+      const totSelling=details.reduce((s,d)=>s+((d.CcpdSellingPrice??0)*effQty(d)),0);
 
       const rows=details.map(d=>{
         const marginPct=d.CcpdMarginPerc!=null?Number(d.CcpdMarginPerc):null;
@@ -464,41 +448,31 @@
               ${marginPct.toFixed(2)}%${marginBelowMin?' <i class="fas fa-exclamation-triangle" style="font-size:.7rem;"></i>':''}
             </span>`
           : '';
+        const eq=effQty(d);
         return`<tr>
         <td>${esc(d.CcpdItemNo||'')}</td>
-        <td class="text-end">${fmt(d.CcpdOrdQty,0)}</td>
+        <td>${esc(d.CcpdItemDescr||'')}</td>
+        <td class="text-end">${fmt(d.CcpdUnitCase,0)}</td>
+        <td>${esc(d.CcpdUm||'')}</td>
+        <td class="text-end">${fmt(d.CcpdFobPriceUsd,4)}</td>
+        <td class="text-end">${fmt((d.CcpdFobPriceUsd??0)*eq)}</td>
+        <td class="text-end">${fmt(eq,0)}</td>
         <td class="text-end">${fmt(d.CcpdFreeQty,0)}</td>
-        <td class="text-end">${fmt(d.CcpdLiters,2)}</td>
-        <td class="text-end">${fmt(d.CcpdFactor,2)}</td>
         <td class="text-end">${fmt(d.CcpdFobPrice,4)}</td>
-        <td class="text-end">${fmt(d.CcpdFobPriceTot)}</td>
-        <td class="text-end">${fmt(d.CcpdInlandFreight)}</td>
-        <td class="text-end">${fmt(d.CcpdFreight)}</td>
-        <td class="text-end">${fmt(d.CcpdLocalHandl)}</td>
-        <td class="text-end">${fmt(d.CcpdDuties)}</td>
-        <td class="text-end">${fmt(d.CcpdEconSurch)}</td>
-        <td class="text-end">${fmt(d.CcpdOb)}</td>
-        <td class="text-end">${fmt(d.CcpdInlandTariff)}</td>
-        <td class="text-end">${fmt(d.CcpdShipCharges)}</td>
-        <td class="text-end">${fmt(d.CcpdInsurance)}</td>
-        <td class="text-end">${fmt(d.CcpdTransport)}</td>
-        <td class="text-end">${fmt(d.CcpdUnloading)}</td>
-        <td class="text-end fw-bold" style="color:var(--primary);">${fmt(d.CcpdFinalCost)}</td>
-        <td class="text-end">${marginCell}</td>
-        <td class="text-end fw-bold" style="color:var(--primary-dark);">${fmt(d.CcpdSellingPrice)}</td>
+        <td class="text-end">${fmt(eq>0?d.CcpdInlandFreight/eq:0)}</td>
+        <td class="text-end">${fmt(eq>0?d.CcpdFreight/eq:0)}</td>
+        <td class="text-end">${fmt(eq>0?d.CcpdLocalHandl/eq:0)}</td>
+        <td class="text-end">${fmt(eq>0?d.CcpdDuties/eq:0)}</td>
+        <td class="text-end">${fmt(eq>0?d.CcpdEconSurch/eq:0)}</td>
+        <td class="text-end">${fmt(eq>0?d.CcpdOb/eq:0)}</td>
+        <td class="text-end">${fmt(eq>0?d.CcpdInlandTariff/eq:0)}</td>
+        <td class="text-end">${fmt(eq>0?d.CcpdShipCharges/eq:0)}</td>
+        <td class="text-end">${fmt(eq>0?d.CcpdInsurance/eq:0)}</td>
+        <td class="text-end">${fmt(eq>0?d.CcpdTransport/eq:0)}</td>
+        <td class="text-end">${fmt(eq>0?d.CcpdUnloading/eq:0)}</td>
+        <td class="text-end fw-bold" style="color:var(--primary);">${fmt(eq>0?d.CcpdFinalCost/eq:0)}</td>
       </tr>`;}).join('');
 
-      const subtotalRow=`<tr class="subtotal-row">
-        <td colspan="3">Subtotals</td>
-        <td class="text-end">${fmt(po.CcphTotLiters,2)}</td>
-        <td></td>
-        <td></td>
-        <td class="text-end">${fmt(totFob)}</td>
-        <td colspan="11"></td>
-        <td class="text-end">${fmt(totFinal)}</td>
-        <td></td>
-        <td class="text-end">${fmt(totSelling)}</td>
-      </tr>`;
 
       return`
         <div class="accordion-item">
@@ -521,10 +495,9 @@
                 <table class="table detail-table table-bordered table-sm mb-0">
                   <thead class="table-light">
                     <tr>
-                      <th>Item No</th><th class="text-end">Qty</th><th class="text-end">Free</th>
-                      <th class="text-end">Liters</th><th class="text-end">Factor</th>
+                      <th>Item No</th><th>Description</th><th class="text-end">UC</th><th>UM</th><th class="text-end">FC Price</th><th class="text-end">Total Inv P</th><th class="text-end">Qty</th><th class="text-end">Free</th>
                       <th class="text-end">FOB Price</th>
-                      <th class="text-end">FOB Total</th><th class="text-end">Inland Frt</th>
+                      <th class="text-end">Inland Frt</th>
                       <th class="text-end">Ocean Frt</th><th class="text-end">Local Hdl</th>
                       <th class="text-end">Duties</th>
                       <th class="text-end">Eco Surch</th>
@@ -533,11 +506,9 @@
                       <th class="text-end">Ship Chgs</th>
                       <th class="text-end">Insurance</th><th class="text-end">Transport</th>
                       <th class="text-end">Unloading</th><th class="text-end">Final Cost</th>
-                      <th class="text-end">Margin %</th><th class="text-end">Selling Price</th>
                     </tr>
                   </thead>
                   <tbody>${rows||'<tr><td colspan="21" class="text-center text-muted">No details – run calculation first.</td></tr>'}</tbody>
-                  ${details.length?'<tfoot>'+subtotalRow+'</tfoot>':''}
                 </table>
               </div>
               <small class="text-muted">Duties, Eco Surcharge and OB are calculated from HS code tariff rates. Items without a goods classification will show 0.00.</small>
@@ -547,42 +518,161 @@
     }).join('');
   }
 
-  function updatePrintHeader(c){
-    const dt=c.CcCalcDate?c.CcCalcDate.split('T')[0]:'';
-    const stLabel=STATUS_LABELS[c.CcStatus]||c.CcStatus;
-    document.getElementById('ph-calc-no').textContent=c.CcCalcNumber;
-    document.getElementById('ph-date').textContent=dt;
-    document.getElementById('ph-status').textContent=stLabel;
-    document.getElementById('ph-warehouse').textContent=c.CcWarehouse||'–';
-    document.getElementById('ph-forwarder').textContent=c.CcForwarderName||c.CcForwarderCode||'–';
-    document.getElementById('ph-currency').textContent=(c.CcCurrCode||'–')+(c.CcCurrRate?' ('+Number(c.CcCurrRate).toFixed(4)+')':'');
-    document.getElementById('ph-ocean').textContent=fmt(c.CcFreight);
-    document.getElementById('ph-transport').textContent=fmt(c.CcTransport);
-    document.getElementById('ph-unloading').textContent=fmt(c.CcUnloading);
-    document.getElementById('ph-lh').textContent=fmt(c.CcLocalHandling);
-    document.getElementById('ph-printed').textContent=new Date().toLocaleDateString('en-US',{year:'numeric',month:'short',day:'2-digit'});
-  }
+  function updatePrintHeader(c){}
 
-  let _printState=null;
   function printReport(){
-    window.print();
+    if(!calcData){return;}
+
+    // ── Map calcData → FinalCostReport props ─────────────────────────────────
+    const pos = calcData.PoHeads || [];
+
+    // Collect unique WH / Invoice values across all POs
+    const unique = (arr) => [...new Set(arr.filter(Boolean))];
+    const warehouses = unique(pos.map(p => p.CcphWhse?.trim()));
+    const invoiceNrs = unique(pos.map(p => p.CcphInvNumber?.trim()));
+    const invoiceDts = unique(pos.map(p => p.CcphInvDate ? p.CcphInvDate.split('T')[0] : null));
+    const containers = unique(pos.map(p => p.CcphConNo?.trim()));
+
+    // Cost totals per PO
+    const costTotals = (calcData.PoHeads||[])
+      .filter(po => (po.Details||[]).some(d => (d.CcpdOrdQty??0) > 0))
+      .map(po => {
+        const dets = (po.Details||[]).filter(d => (d.CcpdOrdQty??0) > 0);
+        const s = k => dets.reduce((acc,d) => acc + (Number(d[k])||0), 0);
+        return {
+          poNo:         po.CcphLmPoNo,
+          fobPrice:     s('CcpdFobPriceTot'),
+          inlandFreight:s('CcpdInlandFreight'),
+          freight:      s('CcpdFreight'),
+          localHandling:s('CcpdLocalHandl'),
+          duties:       s('CcpdDuties'),
+          econSurch:    s('CcpdEconSurch'),
+          tax:          s('CcpdOb'),
+          insurance:    s('CcpdInsurance'),
+          transport:    s('CcpdTransport'),
+          unloading:    s('CcpdUnloading'),
+          realCost:     s('CcpdFinalCost'),
+        };
+      });
+
+    // Item rows (all POs, active lines only, per-case values)
+    const items = (calcData.PoHeads||[])
+      .flatMap(po => (po.Details||[]).filter(d => (d.CcpdOrdQty??0) > 0))
+      .map(d => {
+        const qty  = effQty(d) || 1;
+        const pc   = v => qty > 0 ? (v??0) / qty : 0;
+        const vip  = ranker952Data[d.CcpdItemNo?.trim()] ?? null;
+        return {
+          itemNo:      d.CcpdItemNo,
+          description: d.CcpdItemDescr || '',
+          uc:          d.CcpdUnitCase ?? 0,
+          up:          d.CcpdFobPriceUsd ?? 0,
+          ord:         qty,
+          fcPrice:     d.CcpdFobPriceUsd ?? 0,
+          totalInvP:   (d.CcpdFobPriceUsd??0) * qty,
+          fobPrice:    d.CcpdFobPrice ?? 0,
+          inlandFrt:   pc(d.CcpdInlandFreight),
+          freight:     pc(d.CcpdFreight),
+          localHdl:    pc(d.CcpdLocalHandl),
+          duties:      pc(d.CcpdDuties),
+          econSrch:    pc(d.CcpdEconSurch),
+          tax:         pc(d.CcpdOb),
+          insurance:   pc(d.CcpdInsurance),
+          trans:       pc(d.CcpdTransport),
+          unload:      pc(d.CcpdUnloading),
+          costPerCase: pc((d.CcpdFinalCost??0) - (d.CcpdDuties??0) - (d.CcpdEconSurch??0) - (d.CcpdOb??0)),
+          totalExtWh1: (d.CcpdFinalCost??0) - (d.CcpdDuties??0) - (d.CcpdEconSurch??0) - (d.CcpdOb??0),
+          fullCostPerCase: pc(d.CcpdFinalCost),
+          totalExt:    d.CcpdFinalCost ?? 0,
+          diffWh1:     0,
+          diffWh2:     0,
+          warehouse:   d.CcpdWarehouse || '',
+          vip: vip ? (() => {
+            const c = k => Number(vip[k] ?? 0);
+            const v = {
+              fobPrice:  c('Cost01'),
+              inlandFrt: c('Cost02'),
+              freight:   c('Cost03'),
+              localHdl:  c('Cost04'),
+              duties:    c('Cost05'),
+              econSrch:  c('Cost06'),
+              tax:       c('Cost07'),
+              insurance: c('Cost08'),
+              trans:     c('Cost09'),
+              unload:    c('Cost10'),
+            };
+            v.costPerCase = v.fobPrice + v.inlandFrt + v.freight + v.localHdl
+                          + v.insurance + v.trans + v.unload;
+            v.fullCostPerCase = v.costPerCase + v.duties + v.econSrch + v.tax;
+            v.totalExtWh1 = v.costPerCase * qty;
+            v.totalExt    = v.fullCostPerCase * qty;
+            return v;
+          })() : null,
+        };
+      });
+    items.forEach(d => {
+      if (d.vip) {
+        d.diffWh1 = d.totalExtWh1 - d.vip.totalExtWh1;
+        d.diffWh2 = d.totalExt    - d.vip.totalExt;
+      }
+    });
+
+    // Summaries grouped by warehouse
+    const whMap = {};
+    (calcData.PoHeads||[]).forEach(po => {
+      const wh = po.CcphWhse || 'N/A';
+      if (!whMap[wh]) whMap[wh] = { totalExtended:0, totalActualVip:0, totalRealCost:0 };
+      (po.Details||[]).filter(d => (d.CcpdOrdQty??0) > 0).forEach(d => {
+        whMap[wh].totalExtended  += d.CcpdFinalCost ?? 0;
+        whMap[wh].totalRealCost  += d.CcpdFinalCost ?? 0;
+        whMap[wh].totalActualVip += (d.CcpdSellingPrice??0) * effQty(d);
+      });
+    });
+    const whKeys = Object.keys(whMap);
+    const summaries = whKeys.map(k => ({ label: k, ...whMap[k] }));
+    if (whKeys.length > 1) {
+      summaries.push({
+        label:          whKeys.join(' / '),
+        totalExtended:  summaries.reduce((s,x) => s+x.totalExtended,  0),
+        totalActualVip: summaries.reduce((s,x) => s+x.totalActualVip, 0),
+        totalRealCost:  summaries.reduce((s,x) => s+x.totalRealCost,  0),
+      });
+    }
+
+    const firstPo = pos[0];
+    const reportProps = {
+      reportNumber:  calcData.CcCalcNumber,
+      factor:        calcData.CcCurrRate ?? 1,
+      order:         pos.map(p => p.CcphLmPoNo).filter(Boolean).join(' / ') || '—',
+      warehouse:     warehouses.join(' / ') || '—',
+      warehouseCode: warehouses.join(' / ') || '—',
+      container:     containers.join(' / ') || '—',
+      invoiceNo:     invoiceNrs.join(' / ') || '—',
+      invoiceDate:   invoiceDts.join(' / ') || '—',
+      invRate:       calcData.CcCurrRate ?? 1,
+      custRate:      calcData.CcCustRate ?? calcData.CcCurrRate ?? 1,
+      whCode2:       warehouses.map(w => { const p = (w||'').substring(0,3); return p+'10/'+p+'20'; }).join(' / ') || '—',
+      forwarder:     calcData.CcForwarderName || calcData.CcForwarderCode || '—',
+      vendor:        firstPo?.CcphVendName || firstPo?.CcphVendNo || '—',
+      costTotals,
+      items,
+      summaries,
+      reportDate: new Date().toLocaleDateString('en-US',{year:'numeric',month:'short',day:'2-digit'}),
+      page: '1 of 1',
+    };
+
+    const html = buildReportHTML(reportProps);
+    const iframe = document.createElement('iframe');
+    iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1400px;height:1px;border:0;visibility:hidden;';
+    iframe.onload = function() {
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+      setTimeout(function(){ document.body.removeChild(iframe); }, 1000);
+    };
+    const pageCSS = '*{box-sizing:border-box;margin:0;padding:0;}body{font-family:"Arial Narrow",Arial,sans-serif;background:#fff;}table{border-collapse:collapse;width:100%;}td,th{border:1px solid #d1d5db;}@page{size:A4 landscape;margin:8mm;}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}';
+    iframe.srcdoc = '<!DOCTYPE html><html><head><meta charset="UTF-8"/><style>' + pageCSS + '<\/style><\/head><body>' + html + '<\/body><\/html>';
+    document.body.appendChild(iframe);
   }
-  window.addEventListener('beforeprint',()=>{
-    _printState=[];
-    document.querySelectorAll('.accordion-collapse').forEach(el=>{
-      _printState.push({el,wasOpen:el.classList.contains('show')});
-      el.classList.add('show');
-      el.style.display='block';
-    });
-    document.getElementById('ph-printed').textContent=new Date().toLocaleDateString('en-US',{year:'numeric',month:'short',day:'2-digit',hour:'2-digit',minute:'2-digit'});
-  });
-  window.addEventListener('afterprint',()=>{
-    if(!_printState)return;
-    _printState.forEach(({el,wasOpen})=>{
-      if(!wasOpen){el.classList.remove('show');el.style.display='';}
-    });
-    _printState=null;
-  });
 
   function renderSummary(c){
     const summaryCard=document.getElementById('summary-card');
@@ -598,8 +688,8 @@
     const totUnloading=allDetails.reduce((s,d)=>s+(d.CcpdUnloading??0),0);
     const totLH=allDetails.reduce((s,d)=>s+(d.CcpdLocalHandl??0),0);
     const totFinal=allDetails.reduce((s,d)=>s+(d.CcpdFinalCost??0),0);
-    const totSelling=allDetails.reduce((s,d)=>s+(d.CcpdSellingPrice??0),0);
-    const totQty=allDetails.reduce((s,d)=>s+(d.CcpdOrdQty??0),0);
+    const totSelling=allDetails.reduce((s,d)=>s+((d.CcpdSellingPrice??0)*effQty(d)),0);
+    const totQty=allDetails.reduce((s,d)=>s+effQty(d),0);
     const totLiters=c.PoHeads.reduce((s,p)=>s+(p.CcphTotLiters??0),0);
     const totDuties=allDetails.reduce((s,d)=>s+(d.CcpdDuties??0),0);
     const totEcon=allDetails.reduce((s,d)=>s+(d.CcpdEconSurch??0),0);
@@ -712,7 +802,160 @@
     });
   }
 
+  // ── Report HTML builder (no iframe, no external dependencies) ────────────────
+  function buildReportHTML(p) {
+    const f = (v,d=2) => { const n=Number(v??0); return isNaN(n)?'':n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}); };
+    const esc = s => String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const COST_COLS = [
+      {key:'fobPrice',label:'FOB Price'},{key:'inlandFreight',label:'Inland Frt.'},{key:'freight',label:'Freight'},
+      {key:'localHandling',label:'Local Hdl.'},{key:'duties',label:'Duties'},{key:'econSurch',label:'Econ. Srch.'},
+      {key:'tax',label:'TAX 4.5%'},{key:'insurance',label:'Insurance'},{key:'transport',label:'Transport'},
+      {key:'unloading',label:'Unloading'},{key:'realCost',label:'Real Cost',accent:true},
+    ];
+    const ITEM_COLS = [
+      {key:'uc',label:'U/C',dec:0,g:'order'},{key:'up',label:'U/P',dec:4,g:'order'},{key:'ord',label:'Ord.',dec:0,g:'order'},
+      {key:'fcPrice',label:'F/C Price',dec:4,g:'order'},{key:'totalInvP',label:'Total Inv/P',dec:2,g:'order'},
+      {key:'fobPrice',label:'FOB Price',dec:2,g:'cost'},{key:'inlandFrt',label:'Inland Frt.',dec:2,g:'cost'},
+      {key:'freight',label:'Freight',dec:2,g:'cost'},{key:'localHdl',label:'Local Hdl.',dec:2,g:'cost'},
+      {key:'duties',label:'Duties',dec:2,g:'cost'},{key:'econSrch',label:'Econ. Srch.',dec:2,g:'cost'},
+      {key:'tax',label:'TAX 4.5%',dec:2,g:'cost'},{key:'insurance',label:'Insurance',dec:2,g:'cost'},
+      {key:'trans',label:'Trans.',dec:2,g:'cost'},{key:'unload',label:'Unload.',dec:2,g:'cost'},
+      {key:'costPerCase',label:'Cost p/case',dec:2,g:'wh1',bold:true,accent:true},
+      {key:'totalExtWh1',label:'Total Ext.',dec:2,g:'wh1',bold:true,accent:true},
+      {key:'diffWh1',label:'Diff.',dec:2,g:'wh1',diff:true},
+      {key:'fullCostPerCase',label:'Cost p/case',dec:2,g:'wh2',bold:true,accent:true},
+      {key:'totalExt',label:'Total Ext.',dec:2,g:'wh2',bold:true,accent:true},
+      {key:'diffWh2',label:'Diff.',dec:2,g:'wh2',diff:true},
+    ];
+    const totC = k => (p.costTotals||[]).reduce((s,r)=>s+(Number(r[k])||0),0);
+    const totI = k => (p.items||[]).reduce((s,r)=>s+(Number(r[k])||0),0);
+
+    const NC = (v,d=2,bold=false,accent=false) => {
+      const n=Number(v??0), z=n===0;
+      return `<td style="text-align:right;padding:2px 5px;font-size:9px;font-variant-numeric:tabular-nums;color:${z&&!accent?'#9ca3af':accent?'#111827':'#1f2937'};font-weight:${bold||accent?700:400};${accent?'border-left:2px solid #9ca3af;':''}">${f(v,d)}</td>`;
+    };
+    const DC = v => { const n=Number(v??0); if(!n) return `<td style="text-align:right;padding:2px 5px;font-size:9px;font-weight:700;color:#9ca3af;">—</td>`; return `<td style="text-align:right;padding:2px 5px;font-size:9px;font-weight:700;color:${n>0?'#166534':'#991b1b'};">${n>0?'+':''}${f(n)}</td>`; };
+    const VC = v => { const n=Number(v??0); return `<td style="text-align:right;padding:1px 5px;font-size:7.5px;font-variant-numeric:tabular-nums;color:${n===0?'#d1d5db':'#6b7280'};font-style:italic;">${f(v)}</td>`; };
+    const RTH = (lbl,g) => { const bg=g==='wh1'?'#c7cdd6':g==='wh2'?'#b8bfc9':g==='order'?'#d1d5db':'#e5e7eb'; return `<th style="background:${bg};padding:2px 1px;vertical-align:bottom;text-align:center;height:62px;border:1px solid #d1d5db;"><div style="writing-mode:vertical-rl;transform:rotate(180deg);font-size:7.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:#374151;white-space:nowrap;display:inline-block;">${esc(lbl)}</div></th>`; };
+    const THL = t => `<th style="background:#e5e7eb;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:#374151;padding:3px 8px;text-align:left;white-space:nowrap;border:1px solid #d1d5db;">${esc(t)}</th>`;
+    const THR = (t,accent) => `<th style="background:${accent?'#d1d5db':'#e5e7eb'};font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:#374151;padding:3px 5px;text-align:right;white-space:nowrap;border:1px solid #d1d5db;">${esc(t)}</th>`;
+    const FTD = (v,d=2,bold=false,bg='#e5e7eb') => `<td style="text-align:right;padding:3px 5px;font-size:9px;font-weight:${bold?800:700};color:#111827;background:${bg};font-variant-numeric:tabular-nums;border:1px solid #d1d5db;">${f(v,d)}</td>`;
+    const FTL = (t,bg='#e5e7eb') => `<td style="padding:3px 8px;font-size:9px;font-weight:700;color:#111827;background:${bg};text-transform:uppercase;letter-spacing:0.04em;border:1px solid #d1d5db;">${esc(t)}</td>`;
+    const LBL = t => `<td style="padding:1px 6px 1px 0;font-weight:700;color:#6b7280;white-space:nowrap;border:none;width:70px;">${esc(t)}</td>`;
+    const VAL = (v,extra='') => `<td style="padding:1px 12px 1px 4px;color:#111827;border:none;font-weight:600;${extra}">${v}</td>`;
+
+    const costRows = (p.costTotals||[]).map((r,i)=>
+      `<tr style="background:${i%2?'#f9fafb':'#fff'};">
+        <td style="padding:4px 8px;font-weight:600;font-size:9px;border:1px solid #d1d5db;">${esc(r.poNo)}</td>
+        ${COST_COLS.map(c=>NC(r[c.key],2,!!c.accent,!!c.accent)).join('')}
+      </tr>`
+    ).join('');
+
+    const itemRows = (p.items||[]).map((d,i)=>{
+      const bg=i%2?'#f9fafb':'#fff';
+      let row=`<tr style="background:${bg};">
+        <td style="padding:3px 6px;font-family:monospace;font-size:8px;font-weight:600;color:#374151;border:1px solid #d1d5db;">${esc(d.itemNo)}</td>
+        <td style="padding:3px 6px;font-size:8px;color:#334155;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:1px solid #d1d5db;" title="${esc(d.description)}">${esc(d.description)}</td>
+        ${ITEM_COLS.map(c=>c.diff?DC(d[c.key]):NC(d[c.key],c.dec??2,!!c.bold,!!c.accent)).join('')}
+      </tr>`;
+      if(d.vip){const v=d.vip;
+        row+=`<tr style="background:#f3f4f6;">
+          <td style="padding:1px 6px;font-size:7px;color:#9ca3af;font-style:italic;border:1px solid #e5e7eb;"></td>
+          <td style="padding:1px 6px;font-size:7.5px;color:#6b7280;font-style:italic;border:1px solid #e5e7eb;">↳ Actual Cost VIP</td>
+          ${'<td style="border:1px solid #e5e7eb;"></td>'.repeat(5)}
+          ${VC(v.fobPrice)}${VC(v.inlandFrt)}${VC(v.freight)}${VC(v.localHdl)}${VC(v.duties)}${VC(v.econSrch)}${VC(v.tax)}${VC(v.insurance)}${VC(v.trans)}${VC(v.unload)}
+          ${VC(v.costPerCase)}${VC(v.totalExtWh1)}<td style="border:1px solid #e5e7eb;"></td>
+          ${VC(v.fullCostPerCase)}${VC(v.totalExt)}<td style="border:1px solid #e5e7eb;"></td>
+        </tr>`;}
+      return row;
+    }).join('');
+
+    const itemFoot = ITEM_COLS.map(c=>['up','fcPrice'].includes(c.key)||c.diff?`<td style="background:#e5e7eb;border:1px solid #d1d5db;"></td>`:FTD(totI(c.key),c.dec??2,!!c.accent)).join('');
+    const totVipWh1 = (p.items||[]).reduce((s,d)=>s+(d.vip?d.vip.totalExtWh1:0),0);
+    const totVipWh2 = (p.items||[]).reduce((s,d)=>s+(d.vip?d.vip.totalExt:0),0);
+    const totDiffWh1= totI('totalExtWh1') - totVipWh1;
+    const totDiffWh2= totI('totalExt') - totVipWh2;
+
+    const _summs = p.summaries||[];
+    const summaryHTML = _summs.length ? (
+      '<div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.09em;color:#6b7280;border-bottom:1px solid #d1d5db;padding-bottom:2px;margin-top:8px;margin-bottom:3px;">Summary</div>' +
+      '<div style="display:grid;grid-template-columns:' + (_summs.length>=2?'1fr 1fr':'280px') + ';gap:8px;margin-bottom:10px;">' +
+      _summs.map(function(s){
+        return '<table style="font-size:9px;border-collapse:collapse;width:100%;">' +
+          '<thead><tr><th colspan="2" style="background:#d1d5db;font-size:8px;font-weight:700;text-transform:uppercase;text-align:center;padding:3px 8px;border:1px solid #d1d5db;">Warehouse ' + esc(s.label) + '</th></tr></thead>' +
+          '<tbody>' +
+          '<tr style="background:#fff;"><td style="padding:4px 8px;border:1px solid #d1d5db;">Total Extended</td><td style="text-align:right;padding:4px 8px;font-variant-numeric:tabular-nums;border:1px solid #d1d5db;">' + f(s.totalExtended) + '</td></tr>' +
+          '<tr style="background:#f9fafb;"><td style="padding:4px 8px;border:1px solid #d1d5db;">Total Actual VIP</td><td style="text-align:right;padding:4px 8px;font-variant-numeric:tabular-nums;border:1px solid #d1d5db;">' + f(s.totalActualVip) + '</td></tr>' +
+          '<tr><td style="padding:4px 8px;font-weight:700;background:#e5e7eb;border:1px solid #d1d5db;">Total Real Cost</td><td style="text-align:right;padding:4px 8px;font-weight:800;font-variant-numeric:tabular-nums;background:#e5e7eb;border:1px solid #d1d5db;">' + f(s.totalRealCost) + '</td></tr>' +
+          '</tbody></table>';
+      }).join('') +
+      '</div>'
+    ) : '';
+
+    return `<div style="padding:12px 14px;font-family:'Arial Narrow',Arial,sans-serif;font-size:9px;color:#111827;background:#fff;">
+      <style>.fcr td,.fcr th{border:1px solid #d1d5db;} .fcr table{border-collapse:collapse;width:100%;}<\/style>
+      <div class="fcr">
+      <!-- Header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #374151;padding-bottom:6px;margin-bottom:6px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <img src="../../img/LogoLicores.png" alt="Logo" style="height:40px;object-fit:contain;" onerror="this.style.display='none'"/>
+          <div style="border-left:1px solid #d1d5db;padding-left:10px;">
+            <div style="font-size:15px;font-weight:700;color:#111827;line-height:1.1;">Final Cost Calculation</div>
+            <div style="font-size:8px;color:#6b7280;margin-top:2px;text-transform:uppercase;letter-spacing:0.06em;">Import Cost Report — XCG</div>
+          </div>
+        </div>
+        <div style="text-align:right;"><div style="font-size:8px;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">Report No.</div><div style="font-size:18px;font-weight:800;color:#111827;line-height:1;">#${esc(String(p.reportNumber||''))}</div></div>
+      </div>
+      <!-- Metadata -->
+      <table style="margin-bottom:8px;font-size:8.5px;border-collapse:collapse;"><tbody>
+        <tr>${LBL('Container')}${VAL(esc(p.container||'—'),'border-right:none;')}${LBL('Invoice No.')}${VAL(esc(p.invoiceNo||'—'),'border-right:none;')}${LBL('Forwarder')}${VAL(esc(p.forwarder||'—'),'padding-right:0;border:none;')}</tr>
+        <tr>${LBL('Order')}${VAL(esc(p.order||'—'),'border-right:none;')}${LBL('Inv. Date')}${VAL(esc(p.invoiceDate||'—')+'<span style="margin:0 5px;color:#d1d5db;">|</span><span style="font-weight:400;color:#4b5563;">'+f(p.invRate,4)+'</span>','border-right:none;')}${LBL('Vendor')}${VAL(esc(p.vendor||'—'),'padding-right:0;border:none;font-weight:400;')}</tr>
+        <tr>${LBL('Warehouse')}${VAL(esc(p.warehouse||'—')+'<span style="color:#9ca3af;font-weight:400;margin-left:4px;">('+esc(p.warehouseCode||'')+')</span>','border-right:none;')}${LBL('Cust. Rate')}${VAL(f(p.custRate??p.invRate,4),'border-right:none;')}${LBL('Factor')}${VAL('<strong>'+esc(String(p.factor||''))+'</strong>','padding-right:0;border:none;')}</tr>
+      </tbody></table>
+      <!-- Cost Components -->
+      <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.09em;color:#6b7280;border-bottom:1px solid #d1d5db;padding-bottom:2px;margin-top:8px;margin-bottom:3px;">Cost Components Totals in XCG</div>
+      <table style="table-layout:fixed;font-size:8.5px;margin-bottom:8px;">
+        <thead><tr>${THL('Purchase Order')}${COST_COLS.map(c=>THR(c.label,c.accent)).join('')}</tr></thead>
+        <tbody>${costRows}</tbody>
+        <tfoot><tr>${FTL('Totals')}${COST_COLS.map(c=>FTD(totC(c.key),2,!!c.accent)).join('')}</tr></tfoot>
+      </table>
+      <!-- Item Detail -->
+      <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.09em;color:#6b7280;border-bottom:1px solid #d1d5db;padding-bottom:2px;margin-top:8px;margin-bottom:3px;">Item Detail — Cost per Case in XCG</div>
+      <table style="table-layout:fixed;font-size:8px;margin-bottom:8px;">
+        <colgroup><col style="width:4.5%"/><col style="width:10%"/>${ITEM_COLS.map(function(){return '<col style="width:'+(85.5/ITEM_COLS.length)+'%"/>';}).join('')}</colgroup>
+        <thead>
+          <tr>
+            <th colspan="2" style="background:#e5e7eb;font-size:7.5px;font-weight:700;text-transform:uppercase;color:#1f2937;padding:2px 5px;text-align:left;border:1px solid #d1d5db;"></th>
+            <th colspan="5"  style="background:#d1d5db;font-size:7.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#1f2937;padding:2px 5px;text-align:center;border:1px solid #d1d5db;">Order Data</th>
+            <th colspan="10" style="background:#d1d5db;font-size:7.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#1f2937;padding:2px 5px;text-align:center;border:1px solid #d1d5db;">Cost Breakdown per Case</th>
+            <th colspan="3"  style="background:#c7cdd6;font-size:7.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#1f2937;padding:2px 5px;text-align:center;border:1px solid #d1d5db;">${esc(p.warehouseCode||'WH1')}</th>
+            <th colspan="3"  style="background:#b8bfc9;font-size:7.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#1f2937;padding:2px 5px;text-align:center;border:1px solid #d1d5db;">${esc(p.whCode2||'WH2')}</th>
+          </tr>
+          <tr>
+            <th style="background:#e5e7eb;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:#374151;padding:3px 5px;text-align:left;height:62px;vertical-align:bottom;border:1px solid #d1d5db;">Item No.</th>
+            <th style="background:#e5e7eb;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:#374151;padding:3px 5px;text-align:left;height:62px;vertical-align:bottom;border:1px solid #d1d5db;">Description</th>
+            ${ITEM_COLS.map(c=>RTH(c.label,c.g)).join('')}
+          </tr>
+        </thead>
+        <tbody>${itemRows}</tbody>
+        <tfoot>
+          <tr>${FTL('Totals')}${itemFoot}</tr>
+          <tr>${FTL('Invoice Total','#d1d5db')}<td style="background:#d1d5db;border:1px solid #d1d5db;"></td><td style="background:#d1d5db;border:1px solid #d1d5db;"></td>${FTD(totI('ord'),0,true,'#d1d5db')}<td style="background:#d1d5db;border:1px solid #d1d5db;"></td>${FTD(totI('totalInvP'),2,true,'#d1d5db')}${'<td style="background:#d1d5db;border:1px solid #d1d5db;"></td>'.repeat(10)}${FTD(totI('totalExtWh1'),2,true,'#d1d5db')}${FTD(totDiffWh1,2,false,'#d1d5db')}${'<td style="background:#d1d5db;border:1px solid #d1d5db;"></td>'}${FTD(totI('totalExt'),2,true,'#d1d5db')}${FTD(totDiffWh2,2,false,'#d1d5db')}</tr>
+          <tr>${FTL('Total Actual VIP','#dbeafe')}${'<td style="background:#dbeafe;border:1px solid #d1d5db;"></td>'.repeat(15)}${FTD(totVipWh1,2,false,'#dbeafe')}<td style="background:#dbeafe;border:1px solid #d1d5db;"></td><td style="background:#dbeafe;border:1px solid #d1d5db;"></td>${FTD(totVipWh2,2,false,'#dbeafe')}<td style="background:#dbeafe;border:1px solid #d1d5db;"></td></tr>
+          <tr>${FTL('Total Real Cost','#c7d2fe')}${'<td style="background:#c7d2fe;border:1px solid #d1d5db;"></td>'.repeat(15)}${FTD(totI('totalExtWh1'),2,true,'#c7d2fe')}${FTD(totDiffWh1,2,false,'#c7d2fe')}<td style="background:#c7d2fe;border:1px solid #d1d5db;"></td>${FTD(totI('totalExt'),2,true,'#c7d2fe')}${FTD(totDiffWh2,2,false,'#c7d2fe')}</tr>
+        </tfoot>
+      </table>
+      ${summaryHTML}
+      <!-- Footer -->
+      <div style="display:flex;justify-content:space-between;font-size:7.5px;color:#9ca3af;border-top:1px solid #d1d5db;padding-top:4px;margin-top:4px;">
+        <span>${esc(p.reportDate||new Date().toLocaleDateString('en-US',{year:'numeric',month:'short',day:'2-digit'}))}</span>
+        <span>Page ${esc(p.page||'1 of 1')}</span>
+      </div>
+      </div></div>`;
+  }
+
   function fmt(n,d=2){return n!=null?Number(n).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}):'–';}
+  function effQty(d){return d.CcpdOrdQty??0;}
   function showToast(msg,type='success'){
     const el=document.getElementById('toast');
     el.className=`toast align-items-center text-white border-0 bg-${type==='success'?'success':'danger'}`;
@@ -721,5 +964,27 @@
   }
   function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 </script>
+
+<!-- Report Preview Modal -->
+<div class="modal fade" id="reportModal" tabindex="-1" aria-labelledby="reportModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-fullscreen">
+    <div class="modal-content">
+      <div class="modal-header py-2">
+        <h6 class="modal-title" id="reportModalLabel">
+          <i class="fas fa-file-alt me-2 text-secondary"></i>Final Cost Report — Preview
+        </h6>
+        <div class="d-flex align-items-center gap-2 ms-auto me-3">
+          <button class="btn btn-sm btn-outline-dark" onclick="printIframeReport()">
+            <i class="fas fa-print me-1"></i>Print / Save PDF
+          </button>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-0" style="overflow-y:auto;background:#f3f4f6;">
+        <div id="report-container" style="max-width:1380px;margin:12px auto;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.10);"></div>
+      </div>
+    </div>
+  </div>
+</div>
 </body>
 </html>

@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Final Cost Report</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #e5e7eb; font-family: 'Arial Narrow', Arial, sans-serif; }
+    table { border-collapse: collapse; width: 100%; }
+    td, th { border: 1px solid #d1d5db; }
+    /* Embed mode: render exactly like print (white, full-width, no shadow) */
+    body.embed { background: #fff !important; overflow-x: hidden; }
+    body.embed .no-print { display: none !important; }
+    body.embed #root { max-width: 100% !important; margin: 0 !important; box-shadow: none !important; }
+    @media print {
+      body { background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .no-print { display: none !important; }
+      #root { max-width: 100% !important; margin: 0 !important; box-shadow: none !important; }
+    }
+    @page { margin: 8mm; size: A4 landscape; }
+  </style>
+</head>
+<body>
+
+  <div class="no-print" style="display:flex;align-items:center;gap:10px;background:#fff;border-bottom:1px solid #d1d5db;padding:8px 16px;position:sticky;top:0;z-index:10;">
+    <span style="font-size:13px;font-weight:600;color:#374151;">Final Cost Report — Preview</span>
+    <button onclick="window.print()" style="margin-left:auto;background:#1d4ed8;color:#fff;font-size:12px;font-weight:600;padding:5px 14px;border:none;border-radius:5px;cursor:pointer;">🖨 Print / Save PDF</button>
+  </div>
+
+  <div id="root" style="max-width:1380px;margin:12px auto;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,0.12);"></div>
+
+  <script type="text/babel">
+    const fmt = (val, dec = 2) => {
+      const n = Number(val ?? 0);
+      return isNaN(n) ? '' : n.toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+    };
+
+    // ── Style constants ───────────────────────────────────────────────────────
+    const S = {
+      thHead:  { background: '#e5e7eb', fontSize: '8px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#374151', padding: '3px 5px', textAlign: 'left', whiteSpace: 'nowrap' },
+      thRight: { background: '#e5e7eb', fontSize: '8px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#374151', padding: '3px 5px', textAlign: 'right', whiteSpace: 'nowrap' },
+      thGroup: { background: '#d1d5db', fontSize: '7.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#1f2937', padding: '2px 5px', textAlign: 'center' },
+      thGroupSummary: { background: '#c7cdd6', fontSize: '7.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#1f2937', padding: '2px 5px', textAlign: 'center' },
+      cell:    { fontSize: '9px', padding: '2px 5px', color: '#1f2937' },
+      cellR:   { fontSize: '9px', padding: '2px 5px', color: '#1f2937', textAlign: 'right', fontVariantNumeric: 'tabular-nums' },
+      cellB:   { fontSize: '9px', padding: '2px 5px', color: '#1f2937', textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 700 },
+      foot:    { fontSize: '9px', padding: '3px 5px', fontWeight: 700, color: '#111827', textAlign: 'right', fontVariantNumeric: 'tabular-nums', background: '#e5e7eb' },
+      footL:   { fontSize: '9px', padding: '3px 5px', fontWeight: 700, color: '#111827', background: '#e5e7eb', textTransform: 'uppercase', letterSpacing: '0.04em' },
+      even:    '#ffffff',
+      odd:     '#f9fafb',
+      vipBg:   '#f3f4f6',
+    };
+
+    // rotate-header th
+    function RotTH({ children, group }) {
+      const bg = group === 'summary' ? '#c7cdd6' : group === 'order' ? '#d1d5db' : '#e5e7eb';
+      return (
+        <th style={{ background: bg, padding: '2px 1px', verticalAlign: 'bottom', textAlign: 'center', height: '62px', border: '1px solid #d1d5db' }}>
+          <div style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)', fontSize: '7.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#374151', whiteSpace: 'nowrap', display: 'inline-block' }}>
+            {children}
+          </div>
+        </th>
+      );
+    }
+
+    function NumCell({ val, dec = 2, bold, zero, accent }) {
+      const n = Number(val ?? 0);
+      const isZero = n === 0;
+      return (
+        <td style={{ ...( bold ? S.cellB : S.cellR ), color: isZero && !accent ? '#9ca3af' : accent ? '#111827' : '#1f2937', fontWeight: (bold || accent) ? 700 : 400, borderRight: accent ? '2px solid #9ca3af' : undefined }}>
+          {fmt(val, dec)}
+        </td>
+      );
+    }
+
+    function DiffCell({ val }) {
+      const n = Number(val ?? 0);
+      const s = { ...S.cellR, fontWeight: 700 };
+      if (n === 0) return <td style={{ ...s, color: '#9ca3af' }}>—</td>;
+      return <td style={{ ...s, color: n > 0 ? '#166534' : '#991b1b' }}>{n > 0 ? '+' : ''}{fmt(n)}</td>;
+    }
+
+    function VipCell({ val }) {
+      const n = Number(val ?? 0);
+      return <td style={{ fontSize: '7.5px', padding: '1px 5px', textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: n === 0 ? '#d1d5db' : '#6b7280', fontStyle: 'italic' }}>{fmt(val)}</td>;
+    }
+
+    function SecTitle({ children }) {
+      return (
+        <div style={{ fontSize: '8px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.09em', color: '#6b7280', borderBottom: '1px solid #d1d5db', paddingBottom: '2px', marginTop: '8px', marginBottom: '3px' }}>
+          {children}
+        </div>
+      );
+    }
+
+    // ── Column definitions ────────────────────────────────────────────────────
+    const COST_COLS = [
+      { key: 'fobPrice',      label: 'FOB Price' },
+      { key: 'inlandFreight', label: 'Inland Frt.' },
+      { key: 'freight',       label: 'Freight' },
+      { key: 'localHandling', label: 'Local Hdl.' },
+      { key: 'duties',        label: 'Duties' },
+      { key: 'econSurch',     label: 'Econ. Srch.' },
+      { key: 'tax',           label: 'TAX 4.5%' },
+      { key: 'insurance',     label: 'Insurance' },
+      { key: 'transport',     label: 'Transport' },
+      { key: 'unloading',     label: 'Unloading' },
+      { key: 'realCost',      label: 'Real Cost', accent: true },
+    ];
+
+    const ITEM_COLS = [
+      { key: 'uc',          label: 'U/C',         dec: 0,  group: 'order' },
+      { key: 'up',          label: 'U/P',         dec: 4,  group: 'order' },
+      { key: 'ord',         label: 'Ord.',         dec: 0,  group: 'order' },
+      { key: 'fcPrice',     label: 'F/C Price',   dec: 4,  group: 'order' },
+      { key: 'totalInvP',   label: 'Total Inv/P', dec: 2,  group: 'order' },
+      { key: 'fobPrice',    label: 'FOB Price',   dec: 2,  group: 'cost' },
+      { key: 'inlandFrt',   label: 'Inland Frt.', dec: 2,  group: 'cost' },
+      { key: 'freight',     label: 'Freight',     dec: 2,  group: 'cost' },
+      { key: 'localHdl',    label: 'Local Hdl.',  dec: 2,  group: 'cost' },
+      { key: 'duties',      label: 'Duties',      dec: 2,  group: 'cost' },
+      { key: 'econSrch',    label: 'Econ. Srch.', dec: 2,  group: 'cost' },
+      { key: 'tax',         label: 'TAX 4.5%',   dec: 2,  group: 'cost' },
+      { key: 'insurance',   label: 'Insurance',   dec: 2,  group: 'cost' },
+      { key: 'trans',       label: 'Trans.',       dec: 2,  group: 'cost' },
+      { key: 'unload',      label: 'Unload.',     dec: 2,  group: 'cost' },
+      { key: 'costPerCase', label: 'Cost p/case', dec: 2,  group: 'summary', bold: true, accent: true },
+      { key: 'totalExt',    label: 'Total Ext.',  dec: 2,  group: 'summary', bold: true, accent: true },
+    ];
+
+    // ── Sample data ───────────────────────────────────────────────────────────
+    const SAMPLE_COST_TOTALS = [
+      { poNo: '1007-26-CMB005', fobPrice: 42500.00, inlandFreight: 850.00, freight: 7871.50, localHandling: 1200.00, duties: 3800.00, econSurch: 420.00, tax: 1912.50, insurance: 318.75, transport: 650.00, unloading: 280.00, realCost: 59802.75 },
+      { poNo: '1007-26-CMB006', fobPrice: 18200.00, inlandFreight: 364.00, freight: 3378.50, localHandling: 514.80,  duties: 1638.00, econSurch: 180.00, tax: 819.00,  insurance: 136.50, transport: 278.85, unloading: 120.00, realCost: 25629.65 },
+    ];
+
+    const SAMPLE_ITEMS = [
+      { itemNo: '101001', description: 'JOHNNIE WALKER BLACK 750ML',  uc: 12, up: 28.5000, ord: 50,  fcPrice: 15.6593, totalInvP: 9395.58,  fobPrice: 17118.00, inlandFrt: 342.36, freight: 3172.20, localHdl: 493.20, duties: 1540.62, econSrch: 170.07, tax: 765.31, insurance: 128.39, trans: 265.23, unload: 114.36, costPerCase: 478.21, totalExt: 23910.50, diffCost: 124.30,
+        vip: { fobPrice: 420.00, inlandFrt: 8.50, freight: 78.00, localHdl: 12.00, duties: 38.00, econSrch: 4.20, tax: 18.90, insurance: 3.15, trans: 6.50, unload: 2.80, costPerCase: 553.85 } },
+      { itemNo: '101002', description: 'JOHNNIE WALKER RED 750ML',    uc: 12, up: 18.2000, ord: 80,  fcPrice: 9.9945,  totalInvP: 9594.72,  fobPrice: 17462.40, inlandFrt: 349.25, freight: 3236.50, localHdl: 503.20, duties: 1572.00, econSrch: 173.40, tax: 780.48, insurance: 131.01, trans: 270.72, unload: 116.70, costPerCase: 297.22, totalExt: 23777.60, diffCost: -18.50,
+        vip: { fobPrice: 310.00, inlandFrt: 6.20, freight: 57.00, localHdl: 8.80, duties: 27.90, econSrch: 3.08, tax: 13.95, insurance: 2.34, trans: 4.78, unload: 2.06, costPerCase: 409.15 } },
+      { itemNo: '201001', description: 'CORONA EXTRA 330ML 24PK',     uc: 24, up: 12.5000, ord: 100, fcPrice: 6.8681,  totalInvP: 16483.44, fobPrice: 30000.00, inlandFrt: 600.00, freight: 5563.80, localHdl: 864.60, duties: 2700.00, econSrch: 297.90, tax: 1340.55, insurance: 225.00, trans: 464.85, unload: 200.40, costPerCase: 422.57, totalExt: 42257.00, diffCost: 0, vip: null },
+    ];
+
+    const SAMPLE_SUMMARIES = [
+      { label: '11060',         totalExtended: 52344.20, totalActualVip: 49800.00, totalRealCost: 59802.75 },
+      { label: '11060 / 11020', totalExtended: 89988.10, totalActualVip: 85200.00, totalRealCost: 85432.40 },
+    ];
+
+    // ── Main component ────────────────────────────────────────────────────────
+    function FinalCostReport({
+      reportNumber  = '868',
+      factor        = 1.82,
+      order         = 'ORD-2026-001',
+      warehouse     = 'Main Warehouse',
+      warehouseCode = '11060',
+      container     = 'TCKU3456789',
+      invoiceNo     = 'INV-2026-100',
+      invoiceDate   = '2026-05-22',
+      invRate       = 1.82,
+      forwarder     = 'DHL Global Forwarding',
+      vendor        = 'Diageo International Ltd.',
+      costTotals    = SAMPLE_COST_TOTALS,
+      items         = SAMPLE_ITEMS,
+      summaries     = SAMPLE_SUMMARIES,
+      reportDate    = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: '2-digit' }),
+      page          = '1 of 1',
+    }) {
+      const totCost = k => costTotals.reduce((s, r) => s + (Number(r[k]) || 0), 0);
+      const totItem = k => items.reduce((s, r)      => s + (Number(r[k]) || 0), 0);
+
+      return (
+        <div style={{ padding: '12px 14px', fontFamily: "'Arial Narrow', Arial, sans-serif", fontSize: '9px', color: '#111827', background: '#fff' }}>
+
+          {/* ── Header ── */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '2px solid #374151', paddingBottom: '6px', marginBottom: '6px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <img src="../../img/LogoLicores.png" alt="Logo" style={{ height: '40px', objectFit: 'contain' }} />
+              <div style={{ borderLeft: '1px solid #d1d5db', paddingLeft: '10px' }}>
+                <div style={{ fontSize: '15px', fontWeight: 700, color: '#111827', letterSpacing: '-0.01em', lineHeight: 1.1 }}>Final Cost Calculation</div>
+                <div style={{ fontSize: '8px', color: '#6b7280', marginTop: '2px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Import Cost Report — XCG</div>
+              </div>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: '8px', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Report No.</div>
+              <div style={{ fontSize: '18px', fontWeight: 800, color: '#111827', lineHeight: 1 }}>#{reportNumber}</div>
+            </div>
+          </div>
+
+          {/* ── Metadata table ── */}
+          <table style={{ marginBottom: '8px', fontSize: '8.5px' }}>
+            <tbody>
+              <tr>
+                <td style={{ padding: '1px 6px 1px 0', fontWeight: 700, color: '#6b7280', whiteSpace: 'nowrap', border: 'none', width: '70px' }}>Container</td>
+                <td style={{ padding: '1px 12px 1px 4px', color: '#111827', border: 'none', fontWeight: 600 }}>{container || '—'}</td>
+                <td style={{ padding: '1px 6px 1px 0', fontWeight: 700, color: '#6b7280', whiteSpace: 'nowrap', border: 'none', width: '70px' }}>Invoice No.</td>
+                <td style={{ padding: '1px 12px 1px 4px', color: '#111827', border: 'none', fontWeight: 600 }}>{invoiceNo}</td>
+                <td style={{ padding: '1px 6px 1px 0', fontWeight: 700, color: '#6b7280', whiteSpace: 'nowrap', border: 'none', width: '60px' }}>Forwarder</td>
+                <td style={{ padding: '1px 0 1px 4px', color: '#111827', border: 'none', fontWeight: 600 }}>{forwarder}</td>
+              </tr>
+              <tr>
+                <td style={{ padding: '1px 6px 1px 0', fontWeight: 700, color: '#6b7280', whiteSpace: 'nowrap', border: 'none' }}>Order</td>
+                <td style={{ padding: '1px 12px 1px 4px', color: '#111827', border: 'none', fontWeight: 600 }}>{order}</td>
+                <td style={{ padding: '1px 6px 1px 0', fontWeight: 700, color: '#6b7280', whiteSpace: 'nowrap', border: 'none' }}>Inv. Date</td>
+                <td style={{ padding: '1px 12px 1px 4px', color: '#111827', border: 'none', fontWeight: 600 }}>
+                  {invoiceDate}<span style={{ margin: '0 5px', color: '#d1d5db' }}>|</span><span style={{ fontWeight: 400, color: '#4b5563' }}>{fmt(invRate, 4)}</span>
+                </td>
+                <td style={{ padding: '1px 6px 1px 0', fontWeight: 700, color: '#6b7280', whiteSpace: 'nowrap', border: 'none' }}>Vendor</td>
+                <td style={{ padding: '1px 0 1px 4px', color: '#374151', border: 'none' }}>{vendor}</td>
+              </tr>
+              <tr>
+                <td style={{ padding: '1px 6px 1px 0', fontWeight: 700, color: '#6b7280', whiteSpace: 'nowrap', border: 'none' }}>Warehouse</td>
+                <td style={{ padding: '1px 12px 1px 4px', color: '#111827', border: 'none', fontWeight: 600 }}>{warehouse} <span style={{ color: '#9ca3af', fontWeight: 400 }}>({warehouseCode})</span></td>
+                <td style={{ padding: '1px 6px 1px 0', fontWeight: 700, color: '#6b7280', whiteSpace: 'nowrap', border: 'none' }}>Stat. Rate</td>
+                <td style={{ padding: '1px 12px 1px 4px', color: '#111827', border: 'none', fontWeight: 600 }}>{fmt(invRate, 4)}</td>
+                <td style={{ padding: '1px 6px 1px 0', fontWeight: 700, color: '#6b7280', whiteSpace: 'nowrap', border: 'none' }}>Factor</td>
+                <td style={{ padding: '1px 0 1px 4px', border: 'none', fontWeight: 800, color: '#111827' }}>{factor}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          {/* ── Cost Components Totals ── */}
+          <SecTitle>Cost Components Totals in XCG</SecTitle>
+          <table style={{ tableLayout: 'fixed', fontSize: '8.5px', marginBottom: '8px' }}>
+            <thead>
+              <tr>
+                <th style={{ ...S.thHead, width: '14%' }}>Purchase Order</th>
+                {COST_COLS.map(c => <th key={c.key} style={{ ...S.thRight, fontWeight: c.accent ? 700 : 700 }}>{c.label}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {costTotals.map((r, i) => (
+                <tr key={i} style={{ background: i % 2 === 0 ? S.even : S.odd }}>
+                  <td style={{ ...S.cell, fontWeight: 600 }}>{r.poNo}</td>
+                  {COST_COLS.map(c => <NumCell key={c.key} val={r[c.key]} accent={!!c.accent} bold={!!c.accent} />)}
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td style={{ ...S.footL }}>Totals</td>
+                {COST_COLS.map(c => <td key={c.key} style={{ ...S.foot, fontWeight: c.accent ? 800 : 700 }}>{fmt(totCost(c.key))}</td>)}
+              </tr>
+            </tfoot>
+          </table>
+
+          {/* ── Item Detail ── */}
+          <SecTitle>Item Detail — Cost per Case in XCG</SecTitle>
+          <table style={{ tableLayout: 'fixed', fontSize: '8px', marginBottom: '8px' }}>
+            <colgroup>
+              <col style={{ width: '4.5%' }}/>
+              <col style={{ width: '11%' }}/>
+              {ITEM_COLS.map((c,i) => <col key={i} style={{ width: `${84.5/ITEM_COLS.length}%` }}/>)}
+              <col style={{ width: '3.5%' }}/>
+            </colgroup>
+            <thead>
+              {/* Group row */}
+              <tr>
+                <th colSpan={2} style={{ ...S.thGroup, background: '#e5e7eb', textAlign: 'left' }}> </th>
+                <th colSpan={5}  style={{ ...S.thGroup }}>Order Data</th>
+                <th colSpan={10} style={{ ...S.thGroup }}>Cost Breakdown per Case</th>
+                <th colSpan={2}  style={{ ...S.thGroupSummary }}>Summary</th>
+                <th colSpan={1}  style={{ ...S.thGroup }}>Var.</th>
+              </tr>
+              {/* Column row */}
+              <tr>
+                <th style={{ ...S.thHead, height: '62px', verticalAlign: 'bottom' }}>Item No.</th>
+                <th style={{ ...S.thHead, height: '62px', verticalAlign: 'bottom' }}>Description</th>
+                {ITEM_COLS.map(c => <RotTH key={c.key} group={c.group}>{c.label}</RotTH>)}
+                <RotTH group="cost">Diff.</RotTH>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((d, i) => (
+                <React.Fragment key={i}>
+                  <tr style={{ background: i % 2 === 0 ? S.even : S.odd }}>
+                    <td style={{ ...S.cell, fontFamily: 'monospace', fontWeight: 600, color: '#374151' }}>{d.itemNo}</td>
+                    <td style={{ ...S.cell, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={d.description}>{d.description}</td>
+                    {ITEM_COLS.map(c => <NumCell key={c.key} val={d[c.key]} dec={c.dec ?? 2} bold={!!c.bold} accent={!!c.accent} />)}
+                    <DiffCell val={d.diffCost} />
+                  </tr>
+                  {d.vip && (
+                    <tr style={{ background: S.vipBg }}>
+                      <td style={{ ...S.cell, color: '#9ca3af', fontStyle: 'italic', border: '1px solid #e5e7eb' }}></td>
+                      <td style={{ ...S.cell, color: '#6b7280', fontStyle: 'italic', fontSize: '7.5px', border: '1px solid #e5e7eb' }}>↳ Actual Cost VIP</td>
+                      <td style={{ border: '1px solid #e5e7eb' }}/><td style={{ border: '1px solid #e5e7eb' }}/><td style={{ border: '1px solid #e5e7eb' }}/><td style={{ border: '1px solid #e5e7eb' }}/><td style={{ border: '1px solid #e5e7eb' }}/>
+                      <VipCell val={d.vip.fobPrice} />
+                      <VipCell val={d.vip.inlandFrt} />
+                      <VipCell val={d.vip.freight} />
+                      <VipCell val={d.vip.localHdl} />
+                      <VipCell val={d.vip.duties} />
+                      <VipCell val={d.vip.econSrch} />
+                      <VipCell val={d.vip.tax} />
+                      <VipCell val={d.vip.insurance} />
+                      <VipCell val={d.vip.trans} />
+                      <VipCell val={d.vip.unload} />
+                      <VipCell val={d.vip.costPerCase} />
+                      <td style={{ border: '1px solid #e5e7eb' }}/><td style={{ border: '1px solid #e5e7eb' }}/>
+                    </tr>
+                  )}
+                </React.Fragment>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colSpan={2} style={{ ...S.footL }}>Totals</td>
+                <td style={{ ...S.foot }}>{fmt(totItem('uc'), 0)}</td>
+                <td style={{ ...S.foot }}></td>
+                <td style={{ ...S.foot }}>{fmt(totItem('ord'), 0)}</td>
+                <td style={{ ...S.foot }}></td>
+                {['totalInvP','fobPrice','inlandFrt','freight','localHdl','duties','econSrch','tax','insurance','trans','unload'].map(k => (
+                  <td key={k} style={{ ...S.foot }}>{fmt(totItem(k))}</td>
+                ))}
+                <td style={{ ...S.foot, fontWeight: 800 }}>{fmt(totItem('costPerCase'))}</td>
+                <td style={{ ...S.foot, fontWeight: 800 }}>{fmt(totItem('totalExt'))}</td>
+                <td style={{ ...S.foot }}></td>
+              </tr>
+              <tr>
+                <td colSpan={2} style={{ ...S.footL, background: '#d1d5db' }}>Invoice Total</td>
+                <td style={{ ...S.foot, background: '#d1d5db' }}></td>
+                <td style={{ ...S.foot, background: '#d1d5db' }}></td>
+                <td style={{ ...S.foot, background: '#d1d5db', fontWeight: 800 }}>{fmt(totItem('ord'), 0)}</td>
+                <td style={{ ...S.foot, background: '#d1d5db' }}></td>
+                <td style={{ ...S.foot, background: '#d1d5db', fontWeight: 800 }}>{fmt(totItem('totalInvP'))}</td>
+                {Array(13).fill(0).map((_,i) => <td key={i} style={{ ...S.foot, background: '#d1d5db' }}></td>)}
+              </tr>
+            </tfoot>
+          </table>
+
+          {/* ── Summary ── */}
+          {summaries.length > 0 && (
+            <>
+              <SecTitle>Summary</SecTitle>
+              <div style={{ display: 'grid', gridTemplateColumns: summaries.length >= 2 ? '1fr 1fr' : '280px', gap: '8px', marginBottom: '10px' }}>
+                {summaries.map((s, i) => (
+                  <table key={i} style={{ fontSize: '9px' }}>
+                    <thead>
+                      <tr>
+                        <th colSpan={2} style={{ ...S.thHead, textAlign: 'center', background: '#d1d5db', fontSize: '8px' }}>Warehouse {s.label}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr style={{ background: S.even }}>
+                        <td style={{ ...S.cell }}>Total Extended</td>
+                        <td style={{ ...S.cellR }}>{fmt(s.totalExtended)}</td>
+                      </tr>
+                      <tr style={{ background: S.odd }}>
+                        <td style={{ ...S.cell }}>Total Actual VIP</td>
+                        <td style={{ ...S.cellR }}>{fmt(s.totalActualVip)}</td>
+                      </tr>
+                      <tr style={{ background: S.even }}>
+                        <td style={{ ...S.footL, background: '#e5e7eb' }}>Total Real Cost</td>
+                        <td style={{ ...S.foot }}>{fmt(s.totalRealCost)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* ── Footer ── */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '7.5px', color: '#9ca3af', borderTop: '1px solid #d1d5db', paddingTop: '4px', marginTop: '4px' }}>
+            <span>{reportDate}</span>
+            <span>Page {page}</span>
+          </div>
+
+        </div>
+      );
+    }
+
+    // ── Mount ─────────────────────────────────────────────────────────────────
+    // Apply embed mode (called from modal iframe) — looks identical to print preview
+    if (new URLSearchParams(location.search).get('embed') === '1') {
+      document.body.classList.add('embed');
+    }
+
+    let reportProps = {};
+    try {
+      const raw = sessionStorage.getItem('fcr_data');
+      if (raw) reportProps = JSON.parse(raw);
+    } catch(e) {}
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<FinalCostReport {...reportProps} />);
+  </script>
+</body>
+</html>
