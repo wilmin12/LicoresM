@@ -401,7 +401,11 @@ const API = (() => {
     getShipCharges:   (calcId)        => get(`/api/cost-calc/calculations/${calcId}/ship-charges`),
     createShipCharge: (calcId, dto)   => post(`/api/cost-calc/calculations/${calcId}/ship-charges`, dto),
     updateShipCharge: (calcId, id, dto) => put(`/api/cost-calc/calculations/${calcId}/ship-charges/${id}`, dto),
-    deleteShipCharge: (calcId, id)    => del(`/api/cost-calc/calculations/${calcId}/ship-charges/${id}`)
+    deleteShipCharge: (calcId, id)    => del(`/api/cost-calc/calculations/${calcId}/ship-charges/${id}`),
+    // Vendor CIF
+    getVendorCifs:   ()     => get('/api/cost-calc/vendor-cif'),
+    createVendorCif: (dto)  => post('/api/cost-calc/vendor-cif', dto),
+    deleteVendorCif: (code) => del(`/api/cost-calc/vendor-cif/${encodeURIComponent(code)}`)
   };
 
   // ── Route Assignment ─────────────────────────────────────────────────────────
@@ -459,7 +463,7 @@ const API = (() => {
   const appliedQuotes = {
     getQuotes:       (params = {})   => { const clean = Object.fromEntries(Object.entries(params).filter(([,v]) => v != null && v !== '')); const qs = new URLSearchParams(clean).toString(); return get(`/api/freight/quotes${qs ? '?' + qs : ''}`); },
     getQuote:        (id)            => get(`/api/freight/quotes/${id}`),
-    getNextNumber:   (type)          => get(`/api/freight/quotes/next-number?freightType=${type||''}`),
+    getNextNumber:   ()              => get(`/api/freight/quotes/next-number`),
     getLatestRates:           (forwarderCode) => get(`/api/freight/quotes/latest-rates/${encodeURIComponent(forwarderCode)}`),
     getForwardersWithQuotes:  ()              => get('/api/freight/quotes/forwarders-with-quotes'),
     cloneQuote:               (id)            => post(`/api/freight/quotes/${id}/clone`, {}),
