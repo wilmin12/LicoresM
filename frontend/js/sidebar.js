@@ -68,6 +68,7 @@ const Sidebar = (() => {
         { code: 'COST_INLAND_TARIFFS',    label: 'Inland Tariffs',       href: 'pages/cost-calc/inland-tariffs.html' },
         { code: 'COST_ITEM_FOB_PRICES',   label: 'Item FOB Prices',      href: 'pages/cost-calc/item-fob-prices.html' },
         { code: 'COST_PRICE_CONFIRM',     label: 'Price Confirmation',   href: 'pages/cost-calc/price-confirmation.html' },
+        { code: 'COST_VENDOR_CIF',        label: 'CIF Vendors',          href: 'pages/cost-calc/vendor-cif.html' },
       ],
     },
     {
