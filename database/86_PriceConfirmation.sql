@@ -1,0 +1,97 @@
+USE LicoresMaduoDB;
+GO
+
+-- Add reason code and price change date to PO heads
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+               WHERE TABLE_NAME = 'COST_CALC_PO_HEADS' AND COLUMN_NAME = 'CCPH_ReasonCode')
+BEGIN
+    ALTER TABLE dbo.COST_CALC_PO_HEADS ADD CCPH_ReasonCode NVARCHAR(2) NULL;
+END
+GO
+
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+               WHERE TABLE_NAME = 'COST_CALC_PO_HEADS' AND COLUMN_NAME = 'CCPH_PriceChangeDate')
+BEGIN
+    ALTER TABLE dbo.COST_CALC_PO_HEADS ADD CCPH_PriceChangeDate DATE NULL;
+END
+GO
+
+-- Price change reasons catalog
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'CC_PRICE_CHANGE_REASONS')
+BEGIN
+    CREATE TABLE dbo.CC_PRICE_CHANGE_REASONS (
+        PCR_Code        NVARCHAR(2)   NOT NULL CONSTRAINT PK_CC_PRICE_CHANGE_REASONS PRIMARY KEY,
+        PCR_Description NVARCHAR(100) NOT NULL,
+        PCR_Active      BIT           NOT NULL DEFAULT 1
+    );
+    INSERT INTO dbo.CC_PRICE_CHANGE_REASONS (PCR_Code, PCR_Description) VALUES ('01', 'Product costs did not change');
+END
+GO
+
+-- Price confirmation matrix (one row per CalcNumber + PoNo + ItemNo)
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'CC_PRICE_CONFIRMATION')
+BEGIN
+    CREATE TABLE dbo.CC_PRICE_CONFIRMATION (
+        CCPC_Id              INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_CC_PRICE_CONFIRMATION PRIMARY KEY,
+        CCPC_CalcNumber      INT           NOT NULL,
+        CCPC_PoNo            NVARCHAR(20)  NOT NULL,
+        CCPC_ItemNo          NVARCHAR(20)  NOT NULL,
+        CCPC_Warehouse       NVARCHAR(10)  NULL,
+        CCPC_NewCost11010    DECIMAL(18,4) NULL,
+        CCPC_NewCost11060    DECIMAL(18,4) NULL,
+        CCPC_OldCost11010    DECIMAL(18,4) NULL,
+        CCPC_OldCost11060    DECIMAL(18,4) NULL,
+        CCPC_NewPricePr01    DECIMAL(18,4) NULL,
+        CCPC_NewMarginPr01   DECIMAL(18,4) NULL,
+        CCPC_OldPricePr01    DECIMAL(18,4) NULL,
+        CCPC_OldMarginPr01   DECIMAL(18,4) NULL,
+        CCPC_NewPricePr03    DECIMAL(18,4) NULL,
+        CCPC_NewMarginPr03   DECIMAL(18,4) NULL,
+        CCPC_OldPricePr03    DECIMAL(18,4) NULL,
+        CCPC_OldMarginPr03   DECIMAL(18,4) NULL,
+        CCPC_NewPricePr04    DECIMAL(18,4) NULL,
+        CCPC_NewMarginPr04   DECIMAL(18,4) NULL,
+        CCPC_OldPricePr04    DECIMAL(18,4) NULL,
+        CCPC_OldMarginPr04   DECIMAL(18,4) NULL,
+        CCPC_NewPricePr05    DECIMAL(18,4) NULL,
+        CCPC_NewMarginPr05   DECIMAL(18,4) NULL,
+        CCPC_OldPricePr05    DECIMAL(18,4) NULL,
+        CCPC_OldMarginPr05   DECIMAL(18,4) NULL,
+        CCPC_NewPricePr06    DECIMAL(18,4) NULL,
+        CCPC_NewMarginPr06   DECIMAL(18,4) NULL,
+        CCPC_OldPricePr06    DECIMAL(18,4) NULL,
+        CCPC_OldMarginPr06   DECIMAL(18,4) NULL,
+        CCPC_NewPricePr07    DECIMAL(18,4) NULL,
+        CCPC_NewMarginPr07   DECIMAL(18,4) NULL,
+        CCPC_OldPricePr07    DECIMAL(18,4) NULL,
+        CCPC_OldMarginPr07   DECIMAL(18,4) NULL,
+        CCPC_NewPricePr08    DECIMAL(18,4) NULL,
+        CCPC_NewMarginPr08   DECIMAL(18,4) NULL,
+        CCPC_OldPricePr08    DECIMAL(18,4) NULL,
+        CCPC_OldMarginPr08   DECIMAL(18,4) NULL,
+        CCPC_NewPricePr09    DECIMAL(18,4) NULL,
+        CCPC_NewMarginPr09   DECIMAL(18,4) NULL,
+        CCPC_OldPricePr09    DECIMAL(18,4) NULL,
+        CCPC_OldMarginPr09   DECIMAL(18,4) NULL,
+        CCPC_NewPricePr10    DECIMAL(18,4) NULL,
+        CCPC_NewMarginPr10   DECIMAL(18,4) NULL,
+        CCPC_OldPricePr10    DECIMAL(18,4) NULL,
+        CCPC_OldMarginPr10   DECIMAL(18,4) NULL,
+        CCPC_NewPricePr11    DECIMAL(18,4) NULL,
+        CCPC_NewMarginPr11   DECIMAL(18,4) NULL,
+        CCPC_OldPricePr11    DECIMAL(18,4) NULL,
+        CCPC_OldMarginPr11   DECIMAL(18,4) NULL,
+        CCPC_PriceChangeFlag BIT           NULL,
+        CCPC_ApprovedBy      NVARCHAR(100) NULL,
+        CCPC_ApprovedAt      DATETIME      NULL,
+        CCPC_CreatedAt       DATETIME      NOT NULL DEFAULT GETUTCDATE(),
+        CONSTRAINT UQ_CC_PRICE_CONFIRMATION UNIQUE (CCPC_CalcNumber, CCPC_PoNo, CCPC_ItemNo)
+    );
+END
+GO
+
+-- Verify
+SELECT 'CC_PRICE_CONFIRMATION' AS TableName, COUNT(*) AS RowCount FROM dbo.CC_PRICE_CONFIRMATION
+UNION ALL
+SELECT 'CC_PRICE_CHANGE_REASONS', COUNT(*) FROM dbo.CC_PRICE_CHANGE_REASONS;
+GO
