@@ -405,7 +405,14 @@ const API = (() => {
     // Vendor CIF
     getVendorCifs:   ()     => get('/api/cost-calc/vendor-cif'),
     createVendorCif: (dto)  => post('/api/cost-calc/vendor-cif', dto),
-    deleteVendorCif: (code) => del(`/api/cost-calc/vendor-cif/${encodeURIComponent(code)}`)
+    deleteVendorCif: (code) => del(`/api/cost-calc/vendor-cif/${encodeURIComponent(code)}`),
+    // Price Confirmation
+    getPendingPricePos:     ()                      => get('/api/cost-calc/price-confirmations/pending'),
+    getPoItemPrices:        (calcId, poNo)          => get(`/api/cost-calc/price-confirmations/${calcId}/${encodeURIComponent(poNo)}`),
+    getItemCasePrices:      (calcId, poNo, itemNo)  => get(`/api/cost-calc/price-confirmations/${calcId}/${encodeURIComponent(poNo)}/${encodeURIComponent(itemNo)}`),
+    recalcPrice:            (dto)                   => post('/api/cost-calc/price-confirmations/recalc', dto),
+    approvePoPrices:        (calcId, poNo, dto)     => post(`/api/cost-calc/price-confirmations/${calcId}/${encodeURIComponent(poNo)}/approve`, dto),
+    getPriceChangeReasons:  ()                      => get('/api/cost-calc/price-confirmations/reasons')
   };
 
   // ── Route Assignment ─────────────────────────────────────────────────────────
