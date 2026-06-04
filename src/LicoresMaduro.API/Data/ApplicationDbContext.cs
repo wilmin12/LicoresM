@@ -165,7 +165,10 @@ public sealed class ApplicationDbContext : DbContext
     public DbSet<CcShipCharge>            CcShipCharges            => Set<CcShipCharge>();
     public DbSet<CcItemFobPrice>          CcItemFobPrices          => Set<CcItemFobPrice>();
     public DbSet<CcVendorCif>             CcVendorCifs             => Set<CcVendorCif>();
-    public DbSet<CcVendorFreightWeight>   CcVendorFreightWeights   => Set<CcVendorFreightWeight>();
+    public DbSet<CcVendorFreightWeight>      CcVendorFreightWeights      => Set<CcVendorFreightWeight>();
+    public DbSet<CcCalcPoDetBenamingSum>     CcCalcPoDetBenamingSums     => Set<CcCalcPoDetBenamingSum>();
+    public DbSet<CcPriceConfirmation>  CcPriceConfirmations  => Set<CcPriceConfirmation>();
+    public DbSet<CcPriceChangeReason>  CcPriceChangeReasons  => Set<CcPriceChangeReason>();
 
     // ── MODULE 1: Tracking (Orders) ────────────────────────────────────────────
     public DbSet<TrackingOrder>         TrackingOrders          => Set<TrackingOrder>();
@@ -613,6 +616,7 @@ public sealed class ApplicationDbContext : DbContext
             e.Property(x => x.FqhTransitDays).HasColumnName("FQH_TRANSIT_DAYS");
             e.Property(x => x.FqhStartDate).HasColumnName("FQH_START_DATE");
             e.Property(x => x.FqhEndDate).HasColumnName("FQH_END_DATE");
+            e.Property(x => x.FqhRemarks).HasColumnName("FQH_REMARKS").HasMaxLength(200);
             e.Property(x => x.CreatedAt).HasColumnName("Created_At").HasDefaultValueSql("GETUTCDATE()");
             e.HasMany(x => x.OceanPorts).WithOne(x => x.Header).HasForeignKey(x => x.FqopHeaderId);
             e.HasMany(x => x.InlandRegions).WithOne(x => x.Header).HasForeignKey(x => x.FqerHeaderId);
@@ -1161,6 +1165,8 @@ public sealed class ApplicationDbContext : DbContext
             e.Property(x => x.CcphCreatedBy).HasColumnName("CCPH_Created_By").HasMaxLength(50);
             e.Property(x => x.CcphConfirmedBy).HasColumnName("CCPH_Confirmed_By").HasMaxLength(50);
             e.Property(x => x.CcphApprovedBy).HasColumnName("CCPH_Approved_By").HasMaxLength(50);
+            e.Property(x => x.CcphReasonCode).HasColumnName("CCPH_ReasonCode").HasMaxLength(2);
+            e.Property(x => x.CcphPriceChangeDate).HasColumnName("CCPH_PriceChangeDate");
             e.HasMany(x => x.Details).WithOne(x => x.PoHead).HasForeignKey(x => new { x.CcpdCalcNumber, x.CcpdLmPoNo });
         });
 
@@ -1173,12 +1179,17 @@ public sealed class ApplicationDbContext : DbContext
             e.Property(x => x.CcpdItemNo).HasColumnName("CCPD_ItemNo").HasMaxLength(20);
             e.Property(x => x.CcpdItemDescr).HasColumnName("CCPD_Item_Descr").HasMaxLength(50);
             e.Property(x => x.CcpdUnitCase).HasColumnName("CCPD_UnitCase");
+            e.Property(x => x.CcpdUm).HasColumnName("CCPD_UM").HasMaxLength(5);
+            e.Property(x => x.CcpdCLiter).HasColumnName("CCPD_CLiter");
+            e.Property(x => x.CcpdMl).HasColumnName("CCPD_Ml");
             e.Property(x => x.CcpdOrdQty).HasColumnName("CCPD_OrdQty");
             e.Property(x => x.CcpdFreeQty).HasColumnName("CCPD_Free_Qty");
             e.Property(x => x.CcpdLiters).HasColumnName("CCPD_Liters");
+            e.Property(x => x.CcpdTotLiters).HasColumnName("CCPD_Tot_Liters");
             e.Property(x => x.CcpdFactor).HasColumnName("CCPD_Factor");
             e.Property(x => x.CcpdFobPrice).HasColumnName("CCPD_FOB_Price");
             e.Property(x => x.CcpdFobPriceTot).HasColumnName("CCPD_FOB_Price_Tot");
+            e.Property(x => x.CcpdFobPriceUsd).HasColumnName("CCPD_FOB_Price_USD");
             e.Property(x => x.CcpdInlandFreight).HasColumnName("CCPD_Inland_Freight");
             e.Property(x => x.CcpdFreight).HasColumnName("CCPD_Freight");
             e.Property(x => x.CcpdLocalHandl).HasColumnName("CCPD_Local_Handl");
@@ -1309,6 +1320,35 @@ public sealed class ApplicationDbContext : DbContext
             e.ToTable("CC_VENDOR_FREIGHT_WEIGHT");
             e.HasKey(x => x.VfwVendor);
             e.Property(x => x.VfwVendor).HasColumnName("VFW_Vendor").HasMaxLength(20);
+        });
+
+        modelBuilder.Entity<CcCalcPoDetBenamingSum>(e =>
+        {
+            e.ToTable("CC_CALC_PO_DET_BENAMING_SUM");
+            e.HasKey(x => new { x.CcpdsCalcNumber, x.CcpdsLmPoNo, x.CcpdsHandelsBenam });
+            e.Property(x => x.CcpdsCalcNumber).HasColumnName("CCPDS_Calc_Number");
+            e.Property(x => x.CcpdsLmPoNo).HasColumnName("CCPDS_LMPoNo").HasMaxLength(20);
+            e.Property(x => x.CcpdsHandelsBenam).HasColumnName("CCPDS_HandelsBenam").HasMaxLength(20);
+            e.Property(x => x.CcpdsGoedCode).HasColumnName("CCPDS_GoedCode").HasMaxLength(10);
+            e.Property(x => x.CcpdsOrdQty).HasColumnName("CCPDS_OrdQty");
+            e.Property(x => x.CcpdsCostOrg).HasColumnName("CCPDS_Cost_Org");
+            e.Property(x => x.CcpdsTotInlandFreight).HasColumnName("CCPDS_Tot_Inland_Freight");
+            e.Property(x => x.CcpdsTotFreight).HasColumnName("CCPDS_Tot_Freight");
+            e.Property(x => x.CcpdsTotWaarde).HasColumnName("CCPDS_Tot_Waarde");
+            e.Property(x => x.CcpdsTotLiters).HasColumnName("CCPDS_Tot_Liters");
+            e.Property(x => x.CcpdsDuties).HasColumnName("CCPDS_Duties");
+            e.Property(x => x.CcpdsEconSurch).HasColumnName("CCPDS_Econ_Surch");
+            e.Property(x => x.CcpdsOb).HasColumnName("CCPDS_OB");
+            e.Property(x => x.CcpdsTarT01).HasColumnName("CCPDS_TAR_T01");
+            e.Property(x => x.CcpdsTarT02).HasColumnName("CCPDS_TAR_T02");
+            e.Property(x => x.CcpdsTarT04).HasColumnName("CCPDS_TAR_T04");
+            e.Property(x => x.CcpdsTarT05).HasColumnName("CCPDS_TAR_T05");
+            e.Property(x => x.CcpdsTarT06).HasColumnName("CCPDS_TAR_T06");
+            e.Property(x => x.CcpdsTarT07).HasColumnName("CCPDS_TAR_T07");
+            e.Property(x => x.CcpdsTarT08).HasColumnName("CCPDS_TAR_T08");
+            e.Property(x => x.CcpdsTarT09).HasColumnName("CCPDS_TAR_T09");
+            e.Property(x => x.CcpdsTarT10).HasColumnName("CCPDS_TAR_T10");
+            e.Property(x => x.CcpdsTarT12).HasColumnName("CCPDS_TAR_T12");
         });
 
         // ── Tracking Orders ────────────────────────────────────────────────────
@@ -1705,6 +1745,74 @@ public sealed class ApplicationDbContext : DbContext
             e.Property(x => x.CsLogoUrl).HasColumnName("CS_LogoUrl").HasMaxLength(500);
             e.Property(x => x.CsUpdatedAt).HasColumnName("CS_UpdatedAt");
             e.Property(x => x.CsUpdatedBy).HasColumnName("CS_UpdatedBy").HasMaxLength(100);
+        });
+
+        modelBuilder.Entity<CcPriceChangeReason>(e =>
+        {
+            e.ToTable("CC_PRICE_CHANGE_REASONS");
+            e.HasKey(x => x.PcrCode);
+            e.Property(x => x.PcrCode).HasColumnName("PCR_Code").HasMaxLength(2);
+            e.Property(x => x.PcrDescription).HasColumnName("PCR_Description").HasMaxLength(100);
+            e.Property(x => x.PcrActive).HasColumnName("PCR_Active");
+        });
+
+        modelBuilder.Entity<CcPriceConfirmation>(e =>
+        {
+            e.ToTable("CC_PRICE_CONFIRMATION");
+            e.HasKey(x => x.CcpcId);
+            e.Property(x => x.CcpcId).HasColumnName("CCPC_Id");
+            e.Property(x => x.CcpcCalcNumber).HasColumnName("CCPC_CalcNumber");
+            e.Property(x => x.CcpcPoNo).HasColumnName("CCPC_PoNo").HasMaxLength(20);
+            e.Property(x => x.CcpcItemNo).HasColumnName("CCPC_ItemNo").HasMaxLength(20);
+            e.Property(x => x.CcpcWarehouse).HasColumnName("CCPC_Warehouse").HasMaxLength(10);
+            e.Property(x => x.CcpcNewCost11010).HasColumnName("CCPC_NewCost11010");
+            e.Property(x => x.CcpcNewCost11060).HasColumnName("CCPC_NewCost11060");
+            e.Property(x => x.CcpcOldCost11010).HasColumnName("CCPC_OldCost11010");
+            e.Property(x => x.CcpcOldCost11060).HasColumnName("CCPC_OldCost11060");
+            e.Property(x => x.CcpcNewPricePr01).HasColumnName("CCPC_NewPricePr01");
+            e.Property(x => x.CcpcNewMarginPr01).HasColumnName("CCPC_NewMarginPr01");
+            e.Property(x => x.CcpcOldPricePr01).HasColumnName("CCPC_OldPricePr01");
+            e.Property(x => x.CcpcOldMarginPr01).HasColumnName("CCPC_OldMarginPr01");
+            e.Property(x => x.CcpcNewPricePr03).HasColumnName("CCPC_NewPricePr03");
+            e.Property(x => x.CcpcNewMarginPr03).HasColumnName("CCPC_NewMarginPr03");
+            e.Property(x => x.CcpcOldPricePr03).HasColumnName("CCPC_OldPricePr03");
+            e.Property(x => x.CcpcOldMarginPr03).HasColumnName("CCPC_OldMarginPr03");
+            e.Property(x => x.CcpcNewPricePr04).HasColumnName("CCPC_NewPricePr04");
+            e.Property(x => x.CcpcNewMarginPr04).HasColumnName("CCPC_NewMarginPr04");
+            e.Property(x => x.CcpcOldPricePr04).HasColumnName("CCPC_OldPricePr04");
+            e.Property(x => x.CcpcOldMarginPr04).HasColumnName("CCPC_OldMarginPr04");
+            e.Property(x => x.CcpcNewPricePr05).HasColumnName("CCPC_NewPricePr05");
+            e.Property(x => x.CcpcNewMarginPr05).HasColumnName("CCPC_NewMarginPr05");
+            e.Property(x => x.CcpcOldPricePr05).HasColumnName("CCPC_OldPricePr05");
+            e.Property(x => x.CcpcOldMarginPr05).HasColumnName("CCPC_OldMarginPr05");
+            e.Property(x => x.CcpcNewPricePr06).HasColumnName("CCPC_NewPricePr06");
+            e.Property(x => x.CcpcNewMarginPr06).HasColumnName("CCPC_NewMarginPr06");
+            e.Property(x => x.CcpcOldPricePr06).HasColumnName("CCPC_OldPricePr06");
+            e.Property(x => x.CcpcOldMarginPr06).HasColumnName("CCPC_OldMarginPr06");
+            e.Property(x => x.CcpcNewPricePr07).HasColumnName("CCPC_NewPricePr07");
+            e.Property(x => x.CcpcNewMarginPr07).HasColumnName("CCPC_NewMarginPr07");
+            e.Property(x => x.CcpcOldPricePr07).HasColumnName("CCPC_OldPricePr07");
+            e.Property(x => x.CcpcOldMarginPr07).HasColumnName("CCPC_OldMarginPr07");
+            e.Property(x => x.CcpcNewPricePr08).HasColumnName("CCPC_NewPricePr08");
+            e.Property(x => x.CcpcNewMarginPr08).HasColumnName("CCPC_NewMarginPr08");
+            e.Property(x => x.CcpcOldPricePr08).HasColumnName("CCPC_OldPricePr08");
+            e.Property(x => x.CcpcOldMarginPr08).HasColumnName("CCPC_OldMarginPr08");
+            e.Property(x => x.CcpcNewPricePr09).HasColumnName("CCPC_NewPricePr09");
+            e.Property(x => x.CcpcNewMarginPr09).HasColumnName("CCPC_NewMarginPr09");
+            e.Property(x => x.CcpcOldPricePr09).HasColumnName("CCPC_OldPricePr09");
+            e.Property(x => x.CcpcOldMarginPr09).HasColumnName("CCPC_OldMarginPr09");
+            e.Property(x => x.CcpcNewPricePr10).HasColumnName("CCPC_NewPricePr10");
+            e.Property(x => x.CcpcNewMarginPr10).HasColumnName("CCPC_NewMarginPr10");
+            e.Property(x => x.CcpcOldPricePr10).HasColumnName("CCPC_OldPricePr10");
+            e.Property(x => x.CcpcOldMarginPr10).HasColumnName("CCPC_OldMarginPr10");
+            e.Property(x => x.CcpcNewPricePr11).HasColumnName("CCPC_NewPricePr11");
+            e.Property(x => x.CcpcNewMarginPr11).HasColumnName("CCPC_NewMarginPr11");
+            e.Property(x => x.CcpcOldPricePr11).HasColumnName("CCPC_OldPricePr11");
+            e.Property(x => x.CcpcOldMarginPr11).HasColumnName("CCPC_OldMarginPr11");
+            e.Property(x => x.CcpcPriceChangeFlag).HasColumnName("CCPC_PriceChangeFlag");
+            e.Property(x => x.CcpcApprovedBy).HasColumnName("CCPC_ApprovedBy").HasMaxLength(100);
+            e.Property(x => x.CcpcApprovedAt).HasColumnName("CCPC_ApprovedAt");
+            e.Property(x => x.CcpcCreatedAt).HasColumnName("CCPC_CreatedAt");
         });
     }
 }
@@ -2134,6 +2242,8 @@ public class CcCalcPoHead
     public string?  CcphCreatedBy   { get; set; }
     public string?  CcphConfirmedBy { get; set; }
     public string?  CcphApprovedBy  { get; set; }
+    public string?    CcphReasonCode        { get; set; }
+    public DateTime?  CcphPriceChangeDate   { get; set; }
     public string?  CcphSelectedLines { get; set; } // CSV of selected PdLine numbers (numeric)
     public CcCalcHeader? CalcHeader { get; set; }
     public ICollection<CcCalcPoDetail> Details { get; set; } = [];
@@ -2146,12 +2256,17 @@ public class CcCalcPoDetail
     public string   CcpdItemNo      { get; set; } = string.Empty;
     public string?  CcpdItemDescr   { get; set; }
     public int?     CcpdUnitCase    { get; set; }
+    public string?  CcpdUm          { get; set; }
+    public decimal? CcpdCLiter      { get; set; }
+    public int?     CcpdMl          { get; set; }
     public decimal? CcpdOrdQty      { get; set; }
     public decimal? CcpdFreeQty     { get; set; }
     public decimal? CcpdLiters      { get; set; }
+    public decimal? CcpdTotLiters   { get; set; }
     public decimal? CcpdFactor      { get; set; }
     public decimal? CcpdFobPrice    { get; set; }
     public decimal? CcpdFobPriceTot { get; set; }
+    public decimal? CcpdFobPriceUsd { get; set; }
     public decimal? CcpdInlandFreight { get; set; }
     public decimal? CcpdFreight     { get; set; }
     public decimal? CcpdLocalHandl  { get; set; }
@@ -2289,6 +2404,33 @@ public class CcVendorCif
 public class CcVendorFreightWeight
 {
     public string VfwVendor { get; set; } = string.Empty;
+}
+
+public class CcCalcPoDetBenamingSum
+{
+    public int     CcpdsCalcNumber        { get; set; }
+    public string  CcpdsLmPoNo            { get; set; } = string.Empty;
+    public string  CcpdsHandelsBenam      { get; set; } = string.Empty;
+    public string? CcpdsGoedCode          { get; set; }
+    public decimal CcpdsOrdQty            { get; set; } = 0;
+    public decimal CcpdsCostOrg           { get; set; } = 0;
+    public decimal CcpdsTotInlandFreight  { get; set; } = 0;
+    public decimal CcpdsTotFreight        { get; set; } = 0;
+    public decimal CcpdsTotWaarde         { get; set; } = 0;
+    public decimal CcpdsTotLiters         { get; set; } = 0;
+    public decimal CcpdsDuties            { get; set; } = 0;
+    public decimal CcpdsEconSurch         { get; set; } = 0;
+    public decimal CcpdsOb                { get; set; } = 0;
+    public decimal? CcpdsTarT01           { get; set; }
+    public decimal? CcpdsTarT02           { get; set; }
+    public decimal? CcpdsTarT04           { get; set; }
+    public decimal? CcpdsTarT05           { get; set; }
+    public decimal? CcpdsTarT06           { get; set; }
+    public decimal? CcpdsTarT07           { get; set; }
+    public decimal? CcpdsTarT08           { get; set; }
+    public decimal? CcpdsTarT09           { get; set; }
+    public decimal? CcpdsTarT10           { get; set; }
+    public decimal? CcpdsTarT12           { get; set; }
 }
 
 // ── Tracking ────────────────────────────────────────────────────────────────────
@@ -2826,6 +2968,7 @@ public class FreightQuoteHeader
     public int?      FqhTransitDays  { get; set; }
     public DateOnly? FqhStartDate    { get; set; }
     public DateOnly? FqhEndDate      { get; set; }
+    public string?   FqhRemarks      { get; set; }
     public DateTime  CreatedAt       { get; set; } = DateTime.UtcNow;
     public ICollection<FreightQuoteOceanPort>    OceanPorts    { get; set; } = [];
     public ICollection<FreightQuoteInlRegion>    InlandRegions { get; set; } = [];
@@ -2951,4 +3094,68 @@ public class FreightQuoteLclPortTypeDet
     public decimal? FqlcptdAmountMin  { get; set; }
     public decimal? FqlcptdAmountMax  { get; set; }
     public FreightQuoteLclPortType? PortType { get; set; }
+}
+
+public class CcPriceChangeReason
+{
+    public string PcrCode        { get; set; } = string.Empty;
+    public string PcrDescription { get; set; } = string.Empty;
+    public bool   PcrActive      { get; set; } = true;
+}
+
+public class CcPriceConfirmation
+{
+    public int      CcpcId             { get; set; }
+    public int      CcpcCalcNumber     { get; set; }
+    public string   CcpcPoNo           { get; set; } = string.Empty;
+    public string   CcpcItemNo         { get; set; } = string.Empty;
+    public string?  CcpcWarehouse      { get; set; }
+    public decimal? CcpcNewCost11010   { get; set; }
+    public decimal? CcpcNewCost11060   { get; set; }
+    public decimal? CcpcOldCost11010   { get; set; }
+    public decimal? CcpcOldCost11060   { get; set; }
+    public decimal? CcpcNewPricePr01   { get; set; }
+    public decimal? CcpcNewMarginPr01  { get; set; }
+    public decimal? CcpcOldPricePr01   { get; set; }
+    public decimal? CcpcOldMarginPr01  { get; set; }
+    public decimal? CcpcNewPricePr03   { get; set; }
+    public decimal? CcpcNewMarginPr03  { get; set; }
+    public decimal? CcpcOldPricePr03   { get; set; }
+    public decimal? CcpcOldMarginPr03  { get; set; }
+    public decimal? CcpcNewPricePr04   { get; set; }
+    public decimal? CcpcNewMarginPr04  { get; set; }
+    public decimal? CcpcOldPricePr04   { get; set; }
+    public decimal? CcpcOldMarginPr04  { get; set; }
+    public decimal? CcpcNewPricePr05   { get; set; }
+    public decimal? CcpcNewMarginPr05  { get; set; }
+    public decimal? CcpcOldPricePr05   { get; set; }
+    public decimal? CcpcOldMarginPr05  { get; set; }
+    public decimal? CcpcNewPricePr06   { get; set; }
+    public decimal? CcpcNewMarginPr06  { get; set; }
+    public decimal? CcpcOldPricePr06   { get; set; }
+    public decimal? CcpcOldMarginPr06  { get; set; }
+    public decimal? CcpcNewPricePr07   { get; set; }
+    public decimal? CcpcNewMarginPr07  { get; set; }
+    public decimal? CcpcOldPricePr07   { get; set; }
+    public decimal? CcpcOldMarginPr07  { get; set; }
+    public decimal? CcpcNewPricePr08   { get; set; }
+    public decimal? CcpcNewMarginPr08  { get; set; }
+    public decimal? CcpcOldPricePr08   { get; set; }
+    public decimal? CcpcOldMarginPr08  { get; set; }
+    public decimal? CcpcNewPricePr09   { get; set; }
+    public decimal? CcpcNewMarginPr09  { get; set; }
+    public decimal? CcpcOldPricePr09   { get; set; }
+    public decimal? CcpcOldMarginPr09  { get; set; }
+    public decimal? CcpcNewPricePr10   { get; set; }
+    public decimal? CcpcNewMarginPr10  { get; set; }
+    public decimal? CcpcOldPricePr10   { get; set; }
+    public decimal? CcpcOldMarginPr10  { get; set; }
+    public decimal? CcpcNewPricePr11   { get; set; }
+    public decimal? CcpcNewMarginPr11  { get; set; }
+    public decimal? CcpcOldPricePr11   { get; set; }
+    public decimal? CcpcOldMarginPr11  { get; set; }
+    public bool?    CcpcPriceChangeFlag { get; set; }
+    public string?  CcpcApprovedBy     { get; set; }
+    public DateTime? CcpcApprovedAt    { get; set; }
+    public DateTime CcpcCreatedAt      { get; set; } = DateTime.UtcNow;
 }
