@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -59,7 +59,7 @@
   <nav id="sidebar" class="sidebar">
     <div class="sidebar-header"><img src="../../img/LogoLicores.png" alt="Licores Maduro" class="sidebar-logo-img"/><span class="sidebar-logo-text">LICORES MADURO</span></div>
     <div id="sidebar-nav" class="sidebar-nav"></div>
-    <div class="sidebar-footer"><div class="sidebar-user"><div class="sidebar-avatar" id="sidebar-user-initials">LM</div><div class="sidebar-text"><div id="sidebar-user-name" style="font-weight:600;">–</div></div></div></div>
+    <div class="sidebar-footer"><div class="sidebar-user"><div class="sidebar-avatar" id="sidebar-user-initials">LM</div><div class="sidebar-text"><div id="sidebar-user-name" style="font-weight:600;">â€“</div></div></div></div>
   </nav>
   <div class="main-area">
     <header class="topbar">
@@ -69,7 +69,7 @@
         <div class="dropdown">
           <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown">
             <span class="sidebar-avatar" id="topbar-user-initials" style="width:28px;height:28px;font-size:.75rem;">LM</span>
-            <span id="topbar-user-name" class="d-none d-md-inline">–</span>
+            <span id="topbar-user-name" class="d-none d-md-inline">â€“</span>
           </button>
           <ul class="dropdown-menu dropdown-menu-end shadow-sm">
             <li><div class="dropdown-header"><strong id="topbar-user-fullname">User</strong><br/><small class="text-muted" id="topbar-user-role">Role</small></div></li>
@@ -111,7 +111,7 @@
       <!-- Ship Charges card -->
       <div class="card mb-4" id="ship-charges-card">
         <div class="card-header d-flex align-items-center justify-content-between">
-          <span><i class="fas fa-ship me-2"></i>Ship Charges <small class="text-muted ms-2">(THC, doc fees, etc. — distributed across all PO lines)</small></span>
+          <span><i class="fas fa-ship me-2"></i>Ship Charges <small class="text-muted ms-2">(THC, doc fees, etc. â€” distributed across all PO lines)</small></span>
           <button class="btn btn-wine btn-sm" id="btn-add-charge" style="display:none;"><i class="fas fa-plus me-1"></i>Add Charge</button>
         </div>
         <div class="card-body p-0">
@@ -265,7 +265,7 @@
     await Promise.all([loadCalc(), loadShipCharges()]);
   });
 
-  // ── Ship Charges ────────────────────────────────────────────────────────────
+  // â”€â”€ Ship Charges â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   async function loadShipCharges(){
     try{
       const res=await API.costCalc.getShipCharges(calcId);
@@ -296,7 +296,7 @@
       <td>${esc(sc.ScDescription||'')}</td>
       <td class="text-end">${fmt(sc.ScAmount)}</td>
       <td>${esc(sc.ScCurrency||'')}</td>
-      <td class="text-end">${sc.ScRate!=null?Number(sc.ScRate).toFixed(4):'–'}</td>
+      <td class="text-end">${sc.ScRate!=null?Number(sc.ScRate).toFixed(4):'â€“'}</td>
       <td class="text-center" style="${colV}">
         <button class="btn-action edit me-1" onclick="openEditCharge(${sc.ScId})" title="Edit"><i class="fas fa-edit"></i></button>
         <button class="btn-action delete" onclick="deleteCharge(${sc.ScId})" title="Delete"><i class="fas fa-trash"></i></button>
@@ -354,14 +354,20 @@
     finally{btn.disabled=false;}
   }
 
-  async function deleteCharge(id){
+  function deleteCharge(id){
     const sc=shipCharges.find(x=>x.ScId===id);
-    if(!confirm(`Delete charge "${sc?.ScChargeCode}"?`))return;
-    try{
-      await API.costCalc.deleteShipCharge(calcId,id);
-      showToast('Deleted.','success');
-      await loadShipCharges();
-    }catch(err){showToast(err.message,'danger');}
+    openConfirmModal({
+      title: 'Delete Ship Charge',
+      message: `Are you sure you want to delete charge "${sc?.ScChargeCode}"?`,
+      btnLabel: 'Delete', btnClass: 'btn-danger', icon: 'fa-trash',
+      onConfirm: async () => {
+        try{
+          await API.costCalc.deleteShipCharge(calcId,id);
+          showToast('Deleted.','success');
+          await loadShipCharges();
+        }catch(err){showToast(err.message,'danger');}
+      }
+    });
   }
 
   async function loadCalc(){
@@ -393,15 +399,15 @@
         <div class="col-md-2"><small class="text-muted d-block">Calc No.</small><strong>#${c.CcCalcNumber}</strong></div>
         <div class="col-md-2"><small class="text-muted d-block">Date</small>${dt}</div>
         <div class="col-md-2"><small class="text-muted d-block">Status</small><span class="${stClass}">${stLabel}</span></div>
-        <div class="col-md-2"><small class="text-muted d-block">Warehouse</small>${esc(c.CcWarehouse||'–')}</div>
-        <div class="col-md-2"><small class="text-muted d-block">Forwarder</small>${esc(c.CcForwarderName||c.CcForwarderCode||'–')}</div>
-        <div class="col-md-2"><small class="text-muted d-block">Currency</small>${esc(c.CcCurrCode||'–')} ${c.CcCurrRate?'('+Number(c.CcCurrRate).toFixed(4)+')':''}</div>
+        <div class="col-md-2"><small class="text-muted d-block">Warehouse</small>${esc(c.CcWarehouse||'â€“')}</div>
+        <div class="col-md-2"><small class="text-muted d-block">Forwarder</small>${esc(c.CcForwarderName||c.CcForwarderCode||'â€“')}</div>
+        <div class="col-md-2"><small class="text-muted d-block">Currency</small>${esc(c.CcCurrCode||'â€“')} ${c.CcCurrRate?'('+Number(c.CcCurrRate).toFixed(4)+')':''}</div>
         <div class="col-md-2"><small class="text-muted d-block">Ocean Freight</small>${fmt(c.CcFreight)}</div>
         <div class="col-md-2"><small class="text-muted d-block">Transport</small>${fmt(c.CcTransport)}</div>
         <div class="col-md-2"><small class="text-muted d-block">Unloading</small>${fmt(c.CcUnloading)}</div>
         <div class="col-md-2"><small class="text-muted d-block">Local Handling</small>${fmt(c.CcLocalHandling)}</div>
         <div class="col-md-2"><small class="text-muted d-block">Total POs</small>${c.CcTotOrd??0}</div>
-        <div class="col-md-2"><small class="text-muted d-block">Created By</small>${esc(c.CcCreatedBy||'–')}</div>
+        <div class="col-md-2"><small class="text-muted d-block">Created By</small>${esc(c.CcCreatedBy||'â€“')}</div>
       </div>`;
 
     // Action buttons
@@ -432,7 +438,7 @@
       const stClass=STATUS_CLASS[po.CcphStatus]||'badge bg-secondary';
       const stLabel=STATUS_LABELS[po.CcphStatus]||po.CcphStatus;
       const details=(po.Details||[]).filter(d => (d.CcpdOrdQty ?? 0) > 0);
-      if(details.length === 0) return ''; // No mostrar POs sin artículos activos
+      if(details.length === 0) return ''; // No mostrar POs sin artÃ­culos activos
 
       // Calculate subtotals
       const totFob=details.reduce((s,d)=>s+(d.CcpdFobPriceTot??0),0);
@@ -480,8 +486,8 @@
             <button class="accordion-button ${idx>0?'collapsed':''} print-expanded" type="button" data-bs-toggle="collapse" data-bs-target="#po-collapse-${idx}">
               <div class="d-flex align-items-center gap-3 w-100 me-3">
                 <strong>PO: ${esc(po.CcphLmPoNo)}</strong>
-                <span class="text-muted small">Vendor: ${esc(po.CcphVendNo||po.CcphVendName||'–')}</span>
-                <span class="text-muted small">WH: ${esc(po.CcphWhse||'–')}</span>
+                <span class="text-muted small">Vendor: ${esc(po.CcphVendNo||po.CcphVendName||'â€“')}</span>
+                <span class="text-muted small">WH: ${esc(po.CcphWhse||'â€“')}</span>
                 <span class="text-muted small">Qty: ${fmt(po.CcphTotQty,0)}</span>
                 <span class="text-muted small">Ltrs: ${fmt(po.CcphTotLiters,2)}</span>
                 <span class="text-muted small">Amount: ${fmt(po.CcphTotAmount)}</span>
@@ -508,7 +514,7 @@
                       <th class="text-end">Unloading</th><th class="text-end">Final Cost</th>
                     </tr>
                   </thead>
-                  <tbody>${rows||'<tr><td colspan="21" class="text-center text-muted">No details – run calculation first.</td></tr>'}</tbody>
+                  <tbody>${rows||'<tr><td colspan="21" class="text-center text-muted">No details â€“ run calculation first.</td></tr>'}</tbody>
                 </table>
               </div>
               <small class="text-muted">Duties, Eco Surcharge and OB are calculated from HS code tariff rates. Items without a goods classification will show 0.00.</small>
@@ -523,7 +529,7 @@
   function printReport(){
     if(!calcData){return;}
 
-    // ── Map calcData → FinalCostReport props ─────────────────────────────────
+    // â”€â”€ Map calcData â†’ FinalCostReport props â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const pos = calcData.PoHeads || [];
 
     // Collect unique WH / Invoice values across all POs
@@ -643,17 +649,17 @@
     const reportProps = {
       reportNumber:  calcData.CcCalcNumber,
       factor:        calcData.CcCurrRate ?? 1,
-      order:         pos.map(p => p.CcphLmPoNo).filter(Boolean).join(' / ') || '—',
-      warehouse:     warehouses.join(' / ') || '—',
-      warehouseCode: warehouses.join(' / ') || '—',
-      container:     containers.join(' / ') || '—',
-      invoiceNo:     invoiceNrs.join(' / ') || '—',
-      invoiceDate:   invoiceDts.join(' / ') || '—',
+      order:         pos.map(p => p.CcphLmPoNo).filter(Boolean).join(' / ') || 'â€”',
+      warehouse:     warehouses.join(' / ') || 'â€”',
+      warehouseCode: warehouses.join(' / ') || 'â€”',
+      container:     containers.join(' / ') || 'â€”',
+      invoiceNo:     invoiceNrs.join(' / ') || 'â€”',
+      invoiceDate:   invoiceDts.join(' / ') || 'â€”',
       invRate:       calcData.CcCurrRate ?? 1,
       custRate:      calcData.CcCustRate ?? calcData.CcCurrRate ?? 1,
-      whCode2:       warehouses.map(w => { const p = (w||'').substring(0,3); return p+'10/'+p+'20'; }).join(' / ') || '—',
-      forwarder:     calcData.CcForwarderName || calcData.CcForwarderCode || '—',
-      vendor:        firstPo?.CcphVendName || firstPo?.CcphVendNo || '—',
+      whCode2:       warehouses.map(w => { const p = (w||'').substring(0,3); return p+'10/'+p+'20'; }).join(' / ') || 'â€”',
+      forwarder:     calcData.CcForwarderName || calcData.CcForwarderCode || 'â€”',
+      vendor:        firstPo?.CcphVendName || firstPo?.CcphVendNo || 'â€”',
       costTotals,
       items,
       summaries,
@@ -802,7 +808,7 @@
     });
   }
 
-  // ── Report HTML builder (no iframe, no external dependencies) ────────────────
+  // â”€â”€ Report HTML builder (no iframe, no external dependencies) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   function buildReportHTML(p) {
     const f = (v,d=2) => { const n=Number(v??0); return isNaN(n)?'':n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}); };
     const esc = s => String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -834,13 +840,15 @@
       const n=Number(v??0), z=n===0;
       return `<td style="text-align:right;padding:2px 5px;font-size:9px;font-variant-numeric:tabular-nums;color:${z&&!accent?'#9ca3af':accent?'#111827':'#1f2937'};font-weight:${bold||accent?700:400};${accent?'border-left:2px solid #9ca3af;':''}">${f(v,d)}</td>`;
     };
-    const DC = v => { const n=Number(v??0); if(!n) return `<td style="text-align:right;padding:2px 5px;font-size:9px;font-weight:700;color:#9ca3af;">—</td>`; return `<td style="text-align:right;padding:2px 5px;font-size:9px;font-weight:700;color:${n>0?'#166534':'#991b1b'};">${n>0?'+':''}${f(n)}</td>`; };
+    const DC = v => { const n=Number(v??0); if(!n) return `<td style="text-align:right;padding:2px 5px;font-size:9px;font-weight:700;color:#9ca3af;">â€”</td>`; return `<td style="text-align:right;padding:2px 5px;font-size:9px;font-weight:700;color:${n>0?'#166534':'#991b1b'};">${n>0?'+':''}${f(n)}</td>`; };
     const VC = v => { const n=Number(v??0); return `<td style="text-align:right;padding:1px 5px;font-size:7.5px;font-variant-numeric:tabular-nums;color:${n===0?'#d1d5db':'#6b7280'};font-style:italic;">${f(v)}</td>`; };
     const RTH = (lbl,g) => { const bg=g==='wh1'?'#c7cdd6':g==='wh2'?'#b8bfc9':g==='order'?'#d1d5db':'#e5e7eb'; return `<th style="background:${bg};padding:2px 1px;vertical-align:bottom;text-align:center;height:62px;border:1px solid #d1d5db;"><div style="writing-mode:vertical-rl;transform:rotate(180deg);font-size:7.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:#374151;white-space:nowrap;display:inline-block;">${esc(lbl)}</div></th>`; };
     const THL = t => `<th style="background:#e5e7eb;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:#374151;padding:3px 8px;text-align:left;white-space:nowrap;border:1px solid #d1d5db;">${esc(t)}</th>`;
     const THR = (t,accent) => `<th style="background:${accent?'#d1d5db':'#e5e7eb'};font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:#374151;padding:3px 5px;text-align:right;white-space:nowrap;border:1px solid #d1d5db;">${esc(t)}</th>`;
     const FTD = (v,d=2,bold=false,bg='#e5e7eb') => `<td style="text-align:right;padding:3px 5px;font-size:9px;font-weight:${bold?800:700};color:#111827;background:${bg};font-variant-numeric:tabular-nums;border:1px solid #d1d5db;">${f(v,d)}</td>`;
     const FTL = (t,bg='#e5e7eb') => `<td style="padding:3px 8px;font-size:9px;font-weight:700;color:#111827;background:${bg};text-transform:uppercase;letter-spacing:0.04em;border:1px solid #d1d5db;">${esc(t)}</td>`;
+    // Overflow-capable total cell: lets a long number visually spill over the empty neighbouring cell (alternating totals rows)
+    const FTDX = (v,d=2,bold=false,bg='#e5e7eb') => `<td style="text-align:right;padding:3px 5px;font-size:9px;font-weight:${bold?800:700};color:#111827;background:${bg};font-variant-numeric:tabular-nums;border:1px solid #d1d5db;white-space:nowrap;overflow:visible;">${f(v,d)}</td>`;
     const LBL = t => `<td style="padding:1px 6px 1px 0;font-weight:700;color:#6b7280;white-space:nowrap;border:none;width:70px;">${esc(t)}</td>`;
     const VAL = (v,extra='') => `<td style="padding:1px 12px 1px 4px;color:#111827;border:none;font-weight:600;${extra}">${v}</td>`;
 
@@ -861,7 +869,7 @@
       if(d.vip){const v=d.vip;
         row+=`<tr style="background:#f3f4f6;">
           <td style="padding:1px 6px;font-size:7px;color:#9ca3af;font-style:italic;border:1px solid #e5e7eb;"></td>
-          <td style="padding:1px 6px;font-size:7.5px;color:#6b7280;font-style:italic;border:1px solid #e5e7eb;">↳ Actual Cost VIP</td>
+          <td style="padding:1px 6px;font-size:7.5px;color:#6b7280;font-style:italic;border:1px solid #e5e7eb;">â†³ Actual Cost VIP</td>
           ${'<td style="border:1px solid #e5e7eb;"></td>'.repeat(5)}
           ${VC(v.fobPrice)}${VC(v.inlandFrt)}${VC(v.freight)}${VC(v.localHdl)}${VC(v.duties)}${VC(v.econSrch)}${VC(v.tax)}${VC(v.insurance)}${VC(v.trans)}${VC(v.unload)}
           ${VC(v.costPerCase)}${VC(v.totalExtWh1)}<td style="border:1px solid #e5e7eb;"></td>
@@ -870,7 +878,11 @@
       return row;
     }).join('');
 
-    const itemFoot = ITEM_COLS.map(c=>['up','fcPrice'].includes(c.key)||c.diff?`<td style="background:#e5e7eb;border:1px solid #d1d5db;"></td>`:FTD(totI(c.key),c.dec??2,!!c.accent)).join('');
+    // Narrow columns (8px) cannot fit the totals â†’ split them across two rows: even-index columns show their total in the
+    // top row (after thead), odd-index columns in the bottom row (tfoot). The empty neighbour lets the number overflow into it.
+    const _footBlank = `<td style="background:#e5e7eb;border:1px solid #d1d5db;"></td>`;
+    const itemFootEven = ITEM_COLS.map((c,i)=>(['up','fcPrice'].includes(c.key)||c.diff||(i%2!==0))?_footBlank:FTDX(totI(c.key),c.dec??2,!!c.accent)).join('');
+    const itemFootOdd  = ITEM_COLS.map((c,i)=>(['up','fcPrice'].includes(c.key)||c.diff||(i%2===0))?_footBlank:FTDX(totI(c.key),c.dec??2,!!c.accent)).join('');
     const totVipWh1 = (p.items||[]).reduce((s,d)=>s+(d.vip?d.vip.totalExtWh1:0),0);
     const totVipWh2 = (p.items||[]).reduce((s,d)=>s+(d.vip?d.vip.totalExt:0),0);
     const totDiffWh1= totI('totalExtWh1') - totVipWh1;
@@ -901,16 +913,16 @@
           <img src="../../img/LogoLicores.png" alt="Logo" style="height:40px;object-fit:contain;" onerror="this.style.display='none'"/>
           <div style="border-left:1px solid #d1d5db;padding-left:10px;">
             <div style="font-size:15px;font-weight:700;color:#111827;line-height:1.1;">Final Cost Calculation</div>
-            <div style="font-size:8px;color:#6b7280;margin-top:2px;text-transform:uppercase;letter-spacing:0.06em;">Import Cost Report — XCG</div>
+            <div style="font-size:8px;color:#6b7280;margin-top:2px;text-transform:uppercase;letter-spacing:0.06em;">Import Cost Report â€” XCG</div>
           </div>
         </div>
         <div style="text-align:right;"><div style="font-size:8px;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">Report No.</div><div style="font-size:18px;font-weight:800;color:#111827;line-height:1;">#${esc(String(p.reportNumber||''))}</div></div>
       </div>
       <!-- Metadata -->
       <table style="margin-bottom:8px;font-size:8.5px;border-collapse:collapse;"><tbody>
-        <tr>${LBL('Container')}${VAL(esc(p.container||'—'),'border-right:none;')}${LBL('Invoice No.')}${VAL(esc(p.invoiceNo||'—'),'border-right:none;')}${LBL('Forwarder')}${VAL(esc(p.forwarder||'—'),'padding-right:0;border:none;')}</tr>
-        <tr>${LBL('Order')}${VAL(esc(p.order||'—'),'border-right:none;')}${LBL('Inv. Date')}${VAL(esc(p.invoiceDate||'—')+'<span style="margin:0 5px;color:#d1d5db;">|</span><span style="font-weight:400;color:#4b5563;">'+f(p.invRate,4)+'</span>','border-right:none;')}${LBL('Vendor')}${VAL(esc(p.vendor||'—'),'padding-right:0;border:none;font-weight:400;')}</tr>
-        <tr>${LBL('Warehouse')}${VAL(esc(p.warehouse||'—')+'<span style="color:#9ca3af;font-weight:400;margin-left:4px;">('+esc(p.warehouseCode||'')+')</span>','border-right:none;')}${LBL('Cust. Rate')}${VAL(f(p.custRate??p.invRate,4),'border-right:none;')}${LBL('Factor')}${VAL('<strong>'+esc(String(p.factor||''))+'</strong>','padding-right:0;border:none;')}</tr>
+        <tr>${LBL('Container')}${VAL(esc(p.container||'â€”'),'border-right:none;')}${LBL('Invoice No.')}${VAL(esc(p.invoiceNo||'â€”'),'border-right:none;')}${LBL('Forwarder')}${VAL(esc(p.forwarder||'â€”'),'padding-right:0;border:none;')}</tr>
+        <tr>${LBL('Order')}${VAL(esc(p.order||'â€”'),'border-right:none;')}${LBL('Inv. Date')}${VAL(esc(p.invoiceDate||'â€”')+'<span style="margin:0 5px;color:#d1d5db;">|</span><span style="font-weight:400;color:#4b5563;">'+f(p.invRate,4)+'</span>','border-right:none;')}${LBL('Vendor')}${VAL(esc(p.vendor||'â€”'),'padding-right:0;border:none;font-weight:400;')}</tr>
+        <tr>${LBL('Warehouse')}${VAL(esc(p.warehouse||'â€”')+'<span style="color:#9ca3af;font-weight:400;margin-left:4px;">('+esc(p.warehouseCode||'')+')</span>','border-right:none;')}${LBL('Cust. Rate')}${VAL(f(p.custRate??p.invRate,4),'border-right:none;')}${LBL('Factor')}${VAL('<strong>'+esc(String(p.factor||''))+'</strong>','padding-right:0;border:none;')}</tr>
       </tbody></table>
       <!-- Cost Components -->
       <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.09em;color:#6b7280;border-bottom:1px solid #d1d5db;padding-bottom:2px;margin-top:8px;margin-bottom:3px;">Cost Components Totals in XCG</div>
@@ -920,7 +932,7 @@
         <tfoot><tr>${FTL('Totals')}${COST_COLS.map(c=>FTD(totC(c.key),2,!!c.accent)).join('')}</tr></tfoot>
       </table>
       <!-- Item Detail -->
-      <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.09em;color:#6b7280;border-bottom:1px solid #d1d5db;padding-bottom:2px;margin-top:8px;margin-bottom:3px;">Item Detail — Cost per Case in XCG</div>
+      <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.09em;color:#6b7280;border-bottom:1px solid #d1d5db;padding-bottom:2px;margin-top:8px;margin-bottom:3px;">Item Detail â€” Cost per Case in XCG</div>
       <table style="table-layout:fixed;font-size:8px;margin-bottom:8px;">
         <colgroup><col style="width:3%"/><col style="width:15%"/>${ITEM_COLS.map(function(){return '<col style="width:'+(82/ITEM_COLS.length)+'%"/>';}).join('')}</colgroup>
         <thead>
@@ -936,10 +948,11 @@
             <th style="background:#e5e7eb;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:#374151;padding:3px 5px;text-align:left;height:62px;vertical-align:bottom;border:1px solid #d1d5db;">Description</th>
             ${ITEM_COLS.map(c=>RTH(c.label,c.g)).join('')}
           </tr>
+          <tr>${FTL('Totals')}${itemFootEven}</tr>
         </thead>
         <tbody>${itemRows}</tbody>
         <tfoot>
-          <tr>${FTL('Totals')}${itemFoot}</tr>
+          <tr>${FTL('Totals')}${itemFootOdd}</tr>
           <tr>${FTL('Invoice Total','#d1d5db')}<td style="background:#d1d5db;border:1px solid #d1d5db;"></td><td style="background:#d1d5db;border:1px solid #d1d5db;"></td>${FTD(totI('ord'),0,true,'#d1d5db')}<td style="background:#d1d5db;border:1px solid #d1d5db;"></td>${FTD(totI('totalInvP'),2,true,'#d1d5db')}${'<td style="background:#d1d5db;border:1px solid #d1d5db;"></td>'.repeat(10)}${FTD(totI('totalExtWh1'),2,true,'#d1d5db')}${FTD(totDiffWh1,2,false,'#d1d5db')}${'<td style="background:#d1d5db;border:1px solid #d1d5db;"></td>'}${FTD(totI('totalExt'),2,true,'#d1d5db')}${FTD(totDiffWh2,2,false,'#d1d5db')}</tr>
           <tr>${FTL('Total Actual VIP','#dbeafe')}${'<td style="background:#dbeafe;border:1px solid #d1d5db;"></td>'.repeat(15)}${FTD(totVipWh1,2,false,'#dbeafe')}<td style="background:#dbeafe;border:1px solid #d1d5db;"></td><td style="background:#dbeafe;border:1px solid #d1d5db;"></td>${FTD(totVipWh2,2,false,'#dbeafe')}<td style="background:#dbeafe;border:1px solid #d1d5db;"></td></tr>
           <tr>${FTL('Total Real Cost','#c7d2fe')}${'<td style="background:#c7d2fe;border:1px solid #d1d5db;"></td>'.repeat(15)}${FTD(totI('totalExtWh1'),2,true,'#c7d2fe')}${FTD(totDiffWh1,2,false,'#c7d2fe')}<td style="background:#c7d2fe;border:1px solid #d1d5db;"></td>${FTD(totI('totalExt'),2,true,'#c7d2fe')}${FTD(totDiffWh2,2,false,'#c7d2fe')}</tr>
@@ -954,7 +967,7 @@
       </div></div>`;
   }
 
-  function fmt(n,d=2){return n!=null?Number(n).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}):'–';}
+  function fmt(n,d=2){return n!=null?Number(n).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}):'â€“';}
   function effQty(d){return d.CcpdOrdQty??0;}
   function showToast(msg,type='success'){
     const el=document.getElementById('toast');
@@ -971,7 +984,7 @@
     <div class="modal-content">
       <div class="modal-header py-2">
         <h6 class="modal-title" id="reportModalLabel">
-          <i class="fas fa-file-alt me-2 text-secondary"></i>Final Cost Report — Preview
+          <i class="fas fa-file-alt me-2 text-secondary"></i>Final Cost Report â€” Preview
         </h6>
         <div class="d-flex align-items-center gap-2 ms-auto me-3">
           <button class="btn btn-sm btn-outline-dark" onclick="printIframeReport()">
