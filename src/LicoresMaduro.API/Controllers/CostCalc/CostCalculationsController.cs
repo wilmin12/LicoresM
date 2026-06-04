@@ -1,4 +1,4 @@
-using ClosedXML.Excel;
+﻿using ClosedXML.Excel;
 using LicoresMaduro.API.Data;
 using LicoresMaduro.API.Models.Auth;
 using QuestPDF.Fluent;
@@ -25,9 +25,12 @@ public sealed class CostCalculationsController : ControllerBase
     private readonly DhwDbContext         _dhw;
     private readonly ILogger<CostCalculationsController> _logger;
     private readonly IPermissionService   _permissions;
+    private readonly IServiceScopeFactory _scopeFactory;
 
-    public CostCalculationsController(ApplicationDbContext db, DhwDbContext dhw, ILogger<CostCalculationsController> logger, IPermissionService permissions)
-    { _db = db; _dhw = dhw; _logger = logger; _permissions = permissions; }
+    public CostCalculationsController(ApplicationDbContext db, DhwDbContext dhw,
+        ILogger<CostCalculationsController> logger, IPermissionService permissions,
+        IServiceScopeFactory scopeFactory)
+    { _db = db; _dhw = dhw; _logger = logger; _permissions = permissions; _scopeFactory = scopeFactory; }
 
     // ── List all calculations ─────────────────────────────────────────────────
     [HttpGet]
@@ -49,7 +52,22 @@ public sealed class CostCalculationsController : ControllerBase
             .Include(x => x.PoHeads).ThenInclude(p => p.Details)
             .FirstOrDefaultAsync(x => x.CcCalcNumber == id, ct);
         if (calc is null) return NotFound(ApiResponse.Fail($"Calculation {id} not found."));
-        return Ok(ApiResponse<CcCalcHeader>.Ok(calc));
+
+        // Enrich with RANKER_952 (Actual Cost VIP) for all items in this calculation
+        var itemCodes = calc.PoHeads
+            .SelectMany(p => p.Details)
+            .Select(d => d.CcpdItemNo?.Trim())
+            .Where(c => c != null)
+            .Distinct()
+            .ToList();
+
+        var ranker952 = itemCodes.Any()
+            ? await _dhw.Ranker952.AsNoTracking()
+                .Where(r => itemCodes.Contains(r.Item.Trim()))
+                .ToDictionaryAsync(r => r.Item.Trim(), ct)
+            : new Dictionary<string, DhwRanker952>();
+
+        return Ok(ApiResponse<object>.Ok(new { Calc = calc, Ranker952 = ranker952 }));
     }
 
     // ── Last approved calculation by forwarder (for pre-fill) ────────────────
@@ -359,7 +377,7 @@ public sealed class CostCalculationsController : ControllerBase
 
             var lines = await query.ToListAsync(ct);
 
-            var itemCodes = lines.Select(l => l.PdItem).Where(c => c != null).Distinct().ToList();
+            var itemCodes = lines.Select(l => l.PdItem?.Trim()).Where(c => c != null).Distinct().ToList();
             var fobMap    = await _db.CcItemFobPrices.AsNoTracking()
                 .Where(f => itemCodes.Contains(f.ItCode))
                 .ToDictionaryAsync(f => f.ItCode, ct);
@@ -368,7 +386,7 @@ public sealed class CostCalculationsController : ControllerBase
             // HS codes → duty/econ/OB rates
             var goodsClass = await _db.CcGoodsClassifications.AsNoTracking()
                 .Where(g => g.IsActive && itemCodes.Contains(g.GcItemCode))
-                .ToDictionaryAsync(g => g.GcItemCode, ct);
+                .ToDictionaryAsync(g => g.GcItemCode.Trim(), ct);
             var hsCodes = goodsClass.Values.Select(g => g.GcHsCode).Distinct().ToList();
             var tariffMap = (await _db.CcTariffItems.AsNoTracking()
                 .Where(t => t.IsActive && hsCodes.Contains(t.Hs6Cod))
@@ -385,6 +403,10 @@ public sealed class CostCalculationsController : ControllerBase
                 .ToDictionaryAsync(w => w.IwItemCode, ct);
 
             // ── New Liter & Factor Lookups ────────────────────────────────────
+            var itemDescrMap = await _dhw.ItemT.AsNoTracking()
+                .Where(i => itemCodes.Contains(i.ItItem.Trim()))
+                .ToDictionaryAsync(i => i.ItItem.Trim(), ct);
+
             var ranker560 = await _dhw.Ranker560.AsNoTracking()
                 .Where(r => itemCodes.Contains(r.Field1))
                 .ToDictionaryAsync(r => r.Field1, ct);
@@ -416,11 +438,15 @@ public sealed class CostCalculationsController : ControllerBase
             decimal totalFobInPoXcg = 0;
             var lineDataList = new List<(DhwPoDetail Line, decimal FobTot)>();
 
+            decimal currRate = (decimal)(poHead.CcphCurrRate ?? dto.CurrRate ?? 1);
             foreach (var line in lines)
             {
-                var fobPrice = line.PdItem != null && fobMap.TryGetValue(line.PdItem, out var fob) ? fob.ItPurchasePrice ?? 0 : 0;
-                var qty      = line.PdOqty ?? 0;
-                var fobTot   = fobPrice * qty;
+                var fobPriceUsd = line.PdItem != null && fobMap.TryGetValue(line.PdItem.Trim(), out var fob) ? fob.ItPurchasePrice ?? 0 : 0;
+                var fobPrice    = fobPriceUsd * currRate;
+                var qty         = line.PdItem?.Trim().Length == 6 && (line.PdUnit ?? 0) > 0
+                                  ? Math.Ceiling((line.PdOqty ?? 0) / (line.PdUnit ?? 1))
+                                  : (line.PdOqty ?? 0);
+                var fobTot      = fobPrice * qty;
                 totalFobInPoXcg += fobTot;
                 lineDataList.Add((line, fobTot));
             }
@@ -434,9 +460,14 @@ public sealed class CostCalculationsController : ControllerBase
             bool is11060        = poHead.CcphWhse?.Trim() == "11060";
             const decimal InsFactor = 1.1m * 0.005m * 1.07m;
 
-            // Remove old details
+            // Remove this calc's details (via navigation)
             _db.CcCalcPoDetails.RemoveRange(poHead.Details);
             poHead.Details.Clear();
+            // One calculation per PO: also remove any other calc's details for this PO
+            var otherCalcDetails = await _db.CcCalcPoDetails
+                .Where(d => d.CcpdLmPoNo == poHead.CcphLmPoNo && d.CcpdCalcNumber != id)
+                .ToListAsync(ct);
+            _db.CcCalcPoDetails.RemoveRange(otherCalcDetails);
 
             decimal poInsuranceTotal    = 0;
             decimal poFobTotal          = 0;
@@ -450,7 +481,9 @@ public sealed class CostCalculationsController : ControllerBase
             foreach (var item in lineDataList)
             {
                 var line   = item.Line;
-                var qty    = line.PdOqty ?? 0;
+                var qty    = line.PdItem?.Trim().Length == 6 && (line.PdUnit ?? 0) > 0
+                             ? Math.Ceiling((line.PdOqty ?? 0) / (line.PdUnit ?? 1))
+                             : (line.PdOqty ?? 0);
                 var free   = line.PdBqty ?? 0;
                 var fobTot = item.FobTot;
                 var fobPrice = qty > 0 ? fobTot / qty : 0;
@@ -479,16 +512,14 @@ public sealed class CostCalculationsController : ControllerBase
                             else factor = proofFactor;
                         }
                     }
-                    else // Beer / others — Ranker 562
+                    else // Beer / others — no factor per Supplementary PDF
                     {
-                        if (ranker562.TryGetValue(line.PdItem, out var r562))
-                        {
-                            ml = (r562.Field2 ?? 0) * 29.5735m;
-                            factor = (r562.Field3 ?? 0) / 100m;
-                        }
+                        factor = 1.0m;
+                        if (itemDescrMap.TryGetValue(line.PdItem.Trim(), out var mlDesc))
+                            ml = mlDesc.ItMlPerBottle ?? 0;
                     }
                     decimal unitCase = line.PdUnit ?? 1;
-                    liters = (qty + free) * unitCase * (ml / 100m) * factor;
+                    liters = (qty + free) * unitCase * (ml / 1000m) * factor;
                 }
                 poLitersTotal += liters;
 
@@ -496,8 +527,9 @@ public sealed class CostCalculationsController : ControllerBase
                 decimal lineProp     = totalFobInPoXcg > 0 ? fobTot / totalFobInPoXcg : 0;
                 decimal lineDiscount = poDiscount * lineProp;
                 decimal netFobTot    = fobTot - lineDiscount;
-                decimal freight      = poFreight    * lineProp;
-                decimal inland       = (poHead.CcphInlandFreight ?? 0) * (decimal)(poHead.CcphCurrRate ?? dto.CurrRate ?? 1) * lineProp;
+                // CIF vendors: ocean freight & inland freight must stay 0 (same rule as Insurance below)
+                decimal freight      = isCifVendor ? 0 : poFreight * lineProp;
+                decimal inland       = isCifVendor ? 0 : (poHead.CcphInlandFreight ?? 0) * (decimal)(poHead.CcphCurrRate ?? dto.CurrRate ?? 1) * lineProp;
                 decimal lh           = poLH         * lineProp;
                 decimal transport    = poTransport  * lineProp;
                 decimal unloading    = poUnloading  * lineProp;
@@ -507,19 +539,13 @@ public sealed class CostCalculationsController : ControllerBase
 
                 // ── HS code lookup ────────────────────────────────────────────
                 string? hsCode = null;
-                if (line.PdItem != null && goodsClass.TryGetValue(line.PdItem, out var gcLookup))
+                string? itemTrimmed = line.PdItem?.Trim();
+                if (itemTrimmed != null && goodsClass.TryGetValue(itemTrimmed, out var gcLookup))
                     hsCode = gcLookup.GcHsCode;
+                else
+                    _logger.LogWarning("[CALC] item={Item} has no GoodsClassification — Duties/Econ/OB will be 0", itemTrimmed);
 
-                // ── Duties: fixed per-unit volume rates (T04/T06/T09/T10) ────
-                decimal duties = 0;
-                if (!isDutyFree && hsCode != null && tariffMap.TryGetValue(hsCode, out var tariffD))
-                {
-                    decimal hl = liters / 100m;
-                    duties = (tariffD.TarT04 ?? 0m) * hl
-                           + (tariffD.TarT06 ?? 0m) * liters
-                           + (tariffD.TarT09 ?? 0m) * hl
-                           + (tariffD.TarT10 ?? 0m) * hl;
-                }
+                // Duties are calculated in the HandelsBenaming group pass below
 
                 // ── Inland tariff ─────────────────────────────────────────────
                 decimal inlandTariff = 0;
@@ -542,7 +568,44 @@ public sealed class CostCalculationsController : ControllerBase
                 lineInterms.Add(new LineInterm(
                     line, qty, free, fobPrice, fobTot, netFobTot,
                     inland, freight, lh, transport, unloading, shipChg,
-                    duties, inlandTariff, liters, factor, hsCode, lineWeight));
+                    inlandTariff, liters, factor, hsCode, lineWeight));
+            }
+
+            // Duties: T04 + T06 + T09 + T10, grouped by HS code
+            // Distributed proportionally to each line by liter contribution.
+            _logger.LogInformation("[DUTIES] isDutyFree={DutyFree} lineInterms={Count} withHsCode={WithHs}",
+                isDutyFree, lineInterms.Count, lineInterms.Count(l => l.HsCode != null));
+            if (!isDutyFree)
+            {
+                foreach (var grp in lineInterms.Where(l => l.HsCode != null).GroupBy(l => l.Line.PdItem!.Trim()))
+                {
+                    string? hsCode = grp.First().HsCode;
+                    if (!tariffMap.TryGetValue(hsCode!, out var tariffD)) continue;
+                    decimal groupLiters = grp.Sum(l => l.Liters);
+                    if (groupLiters == 0m) continue;
+
+                    decimal t04 = tariffD.TarT04 ?? 0m;
+                    decimal t06 = tariffD.TarT06 ?? 0m;
+                    decimal t09 = tariffD.TarT09 ?? 0m;
+                    decimal t10 = tariffD.TarT10 ?? 0m;
+
+                    decimal roundedLiters = CustomsRounding.RoundLiters(groupLiters);
+                    decimal hectoliter   = CustomsRounding.LitersToHectoliter(groupLiters);
+
+                    decimal groupDuties = CustomsRounding.CeilTax(hectoliter * t04)
+                                        + (roundedLiters * t06 / 100m)
+                                        + CustomsRounding.CeilTax(hectoliter * t09)
+                                        + CustomsRounding.CeilTax(hectoliter * t10);
+
+                    foreach (var lc in grp)
+                    {
+                        lc.Duties = groupDuties;
+                    }
+                    _logger.LogInformation("[DUTIES] item={Item} HS={HS} liters={Liters} HL={HL} " +
+                        "T04={T04} T06={T06} T09={T09} T10={T10} duties={Duties}",
+                        grp.Key, hsCode, groupLiters, hectoliter,
+                        t04, t06, t09, t10, groupDuties);
+                }
             }
 
             // ── Pass 2: Econ & OB per Goederencode group ─────────────────────
@@ -555,6 +618,8 @@ public sealed class CostCalculationsController : ControllerBase
                 decimal groupAduana = group.Sum(l => l.NetFobTot + l.Inland + l.Freight);
                 decimal groupEcon   = ((tariffE.TarT01 ?? 0m) + (tariffE.TarT02 ?? 0m)) / 100m * groupAduana;
                 decimal groupOb     = (tariffE.TarT07 ?? 0m) / 2m / 100m * groupAduana;
+                _logger.LogInformation("[PASS2] HS={HS} groupAduana={Aduana} T01={T01} T02={T02} T07={T07} econ={Econ} ob={OB}",
+                    group.Key, groupAduana, tariffE.TarT01, tariffE.TarT02, tariffE.TarT07, groupEcon, groupOb);
                 foreach (var lc in group)
                 {
                     decimal lineAduana = lc.NetFobTot + lc.Inland + lc.Freight;
@@ -616,19 +681,30 @@ public sealed class CostCalculationsController : ControllerBase
                     ? (lc.Qty > 0 ? (finalCostLine / lc.Qty) / (1 - marginPerc) : 0)
                     : (lc.Qty > 0 ? (finalCostLine / lc.Qty) : 0);
 
+                itemDescrMap.TryGetValue(lc.Line.PdItem?.Trim() ?? "", out var iDesc);
+                decimal? mlPerBottle = iDesc?.ItMlPerBottle;
+                decimal litersPerBottle = (mlPerBottle ?? 0) / 1000m;
+
                 poHead.Details.Add(new CcCalcPoDetail
                 {
                     CcpdCalcNumber    = id,
                     CcpdLmPoNo        = poHead.CcphLmPoNo,
                     CcpdItemNo        = lc.Line.PdItem ?? "N/A",
-                    CcpdItemDescr     = lc.Line.PdSitem?.Trunc(50),
+                    CcpdItemDescr     = iDesc != null
+                                            ? $"{iDesc.ItShort?.Trim()} {iDesc.ItDesc?.Trim()}".Trim().Trunc(50)
+                                            : lc.Line.PdSitem?.Trunc(50),
                     CcpdUnitCase      = (int?)lc.Line.PdUnit,
+                    CcpdUm            = mlPerBottle != null ? litersPerBottle.ToString("0.###") : lc.Line.PdUm?.Trim(),
+                    CcpdCLiter        = mlPerBottle != null ? (mlPerBottle.Value / 10m) : null,
+                    CcpdMl            = (int?)mlPerBottle,
                     CcpdOrdQty        = lc.Qty,
                     CcpdFreeQty       = lc.Free,
-                    CcpdLiters        = lc.Liters,
-                    CcpdFactor        = lc.Factor,
+                    CcpdLiters        = mlPerBottle != null ? litersPerBottle : null,
+                    CcpdTotLiters     = lc.Liters,
+                    CcpdFactor        = Math.Round(lc.Factor, 2),
                     CcpdFobPrice      = lc.FobPrice,
                     CcpdFobPriceTot   = lc.FobTot,
+                    CcpdFobPriceUsd   = currRate > 0 ? lc.FobPrice / currRate : 0,
                     CcpdInlandFreight = lc.Inland,
                     CcpdFreight       = lc.Freight,
                     CcpdLocalHandl    = lc.Lh,
@@ -641,7 +717,7 @@ public sealed class CostCalculationsController : ControllerBase
                     CcpdTransport     = lc.Transport,
                     CcpdUnloading     = lc.Unloading,
                     CcpdFinalCost     = finalCostLine,
-                    CcpdWarehouse     = poHead.CcphWhse?.Trunc(3),
+                    CcpdWarehouse     = poHead.CcphWhse?.Trim(),
                     CcpdMarginPerc    = marginPerc,
                     CcpdSellingPrice  = sellingPrice,
                     CcpdAllowedMin    = margin?.AmMinMargin,
@@ -649,9 +725,96 @@ public sealed class CostCalculationsController : ControllerBase
                 });
             }
 
+            // ── Pass 4: Benaming summary — one row per unique item per PO ────────
+            // One calculation per PO: replace ALL rows for this PO (any calc)
+            var oldPoBenamingSums = await _db.CcCalcPoDetBenamingSums
+                .Where(s => s.CcpdsLmPoNo == poHead.CcphLmPoNo)
+                .ToListAsync(ct);
+            _db.CcCalcPoDetBenamingSums.RemoveRange(oldPoBenamingSums);
+
+            // Recalculate Duties, Econ, OB on grouped totals (customs formula from PDF)
+            foreach (var grp in lineInterms.Where(l => l.Line.PdItem != null).GroupBy(l => l.Line.PdItem!.Trim()))
+            {
+                string  handelsBenam = grp.Key;
+                string? goedCode     = grp.First().HsCode;
+                tariffMap.TryGetValue(goedCode ?? string.Empty, out var tariffS);
+
+                decimal totInland  = grp.Sum(l => l.Inland);
+                decimal totFreight = grp.Sum(l => l.Freight);
+                decimal totWaarde  = grp.Sum(l => l.NetFobTot);
+                decimal rawLiters  = grp.Sum(l => l.Liters);
+
+                // Supplementary liters rounding (<100: 1 dec ≥6 threshold, ≥100: integer ≥6 threshold)
+                decimal totLiters = CustomsRounding.RoundLiters(rawLiters);
+
+                // Valor de Aduana (Douanewaarde) = Inland + Freight + Waarde → ceiling to integer
+                decimal valorAduana = CustomsRounding.CeilDouanewaarde(totInland + totFreight + totWaarde);
+
+                // Econ Surcharge = Valor_Aduana × TAR_T01 / 100 → ceiling to 1 decimal
+                decimal t01 = tariffS?.TarT01 ?? 0m;
+                decimal econSurch = CustomsRounding.CeilTax(valorAduana * t01 / 100m);
+
+                // OB = Valor_Aduana × (TAR_T07 / 2) / 100 → ceiling to 1 decimal
+                decimal t07 = tariffS?.TarT07 ?? 0m;
+                decimal ob  = CustomsRounding.CeilTax(valorAduana * (t07 / 2m) / 100m);
+
+                // Duties: T06 on rounded liters, T04/T09/T10 on raw HL
+                decimal duties = 0;
+                if (!isDutyFree && tariffS != null)
+                {
+                    decimal hectoliter = CustomsRounding.LitersToHectoliter(rawLiters);
+                    decimal t04 = tariffS.TarT04 ?? 0m;
+                    decimal t06 = tariffS.TarT06 ?? 0m;
+                    decimal t09 = tariffS.TarT09 ?? 0m;
+                    decimal t10 = tariffS.TarT10 ?? 0m;
+
+                    decimal dutyT04 = CustomsRounding.CeilTax(hectoliter * t04);
+                    decimal dutyT06 = totLiters * t06 / 100m;
+                    decimal dutyT09 = CustomsRounding.CeilTax(hectoliter * t09);
+                    decimal dutyT10 = CustomsRounding.CeilTax(hectoliter * t10);
+
+                    duties = dutyT04 + dutyT06 + dutyT09 + dutyT10;
+
+                    _logger.LogInformation("[CCPDS] item={Item} lines={LineCount} rawLiters={Raw} displayLiters={Display} HL={HL} " +
+                        "T04={T04}(duty={DT04}) T06={T06}(duty={DT06}) T09={T09}(duty={DT09}) T10={T10}(duty={DT10}) " +
+                        "totalDuties={Duties} valorAduana={Aduana} econ={Econ} ob={OB}",
+                        handelsBenam, grp.Count(), rawLiters, totLiters, hectoliter,
+                        t04, dutyT04, t06, dutyT06, t09, dutyT09, t10, dutyT10,
+                        duties, valorAduana, econSurch, ob);
+                }
+
+                _db.CcCalcPoDetBenamingSums.Add(new CcCalcPoDetBenamingSum
+                {
+                    CcpdsCalcNumber       = id,
+                    CcpdsLmPoNo           = poHead.CcphLmPoNo,
+                    CcpdsHandelsBenam     = handelsBenam,
+                    CcpdsGoedCode         = goedCode,
+                    CcpdsOrdQty           = grp.Sum(l => l.Qty),
+                    CcpdsCostOrg          = grp.First().FobPrice > 0 ? grp.First().FobPrice / currRate : 0,
+                    CcpdsTotInlandFreight = totInland,
+                    CcpdsTotFreight       = totFreight,
+                    CcpdsTotWaarde        = totWaarde,
+                    CcpdsTotLiters        = totLiters,
+                    CcpdsDuties           = duties,
+                    CcpdsEconSurch        = econSurch,
+                    CcpdsOb               = ob,
+                    CcpdsTarT01           = tariffS?.TarT01,
+                    CcpdsTarT02           = tariffS?.TarT02,
+                    CcpdsTarT04           = tariffS?.TarT04,
+                    CcpdsTarT05           = tariffS?.TarT05,
+                    CcpdsTarT06           = tariffS?.TarT06,
+                    CcpdsTarT07           = tariffS?.TarT07,
+                    CcpdsTarT08           = tariffS?.TarT08,
+                    CcpdsTarT09           = tariffS?.TarT09,
+                    CcpdsTarT10           = tariffS?.TarT10,
+                    CcpdsTarT12           = tariffS?.TarT12,
+                });
+            }
+
             // Update PO head totals
             poHead.CcphLocalHandling = poLH;
-            poHead.CcphFreight       = poFreight;
+            // CIF vendors carry no ocean freight; keep CcphInlandFreight as the entered reference value (detail lines drive the calc)
+            poHead.CcphFreight       = isCifVendor ? 0 : poFreight;
             poHead.CcphTransport     = poTransport;
             poHead.CcphUnloading     = poUnloading;
             poHead.CcphInsurance     = poInsuranceTotal;
@@ -731,8 +894,26 @@ public sealed class CostCalculationsController : ControllerBase
         if (calc is null) return NotFound(ApiResponse.Fail($"Calculation {id} not found."));
         if (calc.CcStatus != "CF") return BadRequest(ApiResponse.Fail("Only Confirmed calculations can be approved."));
         calc.CcStatus = "AP";
-        foreach (var p in calc.PoHeads) { p.CcphStatus = "AP"; p.CcphApprovedBy = User.Identity?.Name; }
+        foreach (var p in calc.PoHeads) { p.CcphStatus = "PC"; p.CcphApprovedBy = User.Identity?.Name; }
         await _db.SaveChangesAsync(ct);
+
+        // Fire-and-forget: compute VIP price matrix in background
+        var calcIdForBg  = id;
+        var approvedByBg = User.Identity?.Name;
+        var scopeFactory = _scopeFactory;
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await using var scope = scopeFactory.CreateAsyncScope();
+                var svc = scope.ServiceProvider.GetRequiredService<IPriceCalculationService>();
+                await svc.ComputeAndPersistAsync(calcIdForBg, approvedByBg);
+            }
+            catch (Exception ex)
+            {
+                _ = ex;
+            }
+        });
 
         // Pre-load data needed for background tasks while DbContext is still alive
         var calcWithDetails = await _db.CcCalcHeaders
@@ -1333,13 +1514,36 @@ public record CalcChargesDto(
     decimal? MarginPerc
 );
 
+internal static class CustomsRounding
+{
+    /// <summary>Supplementary liters: &lt;100 → 1 dec (≥6 up), ≥100 → integer (≥6 up)</summary>
+    public static decimal RoundLiters(decimal liters)
+    {
+        if (liters < 100m)
+            return Math.Floor(liters * 10m + 0.4m) / 10m;
+        return Math.Floor(liters + 0.4m);
+    }
+
+    /// <summary>Ceiling liters to integer, then /100</summary>
+    public static decimal LitersToHectoliter(decimal liters) =>
+        Math.Ceiling(liters) / 100m;
+
+    /// <summary>Douanewaarde: always ceiling to integer</summary>
+    public static decimal CeilDouanewaarde(decimal value) =>
+        Math.Ceiling(value);
+
+    /// <summary>Taxes (Econ, OB, Duties): always ceiling to 1 decimal</summary>
+    public static decimal CeilTax(decimal value) =>
+        Math.Ceiling(value * 10m) / 10m;
+}
+
 internal sealed class LineInterm(
     LicoresMaduro.API.Data.DhwPoDetail line,
     decimal qty, decimal free,
     decimal fobPrice, decimal fobTot, decimal netFobTot,
     decimal inland, decimal freight, decimal lh,
     decimal transport, decimal unloading, decimal shipChg,
-    decimal duties, decimal inlandTariff,
+    decimal inlandTariff,
     decimal liters, decimal factor, string? hsCode, decimal lineWeight)
 {
     public LicoresMaduro.API.Data.DhwPoDetail Line { get; } = line;
@@ -1354,7 +1558,7 @@ internal sealed class LineInterm(
     public decimal Transport    { get; } = transport;
     public decimal Unloading    { get; } = unloading;
     public decimal ShipChg      { get; } = shipChg;
-    public decimal Duties       { get; } = duties;
+    public decimal Duties       { get; set; }  // set in duties group pass
     public decimal InlandTariff { get; } = inlandTariff;
     public decimal Liters       { get; } = liters;
     public decimal Factor       { get; } = factor;
