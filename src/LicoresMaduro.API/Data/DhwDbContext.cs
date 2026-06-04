@@ -14,6 +14,9 @@ public sealed class DhwDbContext : DbContext
     public DbSet<DhwSupplier>      Suppliers      => Set<DhwSupplier>();
     public DbSet<DhwRanker560>     Ranker560      => Set<DhwRanker560>();
     public DbSet<DhwRanker562>     Ranker562      => Set<DhwRanker562>();
+    public DbSet<DhwRanker952>     Ranker952      => Set<DhwRanker952>();
+    public DbSet<DhwRanker553>     Ranker553      => Set<DhwRanker553>();
+    public DbSet<DhwRanker99T>     Ranker99T      => Set<DhwRanker99T>();
 
     // ── Scalar function: Description_Items_BEER ───────────────────────────────
     public static string? DescriptionItemsBeer(string itemCode)
@@ -116,6 +119,57 @@ public sealed class DhwDbContext : DbContext
             e.Property(x => x.Field3).HasColumnName("ALCOHOL_PERCENT");
         });
 
+        mb.Entity<DhwRanker952>(e =>
+        {
+            e.ToTable("RANKER_952");
+            e.HasKey(x => x.Item);
+            e.Property(x => x.Item).HasColumnName("ITEM").HasMaxLength(20);
+            e.Property(x => x.Cost01).HasColumnName("COST01");
+            e.Property(x => x.Cost02).HasColumnName("COST02");
+            e.Property(x => x.Cost03).HasColumnName("COST03");
+            e.Property(x => x.Cost04).HasColumnName("COST04");
+            e.Property(x => x.Cost05).HasColumnName("COST05");
+            e.Property(x => x.Cost06).HasColumnName("COST06");
+            e.Property(x => x.Cost07).HasColumnName("COST07");
+            e.Property(x => x.Cost08).HasColumnName("COST08");
+            e.Property(x => x.Cost09).HasColumnName("COST09");
+            e.Property(x => x.Cost10).HasColumnName("COST10");
+        });
+
+        mb.Entity<DhwRanker553>(e =>
+        {
+            e.ToTable("RANKER_553");
+            e.HasKey(x => x.Item);
+            e.Property(x => x.Item).HasColumnName("ITEM").HasMaxLength(20);
+            e.Property(x => x.Pr01).HasColumnName("PR01");
+            e.Property(x => x.Pr03).HasColumnName("PR03");
+            e.Property(x => x.Pr04).HasColumnName("PR04");
+            e.Property(x => x.Pr05).HasColumnName("PR05");
+            e.Property(x => x.Pr06).HasColumnName("PR06");
+            e.Property(x => x.Pr07).HasColumnName("PR07");
+            e.Property(x => x.Pr08).HasColumnName("PR08");
+            e.Property(x => x.Pr09).HasColumnName("PR09");
+            e.Property(x => x.Pr10).HasColumnName("PR10");
+            e.Property(x => x.Pr11).HasColumnName("PR11");
+        });
+
+        mb.Entity<DhwRanker99T>(e =>
+        {
+            e.ToTable("RANKER_99T");
+            e.HasKey(x => x.Item);
+            e.Property(x => x.Item).HasColumnName("ITEM").HasMaxLength(20);
+            e.Property(x => x.Cost01).HasColumnName("COST01");
+            e.Property(x => x.Cost02).HasColumnName("COST02");
+            e.Property(x => x.Cost03).HasColumnName("COST03");
+            e.Property(x => x.Cost04).HasColumnName("COST04");
+            e.Property(x => x.Cost05).HasColumnName("COST05");
+            e.Property(x => x.Cost06).HasColumnName("COST06");
+            e.Property(x => x.Cost07).HasColumnName("COST07");
+            e.Property(x => x.Cost08).HasColumnName("COST08");
+            e.Property(x => x.Cost09).HasColumnName("COST09");
+            e.Property(x => x.Cost10).HasColumnName("COST10");
+        });
+
         mb.Entity<DhwPoDetail>(e =>
         {
             e.ToTable("PODTLT");
@@ -131,6 +185,7 @@ public sealed class DhwDbContext : DbContext
             e.Property(x => x.PdLtrs).HasColumnName("PDLTRS");
             e.Property(x => x.PdCstAmt).HasColumnName("PDCST$");
             e.Property(x => x.PdUnit).HasColumnName("PDUNIT");
+            e.Property(x => x.PdUm).HasColumnName("PDUM").HasMaxLength(5);
             e.Property(x => x.PdSitem).HasColumnName("PDSITM").HasMaxLength(14);
             e.Property(x => x.PdBsw).HasColumnName("PDBSW").HasMaxLength(1);
             e.Property(x => x.PdClas).HasColumnName("PDCLAS").HasMaxLength(2);
@@ -227,6 +282,7 @@ public sealed class DhwDbContext : DbContext
             e.ToTable("ITEMT");
             e.HasKey(x => x.ItItem);
             e.Property(x => x.ItItem).HasColumnName("ITEM_CODE").HasMaxLength(6);
+            e.Property(x => x.ItShort).HasColumnName("PACKAGE_SHORT").HasMaxLength(30);
             e.Property(x => x.ItDesc).HasColumnName("PACKAGE_DESCRIPTION").HasMaxLength(55);
             e.Property(x => x.ItStatus).HasColumnName("ITEM_STATUS").HasMaxLength(1);
             e.Property(x => x.ItSupCode).HasColumnName("SUPPLIER_CODE").HasMaxLength(2);
@@ -294,6 +350,50 @@ public class DhwRanker562
     public decimal? Field3 { get; set; } // Alcohol %
 }
 
+public class DhwRanker952
+{
+    public string   Item   { get; set; } = string.Empty;
+    public decimal? Cost01 { get; set; } // FOB Price
+    public decimal? Cost02 { get; set; } // Inland Freight
+    public decimal? Cost03 { get; set; } // Ocean Freight
+    public decimal? Cost04 { get; set; } // Local Handling
+    public decimal? Cost05 { get; set; } // Duties
+    public decimal? Cost06 { get; set; } // Eco Surch
+    public decimal? Cost07 { get; set; } // OB Tax
+    public decimal? Cost08 { get; set; } // Insurance
+    public decimal? Cost09 { get; set; } // Transport
+    public decimal? Cost10 { get; set; } // Unloading
+}
+
+public class DhwRanker553
+{
+    public string   Item  { get; set; } = string.Empty;
+    public decimal? Pr01  { get; set; }  // WHOLESALE
+    public decimal? Pr03  { get; set; }  // STORE NORSA
+    public decimal? Pr04  { get; set; }  // STORE RETAIL
+    public decimal? Pr05  { get; set; }  // STORE ALLIANCE
+    public decimal? Pr06  { get; set; }  // BONDED
+    public decimal? Pr07  { get; set; }  // SPECIAL BONDED
+    public decimal? Pr08  { get; set; }  // GWC_MANG_ESP
+    public decimal? Pr09  { get; set; }  // BONDED YU HUA
+    public decimal? Pr10  { get; set; }  // BBB DUTY PAID
+    public decimal? Pr11  { get; set; }  // BBB BONDED
+}
+
+public class DhwRanker99T
+{
+    public string   Item   { get; set; } = string.Empty;
+    public decimal? Cost01 { get; set; }  // FOB Price
+    public decimal? Cost02 { get; set; }  // Inland Freight
+    public decimal? Cost03 { get; set; }  // Ocean Freight
+    public decimal? Cost04 { get; set; }  // Local Handling
+    public decimal? Cost05 { get; set; }  // Duties
+    public decimal? Cost06 { get; set; }  // Eco Surcharge
+    public decimal? Cost07 { get; set; }  // OB Tax
+    public decimal? Cost08 { get; set; }  // Insurance
+    public decimal? Cost09 { get; set; }  // Transport
+    public decimal? Cost10 { get; set; }  // Unloading
+}
 
 public class DhwCountry
 {
@@ -350,6 +450,7 @@ public class DhwPoDetail
     public decimal? PdLtrs   { get; set; }
     public decimal? PdCstAmt { get; set; }
     public decimal? PdUnit   { get; set; }  // numeric
+    public string?  PdUm     { get; set; }
     public string?  PdSitem  { get; set; }
     public string?  PdBsw    { get; set; }
     public string?  PdClas   { get; set; }
@@ -472,6 +573,7 @@ public class DhwInvent
 public class DhwItemT
 {
     public string  ItItem         { get; set; } = string.Empty;
+    public string? ItShort        { get; set; }
     public string? ItDesc         { get; set; }
     public string? ItStatus       { get; set; }
     public string? ItSupCode      { get; set; }
