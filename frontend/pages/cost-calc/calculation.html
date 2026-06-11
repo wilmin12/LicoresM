@@ -271,7 +271,7 @@
 <script>
   const STATUS_LABELS = { DR:'Draft', CF:'Confirmed', AP:'Approved' };
   const STATUS_CLASS  = { DR:'badge-inactive', CF:'badge bg-warning text-dark', AP:'badge-active' };
-  let calcId=null, calcData=null, ranker952Data={}, scModal=null, shipCharges=[];
+  let calcId=null, calcData=null, ranker952Data={}, calcConfirmedBy=null, scModal=null, shipCharges=[];
 
   document.addEventListener('DOMContentLoaded',async()=>{
     if(!Auth.requireAuth())return;Auth.startExpiryWatcher();Auth.populateUserUI();Sidebar.init();
@@ -401,8 +401,9 @@
     try{
       const res=await API.costCalc.getCalculation(calcId);
       const data=res?.Data||res;
-      calcData      = data?.Calc ?? data;
-      ranker952Data = data?.Ranker952 ?? {};
+      calcData       = data?.Calc ?? data;
+      ranker952Data  = data?.Ranker952 ?? {};
+      calcConfirmedBy= data?.CcCalcConfirmedBy ?? null;
       renderHeader(calcData);
       renderAccordion(calcData);
       renderSummary(calcData);
@@ -420,6 +421,9 @@
     const user=Auth.getCurrentUser();
     const isAdmin=user?.RoleName==='SuperAdmin'||user?.RoleName==='Admin'||
                   Auth.hasPermission('COST_CALCULATIONS','CanApprove');
+    const currentUserName=(user?.UserName??user?.Email??user?.Name??'').toLowerCase();
+    const confirmedByMe=!!(calcConfirmedBy)&&
+        calcConfirmedBy.toLowerCase()===currentUserName;
 
     document.getElementById('header-body').innerHTML=`
       <div class="row g-3">
@@ -448,8 +452,13 @@
     if(c.CcStatus==='CF'){
       btns+=` <button class="btn btn-outline-secondary btn-sm" onclick="returnToDraft()"><i class="fas fa-rotate-left me-1"></i>Return to Draft</button>`;
     }
-    if(c.CcStatus==='CF'&&isAdmin){
+    if(c.CcStatus==='CF'&&isAdmin&&!confirmedByMe){
       btns+=` <button class="btn btn-success btn-sm" onclick="approveCalc()"><i class="fas fa-thumbs-up me-1"></i>Approve</button>`;
+    }
+    if(c.CcStatus==='CF'&&isAdmin&&confirmedByMe){
+      btns+=` <span class="badge bg-secondary py-2 px-2" title="You confirmed this calculation — another user must approve.">
+                <i class="fas fa-lock me-1"></i>Awaiting Approver
+              </span>`;
     }
     if(c.CcStatus==='AP'){
       btns+=` <a href="price-confirmation.html?id=${c.CcCalcNumber}" class="btn btn-success btn-sm"><i class="fas fa-tags me-1"></i>Confirm Prices</a>`;
@@ -821,7 +830,10 @@
   document.getElementById('btn-approve-confirm').addEventListener('click', async () => {
     bootstrap.Modal.getInstance(document.getElementById('modal-approve'))?.hide();
     try{await API.costCalc.approveCalculation(calcId);showToast('Calculation approved.','success');await loadCalc();}
-    catch(err){showToast(err.message,'danger');}
+    catch(err){
+      const msg=err?.response?.data?.message||err?.message||'Approval failed.';
+      showToast(msg,'danger');
+    }
   });
 
   // â”€â”€ Report HTML builder (no iframe, no external dependencies) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
