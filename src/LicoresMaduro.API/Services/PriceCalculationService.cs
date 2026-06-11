@@ -66,17 +66,13 @@ public sealed class PriceCalculationService : IPriceCalculationService
             foreach (var d in po.Details)
             {
                 pricesMap.TryGetValue(d.CcpdItemNo, out var op);
-                decimal newCost11010 = SumD(d.CcpdFobPrice) + SumD(d.CcpdInlandFreight) + SumD(d.CcpdFreight)
-                    + SumD(d.CcpdLocalHandl) + d.CcpdDuties + d.CcpdEconSurch + d.CcpdOb
-                    + SumD(d.CcpdInsurance) + SumD(d.CcpdTransport) + SumD(d.CcpdUnloading);
-                decimal newCost11060 = SumD(d.CcpdFobPrice) + SumD(d.CcpdInlandFreight) + SumD(d.CcpdFreight)
-                    + SumD(d.CcpdLocalHandl) + SumD(d.CcpdInsurance) + SumD(d.CcpdTransport) + SumD(d.CcpdUnloading);
+
+                int qty = Math.Max((int)(d.CcpdOrdQty ?? 1m), 1);
+                decimal newCostCase11010 = (d.CcpdFinalCost ?? 0m) / qty;
+                decimal newCostCase11060 = ((d.CcpdFinalCost ?? 0m) - d.CcpdDuties - d.CcpdEconSurch - d.CcpdOb) / qty;
 
                 decimal oldCost11010 = op?.DutyPd ?? 0m;
                 decimal oldCost11060 = op?.DutyFr ?? 0m;
-
-                decimal newCostCase11010 = newCost11010;
-                decimal newCostCase11060 = newCost11060;
 
                 decimal mPR01 = Margin(op?.Pr01, oldCost11010);
                 decimal mPR06 = Margin(op?.Pr06, oldCost11060);
@@ -147,8 +143,6 @@ public sealed class PriceCalculationService : IPriceCalculationService
             _logger.LogError(ex, "PriceCalc #{CalcNumber} failed", calcNumber);
         }
     }
-
-    private static decimal SumD(decimal? v) => v ?? 0m;
 
     private static decimal Margin(decimal? price, decimal cost)
     {
