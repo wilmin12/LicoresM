@@ -58,7 +58,7 @@
       <!-- LEVEL 1: Pending PO list -->
       <div id="level1" class="level active">
         <div class="page-title">Purchase Order Selling Prices to be Approved</div>
-        <div class="page-subtitle">POs pending price confirmation after cost calculation approval.</div>
+        <div class="page-subtitle" id="l1-subtitle">POs pending price confirmation after cost calculation approval.</div>
         <div class="card mt-3">
           <div class="card-header d-flex align-items-center justify-content-between">
             <span><i class="fas fa-list me-2"></i>Pending POs</span>
@@ -172,6 +172,9 @@ const PR_LABELS = {
 };
 const PR_KEYS = Object.keys(PR_LABELS);
 
+const _urlParams = new URLSearchParams(window.location.search);
+const _urlCalcId = parseInt(_urlParams.get('id'), 10) || null;
+
 let allPos = [], reasons = [];
 let currentCalcId = null, currentPoNo = null, currentItemNo = null;
 let itemFlags = {};
@@ -180,6 +183,10 @@ let l3Data = null;
 document.addEventListener('DOMContentLoaded', async () => {
   if (!Auth.requireAuth()) return;
   Auth.startExpiryWatcher(); Auth.populateUserUI(); Sidebar.init();
+  if (_urlCalcId) {
+    document.getElementById('l1-subtitle').textContent = `Calc No: #${_urlCalcId} — POs pending price confirmation.`;
+    document.getElementById('bc-label').textContent = `Price Confirmation — Calc #${_urlCalcId}`;
+  }
   document.getElementById('btn-logout').addEventListener('click', e => { e.preventDefault(); Auth.logout(); });
   document.getElementById('btn-approve-po').addEventListener('click', approvePo);
   document.getElementById('btn-back-l2').addEventListener('click', () => showLevel(2));
@@ -190,7 +197,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function loadPos() {
   try {
     const r = await API.costCalc.getPendingPricePos();
-    allPos = r?.Data || [];
+    const data = r?.Data || [];
+    allPos = _urlCalcId ? data.filter(p => p.CcphCalcNumber === _urlCalcId) : data;
     renderL1();
   } catch(e) { showToast(e.message,'danger'); }
 }
@@ -248,9 +256,11 @@ function renderL2(items) {
     const chgCls = v => v > 0.005 ? 'change-pos' : v < -0.005 ? 'change-neg' : '';
     return `<tr>
       <td><strong>${esc(d.CcpcItemNo)}</strong></td>
-      <td></td><td></td><td></td>
+      <td>${esc(d.CcpcDescription||'')}</td>
+      <td class="text-end">${fmt(d.CcpcOrdQty,0)}</td>
+      <td class="text-end">${fmt(d.CcpcFobFc)}</td>
       <td><span class="wh-label">11010</span><br/><span class="wh-label">11060</span></td>
-      <td class="text-end">-</td>
+      <td class="text-end">${fmt(d.CcpcAllowedMargin)}</td>
       <td class="text-end">${fmt(d.CcpcNewMarginPr01)}<br/>${fmt(d.CcpcNewMarginPr06)}</td>
       <td class="text-end">${fmt(d.CcpcNewCost11010)}<br/>${fmt(d.CcpcNewCost11060)}</td>
       <td class="text-end">${fmt(d.CcpcOldCost11010)}<br/>${fmt(d.CcpcOldCost11060)}</td>
@@ -361,7 +371,7 @@ function showLevel(n) {
   document.querySelectorAll('.level').forEach(el => el.classList.remove('active'));
   document.getElementById('level'+n).classList.add('active');
   document.getElementById('bc-label').textContent =
-    n === 1 ? 'Price Confirmation' : n === 2 ? `PO: ${currentPoNo}` : `Item: ${currentItemNo}`;
+    n === 1 ? (_urlCalcId ? `Price Confirmation — Calc #${_urlCalcId}` : 'Price Confirmation') : n === 2 ? `PO: ${currentPoNo}` : `Item: ${currentItemNo}`;
 }
 
 function fmt(v, d=2) { return v!=null ? Number(v).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}) : '–'; }
