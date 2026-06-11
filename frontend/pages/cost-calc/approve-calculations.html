@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Approve Cost Calculations - Licores Maduro</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="../../css/main.css"/>
+</head>
+<body>
+<div id="sidebar-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;"></div>
+<div class="app-wrapper">
+  <nav id="sidebar" class="sidebar">
+    <div class="sidebar-header"><img src="../../img/LogoLicores.png" alt="Licores Maduro" class="sidebar-logo-img"/><span class="sidebar-logo-text">LICORES MADURO</span></div>
+    <div id="sidebar-nav" class="sidebar-nav"></div>
+    <div class="sidebar-footer"><div class="sidebar-user"><div class="sidebar-avatar" id="sidebar-user-initials">LM</div><div class="sidebar-text"><div id="sidebar-user-name" style="font-weight:600;">—</div></div></div></div>
+  </nav>
+  <div class="main-area">
+    <header class="topbar">
+      <button id="btn-sidebar-toggle" class="btn-sidebar-toggle"><i class="fas fa-bars"></i></button>
+      <span class="topbar-title"><i class="fas fa-check-double me-2 text-wine"></i>Approve Cost Calculations</span>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown">
+            <span class="sidebar-avatar" id="topbar-user-initials" style="width:28px;height:28px;font-size:.75rem;">LM</span>
+            <span id="topbar-user-name" class="d-none d-md-inline">—</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+            <li><div class="dropdown-header"><strong id="topbar-user-fullname">User</strong><br/><small class="text-muted" id="topbar-user-role">Role</small></div></li>
+            <li><hr class="dropdown-divider"/></li>
+            <li><a class="dropdown-item text-danger" href="#" id="btn-logout"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+          </ul>
+        </div>
+      </div>
+    </header>
+    <main class="page-content">
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="../../dashboard.html"><i class="fas fa-home me-1"></i>Home</a></li>
+          <li class="breadcrumb-item"><a href="index.html">Cost Calculations</a></li>
+          <li class="breadcrumb-item active">Approve</li>
+        </ol>
+      </nav>
+      <div class="page-title">Approve Cost Calculations</div>
+      <div class="page-subtitle">Review and approve confirmed calculations pending approval.</div>
+
+      <!-- Access Denied alert (hidden by default) -->
+      <div id="access-denied" class="alert alert-danger d-none" role="alert">
+        <i class="fas fa-ban me-2"></i><strong>Access Denied.</strong> You do not have permission to approve calculations.
+      </div>
+
+      <!-- Content section (hidden if access denied) -->
+      <div id="content-section">
+        <div class="card mb-3">
+          <div class="card-body d-flex flex-wrap align-items-center gap-2 py-2">
+            <div class="search-wrapper flex-grow-1"><i class="fas fa-search search-icon"></i><input type="text" id="search-input" class="form-control form-control-sm" placeholder="Search by calc number, forwarder..."/></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header d-flex align-items-center justify-content-between">
+            <span><i class="fas fa-table me-2"></i>Confirmed Calculations Awaiting Approval</span>
+            <span class="badge" style="background:var(--primary);color:#fff;" id="total-count">0 records</span>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead><tr><th>#</th><th>Calc No.</th><th>Date</th><th>Warehouse</th><th>Forwarder</th><th>Currency</th><th>POs</th><th>Confirmed By</th><th>Status</th><th>Actions</th></tr></thead>
+                <tbody id="data-tbody"><tr><td colspan="10" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="card-footer d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <small class="text-muted" id="page-info">Page 1</small>
+            <nav><ul class="pagination pagination-sm mb-0" id="pagination"></ul></nav>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Confirm Action Modal -->
+<div class="modal fade" id="modal-confirm" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg" style="border-radius:1rem;overflow:hidden;">
+      <div class="modal-body text-center p-5 pb-3">
+        <div class="mb-4">
+          <span id="confirm-icon-wrap" class="d-inline-flex align-items-center justify-content-center rounded-circle" style="width:80px;height:80px;">
+            <i id="confirm-icon" class="fas fa-2x"></i>
+          </span>
+        </div>
+        <h5 class="fw-bold mb-2" id="confirm-title"></h5>
+        <p class="text-muted small mb-0" id="confirm-message"></p>
+      </div>
+      <div class="modal-footer border-0 justify-content-center gap-3 pb-4 pt-3">
+        <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn px-4 fw-semibold" id="btn-confirm-action"></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index:9999;">
+  <div id="toast" class="toast align-items-center text-white border-0" role="alert">
+    <div class="d-flex"><div class="toast-body" id="toast-msg"></div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../../js/i18n.js"></script><script src="../../js/api.js"></script><script src="../../js/auth.js"></script><script src="../../js/sidebar.js"></script>
+<script>
+  const STATUS_LABELS = { DR:'Draft', CF:'Confirmed', AP:'Approved' };
+  const STATUS_CLASS  = { DR:'badge-inactive', CF:'badge bg-warning text-dark', AP:'badge-active' };
+  let allItems=[],filtered=[],currentPage=1;const PAGE_SIZE=15;
+  let currentUserName='';
+
+  document.addEventListener('DOMContentLoaded',async()=>{
+    if(!Auth.requireAuth())return;Auth.startExpiryWatcher();Auth.populateUserUI();Sidebar.init();
+    document.getElementById('btn-logout').addEventListener('click',e=>{e.preventDefault();Auth.logout();});
+
+    // Determine current user for confirmedByMe check
+    const user = Auth.getCurrentUser();
+    currentUserName = (user?.UserName ?? user?.Username ?? user?.Email ?? user?.Name ?? '').toLowerCase();
+
+    // Check approver access
+    const isApprover = user?.RoleName === 'SuperAdmin'
+      || user?.RoleName === 'Admin'
+      || Auth.hasPermission('COST_CALCULATIONS', 'CanApprove');
+
+    if (!isApprover) {
+      document.getElementById('access-denied').classList.remove('d-none');
+      document.getElementById('content-section').classList.add('d-none');
+      return;
+    }
+
+    document.getElementById('search-input').addEventListener('input', filterAndRender);
+    await loadData();
+  });
+
+  async function loadData(){
+    const tbody=document.getElementById('data-tbody');
+    tbody.innerHTML='<tr><td colspan="10" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading...</td></tr>';
+    try{
+      const res=await API.costCalc.getCalculations({pageSize:500});
+      const all=res?.Data||res||[];
+      // Filter client-side: only CF (Confirmed) status
+      allItems=all.filter(c=>c.CcStatus==='CF');
+      filterAndRender();
+    }catch(err){showToast(err.message,'danger');tbody.innerHTML=`<tr><td colspan="10" class="text-center py-4 text-danger">${esc(err.message)}</td></tr>`;}
+  }
+
+  function filterAndRender(){
+    const q=document.getElementById('search-input').value.toLowerCase();
+    filtered=allItems.filter(r=>{
+      return !q||String(r.CcCalcNumber).includes(q)||(r.CcForwarderName||'').toLowerCase().includes(q)||(r.CcForwarderCode||'').toLowerCase().includes(q);
+    });
+    currentPage=1;renderTable();renderPagination();
+  }
+
+  function getConfirmedBy(r){
+    // CcCalcConfirmedBy may be returned directly by an enriched endpoint,
+    // otherwise derive from PoHeads
+    if(r.CcCalcConfirmedBy!=null) return r.CcCalcConfirmedBy;
+    if(r.PoHeads&&r.PoHeads.length){
+      for(const p of r.PoHeads){
+        if(p.CcphConfirmedBy) return p.CcphConfirmedBy;
+      }
+    }
+    return null;
+  }
+
+  function renderTable(){
+    const tbody=document.getElementById('data-tbody');
+    const start=(currentPage-1)*PAGE_SIZE,page=filtered.slice(start,start+PAGE_SIZE);
+    document.getElementById('total-count').textContent=filtered.length+' records';
+    if(!page.length){tbody.innerHTML='<tr><td colspan="10" class="text-center py-4 text-muted">No confirmed calculations awaiting approval.</td></tr>';return;}
+    tbody.innerHTML=page.map((r,i)=>{
+      const dt=r.CcCalcDate?r.CcCalcDate.split('T')[0]:'';
+      const stClass=STATUS_CLASS[r.CcStatus]||'badge bg-secondary';
+      const stLabel=STATUS_LABELS[r.CcStatus]||r.CcStatus;
+      const confirmedBy=getConfirmedBy(r);
+      const confirmedByMe=confirmedBy&&confirmedBy.toLowerCase()===currentUserName;
+      const actionBtn=confirmedByMe
+        ? `<span class="badge bg-secondary ms-1" title="You confirmed this calculation — another user must approve it"><i class="fas fa-hourglass-half me-1"></i>Awaiting Approver</span>`
+        : `<button class="btn btn-sm btn-primary ms-1" onclick="approveCalc(${r.CcCalcNumber})" title="Approve Calculation"><i class="fas fa-thumbs-up me-1"></i>Approve</button>`;
+      return`<tr>
+        <td>${start+i+1}</td>
+        <td><strong>${r.CcCalcNumber}</strong></td>
+        <td>${dt}</td>
+        <td>${esc(r.CcWarehouse||'')}</td>
+        <td>${esc(r.CcForwarderName||r.CcForwarderCode||'')}</td>
+        <td>${esc(r.CcCurrCode||'')}${r.CcCurrRate?' ('+Number(r.CcCurrRate).toFixed(4)+')':''}</td>
+        <td class="text-center">${r.CcTotOrd??0}</td>
+        <td>${esc(confirmedBy||'')}</td>
+        <td><span class="${stClass}">${stLabel}</span></td>
+        <td class="d-flex align-items-center gap-1 flex-wrap">
+          <a href="calculation.html?id=${r.CcCalcNumber}" class="btn-action edit" title="View"><i class="fas fa-eye"></i></a>
+          ${actionBtn}
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  function renderPagination(){
+    const total=Math.ceil(filtered.length/PAGE_SIZE)||1;
+    document.getElementById('page-info').textContent=`Page ${currentPage} of ${total}`;
+    let html=`<li class="page-item ${currentPage===1?'disabled':''}"><a class="page-link" href="#" onclick="event.preventDefault();gotoPage(${currentPage-1})">&#8249;</a></li>`;
+    for(let p=1;p<=total;p++)html+=`<li class="page-item ${p===currentPage?'active':''}"><a class="page-link" href="#" onclick="event.preventDefault();gotoPage(${p})">${p}</a></li>`;
+    html+=`<li class="page-item ${currentPage>=total?'disabled':''}"><a class="page-link" href="#" onclick="event.preventDefault();gotoPage(${currentPage+1})">&#8250;</a></li>`;
+    document.getElementById('pagination').innerHTML=html;
+  }
+  function gotoPage(p){const t=Math.ceil(filtered.length/PAGE_SIZE)||1;if(p<1||p>t)return;currentPage=p;renderTable();renderPagination();}
+
+  let _confirmCb=null;
+  function openConfirmModal({title,message,icon,iconBg,iconColor,btnLabel,btnClass,onConfirm}){
+    document.getElementById('confirm-title').textContent=title;
+    document.getElementById('confirm-message').textContent=message;
+    document.getElementById('confirm-icon').className=`fas ${icon} fa-2x`;
+    document.getElementById('confirm-icon').style.color=iconColor;
+    document.getElementById('confirm-icon-wrap').style.background=iconBg;
+    const btn=document.getElementById('btn-confirm-action');
+    btn.className=`btn px-4 fw-semibold ${btnClass}`;
+    btn.innerHTML=`<i class="fas ${icon} me-2"></i>${btnLabel}`;
+    _confirmCb=onConfirm;
+    new bootstrap.Modal(document.getElementById('modal-confirm')).show();
+  }
+  document.getElementById('btn-confirm-action').addEventListener('click',async()=>{
+    bootstrap.Modal.getInstance(document.getElementById('modal-confirm'))?.hide();
+    if(_confirmCb)await _confirmCb();
+  });
+
+  async function approveCalc(id){
+    openConfirmModal({
+      title:'Approve Calculation',
+      message:'This will finalize the calculation and trigger the price confirmation workflow. This action cannot be undone.',
+      icon:'fa-thumbs-up',iconBg:'rgba(13,110,253,.12)',iconColor:'#0d6efd',
+      btnLabel:'Approve',btnClass:'btn-primary',
+      onConfirm:async()=>{
+        try{
+          await API.costCalc.approveCalculation(id);
+          showToast('Calculation approved successfully.','success');
+          await loadData();
+        }catch(err){showToast(err.message,'danger');}
+      }
+    });
+  }
+
+  function showToast(msg,type='success'){
+    const el=document.getElementById('toast');
+    el.className=`toast align-items-center text-white border-0 bg-${type==='success'?'success':'danger'}`;
+    document.getElementById('toast-msg').textContent=msg;
+    new bootstrap.Toast(el,{delay:3500}).show();
+  }
+  function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+</script>
+</body>
+</html>

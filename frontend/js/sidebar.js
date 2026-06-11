@@ -59,6 +59,7 @@ const Sidebar = (() => {
       icon:       'fa-calculator',
       children: [
         { code: 'COST_CALCULATIONS',       label: 'Calculations',         href: 'pages/cost-calc/index.html' },
+        { code: 'COST_APPROVE_CALC',      label: 'Approve Cost Calculation', href: 'pages/cost-calc/approve-calculations.html' },
         { code: 'COST_NEW_CALC',          label: 'New Calculation',      href: 'pages/cost-calc/new-calculation.html' },
         { code: 'COST_PO_LOOKUP',         label: 'Purchase Orders',      href: 'pages/cost-calc/purchase-orders.html' },
         { code: 'COST_TARIFF_ITEMS',      label: 'Tariff Items (HS)',    href: 'pages/cost-calc/tariff-items.html' },
