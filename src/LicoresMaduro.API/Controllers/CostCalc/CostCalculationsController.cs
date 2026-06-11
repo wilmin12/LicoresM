@@ -904,7 +904,7 @@ public sealed class CostCalculationsController : ControllerBase
                       string.Equals(p.CcphConfirmedBy, currentUser, StringComparison.OrdinalIgnoreCase));
 
         if (confirmedByCurrentUser)
-            return BadRequest(new { message = "The user who confirmed this calculation cannot approve it. Another user must approve." });
+            return BadRequest(new { Message = "The user who confirmed this calculation cannot approve it. Another user must approve." });
 
         calc.CcStatus = "AP";
         foreach (var p in calc.PoHeads) { p.CcphStatus = "PC"; p.CcphApprovedBy = User.Identity?.Name; }

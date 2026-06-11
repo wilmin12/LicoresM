@@ -831,7 +831,7 @@
     bootstrap.Modal.getInstance(document.getElementById('modal-approve'))?.hide();
     try{await API.costCalc.approveCalculation(calcId);showToast('Calculation approved.','success');await loadCalc();}
     catch(err){
-      const msg=err?.response?.data?.message||err?.message||'Approval failed.';
+      const msg=err?.message||'Approval failed.';
       showToast(msg,'danger');
     }
   });
