@@ -32,15 +32,29 @@ public sealed class PriceCalculationService : IPriceCalculationService
             var itemCodes = poHeads.SelectMany(p => p.Details)
                 .Select(d => d.CcpdItemNo).Distinct().ToList();
 
-            var pricesMap = await _dhw.Ranker553
+            var pricesMap = (await _dhw.Ranker553
                 .Where(r => itemCodes.Contains(r.Item))
                 .AsNoTracking()
-                .ToDictionaryAsync(r => r.Item, ct);
+                .ToListAsync(ct))
+                .GroupBy(r => r.Item)
+                .ToDictionary(g => g.Key, g => g.First());
 
-            var costsMap = await _dhw.Ranker99T
+            var all99T = await _dhw.Ranker99T
                 .Where(r => itemCodes.Contains(r.Item))
                 .AsNoTracking()
-                .ToDictionaryAsync(r => r.Item, ct);
+                .ToListAsync(ct);
+
+
+            var allowedMarginMap = all99T
+                .GroupBy(r => r.Item)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.FirstOrDefault(r => (r.Whse ?? "").Trim() == "11010")?.Cost99
+                         ?? g.FirstOrDefault(r => r.Cost99.HasValue)?.Cost99);
+
+            _logger.LogInformation("PriceCalc #{CalcNumber}: Ranker99T rows={Rows}, allowedMarginMap keys={Keys}, sample Whse values={Whse}",
+                calcNumber, all99T.Count, allowedMarginMap.Count,
+                string.Join(",", all99T.Take(3).Select(r => $"'{r.Whse}'")));
 
             decimal norsaPerc    = (sysCfg?.CompStoreNorsaPerc    ?? 0m) / 100m;
             decimal retailPerc   = (sysCfg?.CompStoreRetailPerc   ?? 0m) / 100m;
@@ -52,21 +66,17 @@ public sealed class PriceCalculationService : IPriceCalculationService
             foreach (var d in po.Details)
             {
                 pricesMap.TryGetValue(d.CcpdItemNo, out var op);
-                costsMap.TryGetValue(d.CcpdItemNo, out var oc);
-
                 decimal newCost11010 = SumD(d.CcpdFobPrice) + SumD(d.CcpdInlandFreight) + SumD(d.CcpdFreight)
                     + SumD(d.CcpdLocalHandl) + d.CcpdDuties + d.CcpdEconSurch + d.CcpdOb
                     + SumD(d.CcpdInsurance) + SumD(d.CcpdTransport) + SumD(d.CcpdUnloading);
                 decimal newCost11060 = SumD(d.CcpdFobPrice) + SumD(d.CcpdInlandFreight) + SumD(d.CcpdFreight)
                     + SumD(d.CcpdLocalHandl) + SumD(d.CcpdInsurance) + SumD(d.CcpdTransport) + SumD(d.CcpdUnloading);
 
-                decimal oldCost11010 = oc == null ? 0m :
-                    SumD(oc.Cost01) + SumD(oc.Cost02) + SumD(oc.Cost03) + SumD(oc.Cost04)
-                    + SumD(oc.Cost05) + SumD(oc.Cost06) + SumD(oc.Cost07)
-                    + SumD(oc.Cost08) + SumD(oc.Cost09) + SumD(oc.Cost10);
-                decimal oldCost11060 = oc == null ? 0m :
-                    SumD(oc.Cost01) + SumD(oc.Cost02) + SumD(oc.Cost03) + SumD(oc.Cost04)
-                    + SumD(oc.Cost08) + SumD(oc.Cost09) + SumD(oc.Cost10);
+                decimal oldCost11010 = op?.DutyPd ?? 0m;
+                decimal oldCost11060 = op?.DutyFr ?? 0m;
+
+                decimal newCostCase11010 = newCost11010;
+                decimal newCostCase11060 = newCost11060;
 
                 decimal mPR01 = Margin(op?.Pr01, oldCost11010);
                 decimal mPR06 = Margin(op?.Pr06, oldCost11060);
@@ -75,12 +85,12 @@ public sealed class PriceCalculationService : IPriceCalculationService
                 decimal mPR09 = Margin(op?.Pr09, oldCost11060);
                 decimal mPR11 = Margin(op?.Pr11, oldCost11060);
 
-                decimal nPR01 = Price(newCost11010, mPR01);
-                decimal nPR06 = Price(newCost11060, mPR06);
-                decimal nPR07 = Price(newCost11060, mPR07);
-                decimal nPR08 = Price(newCost11060, mPR08);
-                decimal nPR09 = Price(newCost11060, mPR09);
-                decimal nPR11 = Price(newCost11060, mPR11);
+                decimal nPR01 = Price(newCostCase11010, mPR01);
+                decimal nPR06 = Price(newCostCase11060, mPR06);
+                decimal nPR07 = Price(newCostCase11060, mPR07);
+                decimal nPR08 = Price(newCostCase11060, mPR08);
+                decimal nPR09 = Price(newCostCase11060, mPR09);
+                decimal nPR11 = Price(newCostCase11060, mPR11);
                 decimal nPR03 = nPR01 * (1m + norsaPerc);
                 decimal nPR04 = nPR01 * (1m + retailPerc);
                 decimal nPR05 = nPR01 * (1m + alliancePerc);
@@ -92,29 +102,33 @@ public sealed class PriceCalculationService : IPriceCalculationService
                     CcpcPoNo          = po.CcphLmPoNo,
                     CcpcItemNo        = d.CcpdItemNo,
                     CcpcWarehouse     = po.CcphWhse,
-                    CcpcNewCost11010  = newCost11010,
-                    CcpcNewCost11060  = newCost11060,
+                    CcpcDescription   = d.CcpdItemDescr,
+                    CcpcOrdQty        = d.CcpdOrdQty,
+                    CcpcFobFc         = d.CcpdFobPriceUsd,
+                    CcpcAllowedMargin = allowedMarginMap.TryGetValue(d.CcpdItemNo, out var am) ? am : null,
+                    CcpcNewCost11010  = newCostCase11010,
+                    CcpcNewCost11060  = newCostCase11060,
                     CcpcOldCost11010  = oldCost11010,
                     CcpcOldCost11060  = oldCost11060,
-                    CcpcNewPricePr01  = nPR01,  CcpcNewMarginPr01  = Margin(nPR01, newCost11010),
+                    CcpcNewPricePr01  = nPR01,  CcpcNewMarginPr01  = Margin(nPR01, newCostCase11010),
                     CcpcOldPricePr01  = op?.Pr01, CcpcOldMarginPr01 = mPR01,
-                    CcpcNewPricePr03  = nPR03,  CcpcNewMarginPr03  = Margin(nPR03, newCost11010),
+                    CcpcNewPricePr03  = nPR03,  CcpcNewMarginPr03  = Margin(nPR03, newCostCase11010),
                     CcpcOldPricePr03  = op?.Pr03, CcpcOldMarginPr03 = Margin(op?.Pr03, oldCost11010),
-                    CcpcNewPricePr04  = nPR04,  CcpcNewMarginPr04  = Margin(nPR04, newCost11010),
+                    CcpcNewPricePr04  = nPR04,  CcpcNewMarginPr04  = Margin(nPR04, newCostCase11010),
                     CcpcOldPricePr04  = op?.Pr04, CcpcOldMarginPr04 = Margin(op?.Pr04, oldCost11010),
-                    CcpcNewPricePr05  = nPR05,  CcpcNewMarginPr05  = Margin(nPR05, newCost11010),
+                    CcpcNewPricePr05  = nPR05,  CcpcNewMarginPr05  = Margin(nPR05, newCostCase11010),
                     CcpcOldPricePr05  = op?.Pr05, CcpcOldMarginPr05 = Margin(op?.Pr05, oldCost11010),
-                    CcpcNewPricePr06  = nPR06,  CcpcNewMarginPr06  = Margin(nPR06, newCost11060),
+                    CcpcNewPricePr06  = nPR06,  CcpcNewMarginPr06  = Margin(nPR06, newCostCase11060),
                     CcpcOldPricePr06  = op?.Pr06, CcpcOldMarginPr06 = mPR06,
-                    CcpcNewPricePr07  = nPR07,  CcpcNewMarginPr07  = Margin(nPR07, newCost11060),
+                    CcpcNewPricePr07  = nPR07,  CcpcNewMarginPr07  = Margin(nPR07, newCostCase11060),
                     CcpcOldPricePr07  = op?.Pr07, CcpcOldMarginPr07 = mPR07,
-                    CcpcNewPricePr08  = nPR08,  CcpcNewMarginPr08  = Margin(nPR08, newCost11060),
+                    CcpcNewPricePr08  = nPR08,  CcpcNewMarginPr08  = Margin(nPR08, newCostCase11060),
                     CcpcOldPricePr08  = op?.Pr08, CcpcOldMarginPr08 = mPR08,
-                    CcpcNewPricePr09  = nPR09,  CcpcNewMarginPr09  = Margin(nPR09, newCost11060),
+                    CcpcNewPricePr09  = nPR09,  CcpcNewMarginPr09  = Margin(nPR09, newCostCase11060),
                     CcpcOldPricePr09  = op?.Pr09, CcpcOldMarginPr09 = mPR09,
-                    CcpcNewPricePr10  = nPR10,  CcpcNewMarginPr10  = Margin(nPR10, newCost11010),
+                    CcpcNewPricePr10  = nPR10,  CcpcNewMarginPr10  = Margin(nPR10, newCostCase11010),
                     CcpcOldPricePr10  = op?.Pr10, CcpcOldMarginPr10 = Margin(op?.Pr10, oldCost11010),
-                    CcpcNewPricePr11  = nPR11,  CcpcNewMarginPr11  = Margin(nPR11, newCost11060),
+                    CcpcNewPricePr11  = nPR11,  CcpcNewMarginPr11  = Margin(nPR11, newCostCase11060),
                     CcpcOldPricePr11  = op?.Pr11, CcpcOldMarginPr11 = mPR11,
                     CcpcApprovedBy    = approvedBy,
                     CcpcCreatedAt     = DateTime.UtcNow

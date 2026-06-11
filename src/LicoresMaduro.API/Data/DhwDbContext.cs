@@ -141,22 +141,25 @@ public sealed class DhwDbContext : DbContext
             e.ToTable("RANKER_553");
             e.HasKey(x => x.Item);
             e.Property(x => x.Item).HasColumnName("ITEM").HasMaxLength(20);
-            e.Property(x => x.Pr01).HasColumnName("PR01");
-            e.Property(x => x.Pr03).HasColumnName("PR03");
-            e.Property(x => x.Pr04).HasColumnName("PR04");
-            e.Property(x => x.Pr05).HasColumnName("PR05");
-            e.Property(x => x.Pr06).HasColumnName("PR06");
-            e.Property(x => x.Pr07).HasColumnName("PR07");
-            e.Property(x => x.Pr08).HasColumnName("PR08");
-            e.Property(x => x.Pr09).HasColumnName("PR09");
-            e.Property(x => x.Pr10).HasColumnName("PR10");
-            e.Property(x => x.Pr11).HasColumnName("PR11");
+            e.Property(x => x.Pr01).HasColumnName("PR 01");
+            e.Property(x => x.Pr03).HasColumnName("PR 03");
+            e.Property(x => x.Pr04).HasColumnName("PR 04");
+            e.Property(x => x.Pr05).HasColumnName("PR 05");
+            e.Property(x => x.Pr06).HasColumnName("PR 06");
+            e.Property(x => x.Pr07).HasColumnName("PR 07");
+            e.Property(x => x.Pr08).HasColumnName("PR 08");
+            e.Property(x => x.Pr09).HasColumnName("PR 09");
+            e.Property(x => x.Pr10).HasColumnName("PR 10");
+            e.Property(x => x.Pr11).HasColumnName("PR 11");
+            e.Property(x => x.DutyPd).HasColumnName("DUTY PD");
+            e.Property(x => x.DutyFr).HasColumnName("DUTY FR");
         });
 
         mb.Entity<DhwRanker99T>(e =>
         {
             e.ToTable("RANKER_99T");
-            e.HasKey(x => x.Item);
+            e.HasKey(x => new { x.Whse, x.Item });
+            e.Property(x => x.Whse).HasColumnName("WHSE").HasMaxLength(5);
             e.Property(x => x.Item).HasColumnName("ITEM").HasMaxLength(20);
             e.Property(x => x.Cost01).HasColumnName("COST01");
             e.Property(x => x.Cost02).HasColumnName("COST02");
@@ -168,6 +171,7 @@ public sealed class DhwDbContext : DbContext
             e.Property(x => x.Cost08).HasColumnName("COST08");
             e.Property(x => x.Cost09).HasColumnName("COST09");
             e.Property(x => x.Cost10).HasColumnName("COST10");
+            e.Property(x => x.Cost99).HasColumnName("COST99");
         });
 
         mb.Entity<DhwPoDetail>(e =>
@@ -367,7 +371,9 @@ public class DhwRanker952
 
 public class DhwRanker553
 {
-    public string   Item  { get; set; } = string.Empty;
+    public string   Item   { get; set; } = string.Empty;
+    public decimal? DutyPd { get; set; }  // DUTY PAID cost (WH 11010)
+    public decimal? DutyFr { get; set; }  // DUTY FREE cost (WH 11060)
     public decimal? Pr01  { get; set; }  // WHOLESALE
     public decimal? Pr03  { get; set; }  // STORE NORSA
     public decimal? Pr04  { get; set; }  // STORE RETAIL
@@ -382,6 +388,7 @@ public class DhwRanker553
 
 public class DhwRanker99T
 {
+    public string   Whse   { get; set; } = string.Empty;
     public string   Item   { get; set; } = string.Empty;
     public decimal? Cost01 { get; set; }  // FOB Price
     public decimal? Cost02 { get; set; }  // Inland Freight
@@ -393,6 +400,7 @@ public class DhwRanker99T
     public decimal? Cost08 { get; set; }  // Insurance
     public decimal? Cost09 { get; set; }  // Transport
     public decimal? Cost10 { get; set; }  // Unloading
+    public decimal? Cost99 { get; set; }  // Allowed Margin %
 }
 
 public class DhwCountry
