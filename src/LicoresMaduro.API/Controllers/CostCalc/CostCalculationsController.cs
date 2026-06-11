@@ -67,7 +67,10 @@ public sealed class CostCalculationsController : ControllerBase
                 .ToDictionaryAsync(r => r.Item.Trim(), ct)
             : new Dictionary<string, DhwRanker952>();
 
-        return Ok(ApiResponse<object>.Ok(new { Calc = calc, Ranker952 = ranker952 }));
+        var calcConfirmedBy = calc.PoHeads
+            .FirstOrDefault(p => !string.IsNullOrEmpty(p.CcphConfirmedBy))?.CcphConfirmedBy;
+
+        return Ok(ApiResponse<object>.Ok(new { Calc = calc, Ranker952 = ranker952, CcCalcConfirmedBy = calcConfirmedBy }));
     }
 
     // ── Last approved calculation by forwarder (for pre-fill) ────────────────
@@ -893,6 +896,16 @@ public sealed class CostCalculationsController : ControllerBase
         var calc = await _db.CcCalcHeaders.Include(x => x.PoHeads).FirstOrDefaultAsync(x => x.CcCalcNumber == id, ct);
         if (calc is null) return NotFound(ApiResponse.Fail($"Calculation {id} not found."));
         if (calc.CcStatus != "CF") return BadRequest(ApiResponse.Fail("Only Confirmed calculations can be approved."));
+
+        // 4-eyes: whoever confirmed cannot approve
+        var currentUser = User.Identity?.Name ?? string.Empty;
+        bool confirmedByCurrentUser = calc.PoHeads
+            .Any(p => !string.IsNullOrEmpty(p.CcphConfirmedBy) &&
+                      string.Equals(p.CcphConfirmedBy, currentUser, StringComparison.OrdinalIgnoreCase));
+
+        if (confirmedByCurrentUser)
+            return BadRequest(new { message = "The user who confirmed this calculation cannot approve it. Another user must approve." });
+
         calc.CcStatus = "AP";
         foreach (var p in calc.PoHeads) { p.CcphStatus = "PC"; p.CcphApprovedBy = User.Identity?.Name; }
         await _db.SaveChangesAsync(ct);
@@ -911,7 +924,7 @@ public sealed class CostCalculationsController : ControllerBase
             }
             catch (Exception ex)
             {
-                _ = ex;
+                _logger.LogError(ex, "PriceCalc background task failed for Calc #{CalcId}", calcIdForBg);
             }
         });
 
