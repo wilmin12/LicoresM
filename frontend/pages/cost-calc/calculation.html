@@ -212,6 +212,33 @@
   </div>
 </div>
 
+<!-- Approve Calculation Modal -->
+<div class="modal fade" id="modal-approve" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg" style="border-radius:1rem;overflow:hidden;">
+      <div class="modal-body text-center p-5 pb-3">
+        <div class="mb-4">
+          <span class="d-inline-flex align-items-center justify-content-center rounded-circle"
+                style="width:80px;height:80px;background:rgba(25,135,84,.12);">
+            <i class="fas fa-thumbs-up fa-2x text-success"></i>
+          </span>
+        </div>
+        <h5 class="fw-bold mb-2">Approve Calculation?</h5>
+        <p class="text-muted small mb-0">
+          This will finalize the cost calculation and trigger the<br>
+          price confirmation workflow. This action cannot be undone.
+        </p>
+      </div>
+      <div class="modal-footer border-0 justify-content-center gap-3 pb-4 pt-3">
+        <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-success px-4 fw-semibold" id="btn-approve-confirm">
+          <i class="fas fa-thumbs-up me-2"></i>Approve
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Confirm Action Modal -->
 <div class="modal fade" id="modal-confirm" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
@@ -471,8 +498,6 @@
         <td class="text-end">${fmt(eq>0?d.CcpdDuties/eq:0)}</td>
         <td class="text-end">${fmt(eq>0?d.CcpdEconSurch/eq:0)}</td>
         <td class="text-end">${fmt(eq>0?d.CcpdOb/eq:0)}</td>
-        <td class="text-end">${fmt(eq>0?d.CcpdInlandTariff/eq:0)}</td>
-        <td class="text-end">${fmt(eq>0?d.CcpdShipCharges/eq:0)}</td>
         <td class="text-end">${fmt(eq>0?d.CcpdInsurance/eq:0)}</td>
         <td class="text-end">${fmt(eq>0?d.CcpdTransport/eq:0)}</td>
         <td class="text-end">${fmt(eq>0?d.CcpdUnloading/eq:0)}</td>
@@ -508,8 +533,6 @@
                       <th class="text-end">Duties</th>
                       <th class="text-end">Eco Surch</th>
                       <th class="text-end">OB Tax</th>
-                      <th class="text-end">Inland Tariff</th>
-                      <th class="text-end">Ship Chgs</th>
                       <th class="text-end">Insurance</th><th class="text-end">Transport</th>
                       <th class="text-end">Unloading</th><th class="text-end">Final Cost</th>
                     </tr>
@@ -700,8 +723,6 @@
     const totDuties=allDetails.reduce((s,d)=>s+(d.CcpdDuties??0),0);
     const totEcon=allDetails.reduce((s,d)=>s+(d.CcpdEconSurch??0),0);
     const totOb=allDetails.reduce((s,d)=>s+(d.CcpdOb??0),0);
-    const totShipChg=allDetails.reduce((s,d)=>s+(d.CcpdShipCharges??0),0);
-    const totInlandTariff=allDetails.reduce((s,d)=>s+(d.CcpdInlandTariff??0),0);
 
     const tile=(label,value,d=2)=>`<div class="col-6 col-md-2"><div class="card border-0 bg-light text-center p-2"><div class="small text-muted">${label}</div><div class="fw-bold">${fmt(value,d)}</div></div></div>`;
     summaryBody.innerHTML=`
@@ -715,8 +736,6 @@
         ${tile('Total Duties',totDuties)}
         ${tile('Total Eco Surch',totEcon)}
         ${tile('Total OB Tax',totOb)}
-        ${tile('Total Inland Tariff',totInlandTariff)}
-        ${tile('Total Ship Chgs',totShipChg)}
         ${tile('Total Insurance',totInsurance)}
         ${tile('Total Transport',totTransport)}
         ${tile('Total Unloading',totUnloading)}
@@ -797,16 +816,13 @@
     });
   }
   async function approveCalc(){
-    openConfirmModal({
-      title: 'Approve Calculation', icon: 'fa-thumbs-up',
-      message: 'Are you sure you want to approve this calculation?',
-      btnLabel: 'Approve', btnClass: 'btn-primary',
-      onConfirm: async () => {
-        try{await API.costCalc.approveCalculation(calcId);showToast('Calculation approved.','success');await loadCalc();}
-        catch(err){showToast(err.message,'danger');}
-      }
-    });
+    new bootstrap.Modal(document.getElementById('modal-approve')).show();
   }
+  document.getElementById('btn-approve-confirm').addEventListener('click', async () => {
+    bootstrap.Modal.getInstance(document.getElementById('modal-approve'))?.hide();
+    try{await API.costCalc.approveCalculation(calcId);showToast('Calculation approved.','success');await loadCalc();}
+    catch(err){showToast(err.message,'danger');}
+  });
 
   // â”€â”€ Report HTML builder (no iframe, no external dependencies) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   function buildReportHTML(p) {
