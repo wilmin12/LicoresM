@@ -242,13 +242,26 @@ async function openPo(calcId, poNo) {
   updateViewCalcBtn(calcId);
   document.getElementById('l2-subtitle').textContent = `Calc #${calcId} — PO: ${poNo}`;
   const tbody = document.getElementById('l2-tbody');
-  tbody.innerHTML = '<tr><td colspan="16" class="text-center py-3 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading...</td></tr>';
   showLevel(2);
-  try {
-    const r = await API.costCalc.getPoItemPrices(calcId, poNo);
-    const items = r?.Data || [];
-    renderL2(items);
-  } catch(e) { showToast(e.message,'danger'); }
+  const maxRetries = 8;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    tbody.innerHTML = attempt === 1
+      ? '<tr><td colspan="16" class="text-center py-3 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading...</td></tr>'
+      : `<tr><td colspan="16" class="text-center py-3 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Calculating prices, please wait... (${attempt}/${maxRetries})</td></tr>`;
+    try {
+      const r = await API.costCalc.getPoItemPrices(calcId, poNo);
+      renderL2(r?.Data || []);
+      return;
+    } catch(e) {
+      if (attempt < maxRetries && (e.message||'').includes('No price data found')) {
+        await new Promise(res => setTimeout(res, 2000));
+        continue;
+      }
+      showToast(e.message, 'danger');
+      tbody.innerHTML = `<tr><td colspan="16" class="text-center py-3 text-danger">${esc(e.message)}</td></tr>`;
+      return;
+    }
+  }
 }
 
 function renderL2(items) {
