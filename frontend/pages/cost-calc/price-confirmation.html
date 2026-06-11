@@ -88,6 +88,9 @@
             <div class="page-title mb-0">Approve Price Changes by SALES MANAGER</div>
             <div class="text-muted small" id="l2-subtitle"></div>
           </div>
+          <a id="btn-view-calc" href="#" class="btn btn-outline-primary btn-sm ms-auto disabled" aria-disabled="true">
+            <i class="fas fa-calculator me-1"></i>View Calculation
+          </a>
         </div>
         <div class="card">
           <div class="card-body p-0">
@@ -191,6 +194,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('btn-approve-po').addEventListener('click', approvePo);
   document.getElementById('btn-back-l2').addEventListener('click', () => showLevel(2));
   document.getElementById('btn-save-l3').addEventListener('click', saveL3);
+  updateViewCalcBtn(_urlCalcId);
   await Promise.all([loadPos(), loadReasons()]);
 });
 
@@ -235,6 +239,7 @@ function renderL1() {
 
 async function openPo(calcId, poNo) {
   currentCalcId = calcId; currentPoNo = poNo; itemFlags = {};
+  updateViewCalcBtn(calcId);
   document.getElementById('l2-subtitle').textContent = `Calc #${calcId} — PO: ${poNo}`;
   const tbody = document.getElementById('l2-tbody');
   tbody.innerHTML = '<tr><td colspan="16" class="text-center py-3 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading...</td></tr>';
@@ -277,6 +282,7 @@ function renderL2(items) {
 
 async function openL3(calcId, poNo, itemNo) {
   currentItemNo = itemNo;
+  updateViewCalcBtn(calcId);
   document.getElementById('l3-item-label').textContent = itemNo;
   showLevel(3);
   try {
@@ -367,11 +373,26 @@ async function approvePo() {
   finally { btn.disabled = false; }
 }
 
+function updateViewCalcBtn(calcId) {
+  const btn = document.getElementById('btn-view-calc');
+  if (!btn) return;
+  if (calcId) {
+    btn.href = `calculation.html?id=${calcId}`;
+    btn.classList.remove('disabled');
+    btn.removeAttribute('aria-disabled');
+  } else {
+    btn.href = '#';
+    btn.classList.add('disabled');
+    btn.setAttribute('aria-disabled', 'true');
+  }
+}
+
 function showLevel(n) {
   document.querySelectorAll('.level').forEach(el => el.classList.remove('active'));
   document.getElementById('level'+n).classList.add('active');
   document.getElementById('bc-label').textContent =
     n === 1 ? (_urlCalcId ? `Price Confirmation — Calc #${_urlCalcId}` : 'Price Confirmation') : n === 2 ? `PO: ${currentPoNo}` : `Item: ${currentItemNo}`;
+  if (n === 1) updateViewCalcBtn(_urlCalcId);
 }
 
 function fmt(v, d=2) { return v!=null ? Number(v).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}) : '–'; }
