@@ -82,17 +82,14 @@
 
 <!-- View Calculation Modal -->
 <div class="modal fade" id="modal-view-calc" tabindex="-1">
-  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-    <div class="modal-content border-0 shadow-lg">
-      <div class="modal-header" style="background:var(--primary);color:#fff;">
-        <h5 class="modal-title fw-bold"><i class="fas fa-file-invoice me-2"></i><span id="mvc-title">Calculation</span></h5>
+  <div class="modal-dialog modal-fullscreen">
+    <div class="modal-content border-0">
+      <div class="modal-header py-2" style="background:var(--primary);color:#fff;">
+        <h6 class="modal-title fw-bold mb-0"><i class="fas fa-file-invoice me-2"></i><span id="mvc-title">Calculation</span></h6>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
-      <div class="modal-body p-4" id="mvc-body">
-        <div class="text-center py-5 text-muted"><i class="fas fa-spinner fa-spin fa-2x"></i></div>
-      </div>
-      <div class="modal-footer border-0 justify-content-end gap-2">
-        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal"><i class="fas fa-times me-1"></i>Close</button>
+      <div class="modal-body p-0" style="overflow:hidden;">
+        <iframe id="mvc-iframe" src="about:blank" style="width:100%;height:100%;border:none;"></iframe>
       </div>
     </div>
   </div>
@@ -153,6 +150,9 @@
     }
 
     document.getElementById('search-input').addEventListener('input', filterAndRender);
+    document.getElementById('modal-view-calc').addEventListener('hidden.bs.modal', () => {
+      document.getElementById('mvc-iframe').src = 'about:blank';
+    });
     await loadData();
   });
 
@@ -269,71 +269,10 @@
     });
   }
 
-  async function viewCalc(id) {
+  function viewCalc(id) {
     document.getElementById('mvc-title').textContent = `Calculation #${id}`;
-    document.getElementById('mvc-body').innerHTML = '<div class="text-center py-5 text-muted"><i class="fas fa-spinner fa-spin fa-2x"></i></div>';
+    document.getElementById('mvc-iframe').src = `calculation.html?id=${id}`;
     new bootstrap.Modal(document.getElementById('modal-view-calc')).show();
-    try {
-      const res = await API.costCalc.getCalculation(id);
-      const data = res?.Data || res;
-      const calc = data?.Calc ?? data;
-      const confirmedBy = data?.CcCalcConfirmedBy ?? '';
-      const pos = calc?.PoHeads || [];
-      const dt = calc?.CcCalcDate ? calc.CcCalcDate.split('T')[0] : '';
-      const stLabel = STATUS_LABELS[calc?.CcStatus] || calc?.CcStatus || '';
-      const stClass = STATUS_CLASS[calc?.CcStatus] || 'badge bg-secondary';
-      document.getElementById('mvc-title').textContent = `Calculation #${id} — ${dt}`;
-      document.getElementById('mvc-body').innerHTML = `
-        <div class="row g-3 mb-4">
-          <div class="col-md-3">
-            <div class="p-3 rounded" style="background:#f8f9fa;border-left:4px solid var(--primary);">
-              <div class="text-muted small">Status</div>
-              <span class="${stClass} mt-1">${stLabel}</span>
-            </div>
-          </div>
-          <div class="col-md-3">
-            <div class="p-3 rounded" style="background:#f8f9fa;border-left:4px solid var(--primary);">
-              <div class="text-muted small">Warehouse</div>
-              <div class="fw-semibold">${esc(calc?.CcWarehouse||'—')}</div>
-            </div>
-          </div>
-          <div class="col-md-3">
-            <div class="p-3 rounded" style="background:#f8f9fa;border-left:4px solid var(--primary);">
-              <div class="text-muted small">Forwarder</div>
-              <div class="fw-semibold">${esc(calc?.CcForwarderName||calc?.CcForwarderCode||'—')}</div>
-            </div>
-          </div>
-          <div class="col-md-3">
-            <div class="p-3 rounded" style="background:#f8f9fa;border-left:4px solid var(--primary);">
-              <div class="text-muted small">Currency</div>
-              <div class="fw-semibold">${esc(calc?.CcCurrCode||'—')}${calc?.CcCurrRate?' ('+Number(calc.CcCurrRate).toFixed(4)+')':''}</div>
-            </div>
-          </div>
-          ${confirmedBy ? `<div class="col-12"><div class="alert alert-info py-2 mb-0"><i class="fas fa-user-check me-2"></i><strong>Confirmed by:</strong> ${esc(confirmedBy)}</div></div>` : ''}
-        </div>
-        <h6 class="fw-bold mb-2"><i class="fas fa-boxes me-2"></i>Purchase Orders (${pos.length})</h6>
-        <div class="table-responsive">
-          <table class="table table-sm table-bordered mb-0">
-            <thead class="table-light">
-              <tr><th>PO No.</th><th>Vendor</th><th>Invoice</th><th>Inv. Date</th><th class="text-end">Qty</th><th class="text-end">Amount</th><th class="text-end">Weight</th><th>Status</th></tr>
-            </thead>
-            <tbody>
-              ${pos.length ? pos.map(p=>`<tr>
-                <td><strong>${esc(p.CcphLmPoNo||'')}</strong></td>
-                <td>${esc(p.CcphVendName||p.CcphVendNo||'')}</td>
-                <td>${esc(p.CcphInvNumber||'')}</td>
-                <td>${p.CcphInvDate?p.CcphInvDate.split('T')[0]:''}</td>
-                <td class="text-end">${p.CcphTotQty??''}</td>
-                <td class="text-end">${p.CcphTotAmount!=null?Number(p.CcphTotAmount).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):''}</td>
-                <td class="text-end">${p.CcphWeight!=null?Number(p.CcphWeight).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):''}</td>
-                <td><span class="${STATUS_CLASS[p.CcphStatus]||'badge bg-secondary'}">${STATUS_LABELS[p.CcphStatus]||p.CcphStatus||''}</span></td>
-              </tr>`).join('') : '<tr><td colspan="8" class="text-center text-muted">No POs found.</td></tr>'}
-            </tbody>
-          </table>
-        </div>`;
-    } catch(e) {
-      document.getElementById('mvc-body').innerHTML = `<div class="alert alert-danger"><i class="fas fa-exclamation-triangle me-2"></i>${esc(e.message)}</div>`;
-    }
   }
 
   function showToast(msg,type='success'){
