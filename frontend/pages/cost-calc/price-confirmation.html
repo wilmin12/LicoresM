@@ -190,6 +190,17 @@ const LOCKED_KEYS = new Set(['Pr01','Pr03','Pr04','Pr05']);
 document.addEventListener('DOMContentLoaded', async () => {
   if (!Auth.requireAuth()) return;
   Auth.startExpiryWatcher(); Auth.populateUserUI(); Sidebar.init();
+
+  // When loaded inside an iframe (e.g. approve modal), hide chrome
+  if (window.self !== window.top) {
+    document.querySelector('.sidebar')?.remove();
+    document.querySelector('.topbar')?.remove();
+    document.querySelector('#sidebar-overlay')?.remove();
+    const ma = document.querySelector('.main-area');
+    if (ma) ma.style.marginLeft = '0';
+    const pc = document.querySelector('.page-content');
+    if (pc) { pc.style.paddingTop = '0.5rem'; pc.style.paddingBottom = '0.5rem'; }
+  }
   if (_urlCalcId) {
     document.getElementById('l1-subtitle').textContent = `Calc No: #${_urlCalcId} — POs pending price confirmation.`;
     document.getElementById('bc-label').textContent = `Price Confirmation — Calc #${_urlCalcId}`;

@@ -157,7 +157,7 @@
     try{
       const res=await API.costCalc.getCalculations({pageSize:500});
       const all=res?.Data||res||[];
-      allItems=all.filter(c=>c.CcStatus==='AP');
+      allItems=all.filter(c=>c.CcStatus==='CF');
       filterAndRender();
     }catch(err){showToast(err.message,'danger');tbody.innerHTML=`<tr><td colspan="10" class="text-center py-4 text-danger">${esc(err.message)}</td></tr>`;}
   }
@@ -174,7 +174,7 @@
     const tbody=document.getElementById('data-tbody');
     const start=(currentPage-1)*PAGE_SIZE,page=filtered.slice(start,start+PAGE_SIZE);
     document.getElementById('total-count').textContent=filtered.length+' records';
-    if(!page.length){tbody.innerHTML='<tr><td colspan="9" class="text-center py-4 text-muted">No calculations awaiting price confirmation.</td></tr>';return;}
+    if(!page.length){tbody.innerHTML='<tr><td colspan="9" class="text-center py-4 text-muted">No confirmed calculations awaiting approval.</td></tr>';return;}
     tbody.innerHTML=page.map((r,i)=>{
       const dt=r.CcCalcDate?r.CcCalcDate.split('T')[0]:'';
       const stClass=STATUS_CLASS[r.CcStatus]||'badge bg-secondary';
