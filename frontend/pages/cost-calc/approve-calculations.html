@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -6,17 +6,6 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
   <link rel="stylesheet" href="../../css/main.css"/>
-  <style>
-    .pc-level { display:none; }
-    .pc-level.active { display:block; }
-    .tbl th { font-size:.75rem; white-space:nowrap; background:#f1f5f9; }
-    .tbl td { font-size:.8rem; vertical-align:middle; }
-    .wh-label { font-size:.7rem; color:#6b7280; font-weight:600; }
-    .change-pos { color:#16a34a; font-weight:600; }
-    .change-neg { color:#dc2626; font-weight:600; }
-    .pr-col-new { background:#fefce8; }
-    .pr-col-old { background:#f8fafc; color:#6b7280; }
-  </style>
 </head>
 <body>
 <div id="sidebar-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;"></div>
@@ -90,119 +79,6 @@
 </div>
 
 <!-- View Calculation Modal — inline Price Confirmation panels -->
-<div class="modal fade" id="modal-view-calc" tabindex="-1">
-  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-    <div class="modal-content border-0">
-      <div class="modal-header py-2" style="background:var(--primary);color:#fff;">
-        <h6 class="modal-title fw-bold mb-0"><i class="fas fa-file-invoice me-2"></i><span id="mvc-title">Calculation</span></h6>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body" style="padding:1rem;">
-
-        <!-- LEVEL 1: Pending PO list -->
-        <div id="pc-level1" class="pc-level active">
-          <div class="d-flex align-items-center justify-content-between mb-2">
-            <div class="text-muted small" id="pc-l1-subtitle">POs pending price confirmation after cost calculation approval.</div>
-            <span class="badge" style="background:var(--primary);color:#fff;" id="pc-l1-count">0</span>
-          </div>
-          <div class="card">
-            <div class="card-body p-0">
-              <div class="table-responsive">
-                <table class="table table-hover tbl mb-0">
-                  <thead><tr>
-                    <th>LM P.O. Number</th><th>Calc No.</th><th>Vendor</th><th>Vendor Name</th>
-                    <th>Curr</th><th>Rate</th><th>Invoice Nr.</th><th>Invoice Date</th>
-                    <th class="text-end">Cases</th><th class="text-end">Amount</th>
-                    <th class="text-end">Act. Wght</th><th class="text-end">Inl. Frght.</th>
-                  </tr></thead>
-                  <tbody id="pc-l1-tbody"><tr><td colspan="12" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading...</td></tr></tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- LEVEL 2: Product price analysis -->
-        <div id="pc-level2" class="pc-level">
-          <div class="d-flex align-items-center gap-3 mb-3">
-            <button class="btn btn-outline-secondary btn-sm" onclick="pcShowLevel(1)"><i class="fas fa-arrow-left me-1"></i>Back</button>
-            <div>
-              <div class="fw-bold">Approve Price Changes by SALES MANAGER</div>
-              <div class="text-muted small" id="pc-l2-subtitle"></div>
-            </div>
-            <a id="pc-btn-view-calc" href="#" target="_blank" class="btn btn-outline-primary btn-sm ms-auto disabled" aria-disabled="true">
-              <i class="fas fa-calculator me-1"></i>View Calculation
-            </a>
-          </div>
-          <div class="card">
-            <div class="card-body p-0">
-              <div class="table-responsive">
-                <table class="table tbl mb-0">
-                  <thead><tr>
-                    <th>Item No.</th><th>Description</th><th>Qty</th><th>FOB F/C</th>
-                    <th>WH</th><th class="text-end">Allowed%</th><th class="text-end">Actual%</th>
-                    <th class="text-end">New Cost</th><th class="text-end">Old Cost</th>
-                    <th class="text-end">Chg Cost</th><th class="text-end">New Price</th>
-                    <th class="text-end">Old Price</th><th class="text-end">Chg Price</th>
-                    <th class="text-end">Chg MRG</th><th class="text-end">New Price(Case)</th>
-                    <th></th>
-                    <th class="text-center small" style="min-width:70px;">PRICE<br>CHANGE</th>
-                    <th class="text-center small" style="min-width:70px;">NO PRICE<br>CHANGE</th>
-                  </tr></thead>
-                  <tbody id="pc-l2-tbody"></tbody>
-                </table>
-              </div>
-            </div>
-            <div class="card-footer d-flex align-items-center gap-3 flex-wrap">
-              <div class="d-flex align-items-center gap-2">
-                <label class="form-label mb-0 small fw-semibold">Reason Code:</label>
-                <select id="pc-sel-reason" class="form-select form-select-sm" style="width:260px;"></select>
-              </div>
-              <div class="d-flex align-items-center gap-2">
-                <label class="form-label mb-0 small fw-semibold">Price Change Date:</label>
-                <input type="date" id="pc-inp-date" class="form-control form-control-sm" style="width:150px;"/>
-              </div>
-              <button class="btn btn-wine btn-sm ms-auto" id="pc-btn-approve-po">
-                <i class="fas fa-check-circle me-1"></i>APPROVE PRICE CHANGES AND SEND EMAIL
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- LEVEL 3: Case prices panel -->
-        <div id="pc-level3" class="pc-level">
-          <div class="d-flex align-items-center gap-3 mb-3">
-            <button class="btn btn-outline-secondary btn-sm" id="pc-btn-back-l2"><i class="fas fa-arrow-left me-1"></i>Back</button>
-            <div class="fw-bold">Case Prices — <span id="pc-l3-item-label"></span></div>
-          </div>
-          <div class="card">
-            <div class="card-body p-0">
-              <div class="table-responsive">
-                <table class="table tbl mb-0">
-                  <thead><tr id="pc-l3-pr-header"></tr></thead>
-                  <tbody id="pc-l3-tbody"></tbody>
-                </table>
-              </div>
-            </div>
-            <div class="card-footer d-flex align-items-center gap-3">
-              <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" name="pc-priceChange" id="pc-chk-change" value="1"/>
-                <label class="form-check-label fw-semibold text-success" for="pc-chk-change">PRICE CHANGE</label>
-              </div>
-              <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" name="pc-priceChange" id="pc-chk-nochange" value="0"/>
-                <label class="form-check-label fw-semibold text-secondary" for="pc-chk-nochange">NO PRICE CHANGE</label>
-              </div>
-              <button class="btn btn-wine btn-sm ms-auto" id="pc-btn-save-l3">Save &amp; Back</button>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-  </div>
-</div>
-
 <!-- Confirm Action Modal -->
 <div class="modal fade" id="modal-confirm" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
@@ -234,7 +110,7 @@
 <script src="../../js/i18n.js"></script><script src="../../js/api.js"></script><script src="../../js/auth.js"></script><script src="../../js/sidebar.js"></script>
 <script>
   // ── Page state ────────────────────────────────────────────────────────────
-  const STATUS_LABELS = { DR:'Draft', CF:'Confirmed', AP:'Awaiting Price Confirm', PD:'Prices Confirmed' };
+  const STATUS_LABELS = { DR:'In Calculation', CF:'Confirmed', AP:'Awaiting Price Confirm', PD:'Prices Confirmed' };
   const STATUS_CLASS  = { DR:'badge-inactive', CF:'badge bg-warning text-dark', AP:'badge bg-info text-dark', PD:'badge bg-success' };
   let allItems=[],filtered=[],currentPage=1;const PAGE_SIZE=15;
 
@@ -254,9 +130,6 @@
     }
 
     document.getElementById('search-input').addEventListener('input', filterAndRender);
-    document.getElementById('modal-view-calc').addEventListener('hidden.bs.modal', () => {
-      pcShowLevel(1);
-    });
     await loadData();
   });
 
@@ -298,7 +171,7 @@
         <td class="text-center">${r.CcTotOrd??0}</td>
         <td><span class="${stClass}">${stLabel}</span></td>
         <td>
-          <button class="btn-action edit" title="View &amp; Approve Prices" onclick="viewCalc(${r.CcCalcNumber})"><i class="fas fa-eye"></i></button>
+          <button class="btn-action edit" title="View &amp; Approve Prices" onclick="openPriceForm(${r.CcCalcNumber})"><i class="fas fa-eye"></i></button>
         </td>
       </tr>`;
     }).join('');
@@ -331,14 +204,8 @@
     bootstrap.Modal.getInstance(document.getElementById('modal-confirm'))?.hide();
     if(_confirmCb)await _confirmCb();
   });
-
-  function viewCalc(id) {
-    document.getElementById('mvc-title').textContent = `Approve Price Changes — Calc #${id}`;
-    pcCurrentCalcId = id;
-    pcItemFlags = {};
-    pcShowLevel(1);
-    new bootstrap.Modal(document.getElementById('modal-view-calc')).show();
-    pcInit(id);
+  function openPriceForm(id) {
+    window.location.href = `price-confirmation.html?id=${id}&from=approve`;
   }
 
   function showToast(msg,type='success'){
@@ -350,289 +217,6 @@
   function fmt(v,d=2){return v!=null?Number(v).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}):'–';}
   function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
-  // ── PC (Price Confirmation) inline state ──────────────────────────────────
-  const PC_PR_LABELS = {
-    Pr01:'PR01 WHOLESALE', Pr03:'PR03 STORE NORSA', Pr04:'PR04 STORE RETAIL',
-    Pr05:'PR05 STORE ALLIANCE', Pr06:'PR06 BONDED', Pr07:'PR07 SPECIAL BONDED',
-    Pr08:'PR08 GWC_MAN_ESP', Pr09:'PR09 BONDED YU HUA', Pr10:'PR10 BBB DUTY PAID', Pr11:'PR11 BBB BONDED'
-  };
-  const PC_PR_KEYS = Object.keys(PC_PR_LABELS);
-  const PC_LOCKED_KEYS = new Set(['Pr01','Pr03','Pr04','Pr05']);
-
-  let pcAllPos=[], pcReasons=[], pcReasonsLoaded=false;
-  let pcCurrentCalcId=null, pcCurrentPoNo=null, pcCurrentItemNo=null;
-  let pcItemFlags={}, pcL3Data=null, pcCurrentL2Items=[];
-
-  async function pcInit(calcId) {
-    document.getElementById('pc-l1-subtitle').textContent = `Calc #${calcId} — POs pending price confirmation.`;
-    document.getElementById('pc-l1-tbody').innerHTML = '<tr><td colspan="12" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading...</td></tr>';
-    document.getElementById('pc-btn-approve-po').onclick = pcApprovePo;
-    document.getElementById('pc-btn-back-l2').onclick = () => pcShowLevel(2);
-    document.getElementById('pc-btn-save-l3').onclick = pcSaveL3;
-    const tasks = [pcLoadPos(calcId)];
-    if (!pcReasonsLoaded) tasks.push(pcLoadReasons());
-    await Promise.all(tasks);
-  }
-
-  async function pcLoadPos(calcId) {
-    try {
-      const r = await API.costCalc.getPendingPricePos();
-      const data = r?.Data || [];
-      pcAllPos = calcId ? data.filter(p => p.CcphCalcNumber === calcId) : data;
-      pcRenderL1();
-    } catch(e) { showToast(e.message, 'danger'); }
-  }
-
-  async function pcLoadReasons() {
-    try {
-      const r = await API.costCalc.getPriceChangeReasons();
-      pcReasons = r?.Data || [];
-      const sel = document.getElementById('pc-sel-reason');
-      sel.innerHTML = '<option value="">-- Select reason --</option>' +
-        pcReasons.map(x => `<option value="${esc(x.PcrCode)}">${esc(x.PcrCode)} - ${esc(x.PcrDescription)}</option>`).join('');
-      pcReasonsLoaded = true;
-    } catch(e) { /* non-blocking */ }
-  }
-
-  function pcRenderL1() {
-    const tbody = document.getElementById('pc-l1-tbody');
-    document.getElementById('pc-l1-count').textContent = pcAllPos.length + ' records';
-    if (!pcAllPos.length) { tbody.innerHTML = '<tr><td colspan="12" class="text-center py-4 text-muted">No pending POs.</td></tr>'; return; }
-    tbody.innerHTML = pcAllPos.map(p => `<tr style="cursor:pointer;" onclick="pcOpenPo(${p.CcphCalcNumber},'${esc(p.CcphLmPoNo)}')">
-      <td><strong>${esc(p.CcphLmPoNo)}</strong></td>
-      <td>${p.CcphCalcNumber}</td>
-      <td>${esc(p.CcphVendNo||'')}</td>
-      <td>${esc(p.CcphVendName||'')}</td>
-      <td>${esc(p.CcphCurrCode||'')}</td>
-      <td class="text-end">${fmt(p.CcphCurrRate,4)}</td>
-      <td>${esc(p.CcphInvNumber||'')}</td>
-      <td>${p.CcphInvDate?new Date(p.CcphInvDate).toLocaleDateString('en-US'):'-'}</td>
-      <td class="text-end">${fmt(p.CcphTotQty,0)}</td>
-      <td class="text-end">${fmt(p.CcphTotAmount)}</td>
-      <td class="text-end">${fmt(p.CcphWeight)}</td>
-      <td class="text-end">${fmt(p.CcphInlandFreight)}</td>
-    </tr>`).join('');
-  }
-
-  async function pcOpenPo(calcId, poNo) {
-    pcCurrentCalcId = calcId; pcCurrentPoNo = poNo; pcItemFlags = {};
-    pcUpdateViewCalcBtn(calcId);
-    document.getElementById('pc-l2-subtitle').textContent = `Calc #${calcId} — PO: ${poNo}`;
-    const tbody = document.getElementById('pc-l2-tbody');
-    pcShowLevel(2);
-    const maxRetries = 8;
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      tbody.innerHTML = attempt === 1
-        ? '<tr><td colspan="18" class="text-center py-3 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading...</td></tr>'
-        : `<tr><td colspan="18" class="text-center py-3 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Calculating prices, please wait... (${attempt}/${maxRetries})</td></tr>`;
-      try {
-        const r = await API.costCalc.getPoItemPrices(calcId, poNo);
-        pcRenderL2(r?.Data || []);
-        return;
-      } catch(e) {
-        if (attempt < maxRetries && (e.message||'').includes('No price data found')) {
-          await new Promise(res => setTimeout(res, 2000));
-          continue;
-        }
-        showToast(e.message, 'danger');
-        tbody.innerHTML = `<tr><td colspan="18" class="text-center py-3 text-danger">${esc(e.message)}</td></tr>`;
-        return;
-      }
-    }
-  }
-
-  function pcRenderL2(items) {
-    pcCurrentL2Items = items;
-    const tbody = document.getElementById('pc-l2-tbody');
-    if (!items.length) { tbody.innerHTML = '<tr><td colspan="18" class="text-center py-3 text-muted">No items.</td></tr>'; return; }
-    tbody.innerHTML = items.map(d => {
-      const chg11010 = (d.CcpcNewCost11010||0) - (d.CcpcOldCost11010||0);
-      const chgP = (d.CcpcNewPricePr01||0) - (d.CcpcOldPricePr01||0);
-      const chgM = (d.CcpcNewMarginPr01||0) - (d.CcpcOldMarginPr01||0);
-      const chgCls = v => v > 0.005 ? 'change-pos' : v < -0.005 ? 'change-neg' : '';
-      return `<tr>
-        <td><strong>${esc(d.CcpcItemNo)}</strong></td>
-        <td>${esc(d.CcpcDescription||'')}</td>
-        <td class="text-end">${fmt(d.CcpcOrdQty,0)}</td>
-        <td class="text-end">${fmt(d.CcpcFobFc)}</td>
-        <td><span class="wh-label">11010</span><br/><span class="wh-label">11060</span></td>
-        <td class="text-end">${fmt(d.CcpcAllowedMargin)}</td>
-        <td class="text-end">${fmt(d.CcpcNewMarginPr01)}<br/>${fmt(d.CcpcNewMarginPr06)}</td>
-        <td class="text-end">${fmt(d.CcpcNewCost11010)}<br/>${fmt(d.CcpcNewCost11060)}</td>
-        <td class="text-end">${fmt(d.CcpcOldCost11010)}<br/>${fmt(d.CcpcOldCost11060)}</td>
-        <td class="text-end ${chgCls(chg11010)}">${fmt(chg11010)}</td>
-        <td class="text-end">${fmt(d.CcpcNewPricePr01)}</td>
-        <td class="text-end">${fmt(d.CcpcOldPricePr01)}</td>
-        <td class="text-end ${chgCls(chgP)}">${fmt(chgP)}</td>
-        <td class="text-end ${chgCls(chgM)}">${fmt(chgM)}</td>
-        <td class="text-end fw-bold">${fmt(d.CcpcNewPricePr01)}</td>
-        <td><button class="btn btn-outline-secondary btn-sm" onclick="pcOpenL3(${pcCurrentCalcId},'${esc(pcCurrentPoNo)}','${esc(d.CcpcItemNo)}')">SHOW ALL PRICES &gt;&gt;&gt;</button></td>
-        <td class="text-center">${pcItemFlags[d.CcpcItemNo] === true  ? '<i class="fas fa-check-circle text-success fs-5"></i>' : ''}</td>
-        <td class="text-center">${pcItemFlags[d.CcpcItemNo] === false ? '<i class="fas fa-check-circle text-secondary fs-5"></i>' : ''}</td>
-      </tr>`;
-    }).join('');
-  }
-
-  async function pcOpenL3(calcId, poNo, itemNo) {
-    pcCurrentItemNo = itemNo;
-    pcUpdateViewCalcBtn(calcId);
-    document.getElementById('pc-l3-item-label').textContent = itemNo;
-    pcShowLevel(3);
-    try {
-      const r = await API.costCalc.getItemCasePrices(calcId, poNo, itemNo);
-      pcL3Data = r?.Data;
-      pcRenderL3(pcL3Data);
-      if (pcItemFlags[itemNo] !== undefined) {
-        document.getElementById(pcItemFlags[itemNo] ? 'pc-chk-change' : 'pc-chk-nochange').checked = true;
-        if (pcItemFlags[itemNo] === false) pcApplyNoPriceChange();
-      } else {
-        document.querySelectorAll('input[name="pc-priceChange"]').forEach(el => el.checked = false);
-      }
-      document.getElementById('pc-chk-nochange').onchange = () => pcApplyNoPriceChange();
-      document.getElementById('pc-chk-change').onchange   = () => pcApplyPriceChange();
-    } catch(e) { showToast(e.message, 'danger'); }
-  }
-
-  function pcRenderL3(d) {
-    if (!d) return;
-    const header = document.getElementById('pc-l3-pr-header');
-    const tbody  = document.getElementById('pc-l3-tbody');
-    header.innerHTML = '<th>Label</th>' + PC_PR_KEYS.map(k => {
-      const locked = PC_LOCKED_KEYS.has(k);
-      return `<th class="text-center" style="min-width:90px;">${PC_PR_LABELS[k]}${locked ? ' <i class="fas fa-lock fa-xs text-muted"></i>' : ''}</th>`;
-    }).join('');
-
-    const getV = (row, key) => d[`Ccpc${row}${pcCap1(key)}`];
-
-    const makeRow = (rowLabel, dataPrefix, cls, editable, inputType) => {
-      const cells = PC_PR_KEYS.map(k => {
-        const v = getV(dataPrefix, k);
-        const isLocked = PC_LOCKED_KEYS.has(k);
-        if (editable && !isLocked) {
-          return `<td class="${cls}"><input class="form-control form-control-sm text-end ${cls}" data-key="${k}" data-type="${inputType}" value="${v!=null?Number(v).toFixed(2):''}"/></td>`;
-        }
-        const dimmed = isLocked && editable ? ' text-muted' : '';
-        return `<td class="${cls} text-end${dimmed}" data-key="${k}" data-row="${dataPrefix}">${v!=null?fmt(v):'–'}</td>`;
-      }).join('');
-      return `<tr><td class="fw-semibold small">${rowLabel}</td>${cells}</tr>`;
-    };
-
-    tbody.innerHTML =
-      makeRow('New Price',  'NewPrice',  'pr-col-new', true,  'price')  +
-      makeRow('New Margin', 'NewMargin', 'pr-col-new', true,  'margin') +
-      makeRow('Old Price',  'OldPrice',  'pr-col-old', false, '') +
-      makeRow('Old Margin', 'OldMargin', 'pr-col-old', false, '');
-
-    tbody.querySelectorAll('input[data-type]').forEach(inp => {
-      inp.addEventListener('change', async () => {
-        const key  = inp.dataset.key;
-        const type = inp.dataset.type;
-        const val  = parseFloat(inp.value);
-        if (isNaN(val)) return;
-        const is11060 = ['Pr06','Pr07','Pr08','Pr09','Pr11'].includes(key);
-        const cost = is11060 ? (d.CcpcNewCost11060||0) : (d.CcpcNewCost11010||0);
-        try {
-          const dto = type === 'price' ? {Cost:cost,Price:val,Margin:null} : {Cost:cost,Price:null,Margin:val};
-          const res = (await API.costCalc.recalcPrice(dto))?.Data;
-          if (res) {
-            const sibType = type === 'price' ? 'margin' : 'price';
-            const sibInp  = tbody.querySelector(`input[data-key="${key}"][data-type="${sibType}"]`);
-            if (sibInp) sibInp.value = Number(res[sibType]).toFixed(2);
-          }
-        } catch(e) { /* non-blocking */ }
-      });
-    });
-  }
-
-  function pcApplyNoPriceChange() {
-    if (!pcL3Data) return;
-    const tbody = document.getElementById('pc-l3-tbody');
-    PC_PR_KEYS.forEach(k => {
-      const is11060 = !['Pr01','Pr03','Pr04','Pr05','Pr10'].includes(k);
-      const newCost  = is11060 ? (pcL3Data.CcpcNewCost11060||0) : (pcL3Data.CcpcNewCost11010||0);
-      const oldPrice = pcL3Data[`CcpcOldPrice${pcCap1(k)}`] || 0;
-      const newMargin = oldPrice > 0 ? Math.round((oldPrice - newCost) / oldPrice * 10000) / 100 : 0;
-      if (!PC_LOCKED_KEYS.has(k)) {
-        const pi = tbody.querySelector(`input[data-key="${k}"][data-type="price"]`);
-        const mi = tbody.querySelector(`input[data-key="${k}"][data-type="margin"]`);
-        if (pi) pi.value = oldPrice.toFixed(2);
-        if (mi) mi.value = newMargin.toFixed(2);
-      } else {
-        const pc = tbody.querySelector(`td[data-key="${k}"][data-row="NewPrice"]`);
-        const mc = tbody.querySelector(`td[data-key="${k}"][data-row="NewMargin"]`);
-        if (pc) pc.textContent = fmt(oldPrice);
-        if (mc) mc.textContent = fmt(newMargin);
-      }
-    });
-  }
-
-  function pcApplyPriceChange() {
-    if (!pcL3Data) return;
-    const tbody = document.getElementById('pc-l3-tbody');
-    PC_PR_KEYS.forEach(k => {
-      const origP = pcL3Data[`CcpcNewPrice${pcCap1(k)}`];
-      const origM = pcL3Data[`CcpcNewMargin${pcCap1(k)}`];
-      if (!PC_LOCKED_KEYS.has(k)) {
-        const pi = tbody.querySelector(`input[data-key="${k}"][data-type="price"]`);
-        const mi = tbody.querySelector(`input[data-key="${k}"][data-type="margin"]`);
-        if (pi) pi.value = origP != null ? Number(origP).toFixed(2) : '';
-        if (mi) mi.value = origM != null ? Number(origM).toFixed(2) : '';
-      } else {
-        const pCell = tbody.querySelector(`td[data-key="${k}"][data-row="NewPrice"]`);
-        const mCell = tbody.querySelector(`td[data-key="${k}"][data-row="NewMargin"]`);
-        if (pCell) pCell.textContent = origP != null ? fmt(origP) : '–';
-        if (mCell) mCell.textContent = origM != null ? fmt(origM) : '–';
-      }
-    });
-  }
-
-  function pcCap1(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
-
-  function pcSaveL3() {
-    const flag = document.querySelector('input[name="pc-priceChange"]:checked')?.value;
-    if (flag !== undefined && pcCurrentItemNo) pcItemFlags[pcCurrentItemNo] = flag === '1';
-    pcRenderL2(pcCurrentL2Items);
-    pcShowLevel(2);
-  }
-
-  async function pcApprovePo() {
-    const reason = document.getElementById('pc-sel-reason').value;
-    const date   = document.getElementById('pc-inp-date').value;
-    if (!reason) { showToast('Please select a Reason Code.', 'danger'); return; }
-    if (!date)   { showToast('Please enter a Price Change Date.', 'danger'); return; }
-    const btn = document.getElementById('pc-btn-approve-po');
-    btn.disabled = true;
-    try {
-      await API.costCalc.approvePoPrices(pcCurrentCalcId, pcCurrentPoNo, {
-        ReasonCode: reason,
-        PriceChangeDate: date,
-        ItemFlags: pcItemFlags
-      });
-      showToast('Price changes approved successfully.', 'success');
-      await pcLoadPos(pcCurrentCalcId);
-      pcShowLevel(1);
-    } catch(e) { showToast(e.message||'Error approving.', 'danger'); }
-    finally { btn.disabled = false; }
-  }
-
-  function pcUpdateViewCalcBtn(calcId) {
-    const btn = document.getElementById('pc-btn-view-calc');
-    if (!btn) return;
-    if (calcId) {
-      btn.href = `calculation.html?id=${calcId}`;
-      btn.classList.remove('disabled');
-      btn.removeAttribute('aria-disabled');
-    } else {
-      btn.href = '#';
-      btn.classList.add('disabled');
-      btn.setAttribute('aria-disabled', 'true');
-    }
-  }
-
-  function pcShowLevel(n) {
-    document.querySelectorAll('.pc-level').forEach(el => el.classList.remove('active'));
-    document.getElementById('pc-level' + n).classList.add('active');
-  }
 </script>
 </body>
 </html>
