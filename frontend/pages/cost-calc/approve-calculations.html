@@ -65,8 +65,8 @@
           <div class="card-body p-0">
             <div class="table-responsive">
               <table class="table table-hover mb-0">
-                <thead><tr><th>#</th><th>Calc No.</th><th>Date</th><th>Warehouse</th><th>Forwarder</th><th>Currency</th><th>POs</th><th>Confirmed By</th><th>Status</th><th>Actions</th></tr></thead>
-                <tbody id="data-tbody"><tr><td colspan="10" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading...</td></tr></tbody>
+                <thead><tr><th>#</th><th>Calc No.</th><th>Date</th><th>Warehouse</th><th>Forwarder</th><th>Currency</th><th>POs</th><th>Status</th><th>Actions</th></tr></thead>
+                <tbody id="data-tbody"><tr><td colspan="9" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading...</td></tr></tbody>
               </table>
             </div>
           </div>
@@ -82,14 +82,14 @@
 
 <!-- View Calculation Modal -->
 <div class="modal fade" id="modal-view-calc" tabindex="-1">
-  <div class="modal-dialog modal-fullscreen">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
     <div class="modal-content border-0">
       <div class="modal-header py-2" style="background:var(--primary);color:#fff;">
         <h6 class="modal-title fw-bold mb-0"><i class="fas fa-file-invoice me-2"></i><span id="mvc-title">Calculation</span></h6>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
-      <div class="modal-body p-0" style="overflow:hidden;">
-        <iframe id="mvc-iframe" src="about:blank" style="width:100%;height:100%;border:none;"></iframe>
+      <div class="modal-body p-0" style="overflow:hidden;min-height:75vh;">
+        <iframe id="mvc-iframe" src="about:blank" style="width:100%;height:75vh;border:none;"></iframe>
       </div>
     </div>
   </div>
@@ -128,17 +128,12 @@
   const STATUS_LABELS = { DR:'Draft', CF:'Confirmed', AP:'Awaiting Price Confirm', PD:'Prices Confirmed' };
   const STATUS_CLASS  = { DR:'badge-inactive', CF:'badge bg-warning text-dark', AP:'badge bg-info text-dark', PD:'badge bg-success' };
   let allItems=[],filtered=[],currentPage=1;const PAGE_SIZE=15;
-  let currentUserName='';
 
   document.addEventListener('DOMContentLoaded',async()=>{
     if(!Auth.requireAuth())return;Auth.startExpiryWatcher();Auth.populateUserUI();Sidebar.init();
     document.getElementById('btn-logout').addEventListener('click',e=>{e.preventDefault();Auth.logout();});
 
-    // Determine current user for confirmedByMe check
     const user = Auth.getCurrentUser();
-    currentUserName = (user?.UserName ?? user?.Username ?? user?.Email ?? user?.Name ?? '').toLowerCase();
-
-    // Check approver access
     const isApprover = user?.RoleName === 'SuperAdmin'
       || user?.RoleName === 'Admin'
       || Auth.hasPermission('COST_CALCULATIONS', 'CanApprove');
@@ -162,8 +157,7 @@
     try{
       const res=await API.costCalc.getCalculations({pageSize:500});
       const all=res?.Data||res||[];
-      // CF = awaiting approval; AP = approved, awaiting price confirmation
-      allItems=all.filter(c=>c.CcStatus==='CF'||c.CcStatus==='AP');
+      allItems=all.filter(c=>c.CcStatus==='AP');
       filterAndRender();
     }catch(err){showToast(err.message,'danger');tbody.innerHTML=`<tr><td colspan="10" class="text-center py-4 text-danger">${esc(err.message)}</td></tr>`;}
   }
@@ -176,37 +170,15 @@
     currentPage=1;renderTable();renderPagination();
   }
 
-  function getConfirmedBy(r){
-    // CcCalcConfirmedBy may be returned directly by an enriched endpoint,
-    // otherwise derive from PoHeads
-    if(r.CcCalcConfirmedBy!=null) return r.CcCalcConfirmedBy;
-    if(r.PoHeads&&r.PoHeads.length){
-      for(const p of r.PoHeads){
-        if(p.CcphConfirmedBy) return p.CcphConfirmedBy;
-      }
-    }
-    return null;
-  }
-
   function renderTable(){
     const tbody=document.getElementById('data-tbody');
     const start=(currentPage-1)*PAGE_SIZE,page=filtered.slice(start,start+PAGE_SIZE);
     document.getElementById('total-count').textContent=filtered.length+' records';
-    if(!page.length){tbody.innerHTML='<tr><td colspan="10" class="text-center py-4 text-muted">No calculations pending approval or price confirmation.</td></tr>';return;}
+    if(!page.length){tbody.innerHTML='<tr><td colspan="9" class="text-center py-4 text-muted">No calculations awaiting price confirmation.</td></tr>';return;}
     tbody.innerHTML=page.map((r,i)=>{
       const dt=r.CcCalcDate?r.CcCalcDate.split('T')[0]:'';
       const stClass=STATUS_CLASS[r.CcStatus]||'badge bg-secondary';
       const stLabel=STATUS_LABELS[r.CcStatus]||r.CcStatus;
-      const confirmedBy=getConfirmedBy(r);
-      const confirmedByMe=confirmedBy&&confirmedBy.toLowerCase()===currentUserName;
-      let actionBtn;
-      if(r.CcStatus==='AP'){
-        actionBtn=`<a href="price-confirmation.html?id=${r.CcCalcNumber}" class="btn btn-sm btn-success ms-1" title="Confirm Selling Prices"><i class="fas fa-tags me-1"></i>Confirm Prices</a>`;
-      } else if(confirmedByMe){
-        actionBtn=`<span class="badge bg-secondary ms-1" title="You confirmed this calculation — another user must approve it"><i class="fas fa-hourglass-half me-1"></i>Awaiting Approver</span>`;
-      } else {
-        actionBtn=`<button class="btn btn-sm btn-primary ms-1" onclick="approveCalc(${r.CcCalcNumber})" title="Approve Calculation"><i class="fas fa-thumbs-up me-1"></i>Approve</button>`;
-      }
       return`<tr>
         <td>${start+i+1}</td>
         <td><strong>${r.CcCalcNumber}</strong></td>
@@ -215,11 +187,10 @@
         <td>${esc(r.CcForwarderName||r.CcForwarderCode||'')}</td>
         <td>${esc(r.CcCurrCode||'')}${r.CcCurrRate?' ('+Number(r.CcCurrRate).toFixed(4)+')':''}</td>
         <td class="text-center">${r.CcTotOrd??0}</td>
-        <td>${esc(confirmedBy||'')}</td>
         <td><span class="${stClass}">${stLabel}</span></td>
         <td class="d-flex align-items-center gap-1 flex-wrap">
-          <button class="btn-action edit" title="View Calculation" onclick="viewCalc(${r.CcCalcNumber})"><i class="fas fa-eye"></i></button>
-          ${actionBtn}
+          <button class="btn-action edit" title="View Prices" onclick="viewCalc(${r.CcCalcNumber})"><i class="fas fa-eye"></i></button>
+          <a href="price-confirmation.html?id=${r.CcCalcNumber}" class="btn btn-sm btn-success ms-1"><i class="fas fa-tags me-1"></i>Confirm Prices</a>
         </td>
       </tr>`;
     }).join('');
@@ -253,25 +224,9 @@
     if(_confirmCb)await _confirmCb();
   });
 
-  async function approveCalc(id){
-    openConfirmModal({
-      title:'Approve Calculation',
-      message:'This will finalize the calculation and trigger the price confirmation workflow. This action cannot be undone.',
-      icon:'fa-thumbs-up',iconBg:'rgba(13,110,253,.12)',iconColor:'#0d6efd',
-      btnLabel:'Approve',btnClass:'btn-primary',
-      onConfirm:async()=>{
-        try{
-          await API.costCalc.approveCalculation(id);
-          showToast('Calculation approved. Redirecting to price confirmation...','success');
-          setTimeout(()=>{ window.location.href=`price-confirmation.html?id=${id}`; },1200);
-        }catch(err){showToast(err.message,'danger');}
-      }
-    });
-  }
-
   function viewCalc(id) {
-    document.getElementById('mvc-title').textContent = `Calculation #${id}`;
-    document.getElementById('mvc-iframe').src = `calculation.html?id=${id}`;
+    document.getElementById('mvc-title').textContent = `Approve Price Changes — Calc #${id}`;
+    document.getElementById('mvc-iframe').src = `price-confirmation.html?id=${id}`;
     new bootstrap.Modal(document.getElementById('modal-view-calc')).show();
   }
 

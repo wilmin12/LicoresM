@@ -104,6 +104,8 @@
                   <th class="text-end">Old Price</th><th class="text-end">Chg Price</th>
                   <th class="text-end">Chg MRG</th><th class="text-end">New Price(Case)</th>
                   <th></th>
+                  <th class="text-center small" style="min-width:70px;">PRICE<br>CHANGE</th>
+                  <th class="text-center small" style="min-width:70px;">NO PRICE<br>CHANGE</th>
                 </tr></thead>
                 <tbody id="l2-tbody"></tbody>
               </table>
@@ -182,6 +184,8 @@ let allPos = [], reasons = [];
 let currentCalcId = null, currentPoNo = null, currentItemNo = null;
 let itemFlags = {};
 let l3Data = null;
+let currentL2Items = [];
+const LOCKED_KEYS = new Set(['Pr01','Pr03','Pr04','Pr05']);
 
 document.addEventListener('DOMContentLoaded', async () => {
   if (!Auth.requireAuth()) return;
@@ -265,8 +269,9 @@ async function openPo(calcId, poNo) {
 }
 
 function renderL2(items) {
+  currentL2Items = items;
   const tbody = document.getElementById('l2-tbody');
-  if (!items.length) { tbody.innerHTML = '<tr><td colspan="16" class="text-center py-3 text-muted">No items.</td></tr>'; return; }
+  if (!items.length) { tbody.innerHTML = '<tr><td colspan="18" class="text-center py-3 text-muted">No items.</td></tr>'; return; }
   tbody.innerHTML = items.map(d => {
     const chg11010 = (d.CcpcNewCost11010||0) - (d.CcpcOldCost11010||0);
     const chgP = (d.CcpcNewPricePr01||0) - (d.CcpcOldPricePr01||0);
@@ -289,6 +294,8 @@ function renderL2(items) {
       <td class="text-end ${chgCls(chgM)}">${fmt(chgM)}</td>
       <td class="text-end fw-bold">${fmt(d.CcpcNewPricePr01)}</td>
       <td><button class="btn btn-outline-secondary btn-sm" onclick="openL3(${currentCalcId},'${esc(currentPoNo)}','${esc(d.CcpcItemNo)}')">SHOW ALL PRICES &gt;&gt;&gt;</button></td>
+      <td class="text-center">${itemFlags[d.CcpcItemNo] === true  ? '<i class="fas fa-check-circle text-success fs-5"></i>' : ''}</td>
+      <td class="text-center">${itemFlags[d.CcpcItemNo] === false ? '<i class="fas fa-check-circle text-secondary fs-5"></i>' : ''}</td>
     </tr>`;
   }).join('');
 }
@@ -304,10 +311,55 @@ async function openL3(calcId, poNo, itemNo) {
     renderL3(l3Data);
     if (itemFlags[itemNo] !== undefined) {
       document.getElementById(itemFlags[itemNo] ? 'chk-change' : 'chk-nochange').checked = true;
+      if (itemFlags[itemNo] === false) applyNoPriceChange();
     } else {
       document.querySelectorAll('input[name="priceChange"]').forEach(el => el.checked = false);
     }
+    document.getElementById('chk-nochange').onchange = () => applyNoPriceChange();
+    document.getElementById('chk-change').onchange   = () => applyPriceChange();
   } catch(e) { showToast(e.message,'danger'); }
+}
+
+function applyNoPriceChange() {
+  if (!l3Data) return;
+  const tbody = document.getElementById('l3-tbody');
+  PR_KEYS.forEach(k => {
+    const is11060 = !['Pr01','Pr03','Pr04','Pr05','Pr10'].includes(k);
+    const newCost  = is11060 ? (l3Data.CcpcNewCost11060 || 0) : (l3Data.CcpcNewCost11010 || 0);
+    const oldPrice = l3Data[`CcpcOldPrice${cap1(k)}`] || 0;
+    const newMargin = oldPrice > 0 ? Math.round((oldPrice - newCost) / oldPrice * 10000) / 100 : 0;
+    if (!LOCKED_KEYS.has(k)) {
+      const pi = tbody.querySelector(`input[data-key="${k}"][data-type="price"]`);
+      const mi = tbody.querySelector(`input[data-key="${k}"][data-type="margin"]`);
+      if (pi) pi.value = oldPrice.toFixed(2);
+      if (mi) mi.value = newMargin.toFixed(2);
+    } else {
+      const pc = tbody.querySelector(`td[data-key="${k}"][data-row="NewPrice"]`);
+      const mc = tbody.querySelector(`td[data-key="${k}"][data-row="NewMargin"]`);
+      if (pc) pc.textContent = fmt(oldPrice);
+      if (mc) mc.textContent = fmt(newMargin);
+    }
+  });
+}
+
+function applyPriceChange() {
+  if (!l3Data) return;
+  const tbody = document.getElementById('l3-tbody');
+  PR_KEYS.forEach(k => {
+    const origP = l3Data[`CcpcNewPrice${cap1(k)}`];
+    const origM = l3Data[`CcpcNewMargin${cap1(k)}`];
+    if (!LOCKED_KEYS.has(k)) {
+      const pi = tbody.querySelector(`input[data-key="${k}"][data-type="price"]`);
+      const mi = tbody.querySelector(`input[data-key="${k}"][data-type="margin"]`);
+      if (pi) pi.value = origP != null ? Number(origP).toFixed(2) : '';
+      if (mi) mi.value = origM != null ? Number(origM).toFixed(2) : '';
+    } else {
+      const pc = tbody.querySelector(`td[data-key="${k}"][data-row="NewPrice"]`);
+      const mc = tbody.querySelector(`td[data-key="${k}"][data-row="NewMargin"]`);
+      if (pc) pc.textContent = origP != null ? fmt(origP) : '–';
+      if (mc) mc.textContent = origM != null ? fmt(origM) : '–';
+    }
+  });
 }
 
 function cap1(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
@@ -316,7 +368,10 @@ function renderL3(d) {
   if (!d) return;
   const header = document.getElementById('l3-pr-header');
   const tbody  = document.getElementById('l3-tbody');
-  header.innerHTML = '<th>Label</th>' + PR_KEYS.map(k => `<th class="text-center" style="min-width:90px;">${PR_LABELS[k]}</th>`).join('');
+  header.innerHTML = '<th>Label</th>' + PR_KEYS.map(k => {
+    const locked = LOCKED_KEYS.has(k);
+    return `<th class="text-center" style="min-width:90px;">${PR_LABELS[k]}${locked ? ' <i class="fas fa-lock fa-xs text-muted"></i>' : ''}</th>`;
+  }).join('');
 
   const getV = (row, key) => {
     const prop = `Ccpc${row}${cap1(key)}`;
@@ -326,8 +381,12 @@ function renderL3(d) {
   const makeRow = (rowLabel, dataPrefix, cls, editable, inputType) => {
     const cells = PR_KEYS.map(k => {
       const v = getV(dataPrefix, k);
-      if (editable) return `<td class="${cls}"><input class="form-control form-control-sm text-end ${cls}" data-key="${k}" data-type="${inputType}" value="${v!=null?Number(v).toFixed(2):''}"/></td>`;
-      return `<td class="${cls} text-end">${v!=null?fmt(v):'–'}</td>`;
+      const isLocked = LOCKED_KEYS.has(k);
+      if (editable && !isLocked) {
+        return `<td class="${cls}"><input class="form-control form-control-sm text-end ${cls}" data-key="${k}" data-type="${inputType}" value="${v!=null?Number(v).toFixed(2):''}"/></td>`;
+      }
+      const dimmed = isLocked && editable ? ' text-muted' : '';
+      return `<td class="${cls} text-end${dimmed}" data-key="${k}" data-row="${dataPrefix}">${v!=null?fmt(v):'–'}</td>`;
     }).join('');
     return `<tr><td class="fw-semibold small">${rowLabel}</td>${cells}</tr>`;
   };
@@ -363,6 +422,7 @@ function renderL3(d) {
 function saveL3() {
   const flag = document.querySelector('input[name="priceChange"]:checked')?.value;
   if (flag !== undefined && currentItemNo) itemFlags[currentItemNo] = flag === '1';
+  renderL2(currentL2Items);
   showLevel(2);
 }
 
