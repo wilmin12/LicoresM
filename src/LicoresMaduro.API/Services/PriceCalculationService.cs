@@ -52,6 +52,12 @@ public sealed class PriceCalculationService : IPriceCalculationService
                     g => g.FirstOrDefault(r => (r.Whse ?? "").Trim() == "11010")?.Cost99
                          ?? g.FirstOrDefault(r => r.Cost99.HasValue)?.Cost99);
 
+            var allowedMarginMap11060 = all99T
+                .GroupBy(r => r.Item)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.FirstOrDefault(r => (r.Whse ?? "").Trim() == "11060")?.Cost99);
+
             _logger.LogInformation("PriceCalc #{CalcNumber}: Ranker99T rows={Rows}, allowedMarginMap keys={Keys}, sample Whse values={Whse}",
                 calcNumber, all99T.Count, allowedMarginMap.Count,
                 string.Join(",", all99T.Take(3).Select(r => $"'{r.Whse}'")));
@@ -102,6 +108,7 @@ public sealed class PriceCalculationService : IPriceCalculationService
                     CcpcOrdQty        = d.CcpdOrdQty,
                     CcpcFobFc         = d.CcpdFobPriceUsd,
                     CcpcAllowedMargin = allowedMarginMap.TryGetValue(d.CcpdItemNo, out var am) ? am : null,
+                    CcpcAllowedMargin11060 = allowedMarginMap11060.TryGetValue(d.CcpdItemNo, out var am60) ? am60 : null,
                     CcpcNewCost11010  = newCostCase11010,
                     CcpcNewCost11060  = newCostCase11060,
                     CcpcOldCost11010  = oldCost11010,
@@ -131,7 +138,16 @@ public sealed class PriceCalculationService : IPriceCalculationService
                 });
             }
 
-            var existing = _db.CcPriceConfirmations.Where(x => x.CcpcCalcNumber == calcNumber);
+            // Preserve manager decisions (price-change flags) across recalculations
+            var existing = await _db.CcPriceConfirmations
+                .Where(x => x.CcpcCalcNumber == calcNumber)
+                .ToListAsync(ct);
+            var flagMap = existing
+                .Where(x => x.CcpcPriceChangeFlag != null)
+                .ToDictionary(x => (x.CcpcPoNo, x.CcpcItemNo), x => x.CcpcPriceChangeFlag);
+            foreach (var row in toUpsert)
+                if (flagMap.TryGetValue((row.CcpcPoNo, row.CcpcItemNo), out var oldFlag))
+                    row.CcpcPriceChangeFlag = oldFlag;
             _db.CcPriceConfirmations.RemoveRange(existing);
             _db.CcPriceConfirmations.AddRange(toUpsert);
             await _db.SaveChangesAsync(ct);

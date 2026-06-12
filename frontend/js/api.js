@@ -408,10 +408,11 @@ const API = (() => {
     deleteVendorCif: (code) => del(`/api/cost-calc/vendor-cif/${encodeURIComponent(code)}`),
     // Price Confirmation
     getPendingPricePos:     ()                      => get('/api/cost-calc/price-confirmations/pending'),
-    getPoItemPrices:        (calcId, poNo)          => get(`/api/cost-calc/price-confirmations/${calcId}/${encodeURIComponent(poNo)}`),
-    getItemCasePrices:      (calcId, poNo, itemNo)  => get(`/api/cost-calc/price-confirmations/${calcId}/${encodeURIComponent(poNo)}/${encodeURIComponent(itemNo)}`),
+    getPoItemPrices:        (calcId, poNo)          => get(`/api/cost-calc/price-confirmations/${calcId}?poNo=${encodeURIComponent(poNo)}`),
+    getItemCasePrices:      (calcId, poNo, itemNo)  => get(`/api/cost-calc/price-confirmations/${calcId}/item?poNo=${encodeURIComponent(poNo)}&itemNo=${encodeURIComponent(itemNo)}`),
     recalcPrice:            (dto)                   => post('/api/cost-calc/price-confirmations/recalc', dto),
-    approvePoPrices:        (calcId, poNo, dto)     => post(`/api/cost-calc/price-confirmations/${calcId}/${encodeURIComponent(poNo)}/approve`, dto),
+    approvePoPrices:        (calcId, poNo, dto)     => post(`/api/cost-calc/price-confirmations/${calcId}/approve?poNo=${encodeURIComponent(poNo)}`, dto),
+    savePriceConfirmItem:   (calcId, poNo, itemNo, dto) => put(`/api/cost-calc/price-confirmations/${calcId}/item?poNo=${encodeURIComponent(poNo)}&itemNo=${encodeURIComponent(itemNo)}`, dto),
     getPriceChangeReasons:  ()                      => get('/api/cost-calc/price-confirmations/reasons')
   };
 

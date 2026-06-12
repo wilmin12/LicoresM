@@ -57,7 +57,10 @@
 
       <!-- LEVEL 1: Pending PO list -->
       <div id="level1" class="level active">
-        <div class="page-title">Purchase Order Selling Prices to be Approved</div>
+        <div class="d-flex align-items-center gap-3 mb-2">
+          <a id="btn-back-approve" href="approve-calculations.html" class="btn btn-outline-secondary btn-sm d-none"><i class="fas fa-arrow-left me-1"></i>Back to Approve</a>
+          <div class="page-title mb-0">Purchase Order Selling Prices to be Approved</div>
+        </div>
         <div class="page-subtitle" id="l1-subtitle">POs pending price confirmation after cost calculation approval.</div>
         <div class="card mt-3">
           <div class="card-header d-flex align-items-center justify-content-between">
@@ -120,7 +123,7 @@
               <label class="form-label mb-0 small fw-semibold">Price Change Date:</label>
               <input type="date" id="inp-date" class="form-control form-control-sm" style="width:150px;"/>
             </div>
-            <button class="btn btn-wine btn-sm ms-auto" id="btn-approve-po">
+            <button class="btn btn-wine btn-sm ms-auto" id="btn-approve-po" disabled
               <i class="fas fa-check-circle me-1"></i>APPROVE PRICE CHANGES AND SEND EMAIL
             </button>
           </div>
@@ -205,6 +208,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('l1-subtitle').textContent = `Calc No: #${_urlCalcId} — POs pending price confirmation.`;
     document.getElementById('bc-label').textContent = `Price Confirmation — Calc #${_urlCalcId}`;
   }
+  if (_urlParams.get('from') === 'approve') {
+    document.getElementById('btn-back-approve').classList.remove('d-none');
+  }
   document.getElementById('btn-logout').addEventListener('click', e => { e.preventDefault(); Auth.logout(); });
   document.getElementById('btn-approve-po').addEventListener('click', approvePo);
   document.getElementById('btn-back-l2').addEventListener('click', () => showLevel(2));
@@ -265,7 +271,11 @@ async function openPo(calcId, poNo) {
       : `<tr><td colspan="16" class="text-center py-3 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Calculating prices, please wait... (${attempt}/${maxRetries})</td></tr>`;
     try {
       const r = await API.costCalc.getPoItemPrices(calcId, poNo);
-      renderL2(r?.Data || []);
+      const items = r?.Data || [];
+      // Hydrate saved manager decisions so they survive leaving the module
+      itemFlags = {};
+      items.forEach(d => { if (d.CcpcPriceChangeFlag != null) itemFlags[d.CcpcItemNo] = d.CcpcPriceChangeFlag; });
+      renderL2(items);
       return;
     } catch(e) {
       if (attempt < maxRetries && (e.message||'').includes('No price data found')) {
@@ -282,33 +292,46 @@ async function openPo(calcId, poNo) {
 function renderL2(items) {
   currentL2Items = items;
   const tbody = document.getElementById('l2-tbody');
-  if (!items.length) { tbody.innerHTML = '<tr><td colspan="18" class="text-center py-3 text-muted">No items.</td></tr>'; return; }
+  if (!items.length) { tbody.innerHTML = '<tr><td colspan="18" class="text-center py-3 text-muted">No items.</td></tr>'; updateApproveBtn(); return; }
   tbody.innerHTML = items.map(d => {
     const chg11010 = (d.CcpcNewCost11010||0) - (d.CcpcOldCost11010||0);
-    const chgP = (d.CcpcNewPricePr01||0) - (d.CcpcOldPricePr01||0);
-    const chgM = (d.CcpcNewMarginPr01||0) - (d.CcpcOldMarginPr01||0);
+    const chg11060 = (d.CcpcNewCost11060||0) - (d.CcpcOldCost11060||0);
+    const chgP01 = (d.CcpcNewPricePr01||0) - (d.CcpcOldPricePr01||0);
+    const chgP06 = (d.CcpcNewPricePr06||0) - (d.CcpcOldPricePr06||0);
+    const chgM01 = (d.CcpcNewMarginPr01||0) - (d.CcpcOldMarginPr01||0);
+    const chgM06 = (d.CcpcNewMarginPr06||0) - (d.CcpcOldMarginPr06||0);
     const chgCls = v => v > 0.005 ? 'change-pos' : v < -0.005 ? 'change-neg' : '';
+    const two = (a, b, clsA='', clsB='') => `<span class="${clsA}">${fmt(a)}</span><br/><span class="${clsB}">${fmt(b)}</span>`;
     return `<tr>
       <td><strong>${esc(d.CcpcItemNo)}</strong></td>
       <td>${esc(d.CcpcDescription||'')}</td>
       <td class="text-end">${fmt(d.CcpcOrdQty,0)}</td>
       <td class="text-end">${fmt(d.CcpcFobFc)}</td>
       <td><span class="wh-label">11010</span><br/><span class="wh-label">11060</span></td>
-      <td class="text-end">${fmt(d.CcpcAllowedMargin)}</td>
-      <td class="text-end">${fmt(d.CcpcNewMarginPr01)}<br/>${fmt(d.CcpcNewMarginPr06)}</td>
-      <td class="text-end">${fmt(d.CcpcNewCost11010)}<br/>${fmt(d.CcpcNewCost11060)}</td>
-      <td class="text-end">${fmt(d.CcpcOldCost11010)}<br/>${fmt(d.CcpcOldCost11060)}</td>
-      <td class="text-end ${chgCls(chg11010)}">${fmt(chg11010)}</td>
-      <td class="text-end">${fmt(d.CcpcNewPricePr01)}</td>
-      <td class="text-end">${fmt(d.CcpcOldPricePr01)}</td>
-      <td class="text-end ${chgCls(chgP)}">${fmt(chgP)}</td>
-      <td class="text-end ${chgCls(chgM)}">${fmt(chgM)}</td>
-      <td class="text-end fw-bold">${fmt(d.CcpcNewPricePr01)}</td>
+      <td class="text-end">${two(d.CcpcAllowedMargin, d.CcpcAllowedMargin11060)}</td>
+      <td class="text-end">${two(d.CcpcNewMarginPr01, d.CcpcNewMarginPr06)}</td>
+      <td class="text-end">${two(d.CcpcNewCost11010, d.CcpcNewCost11060)}</td>
+      <td class="text-end">${two(d.CcpcOldCost11010, d.CcpcOldCost11060)}</td>
+      <td class="text-end">${two(chg11010, chg11060, chgCls(chg11010), chgCls(chg11060))}</td>
+      <td class="text-end">${two(d.CcpcNewPricePr01, d.CcpcNewPricePr06)}</td>
+      <td class="text-end">${two(d.CcpcOldPricePr01, d.CcpcOldPricePr06)}</td>
+      <td class="text-end">${two(chgP01, chgP06, chgCls(chgP01), chgCls(chgP06))}</td>
+      <td class="text-end">${two(chgM01, chgM06, chgCls(chgM01), chgCls(chgM06))}</td>
+      <td class="text-end fw-bold">${two(d.CcpcNewPricePr01, d.CcpcNewPricePr06)}</td>
       <td><button class="btn btn-outline-secondary btn-sm" onclick="openL3(${currentCalcId},'${esc(currentPoNo)}','${esc(d.CcpcItemNo)}')">SHOW ALL PRICES &gt;&gt;&gt;</button></td>
       <td class="text-center">${itemFlags[d.CcpcItemNo] === true  ? '<i class="fas fa-check-circle text-success fs-5"></i>' : ''}</td>
       <td class="text-center">${itemFlags[d.CcpcItemNo] === false ? '<i class="fas fa-check-circle text-secondary fs-5"></i>' : ''}</td>
     </tr>`;
   }).join('');
+  updateApproveBtn();
+}
+
+function updateApproveBtn() {
+  const btn = document.getElementById('btn-approve-po');
+  const pending = currentL2Items.filter(d => itemFlags[d.CcpcItemNo] === undefined).length;
+  const ready = currentL2Items.length > 0 && pending === 0;
+  btn.disabled = !ready;
+  btn.title = ready ? '' : `Mark Price change / No price change on all items first (${pending} pending).`;
 }
 
 async function openL3(calcId, poNo, itemNo) {
@@ -430,11 +453,38 @@ function renderL3(d) {
   });
 }
 
-function saveL3() {
+async function saveL3() {
   const flag = document.querySelector('input[name="priceChange"]:checked')?.value;
-  if (flag !== undefined && currentItemNo) itemFlags[currentItemNo] = flag === '1';
-  renderL2(currentL2Items);
-  showLevel(2);
+  if (!currentItemNo) { showLevel(2); return; }
+  if (flag === undefined) { showToast('Select PRICE CHANGE or NO PRICE CHANGE first.','danger'); return; }
+  const flagBool = flag === '1';
+
+  // Collect manager-edited prices/margins from the editable inputs
+  const prices = {};
+  document.querySelectorAll('#l3-tbody input[data-type]').forEach(inp => {
+    const v = parseFloat(inp.value);
+    if (isNaN(v)) return;
+    const k = inp.dataset.key;
+    prices[k] = prices[k] || {};
+    prices[k][inp.dataset.type === 'price' ? 'Price' : 'Margin'] = v;
+  });
+
+  const btn = document.getElementById('btn-save-l3');
+  btn.disabled = true;
+  try {
+    await API.costCalc.savePriceConfirmItem(currentCalcId, currentPoNo, currentItemNo,
+      { PriceChangeFlag: flagBool, Prices: prices });
+    itemFlags[currentItemNo] = flagBool;
+    // Reflect edits in the L2 grid without a full reload
+    const item = currentL2Items.find(d => d.CcpcItemNo === currentItemNo);
+    if (item) Object.entries(prices).forEach(([k, pm]) => {
+      if (pm.Price  != null) item[`CcpcNewPrice${k}`]  = pm.Price;
+      if (pm.Margin != null) item[`CcpcNewMargin${k}`] = pm.Margin;
+    });
+    renderL2(currentL2Items);
+    showLevel(2);
+  } catch(e) { showToast(e.message||'Error saving.','danger'); }
+  finally { btn.disabled = false; }
 }
 
 async function approvePo() {

@@ -1,8 +1,12 @@
 using LicoresMaduro.API.Data;
 using LicoresMaduro.API.Helpers;
+using LicoresMaduro.API.Models.Auth;
+using MailKit.Net.Smtp;
+using MailKit.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using MimeKit;
 
 namespace LicoresMaduro.API.Controllers.CostCalc;
 
@@ -45,9 +49,11 @@ public sealed class PriceConfirmationController : ControllerBase
     }
 
     // Level 2: Product analysis for a specific PO
-    [HttpGet("{calcId:int}/{poNo}")]
-    public async Task<IActionResult> GetPoItems(int calcId, string poNo, CancellationToken ct)
+    [HttpGet("{calcId:int}")]
+    public async Task<IActionResult> GetPoItems(int calcId, [FromQuery] string poNo, CancellationToken ct)
     {
+        if (string.IsNullOrEmpty(poNo))
+            return BadRequest(ApiResponse.Fail("poNo is required."));
         var items = await _db.CcPriceConfirmations
             .AsNoTracking()
             .Where(x => x.CcpcCalcNumber == calcId && x.CcpcPoNo == poNo)
@@ -58,15 +64,48 @@ public sealed class PriceConfirmationController : ControllerBase
     }
 
     // Level 3: Full case prices for a specific item
-    [HttpGet("{calcId:int}/{poNo}/{itemNo}")]
-    public async Task<IActionResult> GetItemPrices(int calcId, string poNo, string itemNo, CancellationToken ct)
+    [HttpGet("{calcId:int}/item")]
+    public async Task<IActionResult> GetItemPrices(int calcId, [FromQuery] string poNo, [FromQuery] string itemNo, CancellationToken ct)
     {
+        if (string.IsNullOrEmpty(poNo) || string.IsNullOrEmpty(itemNo))
+            return BadRequest(ApiResponse.Fail("poNo and itemNo are required."));
         var item = await _db.CcPriceConfirmations
             .AsNoTracking()
             .FirstOrDefaultAsync(x => x.CcpcCalcNumber == calcId
                 && x.CcpcPoNo == poNo && x.CcpcItemNo == itemNo, ct);
         if (item is null) return NotFound(ApiResponse.Fail($"Item {itemNo} not found in price confirmation."));
         return Ok(ApiResponse<CcPriceConfirmation>.Ok(item));
+    }
+
+    // Save manager decision for one item: price-change flag + edited prices/margins
+    [HttpPut("{calcId:int}/item")]
+    public async Task<IActionResult> SaveItem(int calcId, [FromQuery] string poNo, [FromQuery] string itemNo,
+        [FromBody] SaveItemDto dto, CancellationToken ct)
+    {
+        if (string.IsNullOrEmpty(poNo) || string.IsNullOrEmpty(itemNo))
+            return BadRequest(ApiResponse.Fail("poNo and itemNo are required."));
+        var row = await _db.CcPriceConfirmations
+            .FirstOrDefaultAsync(x => x.CcpcCalcNumber == calcId
+                && x.CcpcPoNo == poNo && x.CcpcItemNo == itemNo, ct);
+        if (row is null) return NotFound(ApiResponse.Fail($"Item {itemNo} not found in price confirmation."));
+
+        row.CcpcPriceChangeFlag = dto.PriceChangeFlag;
+        if (dto.Prices is not null)
+        {
+            // PR01/PR03/PR04/PR05 are locked (system-calculated); the rest are manager-editable
+            var editable = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                { "Pr06", "Pr07", "Pr08", "Pr09", "Pr10", "Pr11" };
+            foreach (var (key, pm) in dto.Prices)
+            {
+                if (!editable.Contains(key)) continue;
+                var priceProp  = typeof(CcPriceConfirmation).GetProperty($"CcpcNewPrice{key}");
+                var marginProp = typeof(CcPriceConfirmation).GetProperty($"CcpcNewMargin{key}");
+                if (pm.Price.HasValue)  priceProp?.SetValue(row, pm.Price);
+                if (pm.Margin.HasValue) marginProp?.SetValue(row, pm.Margin);
+            }
+        }
+        await _db.SaveChangesAsync(ct);
+        return Ok(ApiResponse.Ok("Item saved."));
     }
 
     // Bidirectional recalc: given price compute margin, or given margin compute price
@@ -88,8 +127,8 @@ public sealed class PriceConfirmationController : ControllerBase
     }
 
     // Approve price changes for a PO
-    [HttpPost("{calcId:int}/{poNo}/approve")]
-    public async Task<IActionResult> ApprovePo(int calcId, string poNo,
+    [HttpPost("{calcId:int}/approve")]
+    public async Task<IActionResult> ApprovePo(int calcId, [FromQuery] string poNo,
         [FromBody] ApprovePoDto dto, CancellationToken ct)
     {
         var po = await _db.CcCalcPoHeads
@@ -97,6 +136,25 @@ public sealed class PriceConfirmationController : ControllerBase
             .FirstOrDefaultAsync(p => p.CcphCalcNumber == calcId && p.CcphLmPoNo == poNo, ct);
         if (po is null) return NotFound(ApiResponse.Fail($"PO {poNo} not found."));
         if (po.CcphStatus != "PC") return BadRequest(ApiResponse.Fail("Only PC-status POs can be approved here."));
+
+        // 4-eyes: confirmer cannot approve prices
+        var currentUser = User.Identity?.Name ?? string.Empty;
+        if (!string.IsNullOrEmpty(po.CcphConfirmedBy) &&
+            string.Equals(po.CcphConfirmedBy, currentUser, StringComparison.OrdinalIgnoreCase))
+            return BadRequest(ApiResponse.Fail("The user who confirmed this calculation cannot approve prices. Another user must approve."));
+
+        // All items must be flagged (Price change / No price change) before approval
+        var poRows = await _db.CcPriceConfirmations
+            .Where(x => x.CcpcCalcNumber == calcId && x.CcpcPoNo == poNo)
+            .ToListAsync(ct);
+        var unflagged = poRows
+            .Where(x => x.CcpcPriceChangeFlag == null
+                && (dto.ItemFlags == null || !dto.ItemFlags.ContainsKey(x.CcpcItemNo)))
+            .Select(x => x.CcpcItemNo)
+            .ToList();
+        if (unflagged.Count > 0)
+            return BadRequest(ApiResponse.Fail(
+                $"All items must be marked Price change / No price change before approving. Pending: {string.Join(", ", unflagged)}"));
 
         if (dto.ItemFlags?.Count > 0)
         {
@@ -128,8 +186,58 @@ public sealed class PriceConfirmationController : ControllerBase
         po.CcphStatus          = "PD";
         po.CcphReasonCode      = dto.ReasonCode;
         po.CcphPriceChangeDate = dto.PriceChangeDate;
+        po.CcphApprovedBy      = currentUser;
+
+        // Transition calc to AP on first PO approval
+        var calc = await _db.CcCalcHeaders.FirstOrDefaultAsync(c => c.CcCalcNumber == calcId, ct);
+        if (calc is not null && calc.CcStatus == "CF")
+            calc.CcStatus = "AP";
 
         await _db.SaveChangesAsync(ct);
+
+        // Fire-and-forget: send notification email
+        LmEmailConfig? emailCfg = null;
+        string? approvalEmail = null;
+        try
+        {
+            emailCfg     = await _db.LmEmailConfig.AsNoTracking().FirstOrDefaultAsync(ct);
+            var sysCfg   = await _db.SystemTable.AsNoTracking().FirstOrDefaultAsync(ct);
+            approvalEmail = sysCfg?.CompEmailApproval?.Trim();
+        }
+        catch (Exception ex) { _logger.LogWarning(ex, "Could not pre-load email config for ApprovePo #{CalcId}", calcId); }
+
+        if (emailCfg is not null && !string.IsNullOrEmpty(approvalEmail))
+        {
+            var calcIdCopy  = calcId;
+            var poNoCopy    = poNo;
+            var approvedBy  = currentUser;
+            LmEmailConfig cfg = emailCfg;
+            var recipients  = approvalEmail.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                                           .Select(r => r.Trim()).Where(r => !string.IsNullOrEmpty(r)).ToList();
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    var subject = $"[Price Confirmation] Calc #{calcIdCopy} / PO {poNoCopy} — Prices Approved";
+                    var body    = $"<p>The price changes for <b>PO {poNoCopy}</b> in Cost Calculation <b>#{calcIdCopy}</b> have been <b style='color:green;'>approved</b> by <b>{approvedBy}</b>.</p>";
+                    var sslOption = cfg.SmtpPort == 465 ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTls;
+                    using var client = new SmtpClient();
+                    await client.ConnectAsync(cfg.SmtpHost, cfg.SmtpPort, sslOption);
+                    await client.AuthenticateAsync(cfg.SenderEmail, cfg.SenderPassword);
+                    foreach (var to in recipients)
+                    {
+                        var msg = new MimeMessage();
+                        msg.From.Add(new MailboxAddress(cfg.SenderName, cfg.SenderEmail));
+                        msg.To.Add(MailboxAddress.Parse(to));
+                        msg.Subject = subject;
+                        msg.Body    = new TextPart("html") { Text = body };
+                        await client.SendAsync(msg);
+                    }
+                    await client.DisconnectAsync(true);
+                }
+                catch (Exception ex) { _logger.LogWarning(ex, "Failed to send price approval email for Calc #{CalcId} PO {PoNo}", calcIdCopy, poNoCopy); }
+            });
+        }
 
         _logger.LogInformation("PriceConfirm: Calc {CalcId} PO {PoNo} approved by {User}",
             calcId, poNo, User.Identity?.Name);
@@ -151,3 +259,5 @@ public sealed class PriceConfirmationController : ControllerBase
 
 public record RecalcDto(decimal Cost, decimal? Price, decimal? Margin);
 public record ApprovePoDto(string? ReasonCode, DateTime? PriceChangeDate, Dictionary<string, bool>? ItemFlags);
+public record PriceMarginDto(decimal? Price, decimal? Margin);
+public record SaveItemDto(bool? PriceChangeFlag, Dictionary<string, PriceMarginDto>? Prices);

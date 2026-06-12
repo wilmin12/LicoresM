@@ -1765,6 +1765,11 @@ public sealed class ApplicationDbContext : DbContext
             e.Property(x => x.CcpcPoNo).HasColumnName("CCPC_PoNo").HasMaxLength(20);
             e.Property(x => x.CcpcItemNo).HasColumnName("CCPC_ItemNo").HasMaxLength(20);
             e.Property(x => x.CcpcWarehouse).HasColumnName("CCPC_Warehouse").HasMaxLength(10);
+            e.Property(x => x.CcpcDescription).HasColumnName("CCPC_Description").HasMaxLength(200);
+            e.Property(x => x.CcpcOrdQty).HasColumnName("CCPC_OrdQty");
+            e.Property(x => x.CcpcFobFc).HasColumnName("CCPC_FobFc");
+            e.Property(x => x.CcpcAllowedMargin).HasColumnName("CCPC_AllowedMargin");
+            e.Property(x => x.CcpcAllowedMargin11060).HasColumnName("CCPC_AllowedMargin11060");
             e.Property(x => x.CcpcNewCost11010).HasColumnName("CCPC_NewCost11010");
             e.Property(x => x.CcpcNewCost11060).HasColumnName("CCPC_NewCost11060");
             e.Property(x => x.CcpcOldCost11010).HasColumnName("CCPC_OldCost11010");
@@ -3110,6 +3115,11 @@ public class CcPriceConfirmation
     public string   CcpcPoNo           { get; set; } = string.Empty;
     public string   CcpcItemNo         { get; set; } = string.Empty;
     public string?  CcpcWarehouse      { get; set; }
+    public string?  CcpcDescription    { get; set; }
+    public decimal? CcpcOrdQty         { get; set; }
+    public decimal? CcpcFobFc          { get; set; }
+    public decimal? CcpcAllowedMargin  { get; set; }
+    public decimal? CcpcAllowedMargin11060 { get; set; }
     public decimal? CcpcNewCost11010   { get; set; }
     public decimal? CcpcNewCost11060   { get; set; }
     public decimal? CcpcOldCost11010   { get; set; }
