@@ -71,7 +71,7 @@
     <h1><i class="fas fa-calculator me-2"></i>Cost Calculation</h1>
     <p>Módulo de Cálculo de Costo Landed — Guía completa para calcular el costo real de importación de productos.</p>
     <div class="mt-3 d-flex gap-2 flex-wrap">
-      <span class="badge bg-white text-dark">Versión 1.2</span>
+      <span class="badge bg-white text-dark">Versión 1.4</span>
       <span class="badge bg-white text-dark">Fase 1</span>
       <span class="badge bg-white text-dark">Licores Maduro © 2026</span>
     </div>
@@ -90,15 +90,16 @@
           <a href="#sec2">2. Roles y Permisos</a>
           <a href="#sec3">3. Flujo del Proceso</a>
           <a href="#sec4">4. Crear una Calculación</a>
-          <a href="#sec5">5. Ejecutar el Cálculo</a>
-          <a href="#sec6">6. Cargos Adicionales</a>
+          <a href="#sec5">5. Editar y Recalcular</a>
+          <a href="#sec6">6. Confirmación de Precios</a>
           <a href="#sec7">7. Confirmar</a>
-          <a href="#sec8">8. Aprobar</a>
+          <a href="#sec8">8. Aprobar y Archivos Generados</a>
           <a href="#sec9">9. Fórmula del Costo Landed</a>
-          <a href="#sec10">10. Catálogos de Soporte</a>
-          <a href="#sec11">11. Campos del Formulario</a>
-          <a href="#sec12">12. Preguntas Frecuentes</a>
-          <a href="#sec13">13. Maintenance Cost Calculation</a>
+          <a href="#sec9b">10. Reporte Final (Print)</a>
+          <a href="#sec10">11. Catálogos de Soporte</a>
+          <a href="#sec11">12. Campos del Formulario</a>
+          <a href="#sec12">13. Preguntas Frecuentes</a>
+          <a href="#sec13">14. Maintenance Cost Calculation</a>
         </div>
       </div>
     </div>
@@ -139,7 +140,7 @@
           <div class="section-title"><span data-i18n="Process Flow">Flujo del Proceso</span></div>
           <div class="flow-step">
             <div class="flow-icon bg-secondary text-white"><i class="fas fa-pencil-alt"></i></div>
-            <div><strong><span class="badge-status badge-dr">DR — Draft</span></strong><br/>La calculación fue creada. Se pueden correr y recorrer los cálculos, agregar cargos adicionales y ajustar parámetros.</div>
+            <div><strong><span class="badge-status badge-dr">DR — In Calculation</span></strong><br/>La calculación fue creada. Se pueden ajustar los datos base y los parámetros desde <strong>Edit POs / Base Data</strong>; al guardar, el sistema recalcula automáticamente.</div>
           </div>
           <div class="flow-step">
             <div class="flow-icon bg-warning text-dark"><i class="fas fa-check"></i></div>
@@ -178,29 +179,30 @@
       <!-- 5 -->
       <div id="sec5" class="card shadow-sm mb-4">
         <div class="card-body p-4">
-          <div class="section-title"><span data-i18n="Run or Re-run the Calculation">Ejecutar o Re-ejecutar el Cálculo</span></div>
-          <p>Desde la pantalla de detalle de la calculación (estado <span class="badge-status badge-dr">DR</span>):</p>
+          <div class="section-title"><span data-i18n="Edit and Recalculate">Editar y Recalcular</span></div>
+          <p>Mientras la calculación esté en estado <span class="badge-status badge-dr">In Calculation</span>, todo se edita y recalcula desde un solo lugar:</p>
           <ol class="ps-3">
-            <li class="mb-2">Clic en <span class="badge bg-secondary">Run Calculation</span>.</li>
-            <li class="mb-2">Ajustar los parámetros si es necesario (fletes, tasa de cambio, margen %).</li>
-            <li class="mb-2">Confirmar. El sistema distribuye todos los costos por peso entre los ítems de cada PO.</li>
+            <li class="mb-2">Desde la pantalla de detalle, clic en <span class="badge bg-primary">Edit POs / Base Data</span>.</li>
+            <li class="mb-2">El formulario se abre con <strong>todos los datos que ingresaste</strong> (fletes, tasa de cambio, margen %, POs). Corrige lo necesario sin empezar de cero.</li>
+            <li class="mb-2">Al <strong>guardar</strong>, el sistema recalcula automáticamente y distribuye todos los costos por peso entre los ítems de cada PO.</li>
           </ol>
-          <div class="info-box">Puedes re-ejecutar el cálculo tantas veces como necesites mientras la calculación esté en estado <span class="badge-status badge-dr">DR</span>.</div>
+          <div class="info-box">Puedes editar y recalcular tantas veces como necesites mientras la calculación esté en estado <span class="badge-status badge-dr">In Calculation</span>. <strong>Ya no existe un botón "Run Calculation" separado</strong>: el recálculo ocurre al guardar desde Edit POs / Base Data.</div>
         </div>
       </div>
 
       <!-- 6 -->
       <div id="sec6" class="card shadow-sm mb-4">
         <div class="card-body p-4">
-          <div class="section-title"><span data-i18n="Additional Charges (Ship Charges)">Cargos Adicionales (Ship Charges)</span></div>
-          <p>Además del flete principal, puedes agregar cargos extra del naviero (THC, B/L fees, doc fees, etc.):</p>
+          <div class="section-title"><span data-i18n="Price Confirmation">Confirmación de Precios</span></div>
+          <p>Una vez aprobados los costos, el Sales Manager revisa y decide los precios de venta por ítem en el módulo <strong>Price Confirmation</strong>. Para cada PO pendiente:</p>
           <ol class="ps-3">
-            <li class="mb-2">En la pantalla de detalle, localizar la sección <strong>"Ship Charges"</strong>.</li>
-            <li class="mb-2">Clic en <span class="badge bg-outline-secondary border">+ Add Charge</span> (solo Admin).</li>
-            <li class="mb-2">Ingresar: código, descripción, monto y moneda.</li>
-            <li class="mb-2">Re-ejecutar el cálculo para que estos cargos se distribuyan entre los ítems.</li>
+            <li class="mb-2">Abrir el PO. La grilla muestra cada ítem con dos sub-filas por almacén: <strong>11010</strong> (duty paid, basado en PR01) y <strong>11060</strong> (bonded, basado en PR06), cada una con su Allowed%, Actual%, costos y precios nuevos vs. anteriores.</li>
+            <li class="mb-2">En <span class="badge bg-secondary">SHOW ALL PRICES</span> se ven y editan todos los niveles de precio (PR01–PR11) en caja y botella.</li>
+            <li class="mb-2">Marcar cada ítem como <span class="badge bg-success">PRICE CHANGE</span> o <span class="badge bg-secondary">NO PRICE CHANGE</span> y guardar con <strong>Save &amp; Back</strong>.</li>
+            <li class="mb-2">El botón <strong>Approve Price Changes and Send Email</strong> permanece deshabilitado hasta que <strong>todos</strong> los ítems estén marcados.</li>
           </ol>
-          <div class="note-box">Los ship charges se distribuyen proporcionalmente al peso de cada ítem dentro del embarque.</div>
+          <div class="info-box">Tus decisiones (marca y precios editados) se <strong>guardan en la base de datos</strong>: si sales del módulo y vuelves a entrar, los cambios siguen ahí.</div>
+          <div class="note-box mt-2"><strong>Regla de 4 ojos:</strong> el usuario que confirmó la calculación no puede aprobar los precios; debe hacerlo otro usuario.</div>
         </div>
       </div>
 
@@ -211,27 +213,42 @@
           <ol class="ps-3">
             <li class="mb-2">Verificar que todos los costos y el desglose por ítem sean correctos.</li>
             <li class="mb-2">Hacer clic en <span class="badge bg-warning text-dark">Confirm</span> y confirmar en el diálogo que aparece.</li>
-            <li class="mb-2">La calculación pasa a <span class="badge-status badge-cf">CF</span>. Ocurren dos notificaciones automáticas:
+            <li class="mb-2">La calculación pasa a <span class="badge-status badge-cf">CF</span>. Ocurren las siguientes acciones automáticas:
               <ul class="mt-1">
+                <li>El sistema calcula en segundo plano la <strong>matriz de precios de venta</strong> (PR01–PR11) que luego se revisa en Price Confirmation.</li>
                 <li>El equipo de Finanzas configurado en <strong>Maintenance Cost Calculation</strong> recibe un <strong>correo</strong> para proceder con la aprobación.</li>
                 <li>Los usuarios <strong>Admin / SuperAdmin</strong> reciben una <strong>notificación in-app</strong> en el ícono de campana (<i class="fas fa-bell"></i>) con el número de la calculación y un enlace directo.</li>
               </ul>
             </li>
           </ol>
-          <div class="warn-box"><strong>Atención:</strong> Una vez confirmada, no podrás recalcular. Si necesitas corregir algo, contacta a un Admin para que la vuelva a Draft.</div>
+          <div class="warn-box"><strong>Atención:</strong> Una vez confirmada, no podrás recalcular. Si necesitas corregir algo, contacta a un Admin para que la vuelva a <strong>In Calculation</strong>.</div>
         </div>
       </div>
 
       <!-- 8 -->
       <div id="sec8" class="card shadow-sm mb-4">
         <div class="card-body p-4">
-          <div class="section-title"><span data-i18n="Approve">Aprobar (Admin / SuperAdmin)</span></div>
+          <div class="section-title"><span data-i18n="Approve">Aprobar y Archivos Generados</span></div>
+          <p class="fw-bold mb-1">Aprobación de costos (Admin / SuperAdmin)</p>
           <ol class="ps-3">
             <li class="mb-2">Localizar la calculación en estado <span class="badge-status badge-cf">CF</span>.</li>
             <li class="mb-2">Revisar el resumen: POs incluidos, costos totales, precios sugeridos.</li>
             <li class="mb-2">Clic en <span class="badge bg-success">Approve</span>.</li>
             <li class="mb-2">La calculación pasa a <span class="badge-status badge-ap">AP</span>. Los destinatarios configurados en <strong>Maintenance Cost Calculation → Approved by Financial Manager</strong> reciben un correo de confirmación.</li>
           </ol>
+          <p class="fw-bold mb-1 mt-3"><i class="fas fa-file-export me-1 text-primary"></i>Archivos generados al aprobar los costos</p>
+          <ul style="font-size:.9rem;">
+            <li>Un <strong>Excel de costos para VIP</strong> (un renglón por ítem con los 10 componentes de costo por caja) → carpeta <strong>Cost Calculation Path</strong>.</li>
+            <li>El <strong>Final Cost Calculation</strong> en PDF → carpeta <strong>Cost Calculation Path</strong>.</li>
+          </ul>
+          <p class="fw-bold mb-1 mt-3"><i class="fas fa-file-export me-1 text-primary"></i>Archivos generados al aprobar los precios</p>
+          <p style="font-size:.9rem;">Cuando el Sales Manager aprueba los cambios de precio en <strong>Price Confirmation</strong>, el sistema guarda automáticamente:</p>
+          <ul style="font-size:.9rem;">
+            <li><strong>Approved Price Analysis by Sales Manager</strong> (PDF, muestra qué precios cambiaron, por almacén 11010/11060) → carpeta <strong>Price Changes Path</strong>.</li>
+            <li><strong>Final Price Change Report</strong> (PDF, solo los productos cambiados, todos los niveles de precio en caja y botella) → carpeta <strong>Price Changes Path</strong>.</li>
+            <li><strong>Excel de cambios de precio para VIP</strong> (solo los ítems marcados con price change) → carpeta <strong>Cost Changes Path</strong>.</li>
+          </ul>
+          <div class="note-box">Las rutas de estas carpetas se configuran en <strong>Maintenance Cost Calculation → Rutas de Documentos</strong>. Si una ruta no está configurada, el archivo correspondiente se omite (sin error).</div>
         </div>
       </div>
 
@@ -239,25 +256,82 @@
       <div id="sec9" class="card shadow-sm mb-4">
         <div class="card-body p-4">
           <div class="section-title"><span data-i18n="Landed Cost Formula">Fórmula del Costo Landed</span></div>
-          <p>El sistema calcula el costo de cada ítem de la siguiente manera:</p>
+          <p>Los impuestos de aduana se calculan agrupando los ítems por <strong>HandelsBenaming</strong> (artículo) según las reglas oficiales de aduana de Curazao.</p>
 
+          <p class="fw-bold mb-1 mt-3"><i class="fas fa-wine-bottle me-1 text-primary"></i>1. Litros Suplementarios</p>
+          <p class="mb-2" style="font-size:.9rem;">Primero se calculan los litros según el tipo de producto:</p>
           <div class="formula-box mb-3">
-            <strong>CIF Base</strong> = FOB Total + Flete Inland + Flete Marítimo + Seguro<br/>
-            <strong>Arancel (Duty)</strong> = CIF Base × Tasa Duty %<br/>
-            <strong>Econ. Surch.</strong> = (CIF Base + Duty) × Tasa Econ %<br/>
-            <strong>OB</strong> = (CIF Base + Duty + Econ) × Tasa OB %<br/>
-            <strong>Inland Tariff</strong> = CIF Base × Tasa Inland Tariff %<br/>
+            <strong>Base</strong> = Cajas × Botellas/Caja × Litros/Botella<br/>
             <br/>
-            <strong>Costo Final</strong> = FOB + Inland + Flete + Local Handling + Seguro + Transport + Descarga + Ship Charges + Duty + Econ + OB + Inland Tariff<br/>
+            <strong>Licor &lt; 2L</strong> → Litros = Base × 1.2 (Liter Factor)<br/>
+            <strong>Licor ≥ 2L</strong> → Litros = Base × (Proof ÷ 100) &nbsp;<span style="color:#6b7280;">[= Alcohol% ÷ 50]</span><br/>
+            <strong>Vino / Cerveza / Otros</strong> → Litros = Base × 1.0 (sin factor)<br/>
+            <br/>
+            <strong>Hectolitro (HL)</strong> = redondear-arriba(Litros) ÷ 100
+          </div>
+
+          <p class="fw-bold mb-1"><i class="fas fa-percent me-1 text-primary"></i>2. Valor de Aduana e Impuestos Ad-Valorem</p>
+          <div class="formula-box mb-3">
+            <strong>Total Waarde</strong> = Cajas × Costo FOB × Tasa de Cambio<br/>
+            <strong>Valor de Aduana</strong> = Tot. Inland + Tot. Freight + Tot. Waarde &nbsp;<span style="color:#6b7280;">(redondea arriba a entero)</span><br/>
+            <br/>
+            <strong>Econ. Surcharge</strong> = Valor de Aduana × TAR_T01 ÷ 100<br/>
+            <strong>OB (TAX 4.5%)</strong> = Valor de Aduana × (TAR_T07 ÷ 2) ÷ 100
+          </div>
+
+          <p class="fw-bold mb-1"><i class="fas fa-gavel me-1 text-primary"></i>3. Duties (Aranceles por Volumen)</p>
+          <div class="formula-box mb-3">
+            <strong>TAR_T04</strong> = HL × tarifa T04<br/>
+            <strong>TAR_T06</strong> = Litros(redondeados) × tarifa T06 ÷ 100<br/>
+            <strong>TAR_T09</strong> = HL(truncado) × tarifa T09<br/>
+            <strong>TAR_T10</strong> = HL × tarifa T10<br/>
+            <br/>
+            <strong>Duties Total</strong> = T04 + T06 + T09 + T10
+          </div>
+
+          <p class="fw-bold mb-1"><i class="fas fa-coins me-1 text-primary"></i>4. Costo Final y Precio de Venta</p>
+          <div class="formula-box mb-3">
+            <strong>Costo Final</strong> = FOB + Inland + Flete + Local Handling + Seguro + Transport + Descarga + Duties + Econ + OB + Inland Tariff<br/>
             <br/>
             <strong>Precio Venta</strong> = Costo Final ÷ (1 − Margen %)
           </div>
 
           <div class="info-box">
-            <strong>Almacén Duty Free (DF):</strong> Los aranceles (Duty, Econ, OB, Inland Tariff) se omiten completamente del cálculo.
+            <strong>Reglas de redondeo (Aduana):</strong>
+            <ul class="mb-0 mt-1">
+              <li><strong>Litros:</strong> si &lt; 100 → 1 decimal; si ≥ 100 → entero. Sube cuando el siguiente dígito es ≥ 6.</li>
+              <li><strong>Valor de Aduana:</strong> siempre redondea arriba a entero.</li>
+              <li><strong>Impuestos (Econ, OB, Duties):</strong> siempre redondean arriba a 1 decimal.</li>
+            </ul>
+          </div>
+          <div class="info-box mt-2">
+            <strong>Almacén Duty Free (DF):</strong> Los aranceles (Duties, Econ, OB, Inland Tariff) se omiten completamente del cálculo.
           </div>
           <div class="note-box mt-2">
             <strong>Distribución de costos:</strong> Los cargos del contenedor (flete, transport, descarga, ship charges) se distribuyen entre los ítems proporcionalmente al <strong>peso</strong> de cada uno. Si un ítem no tiene peso configurado, se usa la cantidad.
+          </div>
+          <div class="note-box mt-2">
+            <strong><i class="fas fa-database me-1"></i>Un cálculo por PO:</strong> Cada orden de compra (PO) mantiene un solo set de resultados. Si recalculas un PO —en el mismo o en otro cálculo— los valores previos de ese PO se reemplazan por los más recientes.
+          </div>
+        </div>
+      </div>
+
+      <!-- 9b: Final Report -->
+      <div id="sec9b" class="card shadow-sm mb-4">
+        <div class="card-body p-4">
+          <div class="section-title"><i class="fas fa-print me-2"></i>Reporte Final (Print Report)</div>
+          <p>Desde la pantalla de detalle, el botón <span class="badge bg-dark">Print Report</span> genera el <strong>Final Cost Calculation</strong> en formato imprimible (PDF/papel), replicando el reporte oficial del sistema.</p>
+          <p class="fw-bold mb-1 mt-3"><i class="fas fa-table me-1 text-primary"></i>Secciones del reporte</p>
+          <ul style="font-size:.9rem;">
+            <li><strong>Header:</strong> Número de cálculo, Order, Warehouse, Container, Invoice Nr/Date, Inv Rate, Cust. Rate, Forwarder, Vendor y Factor.</li>
+            <li><strong>Cost Components Totals:</strong> totales en ANG por columna (FOB, Inland, Freight, Local Handling, Duties, Econ, TAX 4.5%, Insurance, Transport, Unloading) y Real Cost.</li>
+            <li><strong>Item Detail (por caja):</strong> desglose de cada ítem con todas las columnas de costo por caja.</li>
+            <li><strong>Doble columna por almacén:</strong> el costo por caja se muestra para dos destinos — el almacén bonded (sin duties/taxes) y el de distribución (costo completo) — cada uno con su Total Ext. y Diferencia.</li>
+            <li><strong>Comparación VIP:</strong> bajo cada ítem, una fila "Actual Cost VIP" muestra el costo registrado en VIP/ERP para comparar contra el calculado.</li>
+            <li><strong>Footer:</strong> Totals, Invoice Total, Total Actual VIP y Total Real Cost.</li>
+          </ul>
+          <div class="info-box">
+            <strong>TAX 4.5%:</strong> esta columna corresponde al impuesto OB (TAR_T07 ÷ 2). El <strong>Cost p/case</strong> de la primera columna excluye duties e impuestos (costo comercial); la segunda columna incluye todo.
           </div>
         </div>
       </div>
@@ -324,7 +398,16 @@
           En el menú <strong>Administration → Module Approvers</strong>, sección "Cost Calculation".</p>
 
           <p><strong>¿Puedo eliminar una calculación aprobada?</strong><br/>
-          No. Las calculaciones aprobadas son inmutables. Solo se pueden eliminar las que están en Draft o Confirmed.</p>
+          No. Las calculaciones aprobadas son inmutables. Solo se pueden eliminar las que están en In Calculation o Confirmed.</p>
+
+          <p><strong>¿Por qué los Duties de un licor grande (≥2L) son diferentes a uno pequeño?</strong><br/>
+          Los litros suplementarios usan un factor distinto: botellas &lt; 2L multiplican por 1.2, mientras que las ≥ 2L usan el grado alcohólico (Proof ÷ 100). Esto afecta los litros y por ende los duties por hectolitro.</p>
+
+          <p><strong>Recalculé un PO en otro cálculo, ¿por qué desapareció del cálculo anterior?</strong><br/>
+          Cada PO mantiene un solo set de resultados (el más reciente). Al recalcular un PO, sus valores previos —en cualquier cálculo— se reemplazan. Es el comportamiento esperado de "un cálculo por PO".</p>
+
+          <p><strong>¿Por qué el "Cost p/case" del reporte es menor al costo total?</strong><br/>
+          La primera columna de costo por caja excluye duties e impuestos (costo comercial). La segunda columna incluye todo (costo landed completo).</p>
         </div>
       </div>
 
@@ -380,9 +463,9 @@
           <table class="table table-bordered field-table mb-3">
             <thead><tr><th>Campo</th><th>Descripción</th></tr></thead>
             <tbody>
-              <tr><td>Cost Changes Path</td><td>Ruta de carpeta en el servidor donde se almacenan los documentos de cambios de costo (ej. <code>C:\Documents\CostChanges</code>).</td></tr>
-              <tr><td>Price Changes Path</td><td>Ruta de carpeta donde se guardan los documentos de cambios de precio.</td></tr>
-              <tr><td>Cost Calculation Path</td><td>Ruta de carpeta destino para los archivos PDF generados por el módulo de Cost Calculation.</td></tr>
+              <tr><td>Cost Changes Path</td><td>Carpeta donde se guarda el <strong>Excel de cambios de precio para VIP</strong> (generado al aprobar los precios). Ej. <code>C:\Documents\CostChanges</code>.</td></tr>
+              <tr><td>Price Changes Path</td><td>Carpeta donde se guardan los PDF <strong>Approved Price Analysis by Sales Manager</strong> y <strong>Final Price Change Report</strong> (generados al aprobar los precios).</td></tr>
+              <tr><td>Cost Calculation Path</td><td>Carpeta donde se guardan el <strong>Excel de costos para VIP</strong> y el PDF <strong>Final Cost Calculation</strong> (generados al aprobar los costos).</td></tr>
             </tbody>
           </table>
 
@@ -417,7 +500,7 @@
       </div>
 
       <div class="text-center text-muted mt-3 mb-5" style="font-size:.82rem;">
-        Licores Maduro — Sistema de Gestión Interna &nbsp;|&nbsp; Manual Cost Calculation v1.2 &nbsp;|&nbsp; 2026
+        Licores Maduro — Sistema de Gestión Interna &nbsp;|&nbsp; Manual Cost Calculation v1.4 &nbsp;|&nbsp; 2026
       </div>
     </div>
   </div>
