@@ -850,8 +850,26 @@ public sealed class CostCalculationsController : ControllerBase
         if (calc is null) return NotFound(ApiResponse.Fail($"Calculation {id} not found."));
         if (calc.CcStatus != "DR") return BadRequest(ApiResponse.Fail("Only Draft calculations can be confirmed."));
         calc.CcStatus = "CF";
-        foreach (var p in calc.PoHeads) { p.CcphStatus = "CF"; p.CcphConfirmedBy = User.Identity?.Name; }
+        var confirmedBy = User.Identity?.Name;
+        foreach (var p in calc.PoHeads) { p.CcphStatus = "PC"; p.CcphConfirmedBy = confirmedBy; }
         await _db.SaveChangesAsync(ct);
+
+        // Fire-and-forget: compute VIP price matrix in background
+        var calcIdForBg  = id;
+        var scopeFactory = _scopeFactory;
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await using var scope = scopeFactory.CreateAsyncScope();
+                var svc = scope.ServiceProvider.GetRequiredService<IPriceCalculationService>();
+                await svc.ComputeAndPersistAsync(calcIdForBg, confirmedBy);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "PriceCalc background task failed for Calc #{CalcId}", calcIdForBg);
+            }
+        });
 
         // Pre-load email data while DbContext is still alive
         LmEmailConfig? emailCfg = null;
@@ -907,26 +925,8 @@ public sealed class CostCalculationsController : ControllerBase
             return BadRequest(new { Message = "The user who confirmed this calculation cannot approve it. Another user must approve." });
 
         calc.CcStatus = "AP";
-        foreach (var p in calc.PoHeads) { p.CcphStatus = "PC"; p.CcphApprovedBy = User.Identity?.Name; }
+        foreach (var p in calc.PoHeads) { p.CcphApprovedBy = User.Identity?.Name; }
         await _db.SaveChangesAsync(ct);
-
-        // Fire-and-forget: compute VIP price matrix in background
-        var calcIdForBg  = id;
-        var approvedByBg = User.Identity?.Name;
-        var scopeFactory = _scopeFactory;
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                await using var scope = scopeFactory.CreateAsyncScope();
-                var svc = scope.ServiceProvider.GetRequiredService<IPriceCalculationService>();
-                await svc.ComputeAndPersistAsync(calcIdForBg, approvedByBg);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "PriceCalc background task failed for Calc #{CalcId}", calcIdForBg);
-            }
-        });
 
         // Pre-load data needed for background tasks while DbContext is still alive
         var calcWithDetails = await _db.CcCalcHeaders
@@ -957,7 +957,7 @@ public sealed class CostCalculationsController : ControllerBase
         _ = SendManagerConfirmEmailAsync(calc, emailCfg, managerEmail, CancellationToken.None);
         if (calcWithDetails is not null)
         {
-            _ = GenerateCostChangesExcelAsync(calcWithDetails, sysCfg?.CompPathCostChanges, CancellationToken.None);
+            _ = GenerateCostVipExcelAsync(calcWithDetails, sysCfg?.CompPathCostCalc, CancellationToken.None);
             _ = GenerateCostCalcPdfAsync(calcWithDetails, sysCfg?.CompPathCostCalc, CancellationToken.None);
         }
         _logger.LogInformation("Approve #{Id}: PDF folder={Folder}, managerEmail={Mgr}", id, sysCfg?.CompPathCostCalc, managerEmail);
@@ -1145,108 +1145,77 @@ public sealed class CostCalculationsController : ControllerBase
         }
     }
 
-    // Generates Qry_Cost_Calc_Approved_Fin_VIP_COST Excel and saves to CompPathCostChanges.
-    // calc and folder are pre-loaded in the request scope to avoid DbContext disposal issues.
-    private async Task GenerateCostChangesExcelAsync(CcCalcHeader calc, string? folder, CancellationToken ct)
+    // Generates the VIP cost-import Excel (layout 1043-26-JWN001.xlsx): one row per item
+    // with the 10 cost components per case. Saved to the Cost Calculation Path.
+    private async Task GenerateCostVipExcelAsync(CcCalcHeader calc, string? folder, CancellationToken ct)
     {
         await Task.Yield(); // ensure it runs asynchronously off the request thread
         try
         {
             var calcId = calc.CcCalcNumber;
-            if (string.IsNullOrWhiteSpace(folder)) { _logger.LogWarning("Cost Calc #{Id} — COMP_PATH_COST_CHANGES not configured, skipping Excel.", calcId); return; }
+            if (string.IsNullOrWhiteSpace(folder)) { _logger.LogWarning("Cost Calc #{Id} — Cost Calculation Path not configured, skipping VIP cost Excel.", calcId); return; }
 
             Directory.CreateDirectory(folder);
 
             using var wb = new XLWorkbook();
-            var ws = wb.AddWorksheet("Cost Calc Detail");
+            var ws = wb.AddWorksheet("VIP Cost");
 
-            // ── Header row ────────────────────────────────────────────────────
+            // ── Header row (VIP import layout) ────────────────────────────────
             string[] headers =
             [
-                "PO Number", "Item No", "Description", "Units/Case",
-                "Qty", "Free", "Liters", "Factor",
-                "FOB Total", "Inland Frt", "Ocean Frt", "Local Hdl",
-                "Duties", "Eco Surch", "OB Tax", "Inland Tariff",
-                "Ship Chgs", "Insurance", "Transport", "Unloading",
-                "Final Cost", "Margin %", "Selling Price"
+                "CCPD_Calc_Number", "CCPD_LMPoNo", "ITEM_NUMBER", "ITEM_DESCRIPTION",
+                "COST_01_FOB_PRICE", "COST_02_INLAND_FREIGHT", "COST_03_FREIGHT",
+                "COST_04_LOCAL_HANDLING", "COST_05_DUTIES", "COST_06_ECONOMIC_SURCHARGE",
+                "COST_07_IMPORT_TAX", "COST_08_INSURRANCE", "COST_09_TRANSPORT", "COST_10_UNLOADING"
             ];
             for (int c = 0; c < headers.Length; c++)
                 ws.Cell(1, c + 1).Value = headers[c];
 
             var headerRow = ws.Row(1);
             headerRow.Style.Font.Bold = true;
-            headerRow.Style.Fill.BackgroundColor = XLColor.FromHtml("#6b2929");
-            headerRow.Style.Font.FontColor = XLColor.White;
 
-            // ── Data rows ─────────────────────────────────────────────────────
+            // ── Data rows (cost components per case) ──────────────────────────
             int row = 2;
             foreach (var po in calc.PoHeads.OrderBy(p => p.CcphLmPoNo))
             {
                 var details = po.Details.Where(d => (d.CcpdOrdQty ?? 0) > 0).OrderBy(d => d.CcpdItemNo);
                 foreach (var d in details)
                 {
-                    ws.Cell(row, 1).Value  = po.CcphLmPoNo;
-                    ws.Cell(row, 2).Value  = d.CcpdItemNo;
-                    ws.Cell(row, 3).Value  = d.CcpdItemDescr ?? string.Empty;
-                    ws.Cell(row, 4).Value  = (double)(d.CcpdUnitCase  ?? 0);
-                    ws.Cell(row, 5).Value  = (double)(d.CcpdOrdQty    ?? 0m);
-                    ws.Cell(row, 6).Value  = (double)(d.CcpdFreeQty   ?? 0m);
-                    ws.Cell(row, 7).Value  = (double)Math.Round(d.CcpdLiters       ?? 0m, 4);
-                    ws.Cell(row, 8).Value  = (double)Math.Round(d.CcpdFactor       ?? 0m, 4);
-                    ws.Cell(row, 9).Value  = (double)Math.Round(d.CcpdFobPriceTot  ?? 0m, 2);
-                    ws.Cell(row, 10).Value = (double)Math.Round(d.CcpdInlandFreight ?? 0m, 2);
-                    ws.Cell(row, 11).Value = (double)Math.Round(d.CcpdFreight       ?? 0m, 2);
-                    ws.Cell(row, 12).Value = (double)Math.Round(d.CcpdLocalHandl    ?? 0m, 2);
-                    ws.Cell(row, 13).Value = (double)Math.Round(d.CcpdDuties,    2);
-                    ws.Cell(row, 14).Value = (double)Math.Round(d.CcpdEconSurch, 2);
-                    ws.Cell(row, 15).Value = (double)Math.Round(d.CcpdOb,        2);
-                    ws.Cell(row, 16).Value = (double)Math.Round(d.CcpdInlandTariff  ?? 0m, 2);
-                    ws.Cell(row, 17).Value = (double)Math.Round(d.CcpdShipCharges   ?? 0m, 2);
-                    ws.Cell(row, 18).Value = (double)Math.Round(d.CcpdInsurance     ?? 0m, 2);
-                    ws.Cell(row, 19).Value = (double)Math.Round(d.CcpdTransport     ?? 0m, 2);
-                    ws.Cell(row, 20).Value = (double)Math.Round(d.CcpdUnloading     ?? 0m, 2);
-                    ws.Cell(row, 21).Value = (double)Math.Round(d.CcpdFinalCost     ?? 0m, 2);
-                    ws.Cell(row, 22).Value = d.CcpdMarginPerc.HasValue
-                        ? (double)Math.Round(d.CcpdMarginPerc.Value * 100m, 2)
-                        : 0d;
-                    ws.Cell(row, 23).Value = (double)Math.Round(d.CcpdSellingPrice  ?? 0m, 2);
+                    decimal qty = Math.Max(d.CcpdOrdQty ?? 1m, 1m);
+                    double PerCase(decimal? total) => (double)Math.Round((total ?? 0m) / qty, 6);
+
+                    ws.Cell(row, 1).Value  = calcId;
+                    ws.Cell(row, 2).Value  = po.CcphLmPoNo;
+                    ws.Cell(row, 3).Value  = d.CcpdItemNo;
+                    ws.Cell(row, 4).Value  = d.CcpdItemDescr ?? string.Empty;
+                    ws.Cell(row, 5).Value  = (double)Math.Round(d.CcpdFobPrice ?? 0m, 6); // already per case
+                    ws.Cell(row, 6).Value  = PerCase(d.CcpdInlandFreight);
+                    ws.Cell(row, 7).Value  = PerCase(d.CcpdFreight);
+                    ws.Cell(row, 8).Value  = PerCase(d.CcpdLocalHandl);
+                    ws.Cell(row, 9).Value  = PerCase(d.CcpdDuties);
+                    ws.Cell(row, 10).Value = PerCase(d.CcpdEconSurch);
+                    ws.Cell(row, 11).Value = PerCase(d.CcpdOb);
+                    ws.Cell(row, 12).Value = PerCase(d.CcpdInsurance);
+                    ws.Cell(row, 13).Value = PerCase(d.CcpdTransport);
+                    ws.Cell(row, 14).Value = PerCase(d.CcpdUnloading);
                     row++;
                 }
             }
 
-            // ── Format number columns ─────────────────────────────────────────
             if (row > 2)
-            {
-                var numRange = ws.Range(2, 9, row - 1, 23);
-                numRange.Style.NumberFormat.Format = "#,##0.00";
-                ws.Range(2, 4, row - 1, 8).Style.NumberFormat.Format = "#,##0.0000";
-            }
-
+                ws.Range(2, 5, row - 1, 14).Style.NumberFormat.Format = "#,##0.000000";
             ws.Columns().AdjustToContents();
 
-            // ── Calc info sheet ───────────────────────────────────────────────
-            var ws2 = wb.AddWorksheet("Calculation Info");
-            ws2.Cell(1, 1).Value = "Calculation #";   ws2.Cell(1, 2).Value = calc.CcCalcNumber;
-            ws2.Cell(2, 1).Value = "Date";             ws2.Cell(2, 2).Value = calc.CcCalcDate.ToString("yyyy-MM-dd");
-            ws2.Cell(3, 1).Value = "Forwarder";        ws2.Cell(3, 2).Value = calc.CcForwarderName ?? string.Empty;
-            ws2.Cell(4, 1).Value = "Currency";         ws2.Cell(4, 2).Value = calc.CcCurrCode ?? string.Empty;
-            ws2.Cell(5, 1).Value = "Rate";             ws2.Cell(5, 2).Value = calc.CcCurrRate ?? 0;
-            ws2.Cell(6, 1).Value = "Warehouse";        ws2.Cell(6, 2).Value = calc.CcWarehouse ?? string.Empty;
-            ws2.Cell(7, 1).Value = "Status";           ws2.Cell(7, 2).Value = "AP";
-            ws2.Column(1).Style.Font.Bold = true;
-            ws2.Columns().AdjustToContents();
-
-            // ── Save ──────────────────────────────────────────────────────────
-            // Replace / with _ in calc number (mirrors original filename logic)
-            var safeName = calcId.ToString().Replace("/", "_");
-            var filePath = Path.Combine(folder, $"CALC_{safeName}.xlsx");
+            var firstPo = calc.PoHeads.OrderBy(p => p.CcphLmPoNo).FirstOrDefault()?.CcphLmPoNo;
+            var safeName = (firstPo ?? calcId.ToString()).Replace("/", "_");
+            var filePath = Path.Combine(folder, $"{safeName}.xlsx");
             wb.SaveAs(filePath);
 
-            _logger.LogInformation("Cost Calc #{Id} — Excel saved to {Path}", calcId, filePath);
+            _logger.LogInformation("Cost Calc #{Id} — VIP cost Excel saved to {Path}", calcId, filePath);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to generate Cost Changes Excel for Cost Calculation #{Id}", calc.CcCalcNumber);
+            _logger.LogWarning(ex, "Failed to generate VIP cost Excel for Cost Calculation #{Id}", calc.CcCalcNumber);
         }
     }
 

@@ -125,6 +125,7 @@ try
     builder.Services.AddScoped<IPermissionService, PermissionService>();
     builder.Services.AddScoped<IForexScraperService, ForexScraperService>();
     builder.Services.AddScoped<IPriceCalculationService, PriceCalculationService>();
+    builder.Services.AddScoped<IPriceApprovalReportService, PriceApprovalReportService>();
     builder.Services.AddHostedService<ForexBackgroundService>();
     builder.Services.AddHttpContextAccessor();
 

@@ -1,5 +1,6 @@
 using LicoresMaduro.API.Data;
 using LicoresMaduro.API.Helpers;
+using LicoresMaduro.API.Services;
 using LicoresMaduro.API.Models.Auth;
 using MailKit.Net.Smtp;
 using MailKit.Security;
@@ -18,9 +19,11 @@ public sealed class PriceConfirmationController : ControllerBase
 {
     private readonly ApplicationDbContext _db;
     private readonly ILogger<PriceConfirmationController> _logger;
+    private readonly IServiceScopeFactory _scopeFactory;
 
-    public PriceConfirmationController(ApplicationDbContext db, ILogger<PriceConfirmationController> logger)
-    { _db = db; _logger = logger; }
+    public PriceConfirmationController(ApplicationDbContext db, ILogger<PriceConfirmationController> logger,
+        IServiceScopeFactory scopeFactory)
+    { _db = db; _logger = logger; _scopeFactory = scopeFactory; }
 
     // Level 1: POs pending manager price confirmation
     [HttpGet("pending")]
@@ -194,6 +197,21 @@ public sealed class PriceConfirmationController : ControllerBase
             calc.CcStatus = "AP";
 
         await _db.SaveChangesAsync(ct);
+
+        // Fire-and-forget: generate approval reports (VIP price Excel + 2 PDFs) in a fresh scope
+        var calcIdForBg = calcId;
+        var poNoForBg   = poNo;
+        var scopeFactory = _scopeFactory;
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await using var scope = scopeFactory.CreateAsyncScope();
+                var svc = scope.ServiceProvider.GetRequiredService<IPriceApprovalReportService>();
+                await svc.GenerateAsync(calcIdForBg, poNoForBg, CancellationToken.None);
+            }
+            catch (Exception ex) { _logger.LogWarning(ex, "Price approval report task failed for Calc #{Id} PO {Po}", calcIdForBg, poNoForBg); }
+        });
 
         // Fire-and-forget: send notification email
         LmEmailConfig? emailCfg = null;
