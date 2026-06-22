@@ -109,7 +109,17 @@
         <div class="quotes-list-panel">
           <div class="card shadow-sm">
             <div class="mb-2 px-3 pt-2 mt-2">
-              <input type="search" id="filter-search" class="form-control form-control-sm" placeholder="Search FF..." />
+              <input type="search" id="filter-search" class="form-control form-control-sm mb-2" placeholder="Search FF..." />
+              <div class="btn-group w-100" role="group" aria-label="Filter Forwarders">
+                <input type="radio" class="btn-check" name="ffwFilter" id="ffwFilterAll" value="all" autocomplete="off" checked>
+                <label class="btn btn-outline-secondary btn-sm" for="ffwFilterAll">All</label>
+              
+                <input type="radio" class="btn-check" name="ffwFilter" id="ffwFilterWith" value="with" autocomplete="off">
+                <label class="btn btn-outline-secondary btn-sm" for="ffwFilterWith">With Quotes</label>
+              
+                <input type="radio" class="btn-check" name="ffwFilter" id="ffwFilterWithout" value="without" autocomplete="off">
+                <label class="btn btn-outline-secondary btn-sm" for="ffwFilterWithout">W/O Quotes</label>
+              </div>
             </div>
             <div id="fwd-list" style="max-height:calc(100vh - 280px);overflow-y:auto;">
               <div class="text-center text-muted py-4" style="font-size:.82rem;"><i class="fas fa-spinner fa-spin d-block mb-2 opacity-50"></i>Loading...</div>
@@ -177,26 +187,30 @@
                   
                   <!-- Cascading Filters -->
                   <div class="row gx-2 mb-3 align-items-end" id="ocean-cascade-controls">
-                    <div class="col-md-5">
-                      <label class="form-label text-muted mb-1" style="font-size:.75rem;font-weight:600;">Port</label>
-                      <div class="d-flex gap-1">
-                        <select id="ocean-cascade-port" class="form-select form-select-sm" onchange="onOceanCascadePortChange(this)">
-                          <option value="">— select port —</option>
-                        </select>
-                        <button class="btn btn-outline-secondary btn-sm" onclick="openNewOceanPort()" title="Add Port"><i class="fas fa-plus"></i></button>
-                        <button class="btn btn-outline-secondary btn-sm" id="btn-edit-ocean-port" onclick="editOceanPortBtn()" title="Edit Port" disabled><i class="fas fa-edit"></i></button>
-                        <button class="btn btn-outline-danger btn-sm" id="btn-del-ocean-port" onclick="deleteOceanPortBtn()" title="Delete Port" disabled><i class="fas fa-trash"></i></button>
+                    <div class="col-md-10 d-flex flex-column gap-2">
+                      <div>
+                        <label class="form-label text-muted mb-1" style="font-size:.75rem;font-weight:600;">Port</label>
+                        <div class="d-flex gap-1">
+                          <select id="ocean-cascade-port" class="form-select form-select-sm" onchange="onOceanCascadePortChange(this)" style="width: 240px; flex-shrink: 0;">
+                            <option value="">— select port —</option>
+                          </select>
+                          <button class="btn btn-outline-secondary btn-sm flex-shrink-0" onclick="openNewOceanPort()" title="Add Port"><i class="fas fa-plus"></i></button>
+                          <button class="btn btn-outline-secondary btn-sm flex-shrink-0" id="btn-edit-ocean-port" onclick="editOceanPortBtn()" title="Edit Port" disabled><i class="fas fa-edit"></i></button>
+                          <button class="btn btn-outline-danger btn-sm flex-shrink-0" id="btn-del-ocean-port" onclick="deleteOceanPortBtn()" title="Delete Port" disabled><i class="fas fa-trash"></i></button>
+                          <span id="ocean-port-remarks" class="text-muted ms-2 small italic align-self-center" style="white-space: nowrap;"></span>
+                        </div>
                       </div>
-                    </div>
-                    <div class="col-md-5">
-                      <label class="form-label text-muted mb-1" style="font-size:.75rem;font-weight:600;">Shipping Line</label>
-                      <div class="d-flex gap-1">
-                        <select id="ocean-cascade-sline" class="form-select form-select-sm" onchange="onOceanCascadeSLineChange(this)" disabled>
-                          <option value="">— select shipping line —</option>
-                        </select>
-                        <button class="btn btn-outline-secondary btn-sm" id="btn-add-ocean-sline" onclick="openNewOceanSLineBtn()" title="Add Shipping Line" disabled><i class="fas fa-plus"></i></button>
-                        <button class="btn btn-outline-secondary btn-sm" id="btn-edit-ocean-sline" onclick="editOceanSLineBtn()" title="Edit Shipping Line" disabled><i class="fas fa-edit"></i></button>
-                        <button class="btn btn-outline-danger btn-sm" id="btn-del-ocean-sline" onclick="deleteOceanSLineBtn()" title="Delete Shipping Line" disabled><i class="fas fa-trash"></i></button>
+                      <div>
+                        <label class="form-label text-muted mb-1" style="font-size:.75rem;font-weight:600;">Shipping Line</label>
+                        <div class="d-flex gap-1">
+                          <select id="ocean-cascade-sline" class="form-select form-select-sm" onchange="onOceanCascadeSLineChange(this)" disabled style="width: 240px; flex-shrink: 0;">
+                            <option value="">— select shipping line —</option>
+                          </select>
+                          <button class="btn btn-outline-secondary btn-sm flex-shrink-0" id="btn-add-ocean-sline" onclick="openNewOceanSLineBtn()" title="Add Shipping Line" disabled><i class="fas fa-plus"></i></button>
+                          <button class="btn btn-outline-secondary btn-sm flex-shrink-0" id="btn-edit-ocean-sline" onclick="editOceanSLineBtn()" title="Edit Shipping Line" disabled><i class="fas fa-edit"></i></button>
+                          <button class="btn btn-outline-danger btn-sm flex-shrink-0" id="btn-del-ocean-sline" onclick="deleteOceanSLineBtn()" title="Delete Shipping Line" disabled><i class="fas fa-trash"></i></button>
+                          <span id="ocean-sline-info" class="text-muted ms-2 small italic align-self-center" style="white-space:nowrap;"></span>
+                        </div>
                       </div>
                     </div>
                     <div class="col-md-2 d-flex justify-content-end gap-1">
@@ -224,25 +238,27 @@
                   
                   <!-- Cascading Filters -->
                   <div class="row gx-2 mb-3 align-items-end" id="inland-cascade-controls">
-                    <div class="col-md-5">
-                      <label class="form-label text-muted mb-1" style="font-size:.75rem;font-weight:600;">Region</label>
-                      <div class="d-flex gap-1">
-                        <select id="inland-cascade-region" class="form-select form-select-sm" onchange="onInlandCascadeRegionChange(this)">
-                          <option value="">— select region —</option>
-                        </select>
-                        <button class="btn btn-outline-secondary btn-sm" id="btn-add-region" title="Add Region"><i class="fas fa-plus"></i></button>
-                        <button class="btn btn-outline-danger btn-sm" id="btn-del-inland-region" onclick="deleteInlandRegionBtn()" title="Delete Region" disabled><i class="fas fa-trash"></i></button>
+                    <div class="col-md-10 d-flex flex-column gap-2">
+                      <div>
+                        <label class="form-label text-muted mb-1" style="font-size:.75rem;font-weight:600;">Region</label>
+                        <div class="d-flex gap-1">
+                          <select id="inland-cascade-region" class="form-select form-select-sm" onchange="onInlandCascadeRegionChange(this)" style="width: 240px; flex-shrink: 0;">
+                            <option value="">— select region —</option>
+                          </select>
+                          <button class="btn btn-outline-secondary btn-sm flex-shrink-0" id="btn-add-region" title="Add Region"><i class="fas fa-plus"></i></button>
+                          <button class="btn btn-outline-danger btn-sm flex-shrink-0" id="btn-del-inland-region" onclick="deleteInlandRegionBtn()" title="Delete Region" disabled><i class="fas fa-trash"></i></button>
+                        </div>
                       </div>
-                    </div>
-                    <div class="col-md-5">
-                      <label class="form-label text-muted mb-1" style="font-size:.75rem;font-weight:600;">Charge Type</label>
-                      <div class="d-flex gap-1">
-                        <select id="inland-cascade-type" class="form-select form-select-sm" onchange="onInlandCascadeTypeChange(this)" disabled>
-                          <option value="">— select charge type —</option>
-                        </select>
-                        <button class="btn btn-outline-secondary btn-sm" id="btn-add-inland-type" onclick="addRegionTypeBtn()" title="Add Charge Type" disabled><i class="fas fa-plus"></i></button>
-                        <button class="btn btn-outline-secondary btn-sm" id="btn-edit-inland-type" onclick="editRegionTypeBtn()" title="Edit Charge Type" disabled><i class="fas fa-edit"></i></button>
-                        <button class="btn btn-outline-danger btn-sm" id="btn-del-inland-type" onclick="deleteRegionTypeBtn()" title="Delete Charge Type" disabled><i class="fas fa-trash"></i></button>
+                      <div>
+                        <label class="form-label text-muted mb-1" style="font-size:.75rem;font-weight:600;">Charge Type</label>
+                        <div class="d-flex gap-1">
+                          <select id="inland-cascade-type" class="form-select form-select-sm" onchange="onInlandCascadeTypeChange(this)" disabled style="width: 240px; flex-shrink: 0;">
+                            <option value="">— select charge type —</option>
+                          </select>
+                          <button class="btn btn-outline-secondary btn-sm flex-shrink-0" id="btn-add-inland-type" onclick="addRegionTypeBtn()" title="Add Charge Type" disabled><i class="fas fa-plus"></i></button>
+                          <button class="btn btn-outline-secondary btn-sm flex-shrink-0" id="btn-edit-inland-type" onclick="editRegionTypeBtn()" title="Edit Charge Type" disabled><i class="fas fa-edit"></i></button>
+                          <button class="btn btn-outline-danger btn-sm flex-shrink-0" id="btn-del-inland-type" onclick="deleteRegionTypeBtn()" title="Delete Charge Type" disabled><i class="fas fa-trash"></i></button>
+                        </div>
                       </div>
                     </div>
                     <div class="col-md-2 d-flex justify-content-end gap-1">
@@ -269,7 +285,7 @@
                   <div class="p-3 border-bottom"><div id="portadd-tab-quotes"></div></div>
                   <div class="card-header d-flex justify-content-end py-2 gap-2">
                     <button class="btn btn-outline-success btn-sm" id="btn-add-portadd"><i class="fas fa-plus me-1"></i>Add Row</button>
-                    <button class="btn btn-success btn-sm" id="btn-save-all-portadd" style="display:none;"><i class="fas fa-save me-1"></i>Save All</button>
+                    <button class="btn btn-success btn-sm" id="btn-save-all-portadd"><i class="fas fa-save me-1"></i>Save All</button>
                   </div>
                   <div class="table-responsive">
                     <table class="table table-sm table-bordered charges-grid mb-0">
@@ -306,26 +322,29 @@
                   
                   <!-- Cascading Filters -->
                   <div class="row gx-2 mb-3 align-items-end" id="lcl-cascade-controls">
-                    <div class="col-md-5">
-                      <label class="form-label text-muted mb-1" style="font-size:.75rem;font-weight:600;">Port</label>
-                      <div class="d-flex gap-1">
-                        <select id="lcl-cascade-port" class="form-select form-select-sm" onchange="onLclCascadePortChange(this)">
-                          <option value="">— select port —</option>
-                        </select>
-                        <button class="btn btn-outline-secondary btn-sm" id="btn-add-lcl-port" title="Add Port"><i class="fas fa-plus"></i></button>
-                        <button class="btn btn-outline-secondary btn-sm" id="btn-edit-lcl-port" onclick="editLclPortBtn()" title="Edit Port" disabled><i class="fas fa-edit"></i></button>
-                        <button class="btn btn-outline-danger btn-sm" id="btn-del-lcl-port" onclick="deleteLclPortBtn()" title="Delete Port" disabled><i class="fas fa-trash"></i></button>
+                    <div class="col-md-10 d-flex flex-column gap-2">
+                      <div>
+                        <label class="form-label text-muted mb-1" style="font-size:.75rem;font-weight:600;">Port</label>
+                        <div class="d-flex gap-1" style="max-width: 450px;">
+                          <select id="lcl-cascade-port" class="form-select form-select-sm" onchange="onLclCascadePortChange(this)" style="width: 240px; flex-shrink: 0;">
+                            <option value="">— select port —</option>
+                          </select>
+                          <button class="btn btn-outline-secondary btn-sm flex-shrink-0" id="btn-add-lcl-port" title="Add Port"><i class="fas fa-plus"></i></button>
+                          <button class="btn btn-outline-secondary btn-sm flex-shrink-0" id="btn-edit-lcl-port" onclick="editLclPortBtn()" title="Edit Port" disabled><i class="fas fa-edit"></i></button>
+                          <button class="btn btn-outline-danger btn-sm flex-shrink-0" id="btn-del-lcl-port" onclick="deleteLclPortBtn()" title="Delete Port" disabled><i class="fas fa-trash"></i></button>
+                          <span id="lcl-port-remarks" class="text-muted ms-2 small italic align-self-center" style="white-space: nowrap;"></span>
+                        </div>
                       </div>
-                    </div>
-                    <div class="col-md-5">
-                      <label class="form-label text-muted mb-1" style="font-size:.75rem;font-weight:600;">Charge Type</label>
-                      <div class="d-flex gap-1">
-                        <select id="lcl-cascade-type" class="form-select form-select-sm" onchange="onLclCascadeTypeChange(this)" disabled>
-                          <option value="">— select charge type —</option>
-                        </select>
-                        <button class="btn btn-outline-secondary btn-sm" id="btn-add-lcl-type" onclick="openNewLclShippingBtn()" title="Add Charge Type" disabled><i class="fas fa-plus"></i></button>
-                        <button class="btn btn-outline-secondary btn-sm" id="btn-edit-lcl-type" onclick="editLclShippingBtn()" title="Edit Charge Type" disabled><i class="fas fa-edit"></i></button>
-                        <button class="btn btn-outline-danger btn-sm" id="btn-del-lcl-type" onclick="deleteLclShippingBtn()" title="Delete Charge Type" disabled><i class="fas fa-trash"></i></button>
+                      <div>
+                        <label class="form-label text-muted mb-1" style="font-size:.75rem;font-weight:600;">Charge Type</label>
+                        <div class="d-flex gap-1">
+                          <select id="lcl-cascade-type" class="form-select form-select-sm" onchange="onLclCascadeTypeChange(this)" disabled style="width: 240px; flex-shrink: 0;">
+                            <option value="">— select charge type —</option>
+                          </select>
+                          <button class="btn btn-outline-secondary btn-sm flex-shrink-0" id="btn-add-lcl-type" onclick="openNewLclShippingBtn()" title="Add Charge Type" disabled><i class="fas fa-plus"></i></button>
+                          <button class="btn btn-outline-secondary btn-sm flex-shrink-0" id="btn-edit-lcl-type" onclick="editLclShippingBtn()" title="Edit Charge Type" disabled><i class="fas fa-edit"></i></button>
+                          <button class="btn btn-outline-danger btn-sm flex-shrink-0" id="btn-del-lcl-type" onclick="deleteLclShippingBtn()" title="Delete Charge Type" disabled><i class="fas fa-trash"></i></button>
+                        </div>
                       </div>
                     </div>
                     <div class="col-md-2 d-flex justify-content-end gap-1">
@@ -363,11 +382,12 @@
         <div class="col-sm-4" id="q-num-wrap"><label class="form-label fw-600">Quote #</label><input type="number" id="q-num" class="form-control form-control-sm" min="1" readonly /></div>
         <div class="col-sm-8"><label class="form-label fw-600">Forwarder<span class="text-danger">*</span></label><select id="q-fwd" class="form-select form-select-sm" onchange="onModalFwdChange(this)"><option value="">— select —</option></select></div>
         <div class="col-12" id="q-based-on-wrap" style="display:none;"><label class="form-label fw-600">Based on Quote</label><select id="q-based-on" class="form-select form-select-sm" onchange="onBasedOnChange(this)"><option value="">— start fresh —</option></select></div>
-        <div class="col-sm-6"><label class="form-label fw-600">Port of Loading</label><select id="q-port" class="form-select form-select-sm"><option value="">— select —</option></select></div>
-        <div class="col-sm-6"><label class="form-label fw-600">Route</label><select id="q-route" class="form-select form-select-sm"><option value="">— select —</option></select></div>
-        <div class="col-sm-4"><label class="form-label fw-600">Transit Days</label><input type="number" id="q-transit" class="form-control form-control-sm" min="0" /></div>
-        <div class="col-sm-4"><label class="form-label fw-600">Start Date</label><input type="date" id="q-start" class="form-control form-control-sm" /></div>
-        <div class="col-sm-4"><label class="form-label fw-600">End Date</label><input type="date" id="q-end" class="form-control form-control-sm" /></div>
+        <div class="col-sm-6 d-none"><label class="form-label fw-600">Port of Loading</label><select id="q-port" class="form-select form-select-sm"><option value="">— select —</option></select></div>
+        <div class="col-sm-6 d-none"><label class="form-label fw-600">Route</label><select id="q-route" class="form-select form-select-sm"><option value="">— select —</option></select></div>
+        <div class="col-sm-4 d-none"><label class="form-label fw-600">Transit Days</label><input type="number" id="q-transit" class="form-control form-control-sm" min="0" /></div>
+        <div class="col-sm-6"><label class="form-label fw-600">Start Date</label><input type="date" id="q-start" class="form-control form-control-sm" /></div>
+        <div class="col-sm-6"><label class="form-label fw-600">End Date</label><input type="date" id="q-end" class="form-control form-control-sm" /></div>
+        <div class="col-12"><label class="form-label fw-600">Remarks (Invoice #, etc.)</label><input type="text" id="q-remarks" class="form-control form-control-sm" maxlength="200" /></div>
       </div>
       <div id="quote-form-error" class="alert alert-danger mt-3 d-none"></div>
     </div>
@@ -673,47 +693,63 @@ function _renderFwdList(q) {
     return;
   }
 
-  // If there's an active forwarder but no search query, only show the active forwarder to keep the UI clean
-  const withQuotes = _fwdList.filter(f => 
-    (q && f.Code.toLowerCase().includes(q)) || (!q && f.Code === _activeFwdCode)
-  );
-  
-  const withoutQ = _forwarders.filter(f =>
-    !_fwdList.find(x => x.Code === f.FfCode) &&
-    ((q && (f.FfCode.toLowerCase().includes(q) || (f.FfName||'').toLowerCase().includes(q))) || (!q && f.FfCode === _activeFwdCode))
-  );
+  const filterType = document.querySelector('input[name="ffwFilter"]:checked')?.value || 'all';
 
-  if (!withQuotes.length && !withoutQ.length) {
-    el.innerHTML = '<div class="text-center text-muted py-4" style="font-size:.82rem;">No forwarders found</div>';
-    document.getElementById('list-info').textContent = `0 results`;
-    return;
-  }
+  // For withQuotes, we map to the full catalog info first to access the FfName, then filter
+  const withQuotes = _fwdList
+    .map(f => {
+      const fw = _forwarders.find(x => x.FfCode === f.Code);
+      return { ...f, FfName: fw?.FfName || '' };
+    })
+    .filter(f => 
+      (q && (f.Code.toLowerCase().includes(q) || f.FfName.toLowerCase().includes(q))) || 
+      (!q && f.Code === _activeFwdCode)
+    )
+    .sort((a, b) => a.Code.localeCompare(b.Code));
+  
+  const withoutQ = _forwarders
+    .filter(f =>
+      !_fwdList.find(x => x.Code === f.FfCode) &&
+      ((q && (f.FfCode.toLowerCase().includes(q) || (f.FfName||'').toLowerCase().includes(q))) || (!q && f.FfCode === _activeFwdCode))
+    )
+    .sort((a, b) => a.FfCode.localeCompare(b.FfCode));
+
   let html = '';
-  withQuotes.forEach(f => {
-    const fw = _forwarders.find(x => x.FfCode === f.Code);
-    const name = fw?.FfName || '';
-    const active = f.Code === _activeFwdCode ? 'active' : '';
-    html += `<div class="quote-item ${active}" data-code="${_esc(f.Code)}" onclick="_selectFwd('${_esc(f.Code)}')">
-      <div class="d-flex justify-content-between">
-         <span class="quote-num">${_esc(f.Code)}</span>
-         <span class="badge bg-secondary" style="font-size:.68rem;">${f.QuoteCount} Quotes</span>
-      </div>
-      <div class="text-muted mt-1" style="font-size:.75rem;">${_esc(name)}</div>
-    </div>`;
-  });
-  if (withoutQ.length) {
-    html += `<div class="px-3 pt-2 pb-1 border-top mt-2" style="font-size:.72rem;font-weight:700;color:var(--text-secondary);letter-spacing:.04em;">SIN COTIZACIONES</div>`;
+  let totalShown = 0;
+
+  if (filterType === 'all' || filterType === 'with') {
+    withQuotes.forEach(f => {
+      const active = f.Code === _activeFwdCode ? 'active' : '';
+      html += `<div class="quote-item ${active}" data-code="${_esc(f.Code)}" onclick="_selectFwd('${_esc(f.Code)}')">
+        <div class="d-flex justify-content-between">
+           <span class="quote-num">${_esc(f.Code)}</span>
+           <span class="badge bg-secondary" style="font-size:.68rem;">${f.QuoteCount} Quotes</span>
+        </div>
+        <div class="text-muted mt-1" style="font-size:.75rem;">${_esc(f.FfName)}</div>
+      </div>`;
+      totalShown++;
+    });
+  }
+
+  if (filterType === 'all' || filterType === 'without') {
+    if (withoutQ.length && filterType === 'all') {
+      html += `<div class="px-3 pt-2 pb-1 border-top mt-2" style="font-size:.72rem;font-weight:700;color:var(--text-secondary);letter-spacing:.04em;">SIN COTIZACIONES</div>`;
+    }
     withoutQ.slice(0, 15).forEach(f => {
       const active = f.FfCode === _activeFwdCode ? 'active' : '';
       html += `<div class="quote-item ${active}" data-code="${_esc(f.FfCode)}" onclick="_selectFwd('${_esc(f.FfCode)}')">
         <span class="quote-num">${_esc(f.FfCode)}</span>
         <div class="text-muted mt-1" style="font-size:.75rem;">${_esc(f.FfName||'')}</div>
       </div>`;
+      totalShown++;
     });
   }
+
+  if (!totalShown) {
+    html = '<div class="text-center text-muted py-4" style="font-size:.82rem;">No forwarders found</div>';
+  }
+
   el.innerHTML = html;
-  
-  const totalShown = withQuotes.length + withoutQ.length;
   document.getElementById('list-info').textContent = `${totalShown} FF(s) shown`;
 }
 
@@ -883,6 +919,13 @@ function _updateHeaderCard(q, tabType) {
     clone.querySelector('.dh-transit').textContent = q.FqhTransitDays != null ? q.FqhTransitDays + ' days' : '—';
     clone.querySelector('.dh-dates').textContent   = (q.FqhStartDate ? _fmt(q.FqhStartDate) : '?') + ' → ' + (q.FqhEndDate ? _fmt(q.FqhEndDate) : '?');
 
+    if (q.FqhRemarks) {
+      const remarksDiv = document.createElement('div');
+      remarksDiv.className = 'w-100 mt-2 pt-2 border-top';
+      remarksDiv.innerHTML = `<span class="text-muted" style="font-size:.72rem;">REMARKS:</span><span class="ms-2 text-dark italic" style="font-size:.85rem;">${_esc(q.FqhRemarks)}</span>`;
+      clone.querySelector('.card-body').appendChild(remarksDiv);
+    }
+
     // Add event listeners to the cloned buttons using 'q' from closure
     clone.querySelector('.btn-clone-quote').addEventListener('click', () => quickCloneQuote(q));
     clone.querySelector('.btn-edit-quote').addEventListener('click', () => openEditQuote(q));
@@ -896,6 +939,8 @@ function _updateHeaderCard(q, tabType) {
 
     // Insert the populated clone at the beginning of the tab pane
     activeTabPane.insertBefore(clone, activeTabPane.firstChild);
+
+    _syncHeaderFromSelection(tabType);
   } else if (_activeFwdCode) {
     // Show a simplified Forwarder header when no quote is selected
     const fw = _forwarders.find(x => x.FfCode === _activeFwdCode);
@@ -913,6 +958,58 @@ function _updateHeaderCard(q, tabType) {
       </div>
     `;
     activeTabPane.insertAdjacentHTML('afterbegin', html);
+  }
+}
+
+function _syncHeaderFromSelection(tabType) {
+  if (!tabType) tabType = _curTab();
+  const activeTabId = 'tab-' + (tabType === 'portadd' ? 'port-add' : tabType);
+  const pane = document.getElementById(activeTabId);
+  if (!pane) return;
+
+  const header = pane.querySelector('.quote-header-card');
+  if (!header) return;
+
+  const elPort = header.querySelector('.dh-port');
+  const elRoute = header.querySelector('.dh-route');
+  const elTransit = header.querySelector('.dh-transit');
+  if (!elPort || !elRoute || !elTransit) return;
+
+  if (tabType === 'ocean') {
+    const portSel = document.getElementById('ocean-cascade-port');
+    if (portSel && portSel.value) {
+      const portText = portSel.options[portSel.selectedIndex]?.text || '';
+      elPort.textContent = portText.split(' — ')[0] || '—';
+    } else {
+      elPort.textContent = '—';
+    }
+
+    const p = _activeQuote?.OceanPorts?.find(x => x.FqopId === _selectedOceanPortId);
+    const sl = p?.ShippingLines?.find(x => x.FqopsId === _selectedOceanSLineId);
+    elRoute.textContent = sl?.FqopsRoute || '—';
+    elTransit.textContent = sl?.FqopsDays != null ? sl.FqopsDays + ' days' : '—';
+
+  } else if (tabType === 'lcl') {
+    const portSel = document.getElementById('lcl-cascade-port');
+    if (portSel && portSel.value) {
+      const portText = portSel.options[portSel.selectedIndex]?.text || '';
+      elPort.textContent = portText.split(' — ')[0] || '—';
+    } else {
+      elPort.textContent = '—';
+    }
+    elRoute.textContent = '—';
+    elTransit.textContent = '—';
+
+  } else if (tabType === 'inland') {
+    const regSel = document.getElementById('inland-cascade-region');
+    if (regSel && regSel.value) {
+      const regText = regSel.options[regSel.selectedIndex]?.text || '';
+      elPort.textContent = regText || '—';
+    } else {
+      elPort.textContent = '—';
+    }
+    elRoute.textContent = '—';
+    elTransit.textContent = '—';
   }
 }
 
@@ -1118,6 +1215,7 @@ function _renderOceanTab(ports) {
 function onOceanCascadePortChange(sel) {
   _selectedOceanPortId = sel.value ? +sel.value : null;
   const sLineSel = document.getElementById('ocean-cascade-sline');
+  const remarksEl = document.getElementById('ocean-port-remarks');
   
   // Enable/Disable Port buttons
   document.getElementById('btn-edit-ocean-port').disabled = !_selectedOceanPortId;
@@ -1127,6 +1225,7 @@ function onOceanCascadePortChange(sel) {
   // Clear SLine dropdown and grid
   sLineSel.innerHTML = '<option value="">— select shipping line —</option>';
   sLineSel.disabled = !_selectedOceanPortId;
+  if (remarksEl) remarksEl.textContent = '';
   
   if (!_selectedOceanPortId) {
     _selectedOceanSLineId = null;
@@ -1134,8 +1233,12 @@ function onOceanCascadePortChange(sel) {
     return;
   }
 
-  // Populate SLine dropdown
+  // Populate SLine dropdown and show Port Remarks formatted
   const p = _activeQuote?.OceanPorts?.find(x => x.FqopId === _selectedOceanPortId);
+  if (remarksEl && p?.FqopRemarks) {
+    remarksEl.textContent = `Remarks | ${p.FqopRemarks}`;
+  }
+
   const slines = p?.ShippingLines || [];
   slines.forEach(sl => {
     const opt = document.createElement('option');
@@ -1153,15 +1256,18 @@ function onOceanCascadePortChange(sel) {
   }
 
   onOceanCascadeSLineChange(sLineSel);
+  _syncHeaderFromSelection('ocean');
 }
 
 function onOceanCascadeSLineChange(sel) {
   _selectedOceanSLineId = sel.value ? +sel.value : null;
   const gridContainer = document.getElementById('ocean-grid-container');
+  const infoEl = document.getElementById('ocean-sline-info');
   
   // Enable/Disable SLine buttons
   document.getElementById('btn-edit-ocean-sline').disabled = !_selectedOceanSLineId;
   document.getElementById('btn-del-ocean-sline').disabled = !_selectedOceanSLineId;
+  if (infoEl) infoEl.textContent = '';
   
   // Show/Hide Grid Buttons
   document.getElementById('btn-add-ocean-row').style.display = _selectedOceanSLineId ? '' : 'none';
@@ -1173,13 +1279,22 @@ function onOceanCascadeSLineChange(sel) {
          <i class="fas fa-ship fa-2x mb-2 opacity-25"></i>
          <div class="text-muted" style="font-size:.85rem;">Select a Port and Shipping Line to view charges.</div>
        </div>`;
+    _syncHeaderFromSelection('ocean');
     return;
   }
 
-  // Render Grid
+  // Render Grid and show SLine info (Route, Transit Days)
   const p = _activeQuote?.OceanPorts?.find(x => x.FqopId === _selectedOceanPortId);
   const sl = p?.ShippingLines?.find(x => x.FqopsId === _selectedOceanSLineId);
+  
+  if (infoEl && sl) {
+    const route = sl.FqopsRoute || 'No Route';
+    const days = sl.FqopsDays != null ? `${sl.FqopsDays} days` : 'No Transit Days';
+    infoEl.textContent = `Route | ${route} | ${days}`;
+  }
+
   gridContainer.innerHTML = _renderOceanDetailGrid(sl?.Charges || [], _selectedOceanSLineId);
+  _syncHeaderFromSelection('ocean');
 }
 
 // ── Dropdown Action Button Handlers ──
@@ -1409,6 +1524,7 @@ function onInlandCascadeRegionChange(sel) {
   if (!_selectedInlandRegionId) {
     _selectedInlandTypeId = null;
     onInlandCascadeTypeChange(typeSel);
+    _syncHeaderFromSelection('inland');
     return;
   }
 
@@ -1429,6 +1545,7 @@ function onInlandCascadeRegionChange(sel) {
     typeSel.value = '';
   }
   onInlandCascadeTypeChange(typeSel);
+  _syncHeaderFromSelection('inland');
 }
 
 function onInlandCascadeTypeChange(sel) {
@@ -1597,8 +1714,7 @@ async function deleteDetailRow(btn) {
 // ── PORT ADDITIONAL TAB — inline editable grid ─────────────────────────────
 function _renderPortAddTab(items) {
   const tb = document.getElementById('portadd-tbody');
-  const btnSaveAll = document.getElementById('btn-save-all-portadd');
-  if (btnSaveAll) btnSaveAll.style.display = items.length > 0 ? '' : 'none';
+
   if (!items.length) {
     tb.innerHTML = '<tr><td colspan="14" class="text-center text-muted py-3" style="font-size:.8rem;">No port additional charges — click Add Row</td></tr>';
     return;
@@ -1804,6 +1920,7 @@ function _renderLclTab(ports) {
 function onLclCascadePortChange(sel) {
   _selectedLclPortId = sel.value ? +sel.value : null;
   const typeSel = document.getElementById('lcl-cascade-type');
+  const remarksEl = document.getElementById('lcl-port-remarks');
 
   // Enable/Disable Port buttons
   document.getElementById('btn-edit-lcl-port').disabled = !_selectedLclPortId;
@@ -1813,15 +1930,21 @@ function onLclCascadePortChange(sel) {
   // Clear types and grid
   typeSel.innerHTML = '<option value="">— select charge type —</option>';
   typeSel.disabled = !_selectedLclPortId;
+  if (remarksEl) remarksEl.textContent = '';
 
   if (!_selectedLclPortId) {
     _selectedLclTypeId = null;
     onLclCascadeTypeChange(typeSel);
+    _syncHeaderFromSelection('lcl');
     return;
   }
 
-  // Populate Types
+  // Populate Types and show Port Remarks formatted
   const p = _activeQuote?.LclPorts?.find(x => x.FqlcpId === _selectedLclPortId);
+  if (remarksEl && p?.FqlcpRemarks) {
+    remarksEl.textContent = `Remarks | ${p.FqlcpRemarks}`;
+  }
+
   const types = p?.PortTypes || [];
   types.forEach(t => {
     const opt = document.createElement('option');
@@ -1837,6 +1960,7 @@ function onLclCascadePortChange(sel) {
     typeSel.value = '';
   }
   onLclCascadeTypeChange(typeSel);
+  _syncHeaderFromSelection('lcl');
 }
 
 function onLclCascadeTypeChange(sel) {
@@ -1913,10 +2037,10 @@ function _renderLclDetailGridCascade(details, typeId) {
 
 function _lclDetailRowHtml(id, typeId, d = {}) {
   return `<tr data-id="${id||''}" data-type-id="${typeId}">
-    <td class="num-col"><input type="number" class="form-control ld-from" step="0.0001" value="${d.FqlcptdFrom??''}" oninput="this.closest('tr').classList.add('row-dirty')" style="width:70px;"/></td>
-    <td class="num-col"><input type="number" class="form-control ld-to" step="0.0001" value="${d.FqlcptdTo??''}" oninput="this.closest('tr').classList.add('row-dirty')" style="width:70px;"/></td>
+    <td class="num-col"><input type="number" class="form-control ld-from" step="1" value="${d.FqlcptdFrom??''}" onkeydown="if(['.','e','E',','].includes(event.key)) event.preventDefault();" oninput="this.value=this.value.replace(/[^0-9]/g,''); this.closest('tr').classList.add('row-dirty')" style="width:70px;"/></td>
+    <td class="num-col"><input type="number" class="form-control ld-to" step="1" value="${d.FqlcptdTo??''}" onkeydown="if(['.','e','E',','].includes(event.key)) event.preventDefault();" oninput="this.value=this.value.replace(/[^0-9]/g,''); this.closest('tr').classList.add('row-dirty')" style="width:70px;"/></td>
     <td class="num-col"><input type="number" class="form-control ld-price" step="0.000001" value="${d.FqlcptdPrice??''}" oninput="this.closest('tr').classList.add('row-dirty')" style="width:80px;"/></td>
-    <td class="num-col"><input type="number" class="form-control ld-over" step="0.0001" value="${d.FqlcptdOver??''}" oninput="this.closest('tr').classList.add('row-dirty')" style="width:70px;"/></td>
+    <td class="num-col"><input type="number" class="form-control ld-over" step="1" value="${d.FqlcptdOver??''}" onkeydown="if(['.','e','E',','].includes(event.key)) event.preventDefault();" oninput="this.value=this.value.replace(/[^0-9]/g,''); this.closest('tr').classList.add('row-dirty')" style="width:70px;"/></td>
     <td><select class="form-select ld-pricetype" onmousedown="expandSelectDesc(this,_amountTypes,'AtCode','AtDescription')" onchange="onLclPriceTypeChange(this)" style="width:90px;">${_buildOptsCodeDesc(_amountTypes,'AtCode','AtDescription',d.FqlcptdPriceType||'')}</select></td>
     <td class="desc-cell ld-pt-desc">${_esc(_amountTypeDesc(d.FqlcptdPriceType||''))}</td>
     <td class="num-col"><input type="number" class="form-control ld-min" step="0.01" value="${d.FqlcptdAmountMin??''}" oninput="this.closest('tr').classList.add('row-dirty')" style="width:70px;"/></td>
@@ -1937,10 +2061,10 @@ function addLclDetailRowCascade(typeId) {
   const tr = document.createElement('tr');
   tr.dataset.id = ''; tr.dataset.typeId = typeId;
   tr.innerHTML = `
-    <td class="num-col"><input type="number" class="form-control ld-from" step="0.0001" value="" style="width:70px;"/></td>
-    <td class="num-col"><input type="number" class="form-control ld-to" step="0.0001" value="" style="width:70px;"/></td>
-    <td class="num-col"><input type="number" class="form-control ld-price" step="0.000001" value="" style="width:80px;"/></td>
-    <td class="num-col"><input type="number" class="form-control ld-over" step="0.0001" value="" style="width:70px;"/></td>
+    <td class="num-col"><input type="number" class="form-control ld-from" step="1" onkeydown="if(['.','e','E',','].includes(event.key)) event.preventDefault();" oninput="this.value = this.value.replace(/[^0-9]/g, ''); this.closest('tr').classList.add('row-dirty')" value="" style="width:70px;"/></td>
+    <td class="num-col"><input type="number" class="form-control ld-to" step="1" onkeydown="if(['.','e','E',','].includes(event.key)) event.preventDefault();" oninput="this.value = this.value.replace(/[^0-9]/g, ''); this.closest('tr').classList.add('row-dirty')" value="" style="width:70px;"/></td>
+    <td class="num-col"><input type="number" class="form-control ld-price" step="0.000001" oninput="this.closest('tr').classList.add('row-dirty')" value="" style="width:80px;"/></td>
+    <td class="num-col"><input type="number" class="form-control ld-over" step="1" onkeydown="if(['.','e','E',','].includes(event.key)) event.preventDefault();" oninput="this.value = this.value.replace(/[^0-9]/g, ''); this.closest('tr').classList.add('row-dirty')" value="" style="width:70px;"/></td>
     <td><select class="form-select ld-pricetype" onmousedown="expandSelectDesc(this,_amountTypes,'AtCode','AtDescription')" onchange="onLclPriceTypeChange(this)" style="width:90px;">${_buildOptsCodeDesc(_amountTypes,'AtCode','AtDescription','')}</select></td>
     <td class="desc-cell ld-pt-desc"></td>
     <td class="num-col"><input type="number" class="form-control ld-min" step="0.01" value="" style="width:70px;"/></td>
@@ -2145,6 +2269,12 @@ function _wireEvents() {
     _searchTimer = setTimeout(() => { _renderFwdList(e.target.value); }, 400);
   });
 
+  document.querySelectorAll('input[name="ffwFilter"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      _renderFwdList(document.getElementById('filter-search').value);
+    });
+  });
+
   // Buttons with IDs (Singletons)
   document.getElementById('btn-save-quote').addEventListener('click', saveQuote);
   document.getElementById('btn-save-all-inland').addEventListener('click', saveAllInland);
@@ -2258,6 +2388,7 @@ async function onBasedOnChange(sel) {
     document.getElementById('q-transit').value = '';
     document.getElementById('q-start').value   = '';
     document.getElementById('q-end').value     = '';
+    document.getElementById('q-remarks').value = '';
     return;
   }
   try {
@@ -2269,6 +2400,7 @@ async function onBasedOnChange(sel) {
     document.getElementById('q-transit').value = q.FqhTransitDays != null ? q.FqhTransitDays : '';
     document.getElementById('q-start').value   = q.FqhStartDate   ? q.FqhStartDate.substring(0,10) : '';
     document.getElementById('q-end').value     = q.FqhEndDate     ? q.FqhEndDate.substring(0,10)   : '';
+    document.getElementById('q-remarks').value = q.FqhRemarks     || '';
     _newQuoteSourceOceanPorts = q.OceanPorts?.length    ? q.OceanPorts    : null;
     _newQuoteSourceInland     = q.InlandRegions?.length  ? q.InlandRegions  : null;
     _newQuoteSourcePortAdd    = q.InlandPortAdds?.length ? q.InlandPortAdds : null;
@@ -2295,6 +2427,7 @@ async function openNewQuote() {
   document.getElementById('q-transit').value = '';
   document.getElementById('q-start').value   = '';
   document.getElementById('q-end').value     = '';
+  document.getElementById('q-remarks').value = '';
   // Resetear todas las fuentes de clonación
   _newQuoteSourceOceanPorts = null;
   _newQuoteSourceInland     = null;
@@ -2348,6 +2481,7 @@ function openEditQuote(q) {
   document.getElementById('q-transit').value = q.FqhTransitDays ?? '';
   document.getElementById('q-start').value   = q.FqhStartDate ? q.FqhStartDate.substring(0,10) : '';
   document.getElementById('q-end').value     = q.FqhEndDate   ? q.FqhEndDate.substring(0,10)   : '';
+  document.getElementById('q-remarks').value = q.FqhRemarks   || '';
   _hideErr('quote-form-error');
   document.getElementById('modal-quote').dataset.editId = q.FqhId;
   mQuote.show();
@@ -2369,6 +2503,7 @@ async function saveQuote() {
     TransitDays: document.getElementById('q-transit').value ? +document.getElementById('q-transit').value : null,
     StartDate:   document.getElementById('q-start').value   || null,
     EndDate:     document.getElementById('q-end').value     || null,
+    Remarks:     document.getElementById('q-remarks').value || null,
     CloneFromId: !editId && cloneFromId ? +cloneFromId : null
   };
   try {
@@ -2455,6 +2590,7 @@ async function quickCloneQuote(q) {
   document.getElementById('q-transit').value = q.FqhTransitDays ?? '';
   document.getElementById('q-start').value   = q.FqhStartDate ? q.FqhStartDate.substring(0,10) : '';
   document.getElementById('q-end').value     = q.FqhEndDate   ? q.FqhEndDate.substring(0,10)   : '';
+  document.getElementById('q-remarks').value = q.FqhRemarks   || '';
 
   mQuote.show();
 }

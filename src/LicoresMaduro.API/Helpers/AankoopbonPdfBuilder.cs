@@ -85,7 +85,7 @@ public static class AankoopbonPdfBuilder
                         inner.Item().AlignRight()
                             .Background(labelColor)
                             .Padding(3).PaddingHorizontal(8)
-                            .Text(isReprint ? "REPRINT" : copyLabel.ToUpper())
+                            .Text(copyLabel.ToUpper())
                             .Bold().FontSize(8).FontColor(Colors.White);
                         inner.Item().Height(4); // spacer
                     }

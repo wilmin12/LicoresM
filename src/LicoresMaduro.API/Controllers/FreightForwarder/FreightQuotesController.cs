@@ -93,10 +93,9 @@ public sealed class FreightQuotesController : ControllerBase
     }
 
     [HttpGet("next-number")]
-    public async Task<IActionResult> GetNextNumber([FromQuery] string? freightType, CancellationToken ct)
+    public async Task<IActionResult> GetNextNumber(CancellationToken ct)
     {
         var max = await _db.FreightQuoteHeaders.AsNoTracking()
-                           .Where(x => x.FqhFreightType == freightType)
                            .MaxAsync(x => (int?)x.FqhQuoteNumber, ct) ?? 0;
         return Ok(ApiResponse<int>.Ok(max + 1));
     }
@@ -110,9 +109,8 @@ public sealed class FreightQuotesController : ControllerBase
             if (!ModelState.IsValid)
                 return BadRequest(ApiResponse.Fail(ModelState.Values.SelectMany(v => v.Errors.Select(e => e.ErrorMessage))));
 
-            // Quote number is per FreightType
+            // Quote number is GLOBAL (no longer per FreightType)
             var max = await _db.FreightQuoteHeaders
-                               .Where(x => x.FqhFreightType == dto.FreightType)
                                .MaxAsync(x => (int?)x.FqhQuoteNumber, ct) ?? 0;
 
             var entity = new FreightQuoteHeader
@@ -123,8 +121,9 @@ public sealed class FreightQuotesController : ControllerBase
                 FqhPort        = dto.Port,
                 FqhRoute       = dto.Route,
                 FqhTransitDays = dto.TransitDays,
-                FqhStartDate   = dto.StartDate.HasValue ? DateOnly.FromDateTime(dto.StartDate.Value) : null,
-                FqhEndDate     = dto.EndDate.HasValue ? DateOnly.FromDateTime(dto.EndDate.Value) : null
+                FqhStartDate   = dto.StartDate,
+                FqhEndDate     = dto.EndDate,
+                FqhRemarks     = dto.Remarks
             };
 
             // Server-side Deep Clone logic
@@ -234,18 +233,19 @@ public sealed class FreightQuotesController : ControllerBase
             var entity = await _db.FreightQuoteHeaders.FindAsync([id], ct);
             if (entity is null) return NotFound(ApiResponse.Fail($"Quote {id} not found."));
 
-            // Allow changing quote number only if it doesn't collide within the same FreightType
+            // Allow changing quote number only if it doesn't collide globally
             if (dto.QuoteNumber != entity.FqhQuoteNumber &&
-                await _db.FreightQuoteHeaders.AnyAsync(x => x.FqhQuoteNumber == dto.QuoteNumber && x.FqhFreightType == entity.FqhFreightType && x.FqhId != id, ct))
-                return Conflict(ApiResponse.Fail($"Quote number {dto.QuoteNumber} already exists for type {entity.FqhFreightType}."));
+                await _db.FreightQuoteHeaders.AnyAsync(x => x.FqhQuoteNumber == dto.QuoteNumber && x.FqhId != id, ct))
+                return Conflict(ApiResponse.Fail($"Quote number {dto.QuoteNumber} already exists globally."));
 
             entity.FqhQuoteNumber = dto.QuoteNumber;
             entity.FqhForwarder   = dto.Forwarder;
             entity.FqhPort        = dto.Port;
             entity.FqhRoute       = dto.Route;
             entity.FqhTransitDays = dto.TransitDays;
-            entity.FqhStartDate   = dto.StartDate.HasValue ? DateOnly.FromDateTime(dto.StartDate.Value) : null;
-            entity.FqhEndDate     = dto.EndDate.HasValue ? DateOnly.FromDateTime(dto.EndDate.Value) : null;
+            entity.FqhStartDate   = dto.StartDate;
+            entity.FqhEndDate     = dto.EndDate;
+            entity.FqhRemarks     = dto.Remarks;
 
             await _db.SaveChangesAsync(ct);
             return Ok(ApiResponse<FreightQuoteHeader>.Ok(entity, "Quote updated."));
@@ -890,7 +890,6 @@ public sealed class FreightQuotesController : ControllerBase
             return NotFound(ApiResponse<object>.Fail("Quote not found"));
 
         var nextNo = (await _db.FreightQuoteHeaders
-            .Where(x => x.FqhForwarder == src.FqhForwarder && x.FqhFreightType == src.FqhFreightType)
             .MaxAsync(x => (int?)x.FqhQuoteNumber, ct) ?? 0) + 1;
 
         var clone = new FreightQuoteHeader
@@ -1008,17 +1007,18 @@ public sealed class FreightQuotesController : ControllerBase
 }
 
 // ── DTOs ──────────────────────────────────────────────────────────────────────
-
 public sealed record FreightQuoteHeaderDto(
     int QuoteNumber,
     string Forwarder,
-    string FreightType,
+    string? FreightType,
     string? Port,
     string? Route,
     int? TransitDays,
-    DateTime? StartDate,
-    DateTime? EndDate,
-    int? CloneFromId = null);
+    DateOnly? StartDate,
+    DateOnly? EndDate,
+    string? Remarks,
+    int? CloneFromId
+);
 
 public sealed record FreightQuoteOceanPortDto(string Port, string? Remarks);
 

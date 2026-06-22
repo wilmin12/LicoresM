@@ -22,14 +22,27 @@ public sealed class PurchaseOrdersController : ControllerBase
         [FromQuery] string? warehouse = null,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
+        [FromQuery] bool excludeCalculated = false,
         CancellationToken ct = default)
     {
-        var q = _dhw.PoHeaders.AsNoTracking()
-            .Where(x => x.PhStat == "0" || x.PhStat == "1");
+        var q = _dhw.PoHeaders.AsNoTracking();
         if (!string.IsNullOrWhiteSpace(warehouse))
             q = q.Where(x => x.PhWhse == warehouse);
         if (!string.IsNullOrWhiteSpace(search))
             q = q.Where(x => x.PhPoNo.Contains(search) || (x.PhOvrNo != null && x.PhOvrNo.Contains(search)) || (x.PhConNo != null && x.PhConNo.Contains(search)));
+
+        // Hide POs that already belong to an existing cost calculation so the same
+        // PO is not calculated twice. (CcCalcPoHead lives in a separate DbContext,
+        // so the excluded set is materialized first then applied to the DHW query.)
+        if (excludeCalculated)
+        {
+            var calculatedPoNos = await _db.CcCalcPoHeads.AsNoTracking()
+                .Select(x => x.CcphLmPoNo)
+                .Distinct()
+                .ToListAsync(ct);
+            if (calculatedPoNos.Count > 0)
+                q = q.Where(x => !calculatedPoNos.Contains(x.PhPoNo));
+        }
         var total = await q.CountAsync(ct);
         var data  = await q.OrderByDescending(x => x.PhOrdt).Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(ct);
 
@@ -63,7 +76,7 @@ public sealed class PurchaseOrdersController : ControllerBase
         return Ok(PagedResponse<PoHeaderEnriched>.Ok(enriched, page, pageSize, total));
     }
 
-    [HttpGet("{warehouse}/{poNo}")]
+    [HttpGet("{warehouse}/{**poNo}")]
     public async Task<IActionResult> GetById(string warehouse, string poNo, CancellationToken ct)
     {
         var header = await _dhw.PoHeaders.AsNoTracking()
@@ -96,7 +109,7 @@ public sealed class PurchaseOrdersController : ControllerBase
             .ToListAsync(ct);
 
         // Enrich with FOB prices
-        var itemCodes = details.Select(d => d.PdItem).Where(c => c != null).Distinct().ToList();
+        var itemCodes = details.Select(d => d.PdItem?.Trim()).Where(c => c != null).Distinct().ToList();
         var fobPrices = await _db.CcItemFobPrices.AsNoTracking()
             .Where(f => itemCodes.Contains(f.ItCode))
             .ToDictionaryAsync(f => f.ItCode, ct);
@@ -105,8 +118,8 @@ public sealed class PurchaseOrdersController : ControllerBase
         {
             d.PdLine, d.PdItem, d.PdOqty, d.PdRqty, d.PdWeig, d.PdLtrs,
             d.PdCstAmt, d.PdUnit, d.PdBsw, d.PdClas, d.PdBrvr, d.PdBran, d.PdStat,
-            FobPrice    = d.PdItem != null && fobPrices.TryGetValue(d.PdItem, out var fob) ? fob.ItPurchasePrice : null,
-            Commodity   = d.PdItem != null && fobPrices.TryGetValue(d.PdItem, out var fob2) ? fob2.ItCommodity : null
+            FobPrice    = d.PdItem != null && fobPrices.TryGetValue(d.PdItem.Trim(), out var fob) ? fob.ItPurchasePrice : null,
+            Commodity   = d.PdItem != null && fobPrices.TryGetValue(d.PdItem.Trim(), out var fob2) ? fob2.ItCommodity : null
         });
 
         return Ok(ApiResponse<object>.Ok(new { Header = header, VendorName = vendorName, Lines = enriched }));

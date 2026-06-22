@@ -1,0 +1,5 @@
+-- Add Remarks to FF_QUOTE_HEADER table
+
+ALTER TABLE [dbo].[FF_QUOTE_HEADER]
+ADD [FQH_REMARKS] nvarchar(200) NULL;
+GO

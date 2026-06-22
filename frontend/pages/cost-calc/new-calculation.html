@@ -1,6 +1,8 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
+  <link rel="icon" href="../../img/LogoLicores.png" type="image/png" />
+
   <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>New Calculation - Licores Maduro</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"/>
@@ -359,11 +361,12 @@
   async function loadExistingCalculation(id) {
     try {
         const res = await API.costCalc.getCalculation(id);
-        const c = res?.Data || res;
+        const data = res?.Data || res;
+        const c = data?.Calc ?? data;
         if(!c) return;
 
         // Header fields
-        if(c.CcForwarderCode && _fwdTs) _fwdTs.setValue(c.CcForwarderCode);
+        if(c.CcForwarderCode && _fwdTs) _fwdTs.setValue(c.CcForwarderCode, true);
         if(c.CcForwarderName) document.getElementById('f-fwd-name').value = c.CcForwarderName;
         if(c.CcCurrCode)      document.getElementById('f-curr-code').value = c.CcCurrCode;
         if(c.CcCurrRate)      document.getElementById('f-curr-rate').value = Number(c.CcCurrRate).toFixed(4);
@@ -483,7 +486,7 @@
     const tbody=document.getElementById('po-tbody');
     tbody.innerHTML='<tr><td colspan="11" class="text-center py-3 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading...</td></tr>';
     try{
-      const p={page:poPage,pageSize:PO_PAGE_SIZE};
+      const p={page:poPage,pageSize:PO_PAGE_SIZE,excludeCalculated:true};
       if(search)p.search=search;
       const res=await API.costCalc.getPurchaseOrders(p);
       poTotal=res?.TotalCount??0;
@@ -500,6 +503,7 @@
 
   function fmtDate(n){if(!n)return'';const s=String(n);if(s.length===8)return s.substring(0,4)+'-'+s.substring(4,6)+'-'+s.substring(6,8);return s;}
   function fmtNum(n,d=2){return n!=null?Number(n).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}):'';}
+  function qtyInCases(l){const item=(l.PdItem||'').trim();return(item.length===6&&(l.PdUnit??0)>0)?Math.ceil((l.PdOqty??0)/l.PdUnit):(l.PdOqty??0);}
 
   function renderPoTable(data){
     const tbody=document.getElementById('po-tbody');
@@ -740,7 +744,7 @@
           <td>${esc(l.PdLine??'')}</td>
           <td><strong>${esc(l.PdItem||'')}</strong></td>
           <td class="text-end">${esc(l.PdUnit??'')}</td>
-          <td class="text-end">${fmtNum(l.PdOqty,0)}</td>
+          <td class="text-end">${fmtNum(qtyInCases(l),0)}</td>
           <td class="text-end">${fmtNum(l.PdWeig,2)}</td>
           <td class="text-end">${fmtNum(l.PdLtrs,2)}</td>
           <td class="text-end">${fmtNum(l.PdCstAmt,2)}</td>

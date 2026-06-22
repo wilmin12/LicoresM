@@ -653,19 +653,19 @@ public sealed class AankoopbonController : ControllerBase
                 await clientAppr.ConnectAsync(cfg.SmtpHost, cfg.SmtpPort, sslOptionApproved, ct);
                 await clientAppr.AuthenticateAsync(cfg.SenderEmail, cfg.SenderPassword, ct);
 
-                // ── Send "REPRINT" to requestor ──────────────────────────────
+                // ── Send "Original" to requestor ─────────────────────────────
                 if (!string.IsNullOrEmpty(requestorEmail))
                 {
                     try
                     {
-                        var originalPdf = AankoopbonPdfBuilder.Generate(header, logoPath, "REPRINT");
+                        var originalPdf = AankoopbonPdfBuilder.Generate(header, logoPath, "Original");
                         var bbOrig = new BodyBuilder
                         {
                             HtmlBody = $@"<p>The aankoopbon below has been <b style='color:green;'>approved</b> by {header.AohApprovedByName}.</p>
 {orderTable}
-<p>Your copy (REPRINT) is attached.</p>"
+<p>Your copy (Original) is attached.</p>"
                         };
-                        bbOrig.Attachments.Add($"Aankoopbon_{safeName}_REPRINT.pdf", originalPdf,
+                        bbOrig.Attachments.Add($"Aankoopbon_{safeName}_Original.pdf", originalPdf,
                             new MimeKit.ContentType("application", "pdf"));
 
                         var msgOrig = new MimeMessage();
@@ -674,11 +674,11 @@ public sealed class AankoopbonController : ControllerBase
                         msgOrig.Subject = subject;
                         msgOrig.Body    = bbOrig.ToMessageBody();
                         await clientAppr.SendAsync(msgOrig, ct);
-                        _log.LogInformation("Aankoopbon {BonNr} — REPRINT sent to requestor {To}", header.AohBonNr, requestorEmail);
+                        _log.LogInformation("Aankoopbon {BonNr} — Original sent to requestor {To}", header.AohBonNr, requestorEmail);
                     }
                     catch (Exception ex)
                     {
-                        _log.LogWarning(ex, "Could not send REPRINT PDF for {BonNr}", header.AohBonNr);
+                        _log.LogWarning(ex, "Could not send Original PDF for {BonNr}", header.AohBonNr);
                     }
                 }
 

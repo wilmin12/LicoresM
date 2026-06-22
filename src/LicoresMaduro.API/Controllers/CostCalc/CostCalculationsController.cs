@@ -49,9 +49,32 @@ public sealed class CostCalculationsController : ControllerBase
     public async Task<IActionResult> GetById(int id, CancellationToken ct)
     {
         var calc = await _db.CcCalcHeaders
+            .AsNoTracking()
             .Include(x => x.PoHeads).ThenInclude(p => p.Details)
             .FirstOrDefaultAsync(x => x.CcCalcNumber == id, ct);
         if (calc is null) return NotFound(ApiResponse.Fail($"Calculation {id} not found."));
+
+        // Enrich vendor names from DHW Suppliers (read-only lookup — independent of cost-calculation logic).
+        // Fills CcphVendName when it is blank so the report shows the name instead of the code.
+        var vendCodes = calc.PoHeads
+            .Select(p => p.CcphVendNo?.Trim())
+            .Where(c => !string.IsNullOrEmpty(c))
+            .Distinct()
+            .ToList();
+        if (vendCodes.Any())
+        {
+            var vendMap = (await _dhw.Suppliers.AsNoTracking()
+                    .Where(x => x.Supplier != null && vendCodes.Contains(x.Supplier.Trim()))
+                    .ToListAsync(ct))
+                .GroupBy(v => v.Supplier!.Trim(), StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.First().SupplierName?.Trim() ?? g.Key, StringComparer.OrdinalIgnoreCase);
+            foreach (var po in calc.PoHeads)
+            {
+                var code = po.CcphVendNo?.Trim();
+                if (!string.IsNullOrEmpty(code) && vendMap.TryGetValue(code, out var name) && !string.IsNullOrWhiteSpace(name))
+                    po.CcphVendName = name;
+            }
+        }
 
         // Enrich with RANKER_952 (Actual Cost VIP) for all items in this calculation
         var itemCodes = calc.PoHeads
@@ -66,6 +89,25 @@ public sealed class CostCalculationsController : ControllerBase
                 .Where(r => itemCodes.Contains(r.Item.Trim()))
                 .ToDictionaryAsync(r => r.Item.Trim(), ct)
             : new Dictionary<string, DhwRanker952>();
+
+        // Enrich item descriptions via DHW scalar function Description_Items_BEER (read-time, so
+        // existing calculations also show the client-preferred description format in the report).
+        if (itemCodes.Any())
+        {
+            var descrMap = (await _dhw.ItemT.AsNoTracking()
+                    .Where(i => itemCodes.Contains(i.ItItem.Trim()))
+                    .Select(i => new { Code = i.ItItem.Trim(), Descr = DhwDbContext.DescriptionItemsBeer(i.ItItem) })
+                    .ToListAsync(ct))
+                .Where(x => !string.IsNullOrWhiteSpace(x.Descr))
+                .GroupBy(x => x.Code, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.First().Descr!.Trim(), StringComparer.OrdinalIgnoreCase);
+            foreach (var d in calc.PoHeads.SelectMany(p => p.Details))
+            {
+                var code = d.CcpdItemNo?.Trim();
+                if (!string.IsNullOrEmpty(code) && descrMap.TryGetValue(code, out var nd))
+                    d.CcpdItemDescr = nd;
+            }
+        }
 
         var calcConfirmedBy = calc.PoHeads
             .FirstOrDefault(p => !string.IsNullOrEmpty(p.CcphConfirmedBy))?.CcphConfirmedBy;
@@ -410,6 +452,15 @@ public sealed class CostCalculationsController : ControllerBase
                 .Where(i => itemCodes.Contains(i.ItItem.Trim()))
                 .ToDictionaryAsync(i => i.ItItem.Trim(), ct);
 
+            // Client-preferred item description via DHW scalar function Description_Items_BEER.
+            var funcDescrMap = (await _dhw.ItemT.AsNoTracking()
+                    .Where(i => itemCodes.Contains(i.ItItem.Trim()))
+                    .Select(i => new { Code = i.ItItem.Trim(), Descr = DhwDbContext.DescriptionItemsBeer(i.ItItem) })
+                    .ToListAsync(ct))
+                .Where(x => !string.IsNullOrWhiteSpace(x.Descr))
+                .GroupBy(x => x.Code, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.First().Descr!.Trim(), StringComparer.OrdinalIgnoreCase);
+
             var ranker560 = await _dhw.Ranker560.AsNoTracking()
                 .Where(r => itemCodes.Contains(r.Field1))
                 .ToDictionaryAsync(r => r.Field1, ct);
@@ -693,9 +744,11 @@ public sealed class CostCalculationsController : ControllerBase
                     CcpdCalcNumber    = id,
                     CcpdLmPoNo        = poHead.CcphLmPoNo,
                     CcpdItemNo        = lc.Line.PdItem ?? "N/A",
-                    CcpdItemDescr     = iDesc != null
-                                            ? $"{iDesc.ItShort?.Trim()} {iDesc.ItDesc?.Trim()}".Trim().Trunc(50)
-                                            : lc.Line.PdSitem?.Trunc(50),
+                    CcpdItemDescr     = funcDescrMap.TryGetValue(lc.Line.PdItem?.Trim() ?? "", out var fDesc)
+                                            ? fDesc.Trunc(50)
+                                            : (iDesc != null
+                                                ? $"{iDesc.ItShort?.Trim()} {iDesc.ItDesc?.Trim()}".Trim().Trunc(50)
+                                                : lc.Line.PdSitem?.Trunc(50)),
                     CcpdUnitCase      = (int?)lc.Line.PdUnit,
                     CcpdUm            = mlPerBottle != null ? litersPerBottle.ToString("0.###") : lc.Line.PdUm?.Trim(),
                     CcpdCLiter        = mlPerBottle != null ? (mlPerBottle.Value / 10m) : null,

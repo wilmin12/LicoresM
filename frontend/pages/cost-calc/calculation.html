@@ -1,6 +1,8 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
+  <link rel="icon" href="../../img/LogoLicores.png" type="image/png" />
+
   <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Calculation Detail - Licores Maduro</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"/>
@@ -357,12 +359,14 @@
   function printReport(){
     if(!calcData){return;}
 
-    // ── Map calcData â†’ FinalCostReport props ─────────────────────────────────
+    // Map calcData -> FinalCostReport props
     const pos = calcData.PoHeads || [];
 
     // Collect unique WH / Invoice values across all POs
     const unique = (arr) => [...new Set(arr.filter(Boolean))];
     const warehouses = unique(pos.map(p => p.CcphWhse?.trim()));
+    // Duty-free load (11060 / DF): taxes do not apply, so tax columns are shown as 0 in the report.
+    const dutyFree = warehouses.length > 0 && warehouses.every(w => w === '11060' || (w||'').toUpperCase() === 'DF');
     const invoiceNrs = unique(pos.map(p => p.CcphInvNumber?.trim()));
     const invoiceDts = unique(pos.map(p => p.CcphInvDate ? p.CcphInvDate.split('T')[0] : null));
     const containers = unique(pos.map(p => p.CcphConNo?.trim()));
@@ -398,7 +402,7 @@
         const vip  = ranker952Data[d.CcpdItemNo?.trim()] ?? null;
         return {
           itemNo:      d.CcpdItemNo,
-          description: d.CcpdItemDescr || '',
+          description: (d.CcpdItemDescr || '') + (d.CcpdUm ? ' ' + String(d.CcpdUm).trim() : ''),
           uc:          d.CcpdUnitCase ?? 0,
           up:          d.CcpdFobPriceUsd ?? 0,
           ord:         qty,
@@ -488,6 +492,7 @@
       whCode2:       warehouses.map(w => { const p = (w||'').substring(0,3); return p+'10/'+p+'20'; }).join(' / ') || '—',
       forwarder:     calcData.CcForwarderName || calcData.CcForwarderCode || '—',
       vendor:        firstPo?.CcphVendName || firstPo?.CcphVendNo || '—',
+      dutyFree,
       costTotals,
       items,
       summaries,
@@ -627,6 +632,11 @@
     ];
     const totC = k => (p.costTotals||[]).reduce((s,r)=>s+(Number(r[k])||0),0);
     const totI = k => (p.items||[]).reduce((s,r)=>s+(Number(r[k])||0),0);
+    // Duty-free load (11060/DF): tax components are not paid → display them as 0 (does not alter stored values).
+    // Per client (Jun-16): for Duty Free 11060 only the TAX TOTALS row is shown as 0.
+    // The per-item tax row values stay as calculated (do not zero them).
+    const TAXK_C = ['duties','econSurch','tax'];   // Cost Components keys
+    const zTaxC = k => (p.dutyFree && TAXK_C.includes(k)) ? 0 : totC(k);
 
     const NC = (v,d=2,bold=false,accent=false) => {
       const n=Number(v??0), z=n===0;
@@ -644,13 +654,6 @@
     const LBL = t => `<td style="padding:1px 6px 1px 0;font-weight:700;color:#6b7280;white-space:nowrap;border:none;width:70px;">${esc(t)}</td>`;
     const VAL = (v,extra='') => `<td style="padding:1px 12px 1px 4px;color:#111827;border:none;font-weight:600;${extra}">${v}</td>`;
 
-    const costRows = (p.costTotals||[]).map((r,i)=>
-      `<tr style="background:${i%2?'#f9fafb':'#fff'};">
-        <td style="padding:4px 8px;font-weight:600;font-size:9px;border:1px solid #d1d5db;">${esc(r.poNo)}</td>
-        ${COST_COLS.map(c=>NC(r[c.key],2,!!c.accent,!!c.accent)).join('')}
-      </tr>`
-    ).join('');
-
     const itemRows = (p.items||[]).map((d,i)=>{
       const bg=i%2?'#f9fafb':'#fff';
       let row=`<tr style="background:${bg};">
@@ -661,7 +664,7 @@
       if(d.vip){const v=d.vip;
         row+=`<tr style="background:#f3f4f6;">
           <td style="padding:1px 6px;font-size:7px;color:#9ca3af;font-style:italic;border:1px solid #e5e7eb;"></td>
-          <td style="padding:1px 6px;font-size:7.5px;color:#6b7280;font-style:italic;border:1px solid #e5e7eb;">â†³ Actual Cost VIP</td>
+          <td style="padding:1px 6px;font-size:7.5px;color:#6b7280;font-style:italic;border:1px solid #e5e7eb;">Actual Cost VIP</td>
           ${'<td style="border:1px solid #e5e7eb;"></td>'.repeat(5)}
           ${VC(v.fobPrice)}${VC(v.inlandFrt)}${VC(v.freight)}${VC(v.localHdl)}${VC(v.duties)}${VC(v.econSrch)}${VC(v.tax)}${VC(v.insurance)}${VC(v.trans)}${VC(v.unload)}
           ${VC(v.costPerCase)}${VC(v.totalExtWh1)}<td style="border:1px solid #e5e7eb;"></td>
@@ -670,31 +673,20 @@
       return row;
     }).join('');
 
-    // Narrow columns (8px) cannot fit the totals â†’ split them across two rows: even-index columns show their total in the
-    // top row (after thead), odd-index columns in the bottom row (tfoot). The empty neighbour lets the number overflow into it.
-    const _footBlank = `<td style="background:#e5e7eb;border:1px solid #d1d5db;"></td>`;
-    const itemFootEven = ITEM_COLS.map((c,i)=>(['up','fcPrice'].includes(c.key)||c.diff||(i%2!==0))?_footBlank:FTDX(totI(c.key),c.dec??2,!!c.accent)).join('');
-    const itemFootOdd  = ITEM_COLS.map((c,i)=>(['up','fcPrice'].includes(c.key)||c.diff||(i%2===0))?_footBlank:FTDX(totI(c.key),c.dec??2,!!c.accent)).join('');
     const totVipWh1 = (p.items||[]).reduce((s,d)=>s+(d.vip?d.vip.totalExtWh1:0),0);
     const totVipWh2 = (p.items||[]).reduce((s,d)=>s+(d.vip?d.vip.totalExt:0),0);
     const totDiffWh1= totI('totalExtWh1') - totVipWh1;
     const totDiffWh2= totI('totalExt') - totVipWh2;
 
-    const _summs = p.summaries||[];
-    const summaryHTML = _summs.length ? (
-      '<div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.09em;color:#6b7280;border-bottom:1px solid #d1d5db;padding-bottom:2px;margin-top:8px;margin-bottom:3px;">Summary</div>' +
-      '<div style="display:grid;grid-template-columns:' + (_summs.length>=2?'1fr 1fr':'280px') + ';gap:8px;margin-bottom:10px;">' +
-      _summs.map(function(s){
-        return '<table style="font-size:9px;border-collapse:collapse;width:100%;">' +
-          '<thead><tr><th colspan="2" style="background:#d1d5db;font-size:8px;font-weight:700;text-transform:uppercase;text-align:center;padding:3px 8px;border:1px solid #d1d5db;">Warehouse ' + esc(s.label) + '</th></tr></thead>' +
-          '<tbody>' +
-          '<tr style="background:#fff;"><td style="padding:4px 8px;border:1px solid #d1d5db;">Total Extended</td><td style="text-align:right;padding:4px 8px;font-variant-numeric:tabular-nums;border:1px solid #d1d5db;">' + f(s.totalExtended) + '</td></tr>' +
-          '<tr style="background:#f9fafb;"><td style="padding:4px 8px;border:1px solid #d1d5db;">Total Actual VIP</td><td style="text-align:right;padding:4px 8px;font-variant-numeric:tabular-nums;border:1px solid #d1d5db;">' + f(s.totalActualVip) + '</td></tr>' +
-          '<tr><td style="padding:4px 8px;font-weight:700;background:#e5e7eb;border:1px solid #d1d5db;">Total Real Cost</td><td style="text-align:right;padding:4px 8px;font-weight:800;font-variant-numeric:tabular-nums;background:#e5e7eb;border:1px solid #d1d5db;">' + f(s.totalRealCost) + '</td></tr>' +
-          '</tbody></table>';
-      }).join('') +
-      '</div>'
-    ) : '';
+    // Totals rows built by mapping over ITEM_COLS so every total lands directly under its own column
+    // (fixes client obs #8: totals appearing under the wrong columns). valMap keyed by ITEM_COLS.key.
+    const totalsRow = (label, bg, valMap, bold=true) => {
+      const blank = `<td style="background:${bg};border:1px solid #d1d5db;"></td>`;
+      const cells = ITEM_COLS.map(c => (c.key in valMap) ? FTD(valMap[c.key], c.dec??2, bold, bg) : blank).join('');
+      return `<tr>${FTL(label,bg)}${blank}${cells}</tr>`;
+    };
+
+    const summaryHTML = ''; // Summary block removed per client feedback (Jun-16): totals already shown above.
 
     return `<div style="padding:12px 14px;font-family:'Arial Narrow',Arial,sans-serif;font-size:9px;color:#111827;background:#fff;">
       <style>.fcr td,.fcr th{border:1px solid #d1d5db;} .fcr table{border-collapse:collapse;width:100%;}<\/style>
@@ -713,15 +705,22 @@
       <!-- Metadata -->
       <table style="margin-bottom:8px;font-size:8.5px;border-collapse:collapse;"><tbody>
         <tr>${LBL('Container')}${VAL(esc(p.container||'—'),'border-right:none;')}${LBL('Invoice No.')}${VAL(esc(p.invoiceNo||'—'),'border-right:none;')}${LBL('Forwarder')}${VAL(esc(p.forwarder||'—'),'padding-right:0;border:none;')}</tr>
-        <tr>${LBL('Order')}${VAL(esc(p.order||'—'),'border-right:none;')}${LBL('Inv. Date')}${VAL(esc(p.invoiceDate||'—')+'<span style="margin:0 5px;color:#d1d5db;">|</span><span style="font-weight:400;color:#4b5563;">'+f(p.invRate,4)+'</span>','border-right:none;')}${LBL('Vendor')}${VAL(esc(p.vendor||'—'),'padding-right:0;border:none;font-weight:400;')}</tr>
+        <tr>${LBL('Order')}${VAL(esc(p.order||'—'),'border-right:none;')}${LBL('Inv. Date')}${VAL(esc(p.invoiceDate||'—'),'border-right:none;')}${LBL('Vendor')}${VAL(esc(p.vendor||'—'),'padding-right:0;border:none;font-weight:400;')}</tr>
         <tr>${LBL('Warehouse')}${VAL(esc(p.warehouse||'—')+'<span style="color:#9ca3af;font-weight:400;margin-left:4px;">('+esc(p.warehouseCode||'')+')</span>','border-right:none;')}${LBL('Cust. Rate')}${VAL(f(p.custRate??p.invRate,4),'border-right:none;')}${LBL('Factor')}${VAL('<strong>'+esc(String(p.factor||''))+'</strong>','padding-right:0;border:none;')}</tr>
       </tbody></table>
       <!-- Cost Components -->
       <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.09em;color:#6b7280;border-bottom:1px solid #d1d5db;padding-bottom:2px;margin-top:8px;margin-bottom:3px;">Cost Components Totals in XCG</div>
       <table style="table-layout:fixed;font-size:8.5px;margin-bottom:8px;">
-        <thead><tr>${THL('Purchase Order')}${COST_COLS.map(c=>THR(c.label,c.accent)).join('')}</tr></thead>
-        <tbody>${costRows}</tbody>
-        <tfoot><tr>${FTL('Totals')}${COST_COLS.map(c=>FTD(totC(c.key),2,!!c.accent)).join('')}</tr></tfoot>
+        <thead><tr>${THL('')}${COST_COLS.map(c=>THR(c.label,c.accent)).join('')}</tr></thead>
+        <tbody><tr>${FTL('Totals')}${(()=>{
+          // Real Cost is rendered as the sum of the rounded component cells shown above, so the
+          // totals line reconciles exactly (removes the 1-cent rounding drift the client reported).
+          const r2 = v => Math.round((Number(v)||0)*100)/100;
+          const compKeys = COST_COLS.filter(c=>c.key!=='realCost').map(c=>c.key);
+          return COST_COLS.map(c => c.key==='realCost'
+            ? FTD(compKeys.reduce((s,k)=>s+r2(zTaxC(k)),0),2,true)
+            : FTD(zTaxC(c.key),2,!!c.accent)).join('');
+        })()}</tr></tbody>
       </table>
       <!-- Item Detail -->
       <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.09em;color:#6b7280;border-bottom:1px solid #d1d5db;padding-bottom:2px;margin-top:8px;margin-bottom:3px;">Item Detail — Cost per Case in XCG</div>
@@ -740,14 +739,12 @@
             <th style="background:#e5e7eb;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:#374151;padding:3px 5px;text-align:left;height:62px;vertical-align:bottom;border:1px solid #d1d5db;">Description</th>
             ${ITEM_COLS.map(c=>RTH(c.label,c.g)).join('')}
           </tr>
-          <tr>${FTL('Totals')}${itemFootEven}</tr>
         </thead>
         <tbody>${itemRows}</tbody>
         <tfoot>
-          <tr>${FTL('Totals')}${itemFootOdd}</tr>
-          <tr>${FTL('Invoice Total','#d1d5db')}<td style="background:#d1d5db;border:1px solid #d1d5db;"></td><td style="background:#d1d5db;border:1px solid #d1d5db;"></td>${FTD(totI('ord'),0,true,'#d1d5db')}<td style="background:#d1d5db;border:1px solid #d1d5db;"></td>${FTD(totI('totalInvP'),2,true,'#d1d5db')}${'<td style="background:#d1d5db;border:1px solid #d1d5db;"></td>'.repeat(10)}${FTD(totI('totalExtWh1'),2,true,'#d1d5db')}${FTD(totDiffWh1,2,false,'#d1d5db')}${'<td style="background:#d1d5db;border:1px solid #d1d5db;"></td>'}${FTD(totI('totalExt'),2,true,'#d1d5db')}${FTD(totDiffWh2,2,false,'#d1d5db')}</tr>
-          <tr>${FTL('Total Actual VIP','#dbeafe')}${'<td style="background:#dbeafe;border:1px solid #d1d5db;"></td>'.repeat(15)}${FTD(totVipWh1,2,false,'#dbeafe')}<td style="background:#dbeafe;border:1px solid #d1d5db;"></td><td style="background:#dbeafe;border:1px solid #d1d5db;"></td>${FTD(totVipWh2,2,false,'#dbeafe')}<td style="background:#dbeafe;border:1px solid #d1d5db;"></td></tr>
-          <tr>${FTL('Total Real Cost','#c7d2fe')}${'<td style="background:#c7d2fe;border:1px solid #d1d5db;"></td>'.repeat(15)}${FTD(totI('totalExtWh1'),2,true,'#c7d2fe')}${FTD(totDiffWh1,2,false,'#c7d2fe')}<td style="background:#c7d2fe;border:1px solid #d1d5db;"></td>${FTD(totI('totalExt'),2,true,'#c7d2fe')}${FTD(totDiffWh2,2,false,'#c7d2fe')}</tr>
+          ${totalsRow('Invoice Total','#d1d5db',{ord:totI('ord'),totalInvP:totI('totalInvP'),totalExtWh1:totI('totalExtWh1'),totalExt:totI('totalExt')})}
+          ${totalsRow('Total Actual VIP','#dbeafe',{totalExtWh1:totVipWh1,totalExt:totVipWh2},false)}
+          ${totalsRow('Total Real Cost','#c7d2fe',{totalExtWh1:totI('totalExtWh1'),diffWh1:totDiffWh1,totalExt:totI('totalExt'),diffWh2:totDiffWh2})}
         </tfoot>
       </table>
       ${summaryHTML}

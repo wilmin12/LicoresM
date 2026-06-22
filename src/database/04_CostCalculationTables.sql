@@ -91,7 +91,7 @@ CREATE TABLE dbo.COST_CALC_PO_HEAD_FIN (
         REFERENCES dbo.COST_CALC_FIN (CC_Calc_Number)
         ON DELETE CASCADE,
     CONSTRAINT CK_CCPH_Status
-        CHECK (CCPH_Status IN ('DR','CF','AP'))
+        CHECK (CCPH_Status IN ('DR','CF','AP','PC','PD'))
 );
 GO
 
